@@ -4,7 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Ghost in the Archive - 米公文書館から歴史的ミステリーを発掘し、物語・音声・プロダクトへと変換する自律型エージェント AI システム
+Ghost in the Archive - 米公文書館から歴史的ミステリーと民俗学的怪異を発掘し、物語・音声・プロダクトへと変換する自律型エージェント AI システム
+
+### 設計思想：Fact × Folklore のハイブリッド
+
+本システムは **歴史的事実（Fact-based）** と **民俗学的怪異・伝説（Folklore-based）** の両方をターゲットにする。
+
+- **Fact（左脳的アプローチ）**: 公文書の矛盾、日付の不一致、人物の消失など検証可能な歴史的アノマリー
+- **Folklore（右脳的アプローチ）**: 地元の信仰、禁忌、都市伝説、未解決の怪異など文化的記憶
+
+この二つを融合させた独自のナラティブを生成する。
 
 ## Tech Stack
 
@@ -20,62 +29,82 @@ ADK を使用した 6 つの専門エージェント構成：
 
 | エージェント | 役割 | 入力 | 出力 |
 |------------|------|------|------|
-| **Librarian** | 資料調査・収集 | 調査クエリ | collected_documents |
-| **Historian** | 資料精査・矛盾検出 | collected_documents | mystery_report |
-| **Storyteller** | 脚本・構成 | mystery_report | creative_content (ブログ原稿、ポッドキャスト台本、デザインコンセプト案) |
+| **Librarian** | 資料調査・収集（公文書＋民俗資料） | 調査クエリ | collected_documents |
+| **Historian** | 矛盾検出＋民俗学的アノマリー分析 | collected_documents | mystery_report |
+| **Storyteller** | 歴史的厳密さと怪異的情緒の融合 | mystery_report | creative_content (ブログ原稿、ポッドキャスト台本、デザインコンセプト案) |
 | **Designer** | 視覚表現 | creative_content | visual_assets (Imagen 3 用プロンプト、生成画像) |
 | **Producer** | 音声表現 | creative_content | audio_assets (Chirp 3 / TTS によるバイリンガル音声ファイル) |
 | **Publisher** | 納品・公開 | 全アセット | published_episode (Firestore 保存、管理画面反映) |
 
+### Agent Roles（詳細）
+
+**Librarian（司書）**
+- 検索対象: 公文書（新聞、外交記録）＋ **Folklore, Legends, Myths, Local Beliefs**
+- 公式記録と民俗資料の両方を収集し、Fact と Folklore の素材を揃える
+
+**Historian（歴史家）**
+- 矛盾検出: 日付の不一致、人物の消失、記録の欠落など
+- **民俗学的アノマリーの特定**: 説明のつかない現象、地元の禁忌、繰り返される怪異パターン
+- **事実と伝説の相関分析**: 実際の事件がどのように伝説化したか、逆に伝説の背後にある史実は何か
+
+**Storyteller（語り部）**
+- **歴史的厳密さ**と**怪異的情緒**を両立させた物語の再構築
+- センセーショナリズムに走らず、学術的誠実さを保ちながらも、読者/リスナーの好奇心を刺激する構成
+
 ### Agent Workflow
 
 ```
-                    ┌─────────────┐
-                    │  Librarian  │
-                    │ (資料収集)   │
-                    └──────┬──────┘
-                           │ collected_documents
-                           ▼
-                    ┌─────────────┐
-                    │  Historian  │
-                    │ (矛盾検出)   │
-                    └──────┬──────┘
-                           │ mystery_report
-                           ▼
-                    ┌─────────────┐
-                    │ Storyteller │
-                    │ (脚本・構成) │
-                    └──────┬──────┘
-                           │ creative_content
-              ┌────────────┼────────────┐
-              ▼            ▼            ▼
-       ┌──────────┐ ┌──────────┐ ┌──────────┐
-       │ Designer │ │ Producer │ │          │
-       │ (画像)   │ │ (音声)   │ │          │
-       └────┬─────┘ └────┬─────┘ │          │
-            │            │       │          │
-            ▼            ▼       │          │
-      visual_assets  audio_assets│          │
-            │            │       │          │
-            └────────────┴───────┘          │
-                         │                  │
-                         ▼                  │
-                  ┌─────────────┐           │
-                  │  Publisher  │◄──────────┘
-                  │ (納品・公開) │
-                  └─────────────┘
-                         │
-                         ▼
-                    Firestore
+                    ┌───────────────────────────────┐
+                    │          Librarian            │
+                    │  Fact（公文書）＋ Folklore（民俗）│
+                    └───────────────┬───────────────┘
+                                    │ collected_documents
+                                    │ (FactとFolkloreの両素材)
+                                    ▼
+                    ┌───────────────────────────────┐
+                    │          Historian            │
+                    │   矛盾検出 ╳ 民俗学的アノマリー   │
+                    │   (Cross-reference Analysis)  │
+                    └───────────────┬───────────────┘
+                                    │ mystery_report
+                                    │ (Folkloric Context含む)
+                                    ▼
+                    ┌───────────────────────────────┐
+                    │         Storyteller           │
+                    │  歴史的厳密さ ⚖ 怪異的情緒     │
+                    │     (Narrative Fusion)        │
+                    └───────────────┬───────────────┘
+                                    │ creative_content
+              ┌─────────────────────┼─────────────────────┐
+              ▼                     ▼                     ▼
+       ┌──────────┐          ┌──────────┐          ┌──────────┐
+       │ Designer │          │ Producer │          │          │
+       │ (画像)   │          │ (音声)   │          │          │
+       └────┬─────┘          └────┬─────┘          │          │
+            │                     │                │          │
+            ▼                     ▼                │          │
+      visual_assets          audio_assets          │          │
+            │                     │                │          │
+            └─────────────────────┴────────────────┘          │
+                                  │                           │
+                                  ▼                           │
+                           ┌─────────────┐                    │
+                           │  Publisher  │◄───────────────────┘
+                           │ (納品・公開) │
+                           └─────────────┘
+                                  │
+                                  ▼
+                             Firestore
 ```
 
 ### Session State Keys
 
 各エージェントは `output_key` を使用してセッション状態にデータを保存：
 
-- `collected_documents` - Librarian が収集した資料
+- `collected_documents` - Librarian が収集した資料（Fact＋Folklore両方を含む）
 - `mystery_report` - Historian の分析レポート
-- `creative_content` - Storyteller のコンテンツ
+  - **Folkloric Context 属性を含む**: 事実と伝説の相関、民俗学的アノマリー、地域の信仰・禁忌への言及
+- `creative_content` - Storyteller のコンテンツ（歴史的厳密さと怪異的情緒の融合）
 - `visual_assets` - Designer の画像アセット
 - `audio_assets` - Producer の音声アセット
 - `published_episode` - Publisher の公開結果
