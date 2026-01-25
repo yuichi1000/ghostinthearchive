@@ -27,7 +27,7 @@ export function Header({ isAdmin = false }: HeaderProps) {
                 Ghost in the Archive
               </h1>
               <p className="text-xs text-muted hidden sm:block">
-                Unearthing Historical Mysteries
+                Unearthing History & Folklore
               </p>
             </div>
           </Link>

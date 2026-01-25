@@ -76,7 +76,8 @@ export default function HomePage() {
             </h1>
             <p className="text-muted max-w-2xl mx-auto leading-relaxed">
               Ghosts sleeping in the archive whisper untold stories.
-              AI connects fragments of public records, surfacing erased truths.
+              AI connects fragments of public records and forgotten folklore,
+              surfacing erased truths and lost legends.
               What was hidden in the shadows of history?
             </p>
           </div>

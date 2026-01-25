@@ -25,8 +25,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Ghost in the Archive",
-  description: "米公文書館から歴史的ミステリーを発掘するAIシステム",
-  keywords: ["歴史", "ミステリー", "公文書館", "アーカイブ", "AI"],
+  description: "米公文書館から歴史的ミステリーと民俗学的怪異を発掘するAIシステム",
+  keywords: ["歴史", "ミステリー", "民俗学", "フォークロア", "公文書館", "アーカイブ", "AI"],
 };
 
 /**

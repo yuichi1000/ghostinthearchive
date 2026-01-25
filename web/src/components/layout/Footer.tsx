@@ -17,9 +17,9 @@ export function Footer() {
               Ghost in the Archive
             </h3>
             <p className="text-sm text-muted leading-relaxed">
-              An AI system that unearths historical mysteries from public records
-              and reconstructs them as stories.
-              Exploring truths hidden in the shadows of history.
+              An AI system that unearths historical mysteries and forgotten folklore
+              from public records, reconstructing them as stories.
+              Where fact meets legend in the shadows of history.
             </p>
           </div>
 
