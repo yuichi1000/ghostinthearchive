@@ -1,14 +1,20 @@
-from .analyst import AnalystAgent, analyst_agent
+"""Ghost in the Archive - Agent Module
+
+This module exports all specialized agents for the multi-agent system.
+"""
+
+from .designer import designer_agent
 from .historian import historian_agent
 from .librarian import librarian_agent
-from .publisher import PublisherAgent
-from .storyteller import StorytellerAgent
+from .producer import producer_agent
+from .publisher import publisher_agent
+from .storyteller import storyteller_agent
 
 __all__ = [
     "librarian_agent",
     "historian_agent",
-    "AnalystAgent",
-    "analyst_agent",
-    "StorytellerAgent",
-    "PublisherAgent",
+    "storyteller_agent",
+    "designer_agent",
+    "producer_agent",
+    "publisher_agent",
 ]
