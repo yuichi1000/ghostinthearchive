@@ -9,24 +9,36 @@
 ## 2. 3 つのコア・プロセス (Core Processes)
 
 - **デジタル発掘 (Exhumation):** 公文書データから、AI エージェントが「知の鉱脈」となる未解決の謎を特定します。
-- **マルチモーダル再構築 (Reconstruction):** Gemini 1.5 を中心とした AI 群が、ブログ、Podcast 台本、BGM、プロダクトデザインを生成します。
+- **マルチモーダル再構築 (Reconstruction):** Gemini を中心とした AI 群が、ブログ、Podcast 台本、BGM、プロダクトデザインを生成します。
 - **アーティファクトの定着 (Establishment):** デジタルコンテンツの配信（Next.js, Spotify）と、物理的なプロダクト（T シャツ、メモ帳等）への還元を行います。
 
 ## 3. マルチエージェント構成 (Multi-Agent System)
 
-ADK (Agent Development Kit) を活用し、以下の専門エージェントが協調動作します。
+ADK (Agent Development Kit) を活用し、以下の 6 つの専門エージェントが協調動作します。
 
-- **Librarian Agent (司書):** 公文書館 API から関連性の高い資料を調査・収集します。
-- **Historian Agent (歴史家):** 資料を精査し、記述の矛盾や「歴史の空白」を見つけ出し分析します。
-- **Storyteller Agent (物語作家):** 歴史の謎をブログ、Podcast、Imagen 3 によるデザインへと昇華させます。
-- **Publisher Agent (発行者):** 各プラットフォーム（Spotify, Next.js, POD ショップ等）へ自動配信します。
+| エージェント | 役割 | 入力 | 出力 |
+|------------|------|------|------|
+| **Librarian** | 資料調査・収集 | 調査クエリ | 収集資料 |
+| **Historian** | 資料精査・矛盾検出 | 収集資料 | Mystery Report |
+| **Storyteller** | 脚本・構成 | Mystery Report | ブログ原稿、ポッドキャスト台本、デザインコンセプト案 |
+| **Designer** | 視覚表現 | デザインコンセプト | Imagen 3 用プロンプト、生成画像 |
+| **Producer** | 音声表現 | ポッドキャスト台本 | Chirp 3 / TTS によるバイリンガル音声ファイル |
+| **Publisher** | 納品・公開 | 全アセット | Firestore 保存、管理画面反映 |
+
+### Agent Workflow
+
+```
+Librarian → Historian → Storyteller → Designer  ─┐
+                              │                   │
+                              └──→ Producer ──────┼──→ Publisher → Firestore
+```
 
 ## 4. 技術スタック (Tech Stack)
 
 - **Infrastructure:** Google Cloud (Cloud Run, Cloud Scheduler)
-- **AI/ML:** Vertex AI (Gemini Pro/Flash, Imagen 3, MusicFX, Text-to-Speech)
+- **AI/ML:** Vertex AI (Gemini Pro/Flash, Imagen 3, Chirp 3, Text-to-Speech)
 - **Agent Framework:** Agent Development Kit (ADK)
-- **Data:** BigQuery, Cloud Storage
+- **Data:** BigQuery, Cloud Storage, Firestore
 - **Web:** Next.js
 
 ## 5. プロジェクト構成 (Project Structure)
@@ -38,10 +50,13 @@ ghostinthearchive/
 │   ├── librarian.py       # 司書エージェント（資料調査・収集）
 │   ├── historian.py       # 歴史家エージェント（分析・矛盾発見）
 │   ├── storyteller.py     # 物語作家エージェント（コンテンツ生成）
+│   ├── designer.py        # デザイナーエージェント（画像生成）
+│   ├── producer.py        # プロデューサーエージェント（音声生成）
 │   └── publisher.py       # 発行者エージェント（配信）
-├── data/                   # 取得データの保存用
-├── utils/                  # 共通ユーティリティ
+├── tools/                  # エージェント用ツール
 │   └── __init__.py
+├── data/                   # 取得データの保存用
+├── web/                    # Next.js フロントエンド
 ├── .env                    # 環境変数（Git管理外）
 ├── .gitignore
 ├── CLAUDE.md              # Claude Code向けガイド
@@ -63,4 +78,14 @@ uv sync
 
 # 環境変数の設定
 cp .env.example .env  # 必要に応じて編集
+```
+
+## 7. 使用方法 (Usage)
+
+```bash
+# デフォルトの調査クエリで実行
+uv run python main.py
+
+# カスタムクエリで実行
+uv run python main.py "1840年代のボストンにおけるスペイン関連の歴史的矛盾を調査せよ"
 ```
