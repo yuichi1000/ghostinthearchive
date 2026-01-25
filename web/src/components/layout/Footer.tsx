@@ -17,16 +17,16 @@ export function Footer() {
               Ghost in the Archive
             </h3>
             <p className="text-sm text-muted leading-relaxed">
-              公開情報から歴史的ミステリーを発掘し、
-              物語として再構成するAIシステム。
-              歴史の影に隠された真実を探ります。
+              An AI system that unearths historical mysteries from public records
+              and reconstructs them as stories.
+              Exploring truths hidden in the shadows of history.
             </p>
           </div>
 
           {/* データソース */}
           <div>
             <h4 className="font-medium text-sm mb-3 uppercase tracking-wide text-muted">
-              データソース
+              Data Sources
             </h4>
             <ul className="space-y-2">
               <li>
@@ -68,7 +68,7 @@ export function Footer() {
           {/* 技術情報 */}
           <div>
             <h4 className="font-medium text-sm mb-3 uppercase tracking-wide text-muted">
-              技術スタック
+              Tech Stack
             </h4>
             <ul className="space-y-2 text-sm text-muted">
               <li>Agent Development Kit (ADK)</li>
@@ -83,7 +83,7 @@ export function Footer() {
         <div className="mt-8 pt-6 border-t border-border text-center">
           <p className="text-xs text-muted">
             &copy; {currentYear} Ghost in the Archive.
-            歴史的資料は各公文書館の利用規約に従います。
+            Historical materials are subject to the terms of use of their respective archives.
           </p>
         </div>
       </div>

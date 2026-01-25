@@ -27,7 +27,7 @@ export function Header({ isAdmin = false }: HeaderProps) {
                 Ghost in the Archive
               </h1>
               <p className="text-xs text-muted hidden sm:block">
-                歴史的ミステリーの発掘
+                Unearthing Historical Mysteries
               </p>
             </div>
           </Link>
@@ -53,7 +53,7 @@ export function Header({ isAdmin = false }: HeaderProps) {
                   href="/"
                   className="text-sm text-muted hover:text-ink transition-colors no-underline"
                 >
-                  ホーム
+                  Home
                 </Link>
                 <AdminLink />
               </>

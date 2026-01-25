@@ -21,16 +21,16 @@ export function EvidenceBlock({
   label,
   variant = "primary",
 }: EvidenceBlockProps) {
-  /** 言語の日本語ラベル */
+  /** Language labels */
   const languageLabels: Record<string, string> = {
-    en: "英語",
-    es: "スペイン語",
+    en: "English",
+    es: "Spanish",
   };
 
-  /** ソースタイプの日本語ラベル */
+  /** Source type labels */
   const sourceTypeLabels: Record<string, string> = {
-    newspaper: "新聞",
-    nara_catalog: "公文書",
+    newspaper: "Newspaper",
+    nara_catalog: "Official Record",
   };
 
   /** バリアント別のスタイル */

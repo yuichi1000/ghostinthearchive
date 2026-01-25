@@ -22,12 +22,12 @@ async function MysteryList() {
       <div className="text-center py-16">
         <Search className="h-12 w-12 text-muted mx-auto mb-4" aria-hidden="true" />
         <h2 className="font-serif text-xl text-ink mb-2">
-          まだミステリーがありません
+          No Mysteries Yet
         </h2>
         <p className="text-muted">
-          現在、公開されているミステリーはありません。
+          No published mysteries at this time.
           <br />
-          新しい発見をお待ちください。
+          Check back for new discoveries.
         </p>
       </div>
     );
@@ -75,9 +75,9 @@ export default function HomePage() {
               Ghost in the Archive
             </h1>
             <p className="text-muted max-w-2xl mx-auto leading-relaxed">
-              アーカイブに眠る亡霊たちが、語られなかった物語を囁く。
-              AIが公文書の断片を繋ぎ、消された真実を浮かび上がらせる。
-              歴史の影に、何が隠されていたのか——。
+              Ghosts sleeping in the archive whisper untold stories.
+              AI connects fragments of public records, surfacing erased truths.
+              What was hidden in the shadows of history?
             </p>
           </div>
         </section>
@@ -87,7 +87,7 @@ export default function HomePage() {
           <div className="container-wide">
             <div className="flex items-center justify-between mb-8">
               <h2 className="font-serif text-2xl font-semibold text-ink">
-                発見されたミステリー
+                Discovered Mysteries
               </h2>
             </div>
 

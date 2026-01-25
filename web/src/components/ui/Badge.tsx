@@ -80,9 +80,9 @@ export function StatusBadge({ status }: { status: MysteryStatus }) {
  */
 export function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
   const labels: Record<ConfidenceLevel, string> = {
-    high: "高信頼度",
-    medium: "中信頼度",
-    low: "低信頼度",
+    high: "High Confidence",
+    medium: "Medium Confidence",
+    low: "Low Confidence",
   };
 
   return <Badge variant={level}>{labels[level]}</Badge>;
@@ -94,12 +94,12 @@ export function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
  */
 export function DiscrepancyBadge({ type }: { type: DiscrepancyType }) {
   const labels: Record<DiscrepancyType, string> = {
-    date_mismatch: "日付不一致",
-    person_missing: "人物欠落",
-    event_outcome: "結末相違",
-    location_conflict: "場所矛盾",
-    narrative_gap: "物語空白",
-    name_variant: "名前変異",
+    date_mismatch: "Date Mismatch",
+    person_missing: "Person Missing",
+    event_outcome: "Outcome Discrepancy",
+    location_conflict: "Location Conflict",
+    narrative_gap: "Narrative Gap",
+    name_variant: "Name Variant",
   };
 
   return <Badge variant="default">{labels[type]}</Badge>;

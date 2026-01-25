@@ -38,7 +38,7 @@ export async function generateMetadata({
 
   if (!mystery) {
     return {
-      title: "ミステリーが見つかりません | Ghost in the Archive",
+      title: "Mystery Not Found | Ghost in the Archive",
     };
   }
 
@@ -82,7 +82,7 @@ export default async function MysteryDetailPage({
             className="inline-flex items-center gap-2 text-sm text-muted hover:text-navy transition-colors mb-8 no-underline"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            ミステリー一覧に戻る
+            Back to Mysteries
           </Link>
 
           {/* ヘッダー */}
@@ -105,7 +105,7 @@ export default async function MysteryDetailPage({
           <section className="mb-10">
             <h2 className="font-serif text-xl font-semibold text-ink mb-4 flex items-center gap-2">
               <HelpCircle className="h-5 w-5 text-navy" aria-hidden="true" />
-              発見された矛盾
+              Discovered Discrepancy
             </h2>
             <Card>
               <CardContent>
@@ -119,24 +119,24 @@ export default async function MysteryDetailPage({
           {/* 証拠 */}
           <section className="mb-10">
             <h2 className="font-serif text-xl font-semibold text-ink mb-4">
-              証拠資料
+              Evidence
             </h2>
             <div className="space-y-6">
               <EvidenceBlock
                 evidence={mystery.evidence_a}
-                label="証拠A"
+                label="Evidence A"
                 variant="primary"
               />
               <EvidenceBlock
                 evidence={mystery.evidence_b}
-                label="証拠B"
+                label="Evidence B"
                 variant="secondary"
               />
               {mystery.additional_evidence.map((evidence, index) => (
                 <EvidenceBlock
                   key={index}
                   evidence={evidence}
-                  label={`追加証拠 ${index + 1}`}
+                  label={`Additional Evidence ${index + 1}`}
                   variant="primary"
                 />
               ))}
@@ -147,18 +147,18 @@ export default async function MysteryDetailPage({
           <section className="mb-10">
             <h2 className="font-serif text-xl font-semibold text-ink mb-4 flex items-center gap-2">
               <Lightbulb className="h-5 w-5 text-navy" aria-hidden="true" />
-              仮説
+              Hypothesis
             </h2>
             <Card>
               <CardContent>
                 <div className="mb-4">
-                  <h3 className="font-medium text-ink mb-2">主要仮説</h3>
+                  <h3 className="font-medium text-ink mb-2">Primary Hypothesis</h3>
                   <p className="text-ink leading-relaxed">{mystery.hypothesis}</p>
                 </div>
 
                 {mystery.alternative_hypotheses.length > 0 && (
                   <div className="pt-4 border-t border-border">
-                    <h3 className="font-medium text-muted mb-2">代替仮説</h3>
+                    <h3 className="font-medium text-muted mb-2">Alternative Hypotheses</h3>
                     <ul className="list-disc list-inside space-y-1">
                       {mystery.alternative_hypotheses.map((alt, index) => (
                         <li key={index} className="text-sm text-muted">
@@ -176,14 +176,14 @@ export default async function MysteryDetailPage({
           <section className="mb-10">
             <h2 className="font-serif text-xl font-semibold text-ink mb-4 flex items-center gap-2">
               <Bookmark className="h-5 w-5 text-navy" aria-hidden="true" />
-              歴史的背景
+              Historical Context
             </h2>
             <Card>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <h3 className="text-sm font-medium text-muted uppercase tracking-wide mb-2">
-                      時代
+                      Period
                     </h3>
                     <p className="text-ink">
                       {mystery.historical_context.time_period}
@@ -193,7 +193,7 @@ export default async function MysteryDetailPage({
                   {mystery.historical_context.geographic_scope.length > 0 && (
                     <div>
                       <h3 className="text-sm font-medium text-muted uppercase tracking-wide mb-2">
-                        地域
+                        Region
                       </h3>
                       <p className="text-ink">
                         {mystery.historical_context.geographic_scope.join(", ")}
@@ -204,7 +204,7 @@ export default async function MysteryDetailPage({
                   {mystery.historical_context.key_figures.length > 0 && (
                     <div>
                       <h3 className="text-sm font-medium text-muted uppercase tracking-wide mb-2">
-                        関連人物
+                        Key Figures
                       </h3>
                       <p className="text-ink">
                         {mystery.historical_context.key_figures.join(", ")}
@@ -215,7 +215,7 @@ export default async function MysteryDetailPage({
                   {mystery.historical_context.relevant_events.length > 0 && (
                     <div>
                       <h3 className="text-sm font-medium text-muted uppercase tracking-wide mb-2">
-                        関連事件
+                        Related Events
                       </h3>
                       <ul className="text-ink space-y-1">
                         {mystery.historical_context.relevant_events.map(
@@ -231,7 +231,7 @@ export default async function MysteryDetailPage({
                 {mystery.historical_context.political_climate && (
                   <div className="mt-6 pt-4 border-t border-border">
                     <h3 className="text-sm font-medium text-muted uppercase tracking-wide mb-2">
-                      政治・外交的背景
+                      Political Climate
                     </h3>
                     <p className="text-ink leading-relaxed">
                       {mystery.historical_context.political_climate}
@@ -246,7 +246,7 @@ export default async function MysteryDetailPage({
           {mystery.research_questions.length > 0 && (
             <section className="mb-10">
               <h2 className="font-serif text-xl font-semibold text-ink mb-4">
-                さらなる調査課題
+                Research Questions
               </h2>
               <Card>
                 <CardContent>
@@ -268,8 +268,8 @@ export default async function MysteryDetailPage({
 
           {/* フッター情報 */}
           <footer className="text-center text-sm text-muted pt-8 border-t border-border">
-            <p>ミステリーID: {mystery.mystery_id}</p>
-            <p>分析日時: {mystery.analysis_timestamp}</p>
+            <p>Mystery ID: {mystery.mystery_id}</p>
+            <p>Analysis Date: {mystery.analysis_timestamp}</p>
           </footer>
         </article>
       </main>

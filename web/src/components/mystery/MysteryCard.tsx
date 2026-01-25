@@ -26,7 +26,7 @@ export function MysteryCard({ mystery }: MysteryCardProps) {
    * 日付をフォーマット
    */
   const formatDate = (date: Date): string => {
-    return new Intl.DateTimeFormat("ja-JP", {
+    return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -62,7 +62,7 @@ export function MysteryCard({ mystery }: MysteryCardProps) {
               </time>
             </div>
             <span className="flex items-center gap-1 text-sm text-navy font-medium group-hover:gap-2 transition-all">
-              詳細を見る
+              Read More
               <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </span>
           </div>
