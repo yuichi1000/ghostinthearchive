@@ -1,16 +1,23 @@
-"""Tools for the Librarian Agent."""
+"""Tools for Ghost in the Archive agents."""
 
 # Low-level API tools
 from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
 from .nara_catalog import get_spanish_record_groups, search_nara_catalog
 
-# LLM-facing tool functions
+# Librarian Agent LLM-facing tools
 from .librarian_tools import (
     get_available_keywords,
     save_search_results,
     search_nara_records,
     search_newspapers,
+)
+
+# Historian Agent LLM-facing tools
+from .historian_tools import (
+    list_available_results,
+    load_search_results,
+    save_mystery_report,
 )
 
 __all__ = [
@@ -20,9 +27,13 @@ __all__ = [
     "search_chronicling_america",
     "search_nara_catalog",
     "get_spanish_record_groups",
-    # LLM tools
+    # Librarian LLM tools
     "search_newspapers",
     "search_nara_records",
     "save_search_results",
     "get_available_keywords",
+    # Historian LLM tools
+    "load_search_results",
+    "list_available_results",
+    "save_mystery_report",
 ]
