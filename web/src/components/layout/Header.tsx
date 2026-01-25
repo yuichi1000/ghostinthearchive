@@ -47,21 +47,12 @@ export function Header({ isAdmin = false }: HeaderProps) {
                 </span>
               </>
             ) : (
-              <>
-                <Link
-                  href="/"
-                  className="text-sm text-muted hover:text-ink transition-colors no-underline"
-                >
-                  ホーム
-                </Link>
-                <Link
-                  href="/admin"
-                  className="text-sm text-muted hover:text-ink transition-colors no-underline flex items-center gap-1"
-                >
-                  <Settings className="h-4 w-4" aria-hidden="true" />
-                  <span className="hidden sm:inline">管理</span>
-                </Link>
-              </>
+              <Link
+                href="/"
+                className="text-sm text-muted hover:text-ink transition-colors no-underline"
+              >
+                ホーム
+              </Link>
             )}
           </nav>
         </div>
