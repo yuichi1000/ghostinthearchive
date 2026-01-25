@@ -1,9 +1,10 @@
-import { Header } from "@/components/layout/Header";
+import { AdminHeader } from "@/components/layout/AdminHeader";
 import { Footer } from "@/components/layout/Footer";
+import { SessionProvider } from "@/components/providers/SessionProvider";
 
 /**
  * 管理画面レイアウト
- * 管理画面専用のヘッダー・フッターを適用
+ * 認証状態を表示するヘッダーを含む
  */
 export default function AdminLayout({
   children,
@@ -11,10 +12,12 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col bg-ink/[0.02]">
-      <Header isAdmin />
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </div>
+    <SessionProvider>
+      <div className="min-h-screen flex flex-col bg-ink/[0.02]">
+        <AdminHeader />
+        <main className="flex-1">{children}</main>
+        <Footer />
+      </div>
+    </SessionProvider>
   );
 }
