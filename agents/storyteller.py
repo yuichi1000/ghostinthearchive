@@ -107,7 +107,7 @@ Key Visual Elements:
 
 storyteller_agent = LlmAgent(
     name="storyteller",
-    model="gemini-2.5-flash",
+    model="gemini-3-pro-preview",
     description=(
         "歴史分析データを受け取り、ブログ原稿、ポッドキャスト台本、"
         "デザインコンセプト案を生成するクリエイティブエージェント。"
