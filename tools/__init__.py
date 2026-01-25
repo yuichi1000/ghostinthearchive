@@ -15,7 +15,9 @@ from .librarian_tools import (
 
 # Historian Agent LLM-facing tools
 from .historian_tools import (
+    build_analysis_context,
     list_available_results,
+    load_multiple_search_results,
     load_search_results,
     save_mystery_report,
 )
@@ -34,6 +36,8 @@ __all__ = [
     "get_available_keywords",
     # Historian LLM tools
     "load_search_results",
+    "load_multiple_search_results",
+    "build_analysis_context",
     "list_available_results",
     "save_mystery_report",
 ]
