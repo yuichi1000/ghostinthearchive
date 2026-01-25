@@ -17,9 +17,8 @@ export function Footer() {
               Ghost in the Archive
             </h3>
             <p className="text-sm text-muted leading-relaxed">
-              米国公文書館から歴史的ミステリーを発掘し、
+              公開情報から歴史的ミステリーを発掘し、
               物語として再構成するAIシステム。
-              英語新聞とスペイン語外交文書の矛盾から、
               歴史の影に隠された真実を探ります。
             </p>
           </div>
