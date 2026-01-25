@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Archive, Settings } from "lucide-react";
+import { AdminLink } from "./AdminLink";
 
 interface HeaderProps {
   /** 管理画面モード */
@@ -47,12 +48,15 @@ export function Header({ isAdmin = false }: HeaderProps) {
                 </span>
               </>
             ) : (
-              <Link
-                href="/"
-                className="text-sm text-muted hover:text-ink transition-colors no-underline"
-              >
-                ホーム
-              </Link>
+              <>
+                <Link
+                  href="/"
+                  className="text-sm text-muted hover:text-ink transition-colors no-underline"
+                >
+                  ホーム
+                </Link>
+                <AdminLink />
+              </>
             )}
           </nav>
         </div>
