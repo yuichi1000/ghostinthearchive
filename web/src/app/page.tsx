@@ -75,9 +75,9 @@ export default function HomePage() {
               Ghost in the Archive
             </h1>
             <p className="text-muted max-w-2xl mx-auto leading-relaxed">
-              米国公文書館に眠る歴史的資料から、英語新聞とスペイン語外交文書の
-              矛盾を発見し、歴史の影に隠された真実を探るAIシステム。
-              18〜19世紀の東海岸で何が起きていたのか——。
+              アーカイブに眠る亡霊たちが、語られなかった物語を囁く。
+              AIが公文書の断片を繋ぎ、消された真実を浮かび上がらせる。
+              歴史の影に、何が隠されていたのか——。
             </p>
           </div>
         </section>
