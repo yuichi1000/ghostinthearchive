@@ -38,7 +38,7 @@ const MOCK_MYSTERIES: FirestoreMystery[] = [
       location_context: "Boston, Massachusetts",
     },
     evidence_b: {
-      source_type: "nara_catalog",
+      source_type: "newspaper",
       source_language: "es",
       source_title: "Despacho del Consulado de España en Boston",
       source_date: "1820-03-14",
@@ -103,7 +103,7 @@ const MOCK_MYSTERIES: FirestoreMystery[] = [
       location_context: "New York City",
     },
     evidence_b: {
-      source_type: "nara_catalog",
+      source_type: "newspaper",
       source_language: "es",
       source_title: "Correspondencia del Consulado de España en Nueva York",
       source_date: "1835-07-23",
@@ -161,7 +161,7 @@ const MOCK_MYSTERIES: FirestoreMystery[] = [
       location_context: "Philadelphia, Pennsylvania",
     },
     evidence_b: {
-      source_type: "nara_catalog",
+      source_type: "newspaper",
       source_language: "es",
       source_title: "Informe del Cónsul de España en Filadelfia",
       source_date: "1845-09-12",

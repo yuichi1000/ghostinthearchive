@@ -113,7 +113,7 @@ def test_load_multiple_results(filename: str | None) -> bool:
         print_result(False, "No file available to test")
         return False
 
-    # Test with single file (multiple files would be loc_results.json, nara_results.json)
+    # Test with single file (multiple files would be loc_results.json, etc.)
     result_json = load_multiple_search_results(filename)
     result = json.loads(result_json)
 

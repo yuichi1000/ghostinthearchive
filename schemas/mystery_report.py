@@ -30,7 +30,7 @@ class Evidence(BaseModel):
     """Individual piece of evidence from a source document."""
 
     source_type: str = Field(
-        ..., description="Type of source: newspaper or nara_catalog"
+        ..., description="Type of source: newspaper"
     )
     source_language: str = Field(..., description="Language of the source: en or es")
     source_title: str = Field(..., description="Title of the source document")

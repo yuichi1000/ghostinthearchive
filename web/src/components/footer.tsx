@@ -34,28 +34,6 @@ export function Footer() {
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </li>
-              <li>
-                <a
-                  href="https://www.archives.gov/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-muted-foreground hover:text-gold transition-colors inline-flex items-center gap-1.5 no-underline"
-                >
-                  National Archives (NARA)
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://catalog.archives.gov/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-muted-foreground hover:text-gold transition-colors inline-flex items-center gap-1.5 no-underline"
-                >
-                  NARA Catalog
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </li>
             </ul>
           </div>
 

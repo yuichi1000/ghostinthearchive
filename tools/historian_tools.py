@@ -210,7 +210,7 @@ def save_mystery_report(
 def load_multiple_search_results(*filepaths: str) -> str:
     """Load multiple search result files and combine them for analysis.
 
-    Reads multiple JSON files (e.g., loc_results.json and nara_results.json)
+    Reads multiple JSON files (e.g., loc_results.json)
     from the data directory and combines them into a single analysis context.
 
     Args:

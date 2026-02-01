@@ -18,7 +18,6 @@ class SourceType(str, Enum):
     """Type of archive source."""
 
     NEWSPAPER = "newspaper"
-    NARA_CATALOG = "nara_catalog"
 
 
 class ArchiveDocument(BaseModel):
@@ -35,7 +34,7 @@ class ArchiveDocument(BaseModel):
     location: str = Field(..., description="Physical location or origin")
     source_type: SourceType = Field(..., description="Source API type")
     raw_text: Optional[str] = Field(None, description="Full OCR or text content")
-    record_group: Optional[str] = Field(None, description="NARA Record Group ID")
+    record_group: Optional[str] = Field(None, description="Record Group ID")
     keywords_matched: List[str] = Field(
         default_factory=list, description="Keywords that matched this document"
     )

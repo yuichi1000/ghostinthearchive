@@ -11,7 +11,6 @@ from typing import Optional
 
 from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
-from .nara_catalog import get_spanish_record_groups, search_nara_catalog
 
 
 def search_newspapers(
@@ -68,70 +67,6 @@ def search_newspapers(
         {
             "source": "chronicling_america",
             "keywords_used": all_keywords,
-            "total_hits": results["total_hits"],
-            "documents_returned": len(docs),
-            "documents": docs,
-            "error": results.get("error"),
-        },
-        ensure_ascii=False,
-        indent=2,
-    )
-
-
-def search_nara_records(
-    keywords: str,
-    record_groups: Optional[str] = None,
-    include_spanish_records: bool = True,
-    max_results: int = 25,
-) -> str:
-    """Search NARA (National Archives) catalog for historical records.
-
-    Searches diplomatic, trade, and maritime records from the National
-    Archives. Particularly useful for Spanish-related records and
-    international incidents.
-
-    Args:
-        keywords: Comma-separated list of search keywords related to historical mysteries
-        record_groups: Comma-separated NARA Record Groups to search
-                       (e.g., "RG 59, RG 45" for State Department and Naval records)
-        include_spanish_records: Include Spanish-related Record Groups (default: True)
-        max_results: Maximum number of results to return (default: 25)
-
-    Returns:
-        JSON string containing search results with archival records
-    """
-    # Parse keywords
-    keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
-
-    # Expand keywords to bilingual
-    expanded = expand_keywords_bilingual(keyword_list)
-    all_keywords = expanded["en"] + expanded["es"]
-
-    # Parse record groups
-    rg_list = None
-    if record_groups:
-        rg_list = [rg.strip() for rg in record_groups.split(",") if rg.strip()]
-    elif include_spanish_records:
-        rg_list = list(get_spanish_record_groups().keys())
-
-    # Perform search
-    results = search_nara_catalog(
-        keywords=all_keywords,
-        record_groups=rg_list,
-        rows=max_results,
-    )
-
-    # Convert to JSON-serializable format
-    if results["documents"]:
-        docs = [doc.model_dump() for doc in results["documents"]]
-    else:
-        docs = []
-
-    return json.dumps(
-        {
-            "source": "nara_catalog",
-            "keywords_used": all_keywords,
-            "record_groups_searched": rg_list,
             "total_hits": results["total_hits"],
             "documents_returned": len(docs),
             "documents": docs,

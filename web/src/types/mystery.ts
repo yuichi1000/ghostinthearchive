@@ -16,7 +16,7 @@ export type DiscrepancyType =
 export type ConfidenceLevel = "high" | "medium" | "low";
 
 /** ソースタイプ */
-export type SourceType = "newspaper" | "nara_catalog";
+export type SourceType = "newspaper";
 
 /** ソース言語 */
 export type SourceLanguage = "en" | "es";
@@ -29,7 +29,7 @@ export type MysteryStatus = "pending" | "published" | "archived";
  * 各ソース文書からの引用情報
  */
 export interface Evidence {
-  /** ソースタイプ: newspaper または nara_catalog */
+  /** ソースタイプ: newspaper */
   source_type: SourceType;
   /** ソース言語: en または es */
   source_language: SourceLanguage;
