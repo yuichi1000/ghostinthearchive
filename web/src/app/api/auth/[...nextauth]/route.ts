@@ -13,6 +13,9 @@ const handler = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
+  session: {
+    maxAge: 24 * 60 * 60,
+  },
   pages: {
     signIn: "/admin/login",
   },
