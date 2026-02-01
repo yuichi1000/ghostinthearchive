@@ -52,6 +52,9 @@ htmlcov/
 # Logs
 *.log
 
+# ADK auto-generated
+.adk/
+
 # Firebase Emulator data
 firebase-debug.log
 firestore-debug.log

@@ -77,6 +77,7 @@ async def investigate(query: str) -> None:
         app_name="ghost_in_the_archive",
         user_id=user_id,
         session_id=session_id,
+        state={"pipeline_log": []},
     )
 
     # Pipeline logger
