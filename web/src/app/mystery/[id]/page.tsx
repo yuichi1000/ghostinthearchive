@@ -1,280 +1,311 @@
-import { notFound } from "next/navigation";
-import { ArrowLeft, Lightbulb, HelpCircle, Bookmark } from "lucide-react";
-import Link from "next/link";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { EvidenceBlock } from "@/components/mystery/EvidenceBlock";
-import { ConfidenceBadge, DiscrepancyBadge } from "@/components/ui/Badge";
-import { Card, CardContent } from "@/components/ui/Card";
+import { notFound } from "next/navigation"
+import Link from "next/link"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
+import { EvidenceBlock } from "@/components/evidence-block"
+import { DiscrepancyBadge, ConfidenceBadge } from "@/components/status-badge"
+import { getMysteryById, getPublishedMysteryIds } from "@/lib/firestore/mysteries"
 import {
-  getMysteryById,
-  getPublishedMysteryIds,
-} from "@/lib/firestore/mysteries";
+  ArrowLeft,
+  MapPin,
+  Clock,
+  Calendar,
+  FileText,
+  AlertTriangle,
+  BookOpen,
+  HelpCircle,
+  Lightbulb
+} from "lucide-react"
 
-/**
- * ISR設定: 1時間ごとに再検証
- */
-export const revalidate = 3600;
+export const revalidate = 3600
 
-/**
- * 静的パラメータ生成（SSG）
- * 公開済みミステリーのIDリストを取得
- */
 export async function generateStaticParams() {
-  const ids = await getPublishedMysteryIds();
-  return ids.map((id) => ({ id }));
+  const ids = await getPublishedMysteryIds()
+  return ids.map((id) => ({ id }))
 }
 
-/**
- * メタデータ生成
- */
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string }>
 }) {
-  const { id } = await params;
-  const mystery = await getMysteryById(id);
+  const { id } = await params
+  const mystery = await getMysteryById(id)
 
   if (!mystery) {
-    return {
-      title: "Mystery Not Found | Ghost in the Archive",
-    };
+    return { title: "Mystery Not Found | Ghost in the Archive" }
   }
 
   return {
     title: `${mystery.title} | Ghost in the Archive`,
     description: mystery.summary,
-  };
+  }
 }
 
-/**
- * ミステリー詳細ページ
- * SSG/ISRによる静的生成ページ
- */
 export default async function MysteryDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string }>
 }) {
-  const { id } = await params;
-  const mystery = await getMysteryById(id);
+  const { id } = await params
+  const mystery = await getMysteryById(id)
 
-  // ミステリーが見つからない場合は404
-  if (!mystery) {
-    notFound();
+  if (!mystery || mystery.status !== "published") {
+    notFound()
   }
 
-  // 公開されていないミステリーも404
-  if (mystery.status !== "published") {
-    notFound();
-  }
+  const location = mystery.historical_context?.geographic_scope?.join(", ") || ""
+  const timePeriod = mystery.historical_context?.time_period || ""
+  const allEvidence = [mystery.evidence_a, mystery.evidence_b, ...mystery.additional_evidence]
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col film-grain">
       <Header />
 
-      <main className="flex-1 py-8">
-        <article className="container-narrow">
-          {/* 戻るリンク */}
+      <main className="flex-1 py-8 md:py-12">
+        <div className="container mx-auto px-4">
+          {/* Back link */}
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-sm text-muted hover:text-navy transition-colors mb-8 no-underline"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-parchment transition-colors mb-8 no-underline"
           >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Back to Mysteries
+            <ArrowLeft className="w-4 h-4" />
+            Return to Archive
           </Link>
 
-          {/* ヘッダー */}
-          <header className="mb-8">
-            <div className="flex flex-wrap gap-2 mb-4">
+          {/* Case file header */}
+          <div className="mb-12">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-2 px-3 py-1.5 border border-border bg-card rounded-sm">
+                <FileText className="w-4 h-4 text-gold" />
+                <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                  Case File #{mystery.mystery_id.slice(-3).padStart(4, '0')}
+                </span>
+              </div>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl text-parchment mb-3 leading-tight text-balance">
+              {mystery.title}
+            </h1>
+
+            <div className="flex flex-wrap items-center gap-3 mb-6">
               <DiscrepancyBadge type={mystery.discrepancy_type} />
               <ConfidenceBadge level={mystery.confidence_level} />
             </div>
 
-            <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink mb-4">
-              {mystery.title}
-            </h1>
-
-            <p className="text-lg text-muted leading-relaxed">
-              {mystery.summary}
-            </p>
-          </header>
-
-          {/* 発見された矛盾 */}
-          <section className="mb-10">
-            <h2 className="font-serif text-xl font-semibold text-ink mb-4 flex items-center gap-2">
-              <HelpCircle className="h-5 w-5 text-navy" aria-hidden="true" />
-              Discovered Discrepancy
-            </h2>
-            <Card>
-              <CardContent>
-                <p className="text-ink leading-relaxed">
-                  {mystery.discrepancy_detected}
-                </p>
-              </CardContent>
-            </Card>
-          </section>
-
-          {/* 証拠 */}
-          <section className="mb-10">
-            <h2 className="font-serif text-xl font-semibold text-ink mb-4">
-              Evidence
-            </h2>
-            <div className="space-y-6">
-              <EvidenceBlock
-                evidence={mystery.evidence_a}
-                label="Evidence A"
-                variant="primary"
-              />
-              <EvidenceBlock
-                evidence={mystery.evidence_b}
-                label="Evidence B"
-                variant="secondary"
-              />
-              {mystery.additional_evidence.map((evidence, index) => (
-                <EvidenceBlock
-                  key={index}
-                  evidence={evidence}
-                  label={`Additional Evidence ${index + 1}`}
-                  variant="primary"
-                />
-              ))}
+            <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
+              {location && (
+                <span className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-gold" />
+                  {location}
+                </span>
+              )}
+              {timePeriod && (
+                <span className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-gold" />
+                  {timePeriod}
+                </span>
+              )}
+              {mystery.publishedAt && (
+                <span className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gold" />
+                  Published: {mystery.publishedAt.toLocaleDateString()}
+                </span>
+              )}
             </div>
-          </section>
+          </div>
 
-          {/* 仮説 */}
-          <section className="mb-10">
-            <h2 className="font-serif text-xl font-semibold text-ink mb-4 flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-navy" aria-hidden="true" />
-              Hypothesis
-            </h2>
-            <Card>
-              <CardContent>
-                <div className="mb-4">
-                  <h3 className="font-medium text-ink mb-2">Primary Hypothesis</h3>
-                  <p className="text-ink leading-relaxed">{mystery.hypothesis}</p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+            {/* Main content */}
+            <div className="lg:col-span-2 space-y-12">
+              {/* Summary */}
+              <section>
+                <p className="text-lg text-foreground/90 leading-relaxed">
+                  {mystery.summary}
+                </p>
+              </section>
+
+              {/* Discovered Discrepancy */}
+              {mystery.discrepancy_detected && (
+                <section>
+                  <div className="flex items-center gap-3 mb-4">
+                    <AlertTriangle className="w-5 h-5 text-blood-red" />
+                    <h2 className="font-serif text-xl text-parchment">Discovered Discrepancy</h2>
+                  </div>
+                  <div className="pl-8 border-l-2 border-blood-red/30">
+                    <p className="text-foreground/80 leading-relaxed">
+                      {mystery.discrepancy_detected}
+                    </p>
+                  </div>
+                </section>
+              )}
+
+              {/* Evidence */}
+              <section>
+                <div className="flex items-center gap-3 mb-6">
+                  <FileText className="w-5 h-5 text-gold" />
+                  <h2 className="font-serif text-xl text-parchment">Archival Evidence</h2>
+                </div>
+                <div className="space-y-8">
+                  <EvidenceBlock evidence={mystery.evidence_a} label="Primary Source" />
+                  <EvidenceBlock evidence={mystery.evidence_b} label="Contrasting Source" />
+                  {mystery.additional_evidence.map((ev, i) => (
+                    <EvidenceBlock key={i} evidence={ev} label={`Additional Evidence ${i + 1}`} />
+                  ))}
+                </div>
+              </section>
+
+              {/* Hypothesis */}
+              {mystery.hypothesis && (
+                <section>
+                  <div className="flex items-center gap-3 mb-4">
+                    <Lightbulb className="w-5 h-5 text-gold" />
+                    <h2 className="font-serif text-xl text-parchment">Hypothesis</h2>
+                  </div>
+                  <div className="pl-8 border-l-2 border-gold/30">
+                    <p className="text-foreground/80 leading-relaxed">
+                      {mystery.hypothesis}
+                    </p>
+                  </div>
+                  {mystery.alternative_hypotheses.length > 0 && (
+                    <div className="mt-4 pl-8">
+                      <p className="text-sm text-muted-foreground mb-2 font-mono uppercase tracking-wide">Alternative Hypotheses:</p>
+                      <ul className="space-y-2">
+                        {mystery.alternative_hypotheses.map((alt, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-foreground/70">
+                            <span className="text-gold font-mono text-xs mt-0.5">{(i + 1).toString().padStart(2, '0')}.</span>
+                            <span>{alt}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* Historical Context */}
+              {mystery.historical_context && (
+                <section>
+                  <div className="flex items-center gap-3 mb-4">
+                    <BookOpen className="w-5 h-5 text-parchment-dark" />
+                    <h2 className="font-serif text-xl text-parchment">Historical Context</h2>
+                  </div>
+                  <div className="pl-8 border-l-2 border-parchment/30">
+                    {mystery.historical_context.political_climate && (
+                      <p className="text-foreground/80 leading-relaxed">
+                        {mystery.historical_context.political_climate}
+                      </p>
+                    )}
+                    {mystery.historical_context.relevant_events.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-xs font-mono text-muted-foreground uppercase mb-2">Related Events:</p>
+                        <ul className="space-y-1">
+                          {mystery.historical_context.relevant_events.map((event, i) => (
+                            <li key={i} className="text-sm text-foreground/70">• {event}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {mystery.historical_context.key_figures.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-xs font-mono text-muted-foreground uppercase mb-2">Key Figures:</p>
+                        <p className="text-sm text-foreground/70">{mystery.historical_context.key_figures.join(", ")}</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {/* Research Questions */}
+              {mystery.research_questions.length > 0 && (
+                <section>
+                  <div className="flex items-center gap-3 mb-4">
+                    <HelpCircle className="w-5 h-5 text-muted-foreground" />
+                    <h2 className="font-serif text-xl text-parchment">Open Research Questions</h2>
+                  </div>
+                  <ul className="space-y-3 pl-8">
+                    {mystery.research_questions.map((question, index) => (
+                      <li key={index} className="flex items-start gap-3 text-foreground/80">
+                        <span className="text-gold font-mono text-sm mt-0.5">{(index + 1).toString().padStart(2, '0')}.</span>
+                        <span>{question}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </div>
+
+            {/* Sidebar */}
+            <aside className="lg:col-span-1">
+              <div className="sticky top-24 space-y-6">
+                {/* Quick stats card */}
+                <div className="aged-card letterpress-border rounded-sm p-5">
+                  <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-4">
+                    Case Metadata
+                  </h3>
+                  <dl className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Status</dt>
+                      <dd className="text-parchment capitalize">{mystery.status}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Confidence</dt>
+                      <dd className="text-parchment capitalize">{mystery.confidence_level}</dd>
+                    </div>
+                    {timePeriod && (
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Time Period</dt>
+                        <dd className="text-parchment">{timePeriod}</dd>
+                      </div>
+                    )}
+                    {location && (
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Location</dt>
+                        <dd className="text-parchment text-right">{location}</dd>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Created</dt>
+                      <dd className="text-parchment">{mystery.createdAt.toLocaleDateString()}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Evidence Items</dt>
+                      <dd className="text-parchment">{allEvidence.length}</dd>
+                    </div>
+                  </dl>
                 </div>
 
-                {mystery.alternative_hypotheses.length > 0 && (
-                  <div className="pt-4 border-t border-border">
-                    <h3 className="font-medium text-muted mb-2">Alternative Hypotheses</h3>
-                    <ul className="list-disc list-inside space-y-1">
-                      {mystery.alternative_hypotheses.map((alt, index) => (
-                        <li key={index} className="text-sm text-muted">
-                          {alt}
+                {/* Story hooks */}
+                {mystery.story_hooks.length > 0 && (
+                  <div className="aged-card letterpress-border rounded-sm p-5">
+                    <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-4">
+                      Story Angles
+                    </h3>
+                    <ul className="space-y-2">
+                      {mystery.story_hooks.map((hook, i) => (
+                        <li key={i} className="text-sm text-gold font-mono">
+                          • {hook}
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </section>
 
-          {/* 歴史的コンテキスト */}
-          <section className="mb-10">
-            <h2 className="font-serif text-xl font-semibold text-ink mb-4 flex items-center gap-2">
-              <Bookmark className="h-5 w-5 text-navy" aria-hidden="true" />
-              Historical Context
-            </h2>
-            <Card>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-sm font-medium text-muted uppercase tracking-wide mb-2">
-                      Period
-                    </h3>
-                    <p className="text-ink">
-                      {mystery.historical_context.time_period}
-                    </p>
-                  </div>
-
-                  {mystery.historical_context.geographic_scope.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-muted uppercase tracking-wide mb-2">
-                        Region
-                      </h3>
-                      <p className="text-ink">
-                        {mystery.historical_context.geographic_scope.join(", ")}
-                      </p>
-                    </div>
-                  )}
-
-                  {mystery.historical_context.key_figures.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-muted uppercase tracking-wide mb-2">
-                        Key Figures
-                      </h3>
-                      <p className="text-ink">
-                        {mystery.historical_context.key_figures.join(", ")}
-                      </p>
-                    </div>
-                  )}
-
-                  {mystery.historical_context.relevant_events.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-muted uppercase tracking-wide mb-2">
-                        Related Events
-                      </h3>
-                      <ul className="text-ink space-y-1">
-                        {mystery.historical_context.relevant_events.map(
-                          (event, index) => (
-                            <li key={index}>{event}</li>
-                          )
-                        )}
-                      </ul>
-                    </div>
-                  )}
+                {/* Classification notice */}
+                <div className="border border-blood-red/30 bg-blood-red/5 rounded-sm p-4">
+                  <p className="text-xs text-muted-foreground font-mono leading-relaxed">
+                    <span className="text-[#ff6b6b]">NOTICE:</span> This case file represents AI-generated analysis of archival records.
+                    All sources should be independently verified.
+                  </p>
                 </div>
-
-                {mystery.historical_context.political_climate && (
-                  <div className="mt-6 pt-4 border-t border-border">
-                    <h3 className="text-sm font-medium text-muted uppercase tracking-wide mb-2">
-                      Political Climate
-                    </h3>
-                    <p className="text-ink leading-relaxed">
-                      {mystery.historical_context.political_climate}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </section>
-
-          {/* さらなる調査 */}
-          {mystery.research_questions.length > 0 && (
-            <section className="mb-10">
-              <h2 className="font-serif text-xl font-semibold text-ink mb-4">
-                Research Questions
-              </h2>
-              <Card>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {mystery.research_questions.map((question, index) => (
-                      <li
-                        key={index}
-                        className="flex items-start gap-2 text-ink"
-                      >
-                        <span className="text-navy font-medium">Q{index + 1}.</span>
-                        {question}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </section>
-          )}
-
-          {/* フッター情報 */}
-          <footer className="text-center text-sm text-muted pt-8 border-t border-border">
-            <p>Mystery ID: {mystery.mystery_id}</p>
-            <p>Analysis Date: {mystery.analysis_timestamp}</p>
-          </footer>
-        </article>
+              </div>
+            </aside>
+          </div>
+        </div>
       </main>
 
       <Footer />
     </div>
-  );
+  )
 }

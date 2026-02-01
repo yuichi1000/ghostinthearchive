@@ -1,210 +1,167 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
 
 /*
- * The Digital Ledger - デザインシステム
- * 18〜19世紀の東海岸アーカイブをイメージしたテーマ
+ * Ghost in the Archive - Dark Archival Design System
+ * OKLCH color space for the dark, aged-document aesthetic
  */
 
 :root {
-  /* 基本カラーパレット */
-  --paper: #F9F7F2;        /* オフホワイト（古い紙） */
-  --ink: #2D2D2D;          /* チャコールグレー（インク） */
-  --navy: #1A2B3C;         /* ディープネイビー（海事・アクセント） */
-  --blood: #8B0000;        /* ダークレッド（封蝋・警告） */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+}
 
-  /* セマンティックカラー */
-  --pending: #D4A574;      /* 琥珀色（承認待ち） */
-  --published: #4A6741;    /* 深緑（公開済み） */
-  --muted: #6B6B6B;        /* ミュートテキスト */
-  --border: #D4D0C8;       /* ボーダー（古紙の縁） */
-
-  --background: var(--paper);
-  --foreground: var(--ink);
+.dark {
+  --background: #24221e;
+  --foreground: #f5f1ed;
+  --card: #2a2722;
+  --card-foreground: #f5f1ed;
+  --popover: #2a2722;
+  --popover-foreground: #f5f1ed;
+  --primary: #f5f1ed;
+  --primary-foreground: #24221e;
+  --secondary: #3d3830;
+  --secondary-foreground: #f5f1ed;
+  --muted: #3d3830;
+  --muted-foreground: #a09888;
+  --accent: #3d3830;
+  --accent-foreground: #f5f1ed;
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: #3d3830;
+  --input: #3d3830;
+  --ring: #6b6358;
 }
 
 @theme inline {
-  /* カラー */
+  --font-sans: var(--font-inter, 'Inter', sans-serif);
+  --font-serif: var(--font-playfair, 'Playfair Display', Georgia, serif);
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --font-jp: var(--font-noto-jp, 'Noto Sans JP', sans-serif);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-paper: var(--paper);
-  --color-ink: var(--ink);
-  --color-navy: var(--navy);
-  --color-blood: var(--blood);
-  --color-pending: var(--pending);
-  --color-published: var(--published);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 
-  /* フォント */
-  --font-serif: var(--font-playfair);
-  --font-sans: var(--font-inter);
+  /* Custom archival colors */
+  --color-parchment: #f5f1ed;
+  --color-parchment-dark: #c4b8a8;
+  --color-gold: #d4af37;
+  --color-blood-red: #ff6b6b;
+  --color-teal: #5fb3a1;
+  --color-paper: #2a2520;
+  --color-paper-light: #3d3830;
 }
 
-/* ダークモードは無効化（アーカイブテーマのため） */
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
-  min-height: 100vh;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
-/* 羊皮紙テクスチャ背景（オプション） */
-.bg-parchment {
-  background-color: var(--paper);
-  background-image:
-    radial-gradient(ellipse at 20% 30%, rgba(212, 208, 200, 0.3) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 70%, rgba(212, 208, 200, 0.2) 0%, transparent 50%);
+/* Film grain texture overlay */
+.film-grain::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }
 
-/* 活版印刷風のボーダー */
-.border-letterpress {
+/* Aged card styling */
+.aged-card {
+  background: var(--card);
   border: 1px solid var(--border);
+  position: relative;
+}
+
+.aged-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.02) 100%
+  );
+}
+
+/* Letterpress-style embossed border */
+.letterpress-border {
   box-shadow:
-    inset 1px 1px 2px rgba(0, 0, 0, 0.05),
-    inset -1px -1px 2px rgba(255, 255, 255, 0.5);
+    inset 1px 1px 2px rgba(255, 255, 255, 0.05),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.15);
 }
 
-/* かすれたライン装飾 */
-.divider-faded {
-  border-top: 1px solid var(--border);
-  background: linear-gradient(90deg, transparent, var(--border), transparent);
-  height: 1px;
-  border: none;
+/* Redacted text effect */
+.redacted {
+  background: currentColor;
+  color: transparent;
+  user-select: none;
+  border-radius: 1px;
 }
 
-/* リンクスタイル */
-a {
-  color: var(--navy);
-  text-decoration: underline;
-  text-decoration-color: rgba(26, 43, 60, 0.3);
-  text-underline-offset: 2px;
-  transition: text-decoration-color 0.2s;
-}
-
-a:hover {
-  text-decoration-color: var(--navy);
-}
-
-/* 見出しスタイル */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-playfair), Georgia, serif;
-  color: var(--ink);
-  font-weight: 600;
-}
-
-/* カードの基本スタイル */
-.card {
-  background: var(--paper);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.05),
-    0 4px 6px rgba(0, 0, 0, 0.02);
-}
-
-.card:hover {
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.08),
-    0 8px 16px rgba(0, 0, 0, 0.04);
-}
-
-/* バッジスタイル */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  border-radius: 9999px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.badge-pending {
-  background-color: rgba(212, 165, 116, 0.2);
-  color: #8B6914;
-  border: 1px solid rgba(212, 165, 116, 0.4);
-}
-
-.badge-published {
-  background-color: rgba(74, 103, 65, 0.2);
-  color: var(--published);
-  border: 1px solid rgba(74, 103, 65, 0.4);
-}
-
-.badge-high {
-  background-color: rgba(74, 103, 65, 0.2);
-  color: var(--published);
-}
-
-.badge-medium {
-  background-color: rgba(212, 165, 116, 0.2);
-  color: #8B6914;
-}
-
-.badge-low {
-  background-color: rgba(139, 0, 0, 0.1);
-  color: var(--blood);
-}
-
-/* ボタンスタイル */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border-radius: 4px;
-  transition: all 0.2s;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background-color: var(--navy);
-  color: white;
-  border: 1px solid var(--navy);
-}
-
-.btn-primary:hover {
-  background-color: #0F1A24;
-}
-
-.btn-secondary {
-  background-color: transparent;
-  color: var(--navy);
-  border: 1px solid var(--border);
-}
-
-.btn-secondary:hover {
-  background-color: rgba(26, 43, 60, 0.05);
-  border-color: var(--navy);
-}
-
-.btn-danger {
-  background-color: var(--blood);
-  color: white;
-  border: 1px solid var(--blood);
-}
-
-.btn-danger:hover {
-  background-color: #6B0000;
-}
-
-/* コンテナ */
-.container-narrow {
-  max-width: 48rem;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-.container-wide {
-  max-width: 72rem;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
+/* Typography */
+.font-jp {
+  font-family: var(--font-jp);
 }

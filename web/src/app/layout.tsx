@@ -1,50 +1,60 @@
-import type { Metadata } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
-import { SessionProvider } from "@/components/providers/SessionProvider";
-import "./globals.css";
+import React from "react"
+import type { Metadata } from 'next'
+import { Playfair_Display, Inter, Noto_Sans_JP } from 'next/font/google'
+import { SessionProvider } from "@/components/providers/SessionProvider"
+import './globals.css'
 
-/**
- * Playfair Display - 見出し用セリフフォント
- * 19世紀の新聞活字をイメージ
- */
 const playfair = Playfair_Display({
-  variable: "--font-playfair",
   subsets: ["latin"],
-  display: "swap",
-});
+  variable: '--font-playfair',
+  display: 'swap',
+})
 
-/**
- * Inter - 本文用サンセリフフォント
- * 可読性重視のモダンフォント
- */
 const inter = Inter({
-  variable: "--font-inter",
   subsets: ["latin"],
-  display: "swap",
-});
+  variable: '--font-inter',
+  display: 'swap',
+})
+
+const notoSansJP = Noto_Sans_JP({
+  subsets: ["latin"],
+  variable: '--font-noto-jp',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
-  title: "Ghost in the Archive",
-  description: "米公文書館から歴史的ミステリーと民俗学的怪異を発掘するAIシステム",
+  title: 'Ghost in the Archive',
+  description: 'AI が公文書の闇から発掘する、歴史の亡霊たち — Unearthing historical mysteries and folkloric anomalies from U.S. national archives.',
   keywords: ["歴史", "ミステリー", "民俗学", "フォークロア", "公文書館", "アーカイブ", "AI"],
-};
+  icons: {
+    icon: [
+      {
+        url: '/icon-light-32x32.png',
+        media: '(prefers-color-scheme: light)',
+      },
+      {
+        url: '/icon-dark-32x32.png',
+        media: '(prefers-color-scheme: dark)',
+      },
+      {
+        url: '/icon.svg',
+        type: 'image/svg+xml',
+      },
+    ],
+    apple: '/apple-icon.png',
+  },
+}
 
-/**
- * ルートレイアウト
- * 全ページ共通のフォント設定と背景スタイルを適用
- */
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
-    <html lang="ja">
-      <body
-        className={`${playfair.variable} ${inter.variable} bg-parchment antialiased`}
-      >
+    <html lang="en" className="dark">
+      <body className={`${playfair.variable} ${inter.variable} ${notoSansJP.variable} font-sans antialiased`}>
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
-  );
+  )
 }

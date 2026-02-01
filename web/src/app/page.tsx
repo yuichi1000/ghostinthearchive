@@ -1,36 +1,28 @@
-import { Suspense } from "react";
-import { Archive, Search } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { MysteryCard } from "@/components/mystery/MysteryCard";
-import { CardSkeleton } from "@/components/ui/Loading";
-import { getPublishedMysteries } from "@/lib/firestore/mysteries";
+import { Suspense } from "react"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
+import { Hero } from "@/components/hero"
+import { MysteryCard } from "@/components/mystery-card"
+import { getPublishedMysteries } from "@/lib/firestore/mysteries"
+import { FileStack, Search } from "lucide-react"
 
-/**
- * ISR設定: 1時間ごとに再検証
- */
-export const revalidate = 3600;
+export const revalidate = 3600
 
-/**
- * ミステリー一覧を取得して表示
- */
 async function MysteryList() {
-  const mysteries = await getPublishedMysteries(20);
+  const mysteries = await getPublishedMysteries(20)
 
   if (mysteries.length === 0) {
     return (
       <div className="text-center py-16">
-        <Search className="h-12 w-12 text-muted mx-auto mb-4" aria-hidden="true" />
-        <h2 className="font-serif text-xl text-ink mb-2">
+        <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" aria-hidden="true" />
+        <h2 className="font-serif text-xl text-parchment mb-2">
           No Mysteries Yet
         </h2>
-        <p className="text-muted">
-          No published mysteries at this time.
-          <br />
-          Check back for new discoveries.
+        <p className="text-muted-foreground">
+          No published mysteries at this time. Check back for new discoveries.
         </p>
       </div>
-    );
+    )
   }
 
   return (
@@ -39,67 +31,85 @@ async function MysteryList() {
         <MysteryCard key={mystery.mystery_id} mystery={mystery} />
       ))}
     </div>
-  );
+  )
 }
 
-/**
- * ローディングスケルトン
- */
 function MysteryListSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {[...Array(6)].map((_, i) => (
-        <CardSkeleton key={i} />
+        <div key={i} className="aged-card letterpress-border rounded-sm p-5 h-64 animate-pulse">
+          <div className="h-4 bg-muted rounded w-1/3 mb-4" />
+          <div className="h-6 bg-muted rounded w-2/3 mb-2" />
+          <div className="h-4 bg-muted rounded w-full mb-2" />
+          <div className="h-4 bg-muted rounded w-4/5 mb-4" />
+          <div className="h-6 bg-muted rounded w-1/4" />
+        </div>
       ))}
     </div>
-  );
+  )
 }
 
-/**
- * 公開サイト トップページ
- * publishedミステリー一覧を表示
- */
 export default function HomePage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col film-grain">
       <Header />
 
       <main className="flex-1">
-        {/* ヒーローセクション */}
-        <section className="border-b border-border py-12 md:py-16">
-          <div className="container-wide text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-navy/10 mb-6">
-              <Archive className="h-8 w-8 text-navy" aria-hidden="true" />
-            </div>
-            <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink mb-4">
-              Ghost in the Archive
-            </h1>
-            <p className="text-muted max-w-2xl mx-auto leading-relaxed">
-              Ghosts sleeping in the archive whisper untold stories.
-              AI connects fragments of public records and forgotten folklore,
-              surfacing erased truths and lost legends.
-              What was hidden in the shadows of history?
-            </p>
-          </div>
-        </section>
+        <Hero />
 
-        {/* ミステリー一覧 */}
-        <section className="py-12">
-          <div className="container-wide">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="font-serif text-2xl font-semibold text-ink">
-                Discovered Mysteries
-              </h2>
+        {/* Latest Discoveries Section */}
+        <section className="py-16 md:py-24">
+          <div className="container mx-auto px-4">
+            {/* Section header */}
+            <div className="flex items-center gap-4 mb-12">
+              <div className="flex items-center gap-3">
+                <FileStack className="w-5 h-5 text-gold" />
+                <h2 className="font-serif text-2xl md:text-3xl text-parchment">
+                  Latest Discoveries
+                </h2>
+              </div>
+              <div className="flex-1 h-px bg-gradient-to-r from-border to-transparent" />
             </div>
 
             <Suspense fallback={<MysteryListSkeleton />}>
               <MysteryList />
             </Suspense>
+
+            {/* View all link */}
+            <div className="mt-12 text-center">
+              <p className="text-sm text-muted-foreground font-mono">
+                <span className="redacted">████████</span> Additional cases remain classified <span className="redacted">████████</span>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Methodology note */}
+        <section className="py-16 border-t border-border/50">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto text-center">
+              <h3 className="font-serif text-xl text-parchment mb-4">
+                Research Methodology
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+                Our AI agents systematically analyze digitized records from the Library of Congress and National Archives,
+                identifying discrepancies, temporal anomalies, and patterns that correlate with documented folklore.
+                Each discovery undergoes human review before publication.
+              </p>
+              <div className="flex items-center justify-center gap-4 text-xs font-mono text-muted-foreground">
+                <span>Sources verified</span>
+                <span className="text-border">•</span>
+                <span>Cross-referenced</span>
+                <span className="text-border">•</span>
+                <span>Peer reviewed</span>
+              </div>
+            </div>
           </div>
         </section>
       </main>
 
       <Footer />
     </div>
-  );
+  )
 }

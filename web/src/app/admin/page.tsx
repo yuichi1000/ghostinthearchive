@@ -1,138 +1,290 @@
-"use client";
+"use client"
 
-import { useEffect, useState, useCallback } from "react";
-import { RefreshCw, Inbox, CheckCircle } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { PendingMysteryCard } from "@/components/admin/PendingMysteryCard";
-import { CardSkeleton } from "@/components/ui/Loading";
-import { getPendingMysteries } from "@/lib/firestore/mysteries";
-import type { FirestoreMystery } from "@/types/mystery";
+import { useEffect, useState, useCallback } from "react"
+import Link from "next/link"
+import { DiscrepancyBadge, ConfidenceBadge, StatusBadge } from "@/components/status-badge"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { getAllMysteries, approveMystery, archiveMystery } from "@/lib/firestore/mysteries"
+import type { FirestoreMystery, MysteryStatus } from "@/types/mystery"
+import {
+  Shield,
+  FileText,
+  CheckCircle,
+  XCircle,
+  Eye,
+  Clock,
+  MapPin,
+  Filter,
+  RefreshCw,
+  Inbox
+} from "lucide-react"
 
-/**
- * 管理ダッシュボード
- * pendingステータスのミステリーを表示し、承認・公開機能を提供
- */
-export default function AdminDashboard() {
-  const [mysteries, setMysteries] = useState<FirestoreMystery[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+type FilterStatus = "all" | MysteryStatus
 
-  /**
-   * ミステリー一覧を取得
-   */
-  const fetchMysteries = useCallback(async (showRefreshing = false) => {
-    if (showRefreshing) setRefreshing(true);
+export default function AdminPage() {
+  const [filter, setFilter] = useState<FilterStatus>("all")
+  const [mysteries, setMysteries] = useState<FirestoreMystery[]>([])
+  const [loading, setLoading] = useState(true)
+  const [actionFeedback, setActionFeedback] = useState<string | null>(null)
+
+  const fetchMysteries = useCallback(async () => {
     try {
-      const data = await getPendingMysteries(50);
-      setMysteries(data);
+      const data = await getAllMysteries(100)
+      setMysteries(data)
     } catch (error) {
-      console.error("ミステリーの取得に失敗:", error);
+      console.error("Failed to fetch mysteries:", error)
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setLoading(false)
     }
-  }, []);
+  }, [])
 
-  /**
-   * 初回読み込み
-   */
   useEffect(() => {
-    fetchMysteries();
-  }, [fetchMysteries]);
+    fetchMysteries()
+  }, [fetchMysteries])
 
-  /**
-   * 承認成功時の処理
-   */
-  const handleApproved = useCallback(() => {
-    setSuccessMessage("ミステリーを公開しました");
-    fetchMysteries();
+  const filteredMysteries = filter === "all"
+    ? mysteries
+    : mysteries.filter((m) => m.status === filter)
 
-    // 3秒後にメッセージを消す
-    setTimeout(() => {
-      setSuccessMessage(null);
-    }, 3000);
-  }, [fetchMysteries]);
+  const counts = {
+    all: mysteries.length,
+    pending: mysteries.filter((m) => m.status === "pending").length,
+    published: mysteries.filter((m) => m.status === "published").length,
+    archived: mysteries.filter((m) => m.status === "archived").length,
+  }
 
-  /**
-   * 手動リフレッシュ
-   */
-  const handleRefresh = () => {
-    fetchMysteries(true);
-  };
+  const handleApprove = async (id: string) => {
+    try {
+      await approveMystery(id)
+      setActionFeedback(`Case ${id} approved for publication`)
+      fetchMysteries()
+      setTimeout(() => setActionFeedback(null), 3000)
+    } catch (error) {
+      console.error("Failed to approve:", error)
+    }
+  }
+
+  const handleArchive = async (id: string) => {
+    try {
+      await archiveMystery(id)
+      setActionFeedback(`Case ${id} archived`)
+      fetchMysteries()
+      setTimeout(() => setActionFeedback(null), 3000)
+    } catch (error) {
+      console.error("Failed to archive:", error)
+    }
+  }
 
   return (
-    <div className="py-8">
-      <div className="container-wide">
-        {/* ヘッダー */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="font-serif text-2xl font-bold text-ink">
-              管理ダッシュボード
-            </h1>
-            <p className="text-sm text-muted mt-1">
-              承認待ちのミステリーを確認し、公開を管理します
-            </p>
+    <div className="py-8 md:py-12">
+      <div className="container mx-auto px-4">
+        {/* Page header */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="flex items-center gap-3 px-4 py-2 bg-blood-red/10 border border-blood-red/30 rounded-sm">
+            <Shield className="w-5 h-5 text-[#ff6b6b]" />
+            <span className="font-mono text-sm uppercase tracking-wider text-[#ff6b6b]">
+              Admin Access
+            </span>
           </div>
-
-          <Button
-            variant="secondary"
-            onClick={handleRefresh}
-            loading={refreshing}
-            icon={<RefreshCw className="h-4 w-4" />}
-          >
-            更新
-          </Button>
+          <div className="h-px flex-1 bg-border" />
         </div>
 
-        {/* 成功メッセージ */}
-        {successMessage && (
-          <div className="mb-6 p-4 bg-published/10 border border-published/30 rounded flex items-center gap-3">
-            <CheckCircle className="h-5 w-5 text-published" aria-hidden="true" />
-            <span className="text-sm text-published font-medium">
-              {successMessage}
-            </span>
+        <div className="mb-8">
+          <h1 className="font-serif text-3xl md:text-4xl text-parchment mb-2">
+            Research Review Dashboard
+          </h1>
+          <p className="text-muted-foreground">
+            Review, approve, or archive pending mystery discoveries before publication.
+          </p>
+        </div>
+
+        {/* Action feedback toast */}
+        {actionFeedback && (
+          <div className="fixed top-20 right-4 z-50 px-4 py-3 bg-teal/20 border border-teal/30 rounded-sm animate-in fade-in slide-in-from-right-5">
+            <p className="text-sm text-[#5fb3a1] font-mono">
+              {actionFeedback}
+            </p>
           </div>
         )}
 
-        {/* ローディング */}
+        {/* Filter tabs */}
+        <div className="flex flex-wrap items-center gap-2 mb-8 pb-4 border-b border-border">
+          <Filter className="w-4 h-4 text-muted-foreground mr-2" />
+          {(["all", "pending", "published", "archived"] as FilterStatus[]).map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-mono uppercase tracking-wider rounded-sm border transition-colors",
+                filter === status
+                  ? "bg-gold/20 text-gold border-gold/30"
+                  : "bg-transparent text-muted-foreground border-border hover:border-parchment/30 hover:text-parchment"
+              )}
+            >
+              {status === "all" ? "All Cases" : status}
+              <span className="ml-2 text-muted-foreground">({counts[status]})</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Stats cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="aged-card letterpress-border rounded-sm p-4">
+            <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1">Total Cases</p>
+            <p className="text-2xl font-serif text-parchment">{counts.all}</p>
+          </div>
+          <div className="aged-card letterpress-border rounded-sm p-4">
+            <p className="text-xs font-mono uppercase tracking-wider text-[#d4af37] mb-1">Pending Review</p>
+            <p className="text-2xl font-serif text-[#d4af37]">{counts.pending}</p>
+          </div>
+          <div className="aged-card letterpress-border rounded-sm p-4">
+            <p className="text-xs font-mono uppercase tracking-wider text-[#5fb3a1] mb-1">Published</p>
+            <p className="text-2xl font-serif text-[#5fb3a1]">{counts.published}</p>
+          </div>
+          <div className="aged-card letterpress-border rounded-sm p-4">
+            <p className="text-xs font-mono uppercase tracking-wider text-[#ff6b6b] mb-1">Archived</p>
+            <p className="text-2xl font-serif text-[#ff6b6b]">{counts.archived}</p>
+          </div>
+        </div>
+
+        {/* Loading */}
         {loading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {[...Array(4)].map((_, i) => (
-              <CardSkeleton key={i} />
+              <div key={i} className="aged-card letterpress-border rounded-sm p-5 h-48 animate-pulse">
+                <div className="h-4 bg-muted rounded w-1/4 mb-4" />
+                <div className="h-5 bg-muted rounded w-3/4 mb-2" />
+                <div className="h-4 bg-muted rounded w-full mb-4" />
+                <div className="h-6 bg-muted rounded w-1/3" />
+              </div>
             ))}
           </div>
-        ) : mysteries.length === 0 ? (
-          /* 空状態 */
+        ) : filteredMysteries.length === 0 ? (
           <div className="text-center py-16">
-            <Inbox className="h-12 w-12 text-muted mx-auto mb-4" aria-hidden="true" />
-            <h2 className="font-serif text-xl text-ink mb-2">
-              承認待ちのミステリーはありません
-            </h2>
-            <p className="text-muted">
-              新しいミステリーがエージェントによって発見されると、
-              <br />
-              ここに表示されます。
-            </p>
+            <Inbox className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">No cases match the selected filter.</p>
           </div>
         ) : (
-          /* ミステリー一覧 */
-          <>
-            <div className="mb-4 text-sm text-muted">
-              {mysteries.length} 件の承認待ちミステリー
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {mysteries.map((mystery) => (
-                <PendingMysteryCard
-                  key={mystery.mystery_id}
-                  mystery={mystery}
-                  onApproved={handleApproved}
-                />
-              ))}
-            </div>
-          </>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {filteredMysteries.map((mystery) => (
+              <AdminMysteryCard
+                key={mystery.mystery_id}
+                mystery={mystery}
+                onApprove={() => handleApprove(mystery.mystery_id)}
+                onArchive={() => handleArchive(mystery.mystery_id)}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>
-  );
+  )
+}
+
+interface AdminMysteryCardProps {
+  mystery: FirestoreMystery
+  onApprove: () => void
+  onArchive: () => void
+}
+
+function AdminMysteryCard({ mystery, onApprove, onArchive }: AdminMysteryCardProps) {
+  const isPending = mystery.status === "pending"
+  const location = mystery.historical_context?.geographic_scope?.[0] || ""
+  const timePeriod = mystery.historical_context?.time_period || ""
+
+  return (
+    <article className="aged-card letterpress-border rounded-sm p-5">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+          <FileText className="w-3.5 h-3.5 text-gold" />
+          <span>Case #{mystery.mystery_id.slice(-3).padStart(4, '0')}</span>
+        </div>
+        <StatusBadge status={mystery.status} />
+      </div>
+
+      {/* Title */}
+      <h3 className="font-serif text-lg text-parchment mb-1 leading-tight">
+        {mystery.title}
+      </h3>
+
+      {/* Summary */}
+      <p className="text-sm text-foreground/80 leading-relaxed mb-4 line-clamp-2">
+        {mystery.summary}
+      </p>
+
+      {/* Badges */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <DiscrepancyBadge type={mystery.discrepancy_type} />
+        <ConfidenceBadge level={mystery.confidence_level} />
+      </div>
+
+      {/* Metadata */}
+      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4 pb-4 border-b border-border/50">
+        {location && (
+          <span className="flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            {location}
+          </span>
+        )}
+        {timePeriod && (
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {timePeriod}
+          </span>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center justify-between gap-4">
+        {mystery.status === "published" ? (
+          <Link
+            href={`/mystery/${mystery.mystery_id}`}
+            className="inline-flex items-center gap-2 text-sm text-gold hover:text-parchment transition-colors no-underline"
+          >
+            <Eye className="w-4 h-4" />
+            View Published
+          </Link>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            Created: {mystery.createdAt.toLocaleDateString()}
+          </span>
+        )}
+
+        {isPending && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onArchive}
+              className="border-blood-red/30 text-[#ff6b6b] hover:bg-blood-red/20 hover:text-[#ff6b6b] bg-transparent"
+            >
+              <XCircle className="w-4 h-4 mr-1" />
+              Archive
+            </Button>
+            <Button
+              size="sm"
+              onClick={onApprove}
+              className="bg-teal/20 border border-teal/30 text-[#5fb3a1] hover:bg-teal/30"
+            >
+              <CheckCircle className="w-4 h-4 mr-1" />
+              Approve
+            </Button>
+          </div>
+        )}
+
+        {mystery.status === "archived" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-parchment"
+          >
+            <RefreshCw className="w-4 h-4 mr-1" />
+            Reconsider
+          </Button>
+        )}
+      </div>
+    </article>
+  )
 }

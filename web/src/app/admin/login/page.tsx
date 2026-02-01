@@ -1,23 +1,25 @@
-"use client";
+"use client"
 
-import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { signIn } from "next-auth/react"
+import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
+import { Archive } from "lucide-react"
 
 function LoginContent() {
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/admin";
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get("callbackUrl") || "/admin"
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-paper">
+    <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full mx-4">
-        <div className="bg-white border border-ink/10 rounded-lg shadow-lg p-8">
+        <div className="aged-card letterpress-border rounded-sm p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="font-playfair text-2xl font-bold text-ink mb-2">
+            <Archive className="w-8 h-8 text-gold mx-auto mb-4" />
+            <h1 className="font-serif text-2xl text-parchment mb-2">
               Ghost in the Archive
             </h1>
-            <p className="text-ink/60 text-sm">
+            <p className="text-muted-foreground text-sm">
               管理画面へのアクセスには認証が必要です
             </p>
           </div>
@@ -25,7 +27,7 @@ function LoginContent() {
           {/* Login Button */}
           <button
             onClick={() => signIn("google", { callbackUrl })}
-            className="w-full flex items-center justify-center gap-3 bg-white border border-ink/20 rounded-lg px-4 py-3 text-ink hover:bg-ink/5 transition-colors"
+            className="w-full flex items-center justify-center gap-3 bg-card border border-border rounded-sm px-4 py-3 text-parchment hover:bg-paper-light transition-colors"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -48,26 +50,25 @@ function LoginContent() {
             <span className="font-medium">Google でログイン</span>
           </button>
 
-          {/* Footer */}
-          <p className="text-center text-ink/40 text-xs mt-6">
+          <p className="text-center text-muted-foreground text-xs mt-6 font-mono">
             認証には Google アカウントが必要です
           </p>
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-paper">
-          <div className="text-ink/60">読み込み中...</div>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-muted-foreground">Loading...</div>
         </div>
       }
     >
       <LoginContent />
     </Suspense>
-  );
+  )
 }
