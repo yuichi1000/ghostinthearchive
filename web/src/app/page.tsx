@@ -93,7 +93,7 @@ export default function HomePage() {
                 Research Methodology
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                Our AI agents systematically analyze digitized records from the Library of Congress and National Archives,
+                Our AI agents systematically analyze digitized records from the Library of Congress, DPLA, NYPL, and Internet Archive,
                 identifying discrepancies, temporal anomalies, and patterns that correlate with documented folklore.
                 Each discovery undergoes human review before publication.
               </p>

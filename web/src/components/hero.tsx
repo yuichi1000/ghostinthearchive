@@ -97,18 +97,18 @@ export function Hero() {
         </h1>
 
         <p className="text-lg md:text-xl text-muted-foreground mb-6 font-jp">
-          AI が公文書の闇から発掘する、歴史の亡霊たち
+          AI がアーカイブの闇から発掘する、歴史の亡霊たち
         </p>
 
         <p className="text-base md:text-lg text-foreground/70 max-w-2xl mx-auto leading-relaxed mb-8 text-pretty">
-          Unearthing contradictions, anomalies, and unexplained patterns buried in the depths of U.S. national archives.
+          Unearthing contradictions, anomalies, and unexplained patterns buried in the depths of public digital archives.
           Where historical record meets folkloric mystery.
         </p>
 
         <div className="flex items-center justify-center gap-4 text-muted-foreground">
           <div className="h-px w-16 bg-gradient-to-r from-transparent to-border" />
           <span className="text-xs font-mono uppercase tracking-widest">
-            Library of Congress • National Archives
+            LOC • DPLA • NYPL • Internet Archive
           </span>
           <div className="h-px w-16 bg-gradient-to-l from-transparent to-border" />
         </div>

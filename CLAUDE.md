@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Ghost in the Archive - 米公文書館から歴史的ミステリーと民俗学的怪異を発掘し、物語・音声・プロダクトへと変換する自律型エージェント AI システム
+Ghost in the Archive - 公開デジタルアーカイブから歴史的ミステリーと民俗学的怪異を発掘し、物語・音声・プロダクトへと変換する自律型エージェント AI システム
 
 ### 設計思想：Fact × Folklore のハイブリッド
 
 本システムは **歴史的事実（Fact-based）** と **民俗学的怪異・伝説（Folklore-based）** の両方をターゲットにする。
 
-- **Fact（左脳的アプローチ）**: 公文書の矛盾、日付の不一致、人物の消失など検証可能な歴史的アノマリー
+- **Fact（左脳的アプローチ）**: 歴史的記録の矛盾、日付の不一致、人物の消失など検証可能な歴史的アノマリー
 - **Folklore（右脳的アプローチ）**: 地元の信仰、禁忌、都市伝説、未解決の怪異など文化的記憶
 
 この二つを融合させた独自のナラティブを生成する。
@@ -29,7 +29,7 @@ ADK を使用した 6 つの専門エージェント構成：
 
 | エージェント | 役割 | 入力 | 出力 |
 |------------|------|------|------|
-| **Librarian** | 資料調査・収集（公文書＋民俗資料） | 調査クエリ | collected_documents |
+| **Librarian** | 資料調査・収集（デジタルアーカイブ＋民俗資料） | 調査クエリ | collected_documents |
 | **Historian** | 矛盾検出＋民俗学的アノマリー分析 | collected_documents | mystery_report |
 | **Storyteller** | 歴史的厳密さと怪異的情緒の融合 | mystery_report | creative_content (ブログ原稿、ポッドキャスト台本、デザインコンセプト案) |
 | **Designer** | 視覚表現 | creative_content | visual_assets (Imagen 3 用プロンプト、生成画像) |
@@ -39,8 +39,8 @@ ADK を使用した 6 つの専門エージェント構成：
 ### Agent Roles（詳細）
 
 **Librarian（司書）**
-- 検索対象: 公文書（新聞、外交記録）＋ **Folklore, Legends, Myths, Local Beliefs**
-- 公式記録と民俗資料の両方を収集し、Fact と Folklore の素材を揃える
+- 検索対象: デジタルアーカイブ（LOC, DPLA, NYPL, Internet Archive）＋ **Folklore, Legends, Myths, Local Beliefs**
+- 歴史的記録と民俗資料の両方を収集し、Fact と Folklore の素材を揃える
 
 **Historian（歴史家）**
 - 矛盾検出: 日付の不一致、人物の消失、記録の欠落など
@@ -56,7 +56,7 @@ ADK を使用した 6 つの専門エージェント構成：
 ```
                     ┌───────────────────────────────┐
                     │          Librarian            │
-                    │  Fact（公文書）＋ Folklore（民俗）│
+                    │  Fact（アーカイブ）＋ Folklore（民俗）│
                     └───────────────┬───────────────┘
                                     │ collected_documents
                                     │ (FactとFolkloreの両素材)
@@ -101,7 +101,7 @@ ADK を使用した 6 つの専門エージェント構成：
 
 各エージェントは `output_key` を使用してセッション状態にデータを保存：
 
-- `collected_documents` - Librarian が収集した資料（Fact＋Folklore両方を含む）
+- `collected_documents` - Librarian が収集した資料（デジタルアーカイブ＋Folklore両方を含む）
 - `mystery_report` - Historian の分析レポート
   - **Folkloric Context 属性を含む**: 事実と伝説の相関、民俗学的アノマリー、地域の信仰・禁忌への言及
 - `creative_content` - Storyteller のコンテンツ（歴史的厳密さと怪異的情緒の融合）

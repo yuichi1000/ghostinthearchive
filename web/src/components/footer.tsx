@@ -12,10 +12,10 @@ export function Footer() {
               <span className="font-serif text-parchment">Ghost in the Archive</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              AI-powered excavation of historical mysteries and folkloric anomalies from U.S. national archives.
+              AI-powered excavation of historical mysteries and folkloric anomalies from public digital archives.
             </p>
             <p className="text-xs text-muted-foreground font-jp">
-              AI が公文書の闇から発掘する、歴史の亡霊たち
+              AI がアーカイブの闇から発掘する、歴史の亡霊たち
             </p>
           </div>
 

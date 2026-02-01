@@ -24,8 +24,8 @@ const notoSansJP = Noto_Sans_JP({
 
 export const metadata: Metadata = {
   title: 'Ghost in the Archive',
-  description: 'AI が公文書の闇から発掘する、歴史の亡霊たち — Unearthing historical mysteries and folkloric anomalies from U.S. national archives.',
-  keywords: ["歴史", "ミステリー", "民俗学", "フォークロア", "公文書館", "アーカイブ", "AI"],
+  description: 'AI がアーカイブの闇から発掘する、歴史の亡霊たち — Unearthing historical mysteries and folkloric anomalies from public digital archives.',
+  keywords: ["歴史", "ミステリー", "民俗学", "フォークロア", "デジタルアーカイブ", "AI"],
   icons: {
     icon: [
       {

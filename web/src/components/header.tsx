@@ -25,7 +25,7 @@ export function Header() {
                 Ghost in the Archive
               </span>
               <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest hidden sm:block">
-                公文書の亡霊
+                アーカイブの亡霊
               </span>
             </div>
           </Link>
