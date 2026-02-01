@@ -25,15 +25,16 @@ Ghost in the Archive - 公開デジタルアーカイブから歴史的ミステ
 
 ## Multi-Agent System
 
-ADK を使用した 6 つの専門エージェント構成：
+ADK を使用した 7 つの専門エージェント構成：
 
 | エージェント | 役割 | 入力 | 出力 |
 |------------|------|------|------|
 | **Librarian** | 資料調査・収集（デジタルアーカイブ＋民俗資料） | 調査クエリ | collected_documents |
 | **Historian** | 矛盾検出＋民俗学的アノマリー分析 | collected_documents | mystery_report |
-| **Storyteller** | 歴史的厳密さと怪異的情緒の融合 | mystery_report | creative_content (ブログ原稿、ポッドキャスト台本、デザインコンセプト案) |
+| **Storyteller** | 歴史的厳密さと怪異的情緒の融合（ブログ記事） | mystery_report | creative_content (ブログ原稿、デザインコンセプト案) |
+| **Scriptwriter** | ポッドキャスト脚本作成 | creative_content | podcast_script (ポッドキャスト台本) |
 | **Designer** | 視覚表現 | creative_content | visual_assets (Imagen 3 用プロンプト、生成画像) |
-| **Producer** | 音声表現 | creative_content | audio_assets (Chirp 3 / TTS によるバイリンガル音声ファイル) |
+| **Producer** | 音声表現 | podcast_script | audio_assets (Chirp 3 / TTS によるバイリンガル音声ファイル) |
 | **Publisher** | 納品・公開 | 全アセット | published_episode (Firestore 保存、管理画面反映) |
 
 ### Agent Roles（詳細）
@@ -48,8 +49,12 @@ ADK を使用した 6 つの専門エージェント構成：
 - **事実と伝説の相関分析**: 実際の事件がどのように伝説化したか、逆に伝説の背後にある史実は何か
 
 **Storyteller（語り部）**
-- **歴史的厳密さ**と**怪異的情緒**を両立させた物語の再構築
-- センセーショナリズムに走らず、学術的誠実さを保ちながらも、読者/リスナーの好奇心を刺激する構成
+- **歴史的厳密さ**と**怪異的情緒**を両立させたブログ記事の作成
+- センセーショナリズムに走らず、学術的誠実さを保ちながらも、読者の好奇心を刺激する構成
+
+**Scriptwriter（脚本家）**
+- Storyteller のブログ記事をベースにポッドキャスト用の脚本を作成
+- 音声で聴いて理解しやすい形にコンテンツを再構成
 
 ### Agent Workflow
 
@@ -72,29 +77,35 @@ ADK を使用した 6 つの専門エージェント構成：
                     ┌───────────────────────────────┐
                     │         Storyteller           │
                     │  歴史的厳密さ ⚖ 怪異的情緒     │
-                    │     (Narrative Fusion)        │
+                    │   (ブログ記事 + デザイン案)     │
                     └───────────────┬───────────────┘
                                     │ creative_content
               ┌─────────────────────┼─────────────────────┐
               ▼                     ▼                     ▼
-       ┌──────────┐          ┌──────────┐          ┌──────────┐
-       │ Designer │          │ Producer │          │          │
-       │ (画像)   │          │ (音声)   │          │          │
-       └────┬─────┘          └────┬─────┘          │          │
-            │                     │                │          │
-            ▼                     ▼                │          │
-      visual_assets          audio_assets          │          │
-            │                     │                │          │
-            └─────────────────────┴────────────────┘          │
-                                  │                           │
-                                  ▼                           │
-                           ┌─────────────┐                    │
-                           │  Publisher  │◄───────────────────┘
-                           │ (納品・公開) │
-                           └─────────────┘
-                                  │
-                                  ▼
-                             Firestore
+       ┌──────────────┐      ┌──────────┐          ┌──────────┐
+       │ Scriptwriter │      │ Designer │          │          │
+       │ (脚本)       │      │ (画像)   │          │          │
+       └──────┬───────┘      └────┬─────┘          │          │
+              │ podcast_script    │                 │          │
+              ▼                   ▼                 │          │
+       ┌──────────┐        visual_assets            │          │
+       │ Producer │              │                  │          │
+       │ (音声)   │              │                  │          │
+       └────┬─────┘              │                  │          │
+            │                    │                  │          │
+            ▼                    │                  │          │
+      audio_assets               │                  │          │
+            │                    │                  │          │
+            └────────────────────┴──────────────────┘          │
+                                 │                             │
+                                 ▼                             │
+                          ┌─────────────┐                      │
+                          │  Publisher  │◄─────────────────────┘
+                          │ (納品・公開) │
+                          └─────────────┘
+                                 │
+                                 ▼
+                            Firestore
 ```
 
 ### Session State Keys
@@ -104,7 +115,8 @@ ADK を使用した 6 つの専門エージェント構成：
 - `collected_documents` - Librarian が収集した資料（デジタルアーカイブ＋Folklore両方を含む）
 - `mystery_report` - Historian の分析レポート
   - **Folkloric Context 属性を含む**: 事実と伝説の相関、民俗学的アノマリー、地域の信仰・禁忌への言及
-- `creative_content` - Storyteller のコンテンツ（歴史的厳密さと怪異的情緒の融合）
+- `creative_content` - Storyteller のコンテンツ（ブログ原稿、デザインコンセプト案）
+- `podcast_script` - Scriptwriter のポッドキャスト台本
 - `visual_assets` - Designer の画像アセット
 - `audio_assets` - Producer の音声アセット
 - `published_episode` - Publisher の公開結果
@@ -113,7 +125,8 @@ ADK を使用した 6 つの専門エージェント構成：
 
 - **Librarian:** gemini-2.5-flash (高速な資料検索)
 - **Historian:** gemini-3-pro-preview (深い分析)
-- **Storyteller:** gemini-3-pro-preview (クリエイティブ生成)
+- **Storyteller:** gemini-3-pro-preview (ブログ記事生成)
+- **Scriptwriter:** gemini-3-pro-preview (ポッドキャスト脚本)
 - **Designer:** gemini-3-pro-preview + Imagen 3 (画像生成)
 - **Producer:** gemini-3-pro-preview + Chirp 3 / TTS (音声生成)
 - **Publisher:** gemini-3-pro-preview (データ整理・公開)

@@ -25,21 +25,23 @@ from google.genai import types
 from agents.librarian import librarian_agent
 from agents.historian import historian_agent
 from agents.storyteller import storyteller_agent
+from agents.scriptwriter import scriptwriter_agent
 from agents.designer import designer_agent
+from agents.producer import producer_agent
 from agents.publisher import publisher_agent
 
 # Ghost Commander - Sequential Pipeline
-# ADK の SequentialAgent が Librarian → Historian → Storyteller → Designer → Publisher を固定順序で実行
+# ADK の SequentialAgent が Librarian → Historian → Storyteller → Scriptwriter → Designer → Producer → Publisher を固定順序で実行
 # 各エージェントは output_key でセッション状態にデータを保存し、
 # 次のエージェントが {key} で参照する
 ghost_commander = SequentialAgent(
     name="ghost_commander",
     description=(
         "Ghost in the Archive パイプライン。"
-        "Librarian → Historian → Storyteller → Designer → Publisher の順で実行し、"
-        "歴史的ミステリーと民俗学的怪異を調査・分析・コンテンツ化・画像生成・公開する。"
+        "Librarian → Historian → Storyteller → Scriptwriter → Designer → Producer → Publisher の順で実行し、"
+        "歴史的ミステリーと民俗学的怪異を調査・分析・コンテンツ化・脚本化・画像生成・音声生成・公開する。"
     ),
-    sub_agents=[librarian_agent, historian_agent, storyteller_agent, designer_agent, publisher_agent],
+    sub_agents=[librarian_agent, historian_agent, storyteller_agent, scriptwriter_agent, designer_agent, producer_agent, publisher_agent],
 )
 
 

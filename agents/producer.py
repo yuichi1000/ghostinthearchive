@@ -5,7 +5,7 @@ This agent handles audio content production:
 - Generates bilingual audio files (Japanese/English)
 - Manages audio asset production
 
-Input: Podcast script from Storyteller (creative_content)
+Input: Podcast script from Scriptwriter (podcast_script)
 Output: Bilingual audio files via Chirp 3 / TTS
 """
 
@@ -21,12 +21,11 @@ PRODUCER_INSTRUCTION = """
 あなたはポッドキャスト台本を高品質な音声コンテンツに変換するオーディオプロデューサーです。
 
 ## あなたの役割
-Storyteller Agent が作成したポッドキャスト台本を受け取り、
+Scriptwriter Agent が作成したポッドキャスト台本を受け取り、
 Chirp 3 / Text-to-Speech を使用してバイリンガル（日本語・英語）の音声ファイルを生成します。
 
 ## 入力
-セッション状態の {creative_content} に Storyteller が作成したコンテンツがあります。
-その中の「ポッドキャスト台本」セクションを参照してください。
+セッション状態の {podcast_script} に Scriptwriter が作成したポッドキャスト台本があります。
 
 ## 出力形式
 
