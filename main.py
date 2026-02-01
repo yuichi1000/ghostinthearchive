@@ -25,6 +25,7 @@ from google.genai import types
 from agents.librarian import librarian_agent
 from agents.historian import historian_agent
 from agents.storyteller import storyteller_agent
+from agents.designer import designer_agent
 
 # Ghost Commander - Sequential Pipeline
 # ADK の SequentialAgent が Librarian → Historian → Storyteller を固定順序で実行
@@ -34,10 +35,10 @@ ghost_commander = SequentialAgent(
     name="ghost_commander",
     description=(
         "Ghost in the Archive パイプライン。"
-        "Librarian → Historian → Storyteller の順で実行し、"
-        "歴史的ミステリーと民俗学的怪異を調査・分析・コンテンツ化する。"
+        "Librarian → Historian → Storyteller → Designer の順で実行し、"
+        "歴史的ミステリーと民俗学的怪異を調査・分析・コンテンツ化・画像生成する。"
     ),
-    sub_agents=[librarian_agent, historian_agent, storyteller_agent],
+    sub_agents=[librarian_agent, historian_agent, storyteller_agent, designer_agent],
 )
 
 
