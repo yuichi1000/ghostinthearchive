@@ -1,0 +1,10 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ローカル開発用: 全読み書き許可
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

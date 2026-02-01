@@ -1,0 +1,10 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // ローカル開発用: 全読み書き許可
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}

@@ -51,3 +51,9 @@ htmlcov/
 
 # Logs
 *.log
+
+# Firebase Emulator data
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+storage-debug.log
