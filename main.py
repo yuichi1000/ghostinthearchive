@@ -26,19 +26,20 @@ from agents.librarian import librarian_agent
 from agents.historian import historian_agent
 from agents.storyteller import storyteller_agent
 from agents.designer import designer_agent
+from agents.publisher import publisher_agent
 
 # Ghost Commander - Sequential Pipeline
-# ADK の SequentialAgent が Librarian → Historian → Storyteller を固定順序で実行
+# ADK の SequentialAgent が Librarian → Historian → Storyteller → Designer → Publisher を固定順序で実行
 # 各エージェントは output_key でセッション状態にデータを保存し、
 # 次のエージェントが {key} で参照する
 ghost_commander = SequentialAgent(
     name="ghost_commander",
     description=(
         "Ghost in the Archive パイプライン。"
-        "Librarian → Historian → Storyteller → Designer の順で実行し、"
-        "歴史的ミステリーと民俗学的怪異を調査・分析・コンテンツ化・画像生成する。"
+        "Librarian → Historian → Storyteller → Designer → Publisher の順で実行し、"
+        "歴史的ミステリーと民俗学的怪異を調査・分析・コンテンツ化・画像生成・公開する。"
     ),
-    sub_agents=[librarian_agent, historian_agent, storyteller_agent, designer_agent],
+    sub_agents=[librarian_agent, historian_agent, storyteller_agent, designer_agent, publisher_agent],
 )
 
 
@@ -98,13 +99,12 @@ async def investigate(query: str) -> None:
 
 def main():
     """Main entry point."""
-    # Default investigation query
-    query = "1840年代のボストンにおけるスペイン関連の歴史的矛盾を調査せよ"
+    if len(sys.argv) < 2:
+        print("Usage: python main.py <調査クエリ>")
+        print('Example: python main.py "1840年代のボストンにおけるスペイン関連の歴史的矛盾を調査せよ"')
+        sys.exit(1)
 
-    # Allow custom query from command line
-    if len(sys.argv) > 1:
-        query = " ".join(sys.argv[1:])
-
+    query = " ".join(sys.argv[1:])
     asyncio.run(investigate(query))
 
 

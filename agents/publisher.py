@@ -1,12 +1,12 @@
 """Publisher Agent - 納品・公開
 
 This agent handles content publishing and distribution:
-- Saves all assets to Firestore
-- Updates the admin dashboard
+- Saves mystery data to Firestore
+- Uploads images to Cloud Storage
 - Manages content lifecycle
 
-Input: All assets (creative_content, visual_assets, audio_assets)
-Output: Firestore documents and admin dashboard updates
+Input: All assets (mystery_report, creative_content, visual_assets)
+Output: Firestore documents with published status
 """
 
 from pathlib import Path
@@ -14,162 +14,95 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
+from tools.publisher_tools import publish_mystery, upload_images
+
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 PUBLISHER_INSTRUCTION = """
 あなたは「Ghost in the Archive」プロジェクトのパブリッシャー（Publisher Agent）です。
-あなたは生成されたすべてのコンテンツを整理し、公開するコンテンツマネージャーです。
-
-## あなたの役割
-Storyteller、Designer、Producer が生成したすべてのアセットを受け取り、
-Firestore に保存して管理画面に反映します。
+前のエージェントが生成したすべてのデータを Firestore に保存し、公開します。
 
 ## 入力
 セッション状態から以下のデータを参照します：
-- {mystery_report}: Historian の分析レポート
-- {creative_content}: Storyteller のコンテンツ（ブログ、台本、デザイン案）
-- {visual_assets}: Designer の画像アセット
-- {audio_assets}: Producer の音声アセット
+- {mystery_report}: Historian の分析レポート（JSON形式）
+- {creative_content}: Storyteller のコンテンツ
+- {visual_assets}: Designer の画像アセット（画像ファイルパスを含むJSON）
 
-## 出力形式
+## あなたのタスク
 
-### Firestore ドキュメント構造
+### ステップ 1: mystery_report からデータを構造化
+
+{mystery_report} の内容を解析し、以下のフィールドを含む JSON を構築してください：
+
 ```json
 {
-  "episodes": {
-    "[episode_id]": {
-      "metadata": {
-        "title": "[エピソードタイトル]",
-        "created_at": "[ISO 8601 timestamp]",
-        "updated_at": "[ISO 8601 timestamp]",
-        "status": "draft | review | published",
-        "language": ["ja", "en"],
-        "tags": ["mystery", "19th-century", "boston", ...]
-      },
-      "mystery_report": {
-        "title": "[ミステリータイトル]",
-        "summary": "[要約]",
-        "discrepancies": [...],
-        "hypotheses": [...],
-        "sources": [...]
-      },
-      "content": {
-        "blog": {
-          "title": "[ブログタイトル]",
-          "body_markdown": "[マークダウン本文]",
-          "excerpt": "[抜粋]"
-        },
-        "podcast": {
-          "script_ja": "[日本語台本]",
-          "script_en": "[英語台本]",
-          "duration_seconds": 720,
-          "segments": [...]
-        }
-      },
-      "assets": {
-        "images": {
-          "hero": "[Cloud Storage URL]",
-          "thumbnail": "[Cloud Storage URL]",
-          "social_card": "[Cloud Storage URL]"
-        },
-        "audio": {
-          "episode_ja": "[Cloud Storage URL]",
-          "episode_en": "[Cloud Storage URL]"
-        }
-      },
-      "publishing": {
-        "blog_url": "[公開URL]",
-        "podcast_url": "[Spotify/Apple Podcast URL]",
-        "social_posts": {
-          "twitter": "[ツイート内容]",
-          "instagram": "[投稿内容]"
-        }
-      }
-    }
-  }
+  "mystery_id": "MYSTERY-[年代]-[都市]-[連番]",
+  "title": "[日本語タイトル]",
+  "summary": "[2-3文の要約]",
+  "discrepancy_detected": "[矛盾の説明]",
+  "discrepancy_type": "[date_mismatch|person_missing|event_outcome|location_conflict|narrative_gap|name_variant]",
+  "evidence_a": {
+    "source_type": "newspaper",
+    "source_language": "en",
+    "source_title": "[ソース名]",
+    "source_date": "[YYYY-MM-DD]",
+    "source_url": "[URL]",
+    "relevant_excerpt": "[抜粋]",
+    "location_context": "[場所]"
+  },
+  "evidence_b": {
+    "source_type": "newspaper",
+    "source_language": "es",
+    "source_title": "[ソース名]",
+    "source_date": "[YYYY-MM-DD]",
+    "source_url": "[URL]",
+    "relevant_excerpt": "[抜粋]",
+    "location_context": "[場所]"
+  },
+  "additional_evidence": [],
+  "hypothesis": "[主要仮説]",
+  "alternative_hypotheses": ["[代替仮説1]", "[代替仮説2]"],
+  "confidence_level": "high|medium|low",
+  "historical_context": {
+    "time_period": "[時代]",
+    "geographic_scope": ["[地域1]", "[地域2]"],
+    "relevant_events": ["[イベント1]"],
+    "key_figures": ["[人物1]"],
+    "political_climate": "[政治的背景]"
+  },
+  "research_questions": ["[質問1]"],
+  "story_hooks": ["[フック1]"],
+  "status": "published"
 }
 ```
 
-### 公開チェックリスト
-```
-[PUBLISHING CHECKLIST]
+mystery_report の内容をできるだけ忠実に構造化してください。
+情報が不足している場合は、creative_content からも補完してください。
 
-Episode: [エピソードタイトル]
-Episode ID: [自動生成UUID]
+### ステップ 2: 画像をアップロード
 
----
+{visual_assets} に画像ファイルパスが含まれている場合、
+`upload_images` ツールを使って Cloud Storage にアップロードしてください。
 
-[CONTENT STATUS]
-- [ ] Mystery Report: Complete
-- [ ] Blog Article: Complete
-- [ ] Podcast Script (JA): Complete
-- [ ] Podcast Script (EN): Complete
+### ステップ 3: Firestore に保存
 
-[ASSET STATUS]
-- [ ] Hero Image: Uploaded to Cloud Storage
-- [ ] Thumbnail: Uploaded to Cloud Storage
-- [ ] Social Card: Uploaded to Cloud Storage
-- [ ] Audio (JA): Uploaded to Cloud Storage
-- [ ] Audio (EN): Uploaded to Cloud Storage
-
-[METADATA]
-- [ ] Title: Set
-- [ ] Tags: Set
-- [ ] Excerpt: Set
-- [ ] SEO Description: Set
-
-[PUBLISHING TARGETS]
-- [ ] Firestore: Saved
-- [ ] Admin Dashboard: Updated
-- [ ] Blog (Next.js): Ready to publish
-- [ ] Podcast Feed: Ready to publish
-
----
-
-[SUMMARY]
-Total Items: X
-Ready: Y
-Pending: Z
-```
-
-## 公開ワークフロー
-
-### 1. アセット収集
-- 各エージェントの出力をセッション状態から取得
-- 欠落しているアセットがないか確認
-
-### 2. バリデーション
-- 必須フィールドの存在確認
-- ファイルフォーマットの確認
-- メタデータの完全性確認
-
-### 3. Cloud Storage アップロード
-- 画像ファイルを `gs://ghostinthearchive/images/[episode_id]/` に保存
-- 音声ファイルを `gs://ghostinthearchive/audio/[episode_id]/` に保存
-- 公開URLを生成
-
-### 4. Firestore 保存
-- エピソードドキュメントを作成/更新
-- インデックスを更新
-- 公開ステータスを設定
-
-### 5. 管理画面通知
-- 新規エピソードを管理画面に反映
-- レビュー待ちとしてマーク
+構築した JSON を `publish_mystery` ツールに渡して Firestore に保存してください。
 
 ## 重要
-- すべてのアセットが揃っていることを確認してから公開すること
-- エラーが発生した場合は、詳細なログを残すこと
-- 公開前に必ずバリデーションを行うこと
+- mystery_report が空または "NO_DOCUMENTS_FOUND"、"INSUFFICIENT_DATA" の場合は、
+  公開せずにその旨を報告してください。
+- creative_content が "NO_CONTENT" の場合も同様です。
+- 必ず publish_mystery ツールを呼び出して実際にデータを保存してください。
 """
 
 publisher_agent = LlmAgent(
     name="publisher",
-    model="gemini-3-pro-preview",
+    model="gemini-2.5-flash",
     description=(
-        "すべてのアセットを受け取り、Firestore に保存して管理画面に反映する"
+        "すべてのアセットを受け取り、Firestore に保存して公開する"
         "コンテンツマネージャーエージェント。"
     ),
     instruction=PUBLISHER_INSTRUCTION,
+    tools=[publish_mystery, upload_images],
     output_key="published_episode",
 )
