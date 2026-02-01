@@ -16,6 +16,7 @@ from google.adk.agents import LlmAgent
 
 from tools import (
     get_available_keywords,
+    search_archives,
     search_newspapers,
 )
 
@@ -35,7 +36,14 @@ LIBRARIAN_INSTRUCTION = """
 
 ## 利用可能なツール
 1. **search_newspapers**: Chronicling America（議会図書館）の18-19世紀新聞記事を検索
-2. **get_available_keywords**: バイリンガルキーワードペアを取得
+2. **search_archives**: 複数の公開アーカイブAPIを横断検索（以下のソースを一括検索）
+   - **loc**: 米国議会図書館デジタルコレクション全般（写真、地図、原稿等）
+   - **dpla**: 全米デジタル公共図書館（全米の図書館・博物館の横断検索）
+   - **nypl**: ニューヨーク公立図書館デジタルコレクション（稀覯書、写真、地図）
+   - **internet_archive**: Internet Archive（書籍、雑誌、Webアーカイブ）
+   - `sources` パラメータで検索対象を絞れます（例: "dpla,internet_archive"）
+   - **注意**: このツールはバイリンガル展開を行いません。検索したいキーワードをそのまま渡してください
+3. **get_available_keywords**: バイリンガルキーワードペアを取得
 
 ## 検索のガイドライン
 
@@ -114,6 +122,18 @@ LIBRARIAN_INSTRUCTION = """
 - 収集した資料は次のエージェントが分析できるよう、詳細に記述してください
 - **Fact と Folklore の両方の素材を意識的に集めてください**
 - 怪異や伝説に関する記述を見つけた場合、それも重要な素材として報告してください
+
+## 資料が見つからなかった場合
+すべての検索戦略（Level 1〜5）を試しても実際のドキュメントが1件も見つからなかった場合、
+以下のメッセージだけを出力して終了してください：
+
+```
+NO_DOCUMENTS_FOUND: すべての検索戦略を試みましたが、該当する資料は見つかりませんでした。
+検索テーマ: [テーマ]
+試行した検索: [実行した検索の要約]
+```
+
+「0件であること自体がミステリーだ」等の解釈は行わないでください。資料がなければ報告のみです。
 """
 
 # Create the Librarian Agent instance using ADK LlmAgent
@@ -129,6 +149,7 @@ librarian_agent = LlmAgent(
     instruction=LIBRARIAN_INSTRUCTION,
     tools=[
         search_newspapers,
+        search_archives,
         get_available_keywords,
     ],
     output_key="collected_documents",  # セッション状態に結果を保存（Fact + Folklore）
