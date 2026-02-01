@@ -118,6 +118,12 @@ export interface FirestoreMystery extends MysteryReport {
   updatedAt: Date;
   /** 公開日時（publishedの場合のみ） */
   publishedAt?: Date;
+  /** 画像アセット（Cloud Storage URLs） */
+  images?: {
+    hero?: string;
+    thumbnail?: string;
+    inserts?: string[];
+  };
 }
 
 /**

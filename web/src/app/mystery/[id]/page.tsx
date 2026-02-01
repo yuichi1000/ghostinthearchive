@@ -116,6 +116,18 @@ export default async function MysteryDetailPage({
             </div>
           </div>
 
+          {/* Hero image */}
+          {mystery.images?.hero && (
+            <div className="mb-12 rounded-sm overflow-hidden border border-border">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={mystery.images.hero}
+                alt={mystery.title}
+                className="w-full h-auto"
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Main content */}
             <div className="lg:col-span-2 space-y-12">

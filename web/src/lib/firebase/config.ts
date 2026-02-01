@@ -5,6 +5,7 @@
 
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getFirestore, Firestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getStorage, FirebaseStorage, connectStorageEmulator } from "firebase/storage";
 
 /** Firebase設定オブジェクト */
 const firebaseConfig = {
@@ -22,8 +23,12 @@ let app: FirebaseApp;
 /** Firestoreインスタンス（シングルトン） */
 let db: Firestore;
 
+/** Storageインスタンス（シングルトン） */
+let storageInstance: FirebaseStorage;
+
 /** エミュレータ接続済みフラグ */
 let emulatorConnected = false;
+let storageEmulatorConnected = false;
 
 /**
  * Firebaseアプリを初期化して返す
@@ -51,11 +56,10 @@ export function getFirestoreDb(): Firestore {
     const firebaseApp = getFirebaseApp();
     db = getFirestore(firebaseApp);
 
-    // 開発環境でエミュレータを使用する場合
+    // 開発環境でエミュレータを使用する場合（クライアント・サーバー両方）
     if (
       process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true" &&
-      !emulatorConnected &&
-      typeof window !== "undefined"
+      !emulatorConnected
     ) {
       const host = process.env.NEXT_PUBLIC_FIREBASE_EMULATOR_HOST || "localhost";
       const port = parseInt(
@@ -68,6 +72,32 @@ export function getFirestoreDb(): Firestore {
     }
   }
   return db;
+}
+
+/**
+ * Firebase Storageインスタンスを取得
+ * 開発環境ではエミュレータに接続
+ */
+export function getFirebaseStorage(): FirebaseStorage {
+  if (!storageInstance) {
+    const firebaseApp = getFirebaseApp();
+    storageInstance = getStorage(firebaseApp);
+
+    if (
+      process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true" &&
+      !storageEmulatorConnected
+    ) {
+      const host = process.env.NEXT_PUBLIC_FIREBASE_EMULATOR_HOST || "localhost";
+      const port = parseInt(
+        process.env.NEXT_PUBLIC_STORAGE_EMULATOR_PORT || "9199",
+        10
+      );
+      connectStorageEmulator(storageInstance, host, port);
+      storageEmulatorConnected = true;
+      console.log(`[Firebase] Storage Emulator に接続: ${host}:${port}`);
+    }
+  }
+  return storageInstance;
 }
 
 /**
