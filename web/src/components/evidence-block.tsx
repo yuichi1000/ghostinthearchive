@@ -34,22 +34,22 @@ export function EvidenceBlock({ evidence, label, className }: EvidenceBlockProps
           }}
         />
 
-        {/* Quote marks */}
-        <div className="absolute top-3 left-3 text-4xl text-parchment/20 font-serif leading-none" aria-hidden="true">
-          &ldquo;
+        {/* Date badge + Quote marks row */}
+        <div className="flex items-start justify-between mb-1">
+          <div className="text-4xl text-parchment/20 font-serif leading-none" aria-hidden="true">
+            &ldquo;
+          </div>
+          {evidence.source_date && (
+            <div className="px-2 py-0.5 bg-blood-red/20 border border-blood-red/30 rounded-sm shrink-0">
+              <span className="text-xs font-mono text-[#ff6b6b]">{evidence.source_date}</span>
+            </div>
+          )}
         </div>
 
         {/* Evidence text */}
         <p className="relative text-sm text-foreground/90 leading-relaxed pl-6 font-mono whitespace-pre-wrap">
           {evidence.relevant_excerpt}
         </p>
-
-        {/* Date badge if available */}
-        {evidence.source_date && (
-          <div className="absolute top-3 right-8 px-2 py-0.5 bg-blood-red/20 border border-blood-red/30 rounded-sm">
-            <span className="text-xs font-mono text-[#ff6b6b]">{evidence.source_date}</span>
-          </div>
-        )}
       </blockquote>
 
       {/* Source citation */}
