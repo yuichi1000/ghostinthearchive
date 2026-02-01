@@ -304,7 +304,7 @@ export default async function MysteryDetailPage({
                 {/* Classification notice */}
                 <div className="border border-blood-red/30 bg-blood-red/5 rounded-sm p-4">
                   <p className="text-xs text-muted-foreground font-mono leading-relaxed">
-                    <span className="text-[#ff6b6b]">NOTICE:</span> This case file represents AI-generated analysis of archival records.
+                    <span className="text-blood-red">NOTICE:</span> This case file represents AI-generated analysis of archival records.
                     All sources should be independently verified.
                   </p>
                 </div>
