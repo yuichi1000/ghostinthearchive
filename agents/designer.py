@@ -91,7 +91,7 @@ Folklore: "A ghostly sailing ship emerging from thick fog near a rocky New Engla
 
 designer_agent = LlmAgent(
     name="designer",
-    model="gemini-2.5-flash",
+    model="gemini-3-pro-preview",
     description=(
         "Storyteller のブログ記事を読み、デザインコンセプトを策定し Imagen 3 で画像を生成する。"
         "Fact ベースは白黒写真風、Folklore ベースは木版画風イラストで使い分ける。"

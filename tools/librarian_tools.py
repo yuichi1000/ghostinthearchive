@@ -45,36 +45,62 @@ def search_newspapers(
 
     # Expand keywords to bilingual
     expanded = expand_keywords_bilingual(keyword_list)
-    all_keywords = expanded["en"] + expanded["es"]
+    en_keywords = expanded["en"]
+    es_keywords = expanded["es"]
 
     # Parse states if provided
     state_list = None
     if states:
         state_list = [s.strip() for s in states.split(",") if s.strip()]
 
-    # Perform search
-    results = search_chronicling_america(
-        keywords=all_keywords,
-        date_start=date_start,
-        date_end=date_end,
-        states=state_list,
-        rows=max_results,
-    )
+    # Search English and Spanish separately, then merge
+    all_docs = []
+    total_hits = 0
+    seen_urls = set()
+    all_keywords_used = en_keywords + es_keywords
+    error = None
 
-    # Convert to JSON-serializable format
-    if results["documents"]:
-        docs = [doc.model_dump() for doc in results["documents"]]
-    else:
-        docs = []
+    def _search_and_collect(kw_list):
+        nonlocal total_hits, error
+        if not kw_list:
+            return
+        results = search_chronicling_america(
+            keywords=kw_list,
+            date_start=date_start,
+            date_end=date_end,
+            states=state_list,
+            rows=max_results,
+        )
+        total_hits += results["total_hits"]
+        if results.get("error"):
+            error = results["error"]
+        for doc in results.get("documents", []):
+            if doc.source_url not in seen_urls:
+                seen_urls.add(doc.source_url)
+                all_docs.append(doc)
+
+    # First attempt: all keywords together
+    for kw_list in [en_keywords, es_keywords]:
+        _search_and_collect(kw_list)
+
+    # Fallback: if no results and multiple keywords, try each keyword individually
+    if not all_docs and len(en_keywords) > 1:
+        for kw in en_keywords:
+            _search_and_collect([kw])
+        for kw in es_keywords:
+            _search_and_collect([kw])
+
+    docs = [doc.model_dump() for doc in all_docs]
 
     return json.dumps(
         {
             "source": "chronicling_america",
-            "keywords_used": all_keywords,
-            "total_hits": results["total_hits"],
+            "keywords_used": all_keywords_used,
+            "total_hits": total_hits,
             "documents_returned": len(docs),
             "documents": docs,
-            "error": results.get("error"),
+            "error": error,
+            "fallback_used": not all_docs and len(en_keywords) > 1,
         },
         ensure_ascii=False,
         indent=2,
@@ -158,11 +184,11 @@ def search_archives(
     Searches across LOC Digital Collections, DPLA, NYPL, and Internet Archive.
     Results are merged and returned as a unified JSON response.
 
-    Unlike search_newspapers, this function does NOT perform bilingual keyword
-    expansion. Pass the exact keywords you want to search for.
+    Automatically expands keywords to include both English and Spanish variants,
+    searching each language separately and merging results.
 
     Args:
-        keywords: Comma-separated search keywords (used as-is, no bilingual expansion)
+        keywords: Comma-separated search keywords (automatically expanded to bilingual)
         date_start: Start year (default: 1800)
         date_end: End year (default: 1899)
         sources: Comma-separated source names to search (default: all).
@@ -173,7 +199,11 @@ def search_archives(
         JSON string with merged results from all sources.
     """
     keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
-    all_keywords = keyword_list
+
+    # Expand keywords to bilingual (English + Spanish)
+    expanded = expand_keywords_bilingual(keyword_list)
+    en_keywords = expanded["en"]
+    es_keywords = expanded["es"]
 
     if sources:
         source_keys = [s.strip().lower() for s in sources.split(",") if s.strip()]
@@ -183,6 +213,34 @@ def search_archives(
     all_docs = []
     source_results = {}
     errors = {}
+    seen_urls = set()
+    fallback_used = False
+
+    def _search_source(search_fn, kw_list):
+        """Search a single source with given keywords, collecting results."""
+        docs = []
+        hits = 0
+        err = None
+        if not kw_list:
+            return docs, hits, err
+        try:
+            result = search_fn(
+                keywords=kw_list,
+                date_start=date_start,
+                date_end=date_end,
+                max_results=max_results,
+            )
+            hits = result.get("total_hits", 0)
+            err = result.get("error")
+            for doc in result.get("documents", []):
+                dump = doc.model_dump()
+                url = dump.get("source_url", "")
+                if url not in seen_urls:
+                    seen_urls.add(url)
+                    docs.append(dump)
+        except Exception as e:
+            err = str(e)
+        return docs, hits, err
 
     for key in source_keys:
         if key not in _ARCHIVE_SOURCES:
@@ -190,33 +248,61 @@ def search_archives(
             continue
 
         name, search_fn = _ARCHIVE_SOURCES[key]
-        try:
-            result = search_fn(
-                keywords=all_keywords,
-                date_start=date_start,
-                date_end=date_end,
-                max_results=max_results,
-            )
-            docs = [doc.model_dump() for doc in result.get("documents", [])]
-            all_docs.extend(docs)
-            source_results[key] = {
-                "name": name,
-                "total_hits": result.get("total_hits", 0),
-                "documents_returned": len(docs),
-            }
-            if result.get("error"):
-                errors[key] = result["error"]
-        except Exception as e:
-            errors[key] = str(e)
-            source_results[key] = {"name": name, "total_hits": 0, "documents_returned": 0}
+        source_hits = 0
+        source_docs = []
+
+        # Search English and Spanish separately, then merge
+        for kw_list in [en_keywords, es_keywords]:
+            docs, hits, err = _search_source(search_fn, kw_list)
+            source_docs.extend(docs)
+            source_hits += hits
+            if err:
+                errors[key] = err
+
+        # Fallback: if no results and multiple keywords, try each individually
+        if not source_docs and len(en_keywords) > 1:
+            fallback_used = True
+            for kw in en_keywords:
+                docs, hits, err = _search_source(search_fn, [kw])
+                source_docs.extend(docs)
+                source_hits += hits
+                if err:
+                    errors[key] = err
+            for kw in es_keywords:
+                docs, hits, err = _search_source(search_fn, [kw])
+                source_docs.extend(docs)
+                source_hits += hits
+                if err:
+                    errors[key] = err
+
+        all_docs.extend(source_docs)
+        source_results[key] = {
+            "name": name,
+            "total_hits": source_hits,
+            "documents_returned": len(source_docs),
+        }
+
+    all_keywords_used = en_keywords + es_keywords
+
+    # Build warnings for missing API keys
+    warnings = []
+    api_key_errors = {k: v for k, v in errors.items() if "not set" in str(v)}
+    if api_key_errors:
+        skipped = ", ".join(api_key_errors.keys())
+        warnings.append(
+            f"⚠ API keys not configured for: {skipped}. "
+            f"These sources were skipped. Set the required environment variables to enable them."
+        )
 
     return json.dumps(
         {
-            "keywords_used": all_keywords,
+            "warnings": warnings if warnings else None,
+            "keywords_used": all_keywords_used,
             "sources_searched": source_results,
             "total_documents": len(all_docs),
             "documents": all_docs,
             "errors": errors if errors else None,
+            "fallback_used": fallback_used,
         },
         ensure_ascii=False,
         indent=2,

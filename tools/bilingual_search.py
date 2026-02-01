@@ -42,6 +42,28 @@ KEYWORD_PAIRS: Dict[str, str] = {
     "spanish": "español",
     "cuba": "cuba",
     "florida": "florida",
+    # Folklore and supernatural
+    "ghost": "fantasma",
+    "specter": "espectro",
+    "apparition": "aparición",
+    "legend": "leyenda",
+    "tale": "cuento",
+    "lore": "tradición",
+    "curse": "maldición",
+    "cursed": "maldito",
+    "superstition": "superstición",
+    "belief": "creencia",
+    "strange": "extraño",
+    "mysterious": "misterioso",
+    "unexplained": "inexplicable",
+    "forbidden": "prohibido",
+    "taboo": "tabú",
+    "haunted": "embrujado",
+    "witch": "bruja",
+    "witchcraft": "brujería",
+    "demon": "demonio",
+    "omen": "presagio",
+    "prophecy": "profecía",
 }
 
 

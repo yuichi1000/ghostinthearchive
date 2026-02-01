@@ -123,7 +123,7 @@ ADK を使用した 7 つの専門エージェント構成：
 
 ### Models
 
-- **Librarian:** gemini-2.5-flash (高速な資料検索)
+- **Librarian:** gemini-3-pro-preview (資料検索)
 - **Historian:** gemini-3-pro-preview (深い分析)
 - **Storyteller:** gemini-3-pro-preview (ブログ記事生成)
 - **Scriptwriter:** gemini-3-pro-preview (ポッドキャスト脚本)

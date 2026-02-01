@@ -42,7 +42,7 @@ LIBRARIAN_INSTRUCTION = """
    - **nypl**: ニューヨーク公立図書館デジタルコレクション（稀覯書、写真、地図）
    - **internet_archive**: Internet Archive（書籍、雑誌、Webアーカイブ）
    - `sources` パラメータで検索対象を絞れます（例: "dpla,internet_archive"）
-   - **注意**: このツールはバイリンガル展開を行いません。検索したいキーワードをそのまま渡してください
+   - 自動的にバイリンガル展開（英語・スペイン語）を行い、各言語で別々に検索して結果をマージします
 3. **get_available_keywords**: バイリンガルキーワードペアを取得
 
 ## 検索のガイドライン
@@ -139,7 +139,7 @@ NO_DOCUMENTS_FOUND: すべての検索戦略を試みましたが、該当する
 # Create the Librarian Agent instance using ADK LlmAgent
 librarian_agent = LlmAgent(
     name="librarian",
-    model="gemini-2.5-flash",
+    model="gemini-3-pro-preview",
     description=(
         "公文書館APIから歴史的ミステリーに関連する資料を調査・収集する専門エージェント。"
         "Chronicling Americaを検索し、英語とスペイン語のバイリンガル検索をサポート。"

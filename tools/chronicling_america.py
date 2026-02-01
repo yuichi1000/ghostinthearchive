@@ -78,8 +78,8 @@ def search_chronicling_america(
     # Limit rows to reasonable maximum
     rows = min(rows, 50)
 
-    # Build search query - join keywords with spaces
-    search_text = " ".join(kw for kw in keywords if kw.strip())
+    # Build search query - join keywords with OR for broader results
+    search_text = " OR ".join(kw for kw in keywords if kw.strip())
 
     if not search_text:
         return {

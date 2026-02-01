@@ -48,12 +48,17 @@ def search_nypl(
     if not api_token:
         return {"documents": [], "total_hits": 0, "error": "NYPL_API_TOKEN not set"}
 
-    search_text = " ".join(kw for kw in keywords if kw.strip())
+    search_text = " OR ".join(kw for kw in keywords if kw.strip())
     if not search_text:
         return {"documents": [], "total_hits": 0, "error": "No keywords provided"}
 
+    # Include date range in query for filtering
+    start_year = date_start[:4] if len(date_start) >= 4 else date_start
+    end_year = date_end[:4] if len(date_end) >= 4 else date_end
+    search_text_with_date = f"{search_text} {start_year}-{end_year}"
+
     params = {
-        "q": search_text,
+        "q": search_text_with_date,
         "per_page": min(max_results, 100),
         "page": 1,
         "publicDomainOnly": "true",

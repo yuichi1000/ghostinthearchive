@@ -43,7 +43,7 @@ def search_loc_digital(
     Returns:
         Dict with documents, total_hits, error keys.
     """
-    search_text = " ".join(kw for kw in keywords if kw.strip())
+    search_text = " OR ".join(kw for kw in keywords if kw.strip())
     if not search_text:
         return {"documents": [], "total_hits": 0, "error": "No keywords provided"}
 
@@ -52,6 +52,7 @@ def search_loc_digital(
 
     params = {
         "q": search_text,
+        "fa": "not:partof:chronicling america",  # Exclude Chronicling America (searched separately)
         "fo": "json",
         "c": min(max_results, 50),
         "sp": 1,

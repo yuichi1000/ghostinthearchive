@@ -43,7 +43,7 @@ def search_internet_archive(
     Returns:
         Dict with documents, total_hits, error keys.
     """
-    search_text = " ".join(kw for kw in keywords if kw.strip())
+    search_text = " OR ".join(kw for kw in keywords if kw.strip())
     if not search_text:
         return {"documents": [], "total_hits": 0, "error": "No keywords provided"}
 
