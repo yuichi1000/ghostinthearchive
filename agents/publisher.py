@@ -72,12 +72,17 @@ PUBLISHER_INSTRUCTION = """
   },
   "research_questions": ["[質問1]"],
   "story_hooks": ["[フック1]"],
+  "narrative_content": "[Storytellerが生成した物語テキスト]",
   "status": "published"
 }
 ```
 
 mystery_report の内容をできるだけ忠実に構造化してください。
 情報が不足している場合は、creative_content からも補完してください。
+
+**重要: `narrative_content` フィールドには {creative_content} の内容をそのまま格納してください。**
+これは Storyteller が生成した物語的ブログ原稿（マークダウン形式）です。
+編集や要約はせず、そのまま保存してください。
 
 ### ステップ 2: 画像をアップロード
 

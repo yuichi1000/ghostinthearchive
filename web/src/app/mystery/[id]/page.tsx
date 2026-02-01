@@ -13,9 +13,9 @@ import {
   FileText,
   AlertTriangle,
   BookOpen,
-  HelpCircle,
   Lightbulb
 } from "lucide-react"
+import Markdown from "react-markdown"
 
 export const revalidate = 3600
 
@@ -131,12 +131,26 @@ export default async function MysteryDetailPage({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Main content */}
             <div className="lg:col-span-2 space-y-12">
-              {/* Summary */}
-              <section>
-                <p className="text-lg text-foreground/90 leading-relaxed">
-                  {mystery.summary}
-                </p>
-              </section>
+              {/* Narrative Content (primary) */}
+              {mystery.narrative_content ? (
+                <section className="prose prose-invert prose-parchment max-w-none prose-headings:font-serif prose-headings:text-parchment prose-p:text-foreground/90 prose-p:leading-relaxed prose-a:text-gold prose-blockquote:border-gold/30 prose-blockquote:text-foreground/70">
+                  <Markdown>{mystery.narrative_content}</Markdown>
+                </section>
+              ) : (
+                /* Fallback: show summary if no narrative */
+                <section>
+                  <p className="text-lg text-foreground/90 leading-relaxed">
+                    {mystery.summary}
+                  </p>
+                </section>
+              )}
+
+              {/* Divider between narrative and archival data */}
+              <div className="flex items-center gap-4">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Archival Data</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
 
               {/* Discovered Discrepancy */}
               {mystery.discrepancy_detected && (
@@ -229,23 +243,6 @@ export default async function MysteryDetailPage({
                 </section>
               )}
 
-              {/* Research Questions */}
-              {mystery.research_questions.length > 0 && (
-                <section>
-                  <div className="flex items-center gap-3 mb-4">
-                    <HelpCircle className="w-5 h-5 text-muted-foreground" />
-                    <h2 className="font-serif text-xl text-parchment">Open Research Questions</h2>
-                  </div>
-                  <ul className="space-y-3 pl-8">
-                    {mystery.research_questions.map((question, index) => (
-                      <li key={index} className="flex items-start gap-3 text-foreground/80">
-                        <span className="text-gold font-mono text-sm mt-0.5">{(index + 1).toString().padStart(2, '0')}.</span>
-                        <span>{question}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
             </div>
 
             {/* Sidebar */}

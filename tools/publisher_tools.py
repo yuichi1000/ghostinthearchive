@@ -61,7 +61,7 @@ def publish_mystery(mystery_json: str) -> str:
         JSON string with status and document ID.
     """
     try:
-        data = json.loads(mystery_json)
+        data = json.loads(mystery_json, strict=False)
 
         mystery_id = data.get("mystery_id")
         if not mystery_id:

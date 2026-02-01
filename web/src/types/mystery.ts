@@ -101,6 +101,9 @@ export interface MysteryReport {
   /** Storyteller Agent向けのナラティブフック */
   story_hooks: string[];
 
+  /** Storyteller が生成した物語的ブログ原稿（マークダウン形式） */
+  narrative_content?: string;
+
   /** 分析実行日時（ISO形式） */
   analysis_timestamp: string;
 }

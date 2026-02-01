@@ -131,6 +131,11 @@ class MysteryReport(BaseModel):
         description="Narrative angles for the Storyteller Agent",
     )
 
+    narrative_content: Optional[str] = Field(
+        None,
+        description="Storyteller が生成した物語的ブログ原稿（マークダウン形式）",
+    )
+
     analysis_timestamp: str = Field(
         default_factory=lambda: datetime.now().isoformat(),
         description="When this analysis was performed",
