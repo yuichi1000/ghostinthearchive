@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { getAllMysteries, approveMystery, archiveMystery } from "@/lib/firestore/mysteries"
 import type { FirestoreMystery, MysteryStatus } from "@/types/mystery"
+import { PipelineSummary } from "@/components/pipeline-summary"
+import { PipelineTimeline } from "@/components/pipeline-timeline"
 import {
   Shield,
   FileText,
@@ -17,7 +19,9 @@ import {
   MapPin,
   Filter,
   RefreshCw,
-  Inbox
+  Inbox,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 
 type FilterStatus = "all" | MysteryStatus
@@ -189,9 +193,11 @@ interface AdminMysteryCardProps {
 }
 
 function AdminMysteryCard({ mystery, onApprove, onArchive }: AdminMysteryCardProps) {
+  const [showPipeline, setShowPipeline] = useState(false)
   const isPending = mystery.status === "pending"
   const location = mystery.historical_context?.geographic_scope?.[0] || ""
   const timePeriod = mystery.historical_context?.time_period || ""
+  const hasPipelineLog = mystery.pipeline_log && mystery.pipeline_log.length > 0
 
   return (
     <article className="aged-card letterpress-border rounded-sm p-5">
@@ -235,6 +241,29 @@ function AdminMysteryCard({ mystery, onApprove, onArchive }: AdminMysteryCardPro
           </span>
         )}
       </div>
+
+      {/* Pipeline log */}
+      {hasPipelineLog && (
+        <div className="mb-4 pb-4 border-b border-border/50">
+          <button
+            onClick={() => setShowPipeline(!showPipeline)}
+            className="w-full flex items-center justify-between hover:bg-muted/50 transition-colors p-1 -mx-1 rounded-sm"
+          >
+            <PipelineSummary logs={mystery.pipeline_log!} />
+            {showPipeline ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            )}
+          </button>
+
+          {showPipeline && (
+            <div className="mt-4 pt-4 border-t border-border/50">
+              <PipelineTimeline logs={mystery.pipeline_log!} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center justify-between gap-4">

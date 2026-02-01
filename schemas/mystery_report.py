@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -70,6 +70,17 @@ class HistoricalContext(BaseModel):
         None,
         description="Political or diplomatic backdrop (US-Spain relations, trade tensions, etc.)",
     )
+
+
+class AgentLogEntry(BaseModel):
+    """パイプライン実行中の単一エージェントのログエントリ。"""
+
+    agent_name: str = Field(..., description="エージェント名 (librarian, historian, etc.)")
+    status: Literal["running", "completed", "error"] = Field(..., description="実行ステータス")
+    start_time: str = Field(..., description="開始タイムスタンプ (ISO format)")
+    end_time: Optional[str] = Field(None, description="終了タイムスタンプ (ISO format)")
+    duration_seconds: Optional[float] = Field(None, description="所要時間（秒）")
+    output_summary: Optional[str] = Field(None, description="出力の要約（最大200文字）")
 
 
 class MysteryReport(BaseModel):

@@ -24,6 +24,27 @@ export type SourceLanguage = "en" | "es";
 /** ミステリーのステータス */
 export type MysteryStatus = "pending" | "published" | "archived";
 
+/** エージェント実行ステータス */
+export type AgentStatus = "running" | "completed" | "error";
+
+/**
+ * パイプライン実行ログの単一エントリ
+ */
+export interface AgentLogEntry {
+  /** エージェント名 (librarian, historian, etc.) */
+  agent_name: string;
+  /** 実行ステータス */
+  status: AgentStatus;
+  /** 開始タイムスタンプ (ISO format) */
+  start_time: string;
+  /** 終了タイムスタンプ (ISO format) */
+  end_time: string | null;
+  /** 所要時間（秒） */
+  duration_seconds: number | null;
+  /** 出力の要約 */
+  output_summary: string | null;
+}
+
 /**
  * 証拠データ
  * 各ソース文書からの引用情報
@@ -127,6 +148,8 @@ export interface FirestoreMystery extends MysteryReport {
     thumbnail?: string;
     inserts?: string[];
   };
+  /** パイプライン実行ログ */
+  pipeline_log?: AgentLogEntry[];
 }
 
 /**
@@ -162,4 +185,17 @@ export const CONFIDENCE_LEVEL_LABELS: Record<ConfidenceLevel, string> = {
   high: "高",
   medium: "中",
   low: "低",
+};
+
+/**
+ * エージェント名の日本語ラベルマッピング
+ */
+export const AGENT_NAME_LABELS: Record<string, string> = {
+  librarian: "資料収集",
+  historian: "矛盾分析",
+  storyteller: "物語生成",
+  scriptwriter: "脚本作成",
+  designer: "画像生成",
+  producer: "音声生成",
+  publisher: "公開処理",
 };

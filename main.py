@@ -22,6 +22,7 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
+from utils.pipeline_logger import PipelineLogger
 from agents.librarian import librarian_agent
 from agents.historian import historian_agent
 from agents.storyteller import storyteller_agent
@@ -78,6 +79,11 @@ async def investigate(query: str) -> None:
         session_id=session_id,
     )
 
+    # Pipeline logger
+    logger = PipelineLogger()
+    current_agent_name: str | None = None
+    accumulated_text: list[str] = []
+
     # Run the investigation
     async for event in runner.run_async(
         user_id=user_id,
@@ -87,16 +93,50 @@ async def investigate(query: str) -> None:
             parts=[types.Part(text=query)],
         ),
     ):
+        # Detect agent transitions via event.author
+        author = getattr(event, "author", None)
+        if author and author != "ghost_commander" and author != current_agent_name:
+            # Complete previous agent
+            if current_agent_name:
+                summary = " ".join(accumulated_text)[:200]
+                logger.complete_agent(summary or "(no text output)")
+                accumulated_text = []
+            # Start new agent
+            current_agent_name = author
+            logger.start_agent(current_agent_name)
+
         # Print text responses from agents
         if event.content and event.content.parts:
             for part in event.content.parts:
                 if hasattr(part, "text") and part.text:
                     print(part.text)
+                    accumulated_text.append(part.text[:100])
+
+    # Complete final agent
+    if current_agent_name:
+        summary = " ".join(accumulated_text)[:200]
+        logger.complete_agent(summary or "(no text output)")
+
+    # Store pipeline log in session state for Publisher
+    session = await session_service.get_session(
+        app_name="ghost_in_the_archive",
+        user_id=user_id,
+        session_id=session_id,
+    )
+    if session:
+        session.state["pipeline_log"] = logger.get_logs()
 
     print()
     print("=" * 70)
     print("調査完了")
     print("=" * 70)
+
+    # Print execution summary
+    print("\n実行ログ:")
+    for log in logger.get_logs():
+        icon = "✓" if log["status"] == "completed" else "✗" if log["status"] == "error" else "⋯"
+        dur = f'{log["duration_seconds"]}s' if log["duration_seconds"] else "running"
+        print(f"  {icon} {log['agent_name']:12s} {dur:>8s}")
 
 
 def main():

@@ -85,6 +85,7 @@ def publish_mystery(mystery_json: str) -> str:
         data.setdefault("alternative_hypotheses", [])
         data.setdefault("research_questions", [])
         data.setdefault("story_hooks", [])
+        data.setdefault("pipeline_log", [])
 
         db = _get_firestore_client()
         db.collection("mysteries").document(mystery_id).set(data)
