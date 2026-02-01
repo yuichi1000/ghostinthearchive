@@ -9,39 +9,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from dotenv import load_dotenv
-
-# .env を読み込んでエミュレータ設定を反映
-load_dotenv(Path(__file__).parent.parent / ".env")
-
-# Storage エミュレータの場合、http:// プレフィックスが必要
-_storage_host = os.environ.get("STORAGE_EMULATOR_HOST", "")
-if _storage_host and not _storage_host.startswith("http"):
-    os.environ["STORAGE_EMULATOR_HOST"] = f"http://{_storage_host}"
-
-import firebase_admin
-from firebase_admin import credentials, firestore, storage
-
-
-def _get_firestore_client():
-    """Get a Firestore client, initializing Firebase Admin if needed."""
-    if not firebase_admin._apps:
-        # エミュレータ使用時はプロジェクトIDのみで初期化
-        project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "ghostinthearchive")
-        firebase_admin.initialize_app(
-            options={
-                "projectId": project_id,
-                "storageBucket": f"{project_id}.appspot.com",
-            }
-        )
-    return firestore.client()
-
-
-def _get_storage_bucket():
-    """Get a Cloud Storage bucket."""
-    if not firebase_admin._apps:
-        _get_firestore_client()  # ensure initialized
-    return storage.bucket()
+from shared.firestore import get_firestore_client, get_storage_bucket
 
 
 def publish_mystery(mystery_json: str) -> str:
@@ -87,7 +55,7 @@ def publish_mystery(mystery_json: str) -> str:
         data.setdefault("story_hooks", [])
         data.setdefault("pipeline_log", [])
 
-        db = _get_firestore_client()
+        db = get_firestore_client()
         db.collection("mysteries").document(mystery_id).set(data)
 
         return json.dumps({
@@ -122,7 +90,7 @@ def upload_images(mystery_id: str, image_paths: str) -> str:
         if isinstance(paths, str):
             paths = [paths]
 
-        bucket = _get_storage_bucket()
+        bucket = get_storage_bucket()
         uploaded = []
 
         for local_path in paths:

@@ -25,17 +25,26 @@ Ghost in the Archive - 公開デジタルアーカイブから歴史的ミステ
 
 ## Multi-Agent System
 
-ADK を使用した 7 つの専門エージェント構成：
+2つの独立した ADK パイプラインで構成：
+
+### ブログ作成パイプライン（`archive_agents/`）
 
 | エージェント | 役割 | 入力 | 出力 |
 |------------|------|------|------|
 | **Librarian** | 資料調査・収集（デジタルアーカイブ＋民俗資料） | 調査クエリ | collected_documents |
 | **Historian** | 矛盾検出＋民俗学的アノマリー分析 | collected_documents | mystery_report |
 | **Storyteller** | 歴史的厳密さと怪異的情緒の融合（ブログ記事） | mystery_report | creative_content (ブログ原稿) |
-| **Scriptwriter** | ポッドキャスト脚本作成 | creative_content | podcast_script (ポッドキャスト台本) |
 | **Visualizer** | トップ画像生成 | creative_content | visual_assets (Imagen 3 によるトップ画像1枚) |
-| **Producer** | 音声表現 | podcast_script | audio_assets (Chirp 3 / TTS によるバイリンガル音声ファイル) |
 | **Publisher** | 納品・公開 | 全アセット | published_episode (Firestore 保存、管理画面反映) |
+
+### Podcast 作成パイプライン（`podcast_agents/`）
+
+管理画面から公開済み記事に対してオンデマンドで実行。
+
+| エージェント | 役割 | 入力 | 出力 |
+|------------|------|------|------|
+| **Scriptwriter** | ポッドキャスト脚本作成 | creative_content (Firestoreから取得) | podcast_script (ポッドキャスト台本) |
+| **Producer** | 音声表現 | podcast_script | audio_assets (Chirp 3 / TTS によるバイリンガル音声ファイル) |
 
 ### Agent Roles（詳細）
 
@@ -58,68 +67,35 @@ ADK を使用した 7 つの専門エージェント構成：
 
 ### Agent Workflow
 
+#### ブログ作成パイプライン（`archive_agents/`）
+
 ```
-                    ┌───────────────────────────────┐
-                    │          Librarian            │
-                    │  Fact（アーカイブ）＋ Folklore（民俗）│
-                    └───────────────┬───────────────┘
-                                    │ collected_documents
-                                    │ (FactとFolkloreの両素材)
-                                    ▼
-                    ┌───────────────────────────────┐
-                    │          Historian            │
-                    │   矛盾検出 ╳ 民俗学的アノマリー   │
-                    │   (Cross-reference Analysis)  │
-                    └───────────────┬───────────────┘
-                                    │ mystery_report
-                                    │ (Folkloric Context含む)
-                                    ▼
-                    ┌───────────────────────────────┐
-                    │         Storyteller           │
-                    │  歴史的厳密さ ⚖ 怪異的情緒     │
-                    │      (ブログ記事)              │
-                    └───────────────┬───────────────┘
-                                    │ creative_content
-              ┌─────────────────────┼─────────────────────┐
-              ▼                     ▼                     ▼
-       ┌──────────────┐      ┌──────────┐          ┌──────────┐
-       │ Scriptwriter │      │Visualizer│          │          │
-       │ (脚本)       │      │ (画像)   │          │          │
-       └──────┬───────┘      └────┬─────┘          │          │
-              │ podcast_script    │                 │          │
-              ▼                   ▼                 │          │
-       ┌──────────┐        visual_assets            │          │
-       │ Producer │              │                  │          │
-       │ (音声)   │              │                  │          │
-       └────┬─────┘              │                  │          │
-            │                    │                  │          │
-            ▼                    │                  │          │
-      audio_assets               │                  │          │
-            │                    │                  │          │
-            └────────────────────┴──────────────────┘          │
-                                 │                             │
-                                 ▼                             │
-                          ┌─────────────┐                      │
-                          │  Publisher  │◄─────────────────────┘
-                          │ (納品・公開) │
-                          └─────────────┘
-                                 │
-                                 ▼
-                            Firestore
+Librarian → Historian → Storyteller → Visualizer → Publisher → Firestore
 ```
+
+#### Podcast 作成パイプライン（`podcast_agents/`）
+
+```
+Firestore (narrative_content) → Scriptwriter → Producer → Firestore (podcast_script, audio_assets)
+```
+
+管理画面の「Podcast 作成」ボタンからオンデマンドで起動。
 
 ### Session State Keys
 
 各エージェントは `output_key` を使用してセッション状態にデータを保存：
 
+**ブログパイプライン（`archive_agents`）:**
 - `collected_documents` - Librarian が収集した資料（デジタルアーカイブ＋Folklore両方を含む）
-- `mystery_report` - Historian の分析レポート
-  - **Folkloric Context 属性を含む**: 事実と伝説の相関、民俗学的アノマリー、地域の信仰・禁忌への言及
+- `mystery_report` - Historian の分析レポート（Folkloric Context 属性を含む）
 - `creative_content` - Storyteller のブログ原稿
-- `podcast_script` - Scriptwriter のポッドキャスト台本
 - `visual_assets` - Visualizer のトップ画像アセット
-- `audio_assets` - Producer の音声アセット
 - `published_episode` - Publisher の公開結果
+
+**Podcast パイプライン（`podcast_agents`）:**
+- `creative_content` - Firestore の narrative_content から事前セット
+- `podcast_script` - Scriptwriter のポッドキャスト台本
+- `audio_assets` - Producer の音声アセット
 
 ### Models
 
@@ -130,3 +106,44 @@ ADK を使用した 7 つの専門エージェント構成：
 - **Visualizer:** gemini-3-pro-preview + Imagen 3 (トップ画像生成)
 - **Producer:** gemini-3-pro-preview + Chirp 3 / TTS (音声生成)
 - **Publisher:** gemini-3-pro-preview (データ整理・公開)
+
+## ADK 規約・ベストプラクティス
+
+本プロジェクトでは ADK（Agent Development Kit）の規約とベストプラクティスに必ず従うこと。
+
+### エージェントパッケージ構成
+- 各パイプラインは独立したパッケージ（`archive_agents/`, `podcast_agents/`）として構成する
+- パッケージ直下の `agent.py` に `root_agent` 変数を定義する（ADK ローダーの発見規約）
+- `__init__.py` で `from . import agent` をエクスポートする
+
+### レイヤー分離
+- **エージェント定義**（instruction, model, output_key）は各パッケージの `agents/` に配置
+- **ドメイン固有ツール**（publish_mystery, save_podcast_result 等）は各パッケージの `tools/` に配置
+- **インフラ層**（Firestore 接続, Cloud Storage 接続）は `shared/` で一元管理し、各パッケージから import する
+
+### コード原則
+- エージェントの instruction 内で `{session_state_key}` プレースホルダーを使用してセッション状態を参照する
+- 各エージェントは前段の失敗マーカー（`NO_DOCUMENTS_FOUND`, `NO_CONTENT` 等）をチェックし、適切に中断する
+- Firebase Admin SDK はシングルトン（`firebase_admin._apps`）で管理されるため、初期化は `shared/firestore.py` に集約する
+
+## Project Structure
+
+```
+shared/                       # インフラ共有層
+├── firestore.py              # Firebase Admin 初期化, Firestore/Storage クライアント
+
+archive_agents/               # ブログ作成パイプライン
+├── agent.py                  # root_agent = ghost_commander
+├── agents/                   # 各エージェント定義
+├── tools/                    # Publisher 用 Firestore/Storage ツール
+└── utils/                    # PipelineLogger 等
+
+podcast_agents/               # Podcast 作成パイプライン
+├── agent.py                  # root_agent = podcast_commander
+├── agents/                   # Scriptwriter, Producer
+└── tools/                    # Podcast 用 Firestore ツール
+
+web/                          # Next.js 管理画面・公開サイト
+main.py                       # ブログパイプライン CLI
+podcast_main.py               # Podcast パイプライン CLI
+```

@@ -7,6 +7,7 @@ import type {
   FirestoreMystery,
   MysteryStatus,
   MysteryCardData,
+  PodcastStatus,
 } from "@/types/mystery";
 
 // Firestore から直接読み取り（エミュレータまたは本番）
@@ -169,6 +170,23 @@ export function toCardData(mystery: FirestoreMystery): MysteryCardData {
     status: mystery.status,
     createdAt: mystery.createdAt,
   };
+}
+
+/**
+ * Podcast 生成をリクエスト
+ * podcast_status を "generating" に更新
+ */
+export async function requestPodcast(mysteryId: string): Promise<void> {
+  const { doc, updateDoc, Timestamp } = await import("firebase/firestore");
+  const { getFirestoreDb, COLLECTIONS } = await import("@/lib/firebase/config");
+
+  const db = getFirestoreDb();
+  const docRef = doc(db, COLLECTIONS.MYSTERIES, mysteryId);
+
+  await updateDoc(docRef, {
+    podcast_status: "generating" as PodcastStatus,
+    updatedAt: Timestamp.now(),
+  });
 }
 
 // ============================================

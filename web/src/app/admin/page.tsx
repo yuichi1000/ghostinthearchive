@@ -5,7 +5,7 @@ import Link from "next/link"
 import { DiscrepancyBadge, ConfidenceBadge, StatusBadge } from "@/components/status-badge"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { getAllMysteries, approveMystery, archiveMystery } from "@/lib/firestore/mysteries"
+import { getAllMysteries, approveMystery, archiveMystery, requestPodcast } from "@/lib/firestore/mysteries"
 import type { FirestoreMystery, MysteryStatus } from "@/types/mystery"
 import { PipelineSummary } from "@/components/pipeline-summary"
 import { PipelineTimeline } from "@/components/pipeline-timeline"
@@ -22,6 +22,9 @@ import {
   Inbox,
   ChevronDown,
   ChevronUp,
+  Mic,
+  Loader2,
+  AlertCircle,
 } from "lucide-react"
 
 type FilterStatus = "all" | MysteryStatus
@@ -77,6 +80,25 @@ export default function AdminPage() {
       setTimeout(() => setActionFeedback(null), 3000)
     } catch (error) {
       console.error("Failed to archive:", error)
+    }
+  }
+
+  const handlePodcast = async (id: string) => {
+    try {
+      await requestPodcast(id)
+      const res = await fetch("/api/podcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mysteryId: id }),
+      })
+      if (!res.ok) throw new Error("API request failed")
+      setActionFeedback(`Podcast generation started for Case ${id}`)
+      fetchMysteries()
+      setTimeout(() => setActionFeedback(null), 3000)
+    } catch (error) {
+      console.error("Failed to start podcast:", error)
+      setActionFeedback(`Failed to start podcast generation`)
+      setTimeout(() => setActionFeedback(null), 3000)
     }
   }
 
@@ -177,6 +199,7 @@ export default function AdminPage() {
                 mystery={mystery}
                 onApprove={() => handleApprove(mystery.mystery_id)}
                 onArchive={() => handleArchive(mystery.mystery_id)}
+                onPodcast={() => handlePodcast(mystery.mystery_id)}
               />
             ))}
           </div>
@@ -190,9 +213,10 @@ interface AdminMysteryCardProps {
   mystery: FirestoreMystery
   onApprove: () => void
   onArchive: () => void
+  onPodcast: () => void
 }
 
-function AdminMysteryCard({ mystery, onApprove, onArchive }: AdminMysteryCardProps) {
+function AdminMysteryCard({ mystery, onApprove, onArchive, onPodcast }: AdminMysteryCardProps) {
   const [showPipeline, setShowPipeline] = useState(false)
   const isPending = mystery.status === "pending"
   const location = mystery.historical_context?.geographic_scope?.[0] || ""
@@ -268,13 +292,41 @@ function AdminMysteryCard({ mystery, onApprove, onArchive }: AdminMysteryCardPro
       {/* Actions */}
       <div className="flex items-center justify-between gap-4">
         {mystery.status === "published" ? (
-          <Link
-            href={`/mystery/${mystery.mystery_id}`}
-            className="inline-flex items-center gap-2 text-sm text-gold hover:text-parchment transition-colors no-underline"
-          >
-            <Eye className="w-4 h-4" />
-            View Published
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/mystery/${mystery.mystery_id}`}
+              className="inline-flex items-center gap-2 text-sm text-gold hover:text-parchment transition-colors no-underline"
+            >
+              <Eye className="w-4 h-4" />
+              View Published
+            </Link>
+            {mystery.podcast_status === "generating" ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Generating...
+              </span>
+            ) : mystery.podcast_status === "error" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onPodcast}
+                className="border-blood-red/30 text-[#ff6b6b] hover:bg-blood-red/20 hover:text-[#ff6b6b] bg-transparent"
+              >
+                <AlertCircle className="w-4 h-4 mr-1" />
+                Retry Podcast
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onPodcast}
+                className="border-gold/30 text-gold hover:bg-gold/20 hover:text-gold bg-transparent"
+              >
+                <Mic className="w-4 h-4 mr-1" />
+                {mystery.podcast_status === "completed" ? "Podcast 再生成" : "Podcast 作成"}
+              </Button>
+            )}
+          </div>
         ) : (
           <span className="text-xs text-muted-foreground">
             Created: {mystery.createdAt.toLocaleDateString()}

@@ -133,6 +133,9 @@ export interface MysteryReport {
  * Firestoreに保存されるミステリードキュメント
  * MysteryReportにステータス管理フィールドを追加
  */
+/** Podcast 生成ステータス */
+export type PodcastStatus = "generating" | "completed" | "error";
+
 export interface FirestoreMystery extends MysteryReport {
   /** ステータス: pending, published, archived */
   status: MysteryStatus;
@@ -150,6 +153,15 @@ export interface FirestoreMystery extends MysteryReport {
   };
   /** パイプライン実行ログ */
   pipeline_log?: AgentLogEntry[];
+  /** ポッドキャスト脚本 */
+  podcast_script?: string;
+  /** 音声アセット */
+  audio_assets?: {
+    japanese_audio?: string;
+    english_audio?: string;
+  };
+  /** ポッドキャスト生成ステータス */
+  podcast_status?: PodcastStatus;
 }
 
 /**
