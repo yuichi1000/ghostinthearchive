@@ -31,7 +31,7 @@ ADK を使用した 7 つの専門エージェント構成：
 |------------|------|------|------|
 | **Librarian** | 資料調査・収集（デジタルアーカイブ＋民俗資料） | 調査クエリ | collected_documents |
 | **Historian** | 矛盾検出＋民俗学的アノマリー分析 | collected_documents | mystery_report |
-| **Storyteller** | 歴史的厳密さと怪異的情緒の融合（ブログ記事） | mystery_report | creative_content (ブログ原稿、デザインコンセプト案) |
+| **Storyteller** | 歴史的厳密さと怪異的情緒の融合（ブログ記事） | mystery_report | creative_content (ブログ原稿) |
 | **Scriptwriter** | ポッドキャスト脚本作成 | creative_content | podcast_script (ポッドキャスト台本) |
 | **Designer** | 視覚表現 | creative_content | visual_assets (Imagen 3 用プロンプト、生成画像) |
 | **Producer** | 音声表現 | podcast_script | audio_assets (Chirp 3 / TTS によるバイリンガル音声ファイル) |
@@ -77,7 +77,7 @@ ADK を使用した 7 つの専門エージェント構成：
                     ┌───────────────────────────────┐
                     │         Storyteller           │
                     │  歴史的厳密さ ⚖ 怪異的情緒     │
-                    │   (ブログ記事 + デザイン案)     │
+                    │      (ブログ記事)              │
                     └───────────────┬───────────────┘
                                     │ creative_content
               ┌─────────────────────┼─────────────────────┐
@@ -115,7 +115,7 @@ ADK を使用した 7 つの専門エージェント構成：
 - `collected_documents` - Librarian が収集した資料（デジタルアーカイブ＋Folklore両方を含む）
 - `mystery_report` - Historian の分析レポート
   - **Folkloric Context 属性を含む**: 事実と伝説の相関、民俗学的アノマリー、地域の信仰・禁忌への言及
-- `creative_content` - Storyteller のコンテンツ（ブログ原稿、デザインコンセプト案）
+- `creative_content` - Storyteller のブログ原稿
 - `podcast_script` - Scriptwriter のポッドキャスト台本
 - `visual_assets` - Designer の画像アセット
 - `audio_assets` - Producer の音声アセット

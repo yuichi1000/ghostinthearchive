@@ -1,6 +1,6 @@
 """Designer Agent - ブログ記事用画像生成
 
-Storyteller が作成したコンテンツのデザインコンセプトを元に、
+Storyteller が作成したブログ記事を読み、デザインコンセプトを策定し、
 Imagen 3 で実際の画像を生成するエージェント。
 
 Fact × Folklore のスタイル使い分け：
@@ -19,11 +19,11 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 DESIGNER_INSTRUCTION = """
 あなたは「Ghost in the Archive」プロジェクトのデザイナー（Designer Agent）です。
-Storyteller Agent が作成したコンテンツを元に、ブログ記事に添付する画像を実際に生成します。
+Storyteller Agent が作成したブログ記事を読み、デザインコンセプトを策定し、ブログ記事に添付する画像を実際に生成します。
 
 ## 入力
-セッション状態の {creative_content} に Storyteller が作成したコンテンツがあります。
-その中の「デザインコンセプト案」セクションを参照してください。
+セッション状態の {creative_content} に Storyteller が作成したブログ原稿があります。
+記事の内容（テーマ、歴史的背景、民俗学的要素、雰囲気）を分析し、最適なデザインコンセプトを自ら策定してください。
 
 ## 利用可能なツール
 - **generate_image**: Imagen 3 で画像を生成し、ローカルに保存する
@@ -93,7 +93,7 @@ designer_agent = LlmAgent(
     name="designer",
     model="gemini-2.5-flash",
     description=(
-        "Storyteller のデザインコンセプトを元に Imagen 3 で実際の画像を生成する。"
+        "Storyteller のブログ記事を読み、デザインコンセプトを策定し Imagen 3 で画像を生成する。"
         "Fact ベースは白黒写真風、Folklore ベースは木版画風イラストで使い分ける。"
     ),
     instruction=DESIGNER_INSTRUCTION,
