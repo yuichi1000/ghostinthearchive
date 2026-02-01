@@ -11,6 +11,10 @@ from typing import Optional
 
 from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
+from .dpla import search_dpla
+from .internet_archive import search_internet_archive
+from .loc_digital import search_loc_digital
+from .nypl_digital import search_nypl
 
 
 def search_newspapers(
@@ -131,6 +135,91 @@ def save_search_results(
             "theme": theme,
         },
         ensure_ascii=False,
+    )
+
+
+_ARCHIVE_SOURCES = {
+    "loc": ("LOC Digital Collections", search_loc_digital),
+    "dpla": ("DPLA", search_dpla),
+    "nypl": ("NYPL Digital Collections", search_nypl),
+    "internet_archive": ("Internet Archive", search_internet_archive),
+}
+
+
+def search_archives(
+    keywords: str,
+    date_start: str = "1800",
+    date_end: str = "1899",
+    sources: Optional[str] = None,
+    max_results: int = 10,
+) -> str:
+    """Search multiple public archive APIs simultaneously.
+
+    Searches across LOC Digital Collections, DPLA, NYPL, and Internet Archive.
+    Results are merged and returned as a unified JSON response.
+
+    Unlike search_newspapers, this function does NOT perform bilingual keyword
+    expansion. Pass the exact keywords you want to search for.
+
+    Args:
+        keywords: Comma-separated search keywords (used as-is, no bilingual expansion)
+        date_start: Start year (default: 1800)
+        date_end: End year (default: 1899)
+        sources: Comma-separated source names to search (default: all).
+                 Options: loc, dpla, nypl, internet_archive
+        max_results: Max results per source (default: 10)
+
+    Returns:
+        JSON string with merged results from all sources.
+    """
+    keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
+    all_keywords = keyword_list
+
+    if sources:
+        source_keys = [s.strip().lower() for s in sources.split(",") if s.strip()]
+    else:
+        source_keys = list(_ARCHIVE_SOURCES.keys())
+
+    all_docs = []
+    source_results = {}
+    errors = {}
+
+    for key in source_keys:
+        if key not in _ARCHIVE_SOURCES:
+            errors[key] = f"Unknown source: {key}"
+            continue
+
+        name, search_fn = _ARCHIVE_SOURCES[key]
+        try:
+            result = search_fn(
+                keywords=all_keywords,
+                date_start=date_start,
+                date_end=date_end,
+                max_results=max_results,
+            )
+            docs = [doc.model_dump() for doc in result.get("documents", [])]
+            all_docs.extend(docs)
+            source_results[key] = {
+                "name": name,
+                "total_hits": result.get("total_hits", 0),
+                "documents_returned": len(docs),
+            }
+            if result.get("error"):
+                errors[key] = result["error"]
+        except Exception as e:
+            errors[key] = str(e)
+            source_results[key] = {"name": name, "total_hits": 0, "documents_returned": 0}
+
+    return json.dumps(
+        {
+            "keywords_used": all_keywords,
+            "sources_searched": source_results,
+            "total_documents": len(all_docs),
+            "documents": all_docs,
+            "errors": errors if errors else None,
+        },
+        ensure_ascii=False,
+        indent=2,
     )
 
 
