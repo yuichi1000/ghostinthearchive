@@ -17,8 +17,8 @@ from .librarian_tools import (
     search_newspapers,
 )
 
-# Designer Agent LLM-facing tools
-from .designer_tools import generate_image
+# Visualizer Agent LLM-facing tools
+from .visualizer_tools import generate_image
 
 # Historian Agent LLM-facing tools
 from .historian_tools import (
@@ -44,7 +44,7 @@ __all__ = [
     "search_archives",
     "save_search_results",
     "get_available_keywords",
-    # Designer LLM tools
+    # Visualizer LLM tools
     "generate_image",
     # Historian LLM tools
     "load_search_results",

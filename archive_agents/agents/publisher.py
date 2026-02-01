@@ -26,7 +26,7 @@ PUBLISHER_INSTRUCTION = """
 セッション状態から以下のデータを参照します：
 - {mystery_report}: Historian の分析レポート（JSON形式）
 - {creative_content}: Storyteller のコンテンツ
-- {visual_assets}: Designer の画像アセット（画像ファイルパスを含むJSON）
+- {visual_assets}: Visualizer のトップ画像アセット（画像ファイルパスを含むJSON）
 
 ## あなたのタスク
 

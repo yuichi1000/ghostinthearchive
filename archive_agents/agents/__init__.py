@@ -3,7 +3,7 @@
 This module exports all specialized agents for the multi-agent system.
 """
 
-from .designer import designer_agent
+from .visualizer import visualizer_agent
 from .historian import historian_agent
 from .librarian import librarian_agent
 from .producer import producer_agent
@@ -16,7 +16,7 @@ __all__ = [
     "historian_agent",
     "storyteller_agent",
     "scriptwriter_agent",
-    "designer_agent",
+    "visualizer_agent",
     "producer_agent",
     "publisher_agent",
 ]

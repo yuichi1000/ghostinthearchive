@@ -33,7 +33,7 @@ ADK を使用した 7 つの専門エージェント構成：
 | **Historian** | 矛盾検出＋民俗学的アノマリー分析 | collected_documents | mystery_report |
 | **Storyteller** | 歴史的厳密さと怪異的情緒の融合（ブログ記事） | mystery_report | creative_content (ブログ原稿) |
 | **Scriptwriter** | ポッドキャスト脚本作成 | creative_content | podcast_script (ポッドキャスト台本) |
-| **Designer** | 視覚表現 | creative_content | visual_assets (Imagen 3 用プロンプト、生成画像) |
+| **Visualizer** | トップ画像生成 | creative_content | visual_assets (Imagen 3 によるトップ画像1枚) |
 | **Producer** | 音声表現 | podcast_script | audio_assets (Chirp 3 / TTS によるバイリンガル音声ファイル) |
 | **Publisher** | 納品・公開 | 全アセット | published_episode (Firestore 保存、管理画面反映) |
 
@@ -83,7 +83,7 @@ ADK を使用した 7 つの専門エージェント構成：
               ┌─────────────────────┼─────────────────────┐
               ▼                     ▼                     ▼
        ┌──────────────┐      ┌──────────┐          ┌──────────┐
-       │ Scriptwriter │      │ Designer │          │          │
+       │ Scriptwriter │      │Visualizer│          │          │
        │ (脚本)       │      │ (画像)   │          │          │
        └──────┬───────┘      └────┬─────┘          │          │
               │ podcast_script    │                 │          │
@@ -117,7 +117,7 @@ ADK を使用した 7 つの専門エージェント構成：
   - **Folkloric Context 属性を含む**: 事実と伝説の相関、民俗学的アノマリー、地域の信仰・禁忌への言及
 - `creative_content` - Storyteller のブログ原稿
 - `podcast_script` - Scriptwriter のポッドキャスト台本
-- `visual_assets` - Designer の画像アセット
+- `visual_assets` - Visualizer のトップ画像アセット
 - `audio_assets` - Producer の音声アセット
 - `published_episode` - Publisher の公開結果
 
@@ -127,6 +127,6 @@ ADK を使用した 7 つの専門エージェント構成：
 - **Historian:** gemini-3-pro-preview (深い分析)
 - **Storyteller:** gemini-3-pro-preview (ブログ記事生成)
 - **Scriptwriter:** gemini-3-pro-preview (ポッドキャスト脚本)
-- **Designer:** gemini-3-pro-preview + Imagen 3 (画像生成)
+- **Visualizer:** gemini-3-pro-preview + Imagen 3 (トップ画像生成)
 - **Producer:** gemini-3-pro-preview + Chirp 3 / TTS (音声生成)
 - **Publisher:** gemini-3-pro-preview (データ整理・公開)
