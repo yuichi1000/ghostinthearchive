@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from schemas.document import ArchiveDocument, SourceLanguage, SourceType
+from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
 
 # East Coast states for filtering (lowercase for API)
 EAST_COAST_STATES = [

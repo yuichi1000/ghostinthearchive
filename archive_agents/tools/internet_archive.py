@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from schemas.document import ArchiveDocument, SourceLanguage, SourceType
+from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
 
 BASE_URL = "https://archive.org/advancedsearch.php"
 MIN_REQUEST_DELAY = 2.0

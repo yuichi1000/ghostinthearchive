@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from schemas.document import ArchiveDocument, SourceLanguage, SourceType
+from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
 
 BASE_URL = "https://api.repo.nypl.org/api/v2/items/search"
 MIN_REQUEST_DELAY = 1.0

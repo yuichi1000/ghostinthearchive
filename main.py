@@ -1,8 +1,7 @@
-"""Ghost in the Archive - Entry Point
+"""Ghost in the Archive - CLI Entry Point
 
-This module provides the main entry point for running the Ghost Commander pipeline,
-which sequentially executes Librarian → Historian → Storyteller agents using
-ADK's SequentialAgent for deterministic execution order.
+This module provides the CLI entry point for running the Ghost Commander pipeline.
+The agent definition lives in archive_agents/agent.py (ADK convention).
 """
 
 import asyncio
@@ -11,39 +10,15 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Add project root to path for imports
-sys.path.insert(0, str(Path(__file__).parent))
-
 # Load environment variables
 load_dotenv(Path(__file__).parent / ".env")
 
-from google.adk.agents import SequentialAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from utils.pipeline_logger import PipelineLogger
-from agents.librarian import librarian_agent
-from agents.historian import historian_agent
-from agents.storyteller import storyteller_agent
-from agents.scriptwriter import scriptwriter_agent
-from agents.designer import designer_agent
-from agents.producer import producer_agent
-from agents.publisher import publisher_agent
-
-# Ghost Commander - Sequential Pipeline
-# ADK の SequentialAgent が Librarian → Historian → Storyteller → Scriptwriter → Designer → Producer → Publisher を固定順序で実行
-# 各エージェントは output_key でセッション状態にデータを保存し、
-# 次のエージェントが {key} で参照する
-ghost_commander = SequentialAgent(
-    name="ghost_commander",
-    description=(
-        "Ghost in the Archive パイプライン。"
-        "Librarian → Historian → Storyteller → Scriptwriter → Designer → Producer → Publisher の順で実行し、"
-        "歴史的ミステリーと民俗学的怪異を調査・分析・コンテンツ化・脚本化・画像生成・音声生成・公開する。"
-    ),
-    sub_agents=[librarian_agent, historian_agent, storyteller_agent, scriptwriter_agent, designer_agent, producer_agent, publisher_agent],
-)
+from archive_agents.agent import ghost_commander
+from archive_agents.utils.pipeline_logger import PipelineLogger
 
 
 async def investigate(query: str) -> None:

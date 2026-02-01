@@ -14,7 +14,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
-from tools import (
+from ..tools import (
     get_available_keywords,
     search_archives,
     search_newspapers,

@@ -14,9 +14,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
-from tools.publisher_tools import publish_mystery, upload_images
+from ..tools.publisher_tools import publish_mystery, upload_images
 
-load_dotenv(Path(__file__).parent.parent / ".env")
+load_dotenv(Path(__file__).parent.parent / ".env")  # archive_agents/.env
 
 PUBLISHER_INSTRUCTION = """
 あなたは「Ghost in the Archive」プロジェクトのパブリッシャー（Publisher Agent）です。

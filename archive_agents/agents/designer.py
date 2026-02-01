@@ -13,7 +13,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
-from tools import generate_image
+from ..tools import generate_image
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
