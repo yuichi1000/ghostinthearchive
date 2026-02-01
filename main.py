@@ -1,7 +1,8 @@
 """Ghost in the Archive - Entry Point
 
-This module provides the main entry point for running the Ghost Commander,
-the root orchestrator agent that coordinates the Librarian and Historian agents.
+This module provides the main entry point for running the Ghost Commander pipeline,
+which sequentially executes Librarian → Historian → Storyteller agents using
+ADK's SequentialAgent for deterministic execution order.
 """
 
 import asyncio
@@ -16,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 # Load environment variables
 load_dotenv(Path(__file__).parent / ".env")
 
-from google.adk.agents import LlmAgent
+from google.adk.agents import SequentialAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
@@ -25,56 +26,18 @@ from agents.librarian import librarian_agent
 from agents.historian import historian_agent
 from agents.storyteller import storyteller_agent
 
-# Ghost Commander - Root Orchestrator Agent
-COMMANDER_INSTRUCTION = """
-あなたは「Ghost in the Archive」プロジェクトの司令官（Ghost Commander）です。
-あなたは18-19世紀のアメリカ東海岸の歴史的ミステリーを解明するために、
-専門家チームを指揮する指揮官です。
-
-## あなたの部下
-1. **Librarian（司書）**: 公文書館から資料を調査・収集する専門家
-2. **Historian（歴史家）**: 収集した資料を分析し、矛盾や謎を発見する専門家
-3. **Storyteller（語り部）**: 分析結果をブログ記事やポッドキャスト台本に変換するクリエイター
-
-## ワークフロー
-ユーザーから調査依頼を受けたら、以下の手順で進めてください：
-
-1. **資料収集フェーズ**: まず Librarian に資料を探させる
-   - transfer_to_librarian を使って司書に調査を依頼
-   - 司書は新聞記事やNARA公文書を検索し、関連資料を収集する
-
-2. **分析フェーズ**: 資料が集まったら Historian に分析を依頼
-   - transfer_to_historian を使って歴史家に分析を依頼
-   - 歴史家は資料の矛盾を分析し、Mystery Report を作成する
-
-3. **物語化フェーズ**: 分析が完了したら Storyteller にコンテンツ作成を依頼
-   - transfer_to_storyteller を使って語り部にコンテンツ作成を依頼
-   - 語り部は Mystery Report を元にブログ記事とポッドキャスト台本を作成する
-
-4. **報告フェーズ**: Storyteller の成果物をユーザーに報告
-   - 生成されたコンテンツの概要を報告する
-
-## 重要
-- 必ず Librarian → Historian → Storyteller の順序で進めること
-- 各専門家の役割を尊重し、適切なタスクを委任すること
-- 最終的な報告はあなたが行うこと
-
-## 調査対象
-- 18-19世紀の東海岸港湾都市（ボストン、ニューヨーク、フィラデルフィア、ボルチモア、ニューオーリンズ）
-- 米西関係、スペイン船、外交問題
-- 失踪、陰謀、密輸、海賊行為などのミステリー
-"""
-
-# Create the Ghost Commander (Root Agent)
-ghost_commander = LlmAgent(
+# Ghost Commander - Sequential Pipeline
+# ADK の SequentialAgent が Librarian → Historian → Storyteller を固定順序で実行
+# 各エージェントは output_key でセッション状態にデータを保存し、
+# 次のエージェントが {key} で参照する
+ghost_commander = SequentialAgent(
     name="ghost_commander",
-    model="gemini-3-pro-preview",
     description=(
-        "Ghost in the Archive プロジェクトの司令官。"
-        "Librarian、Historian、Storyteller を指揮して、18-19世紀の歴史的ミステリーを解明し、コンテンツ化する。"
+        "Ghost in the Archive パイプライン。"
+        "Librarian → Historian → Storyteller の順で実行し、"
+        "歴史的ミステリーと民俗学的怪異を調査・分析・コンテンツ化する。"
     ),
-    instruction=COMMANDER_INSTRUCTION,
-    sub_agents=[librarian_agent, historian_agent, storyteller_agent],  # ADK が自動的に transfer ツールを生成
+    sub_agents=[librarian_agent, historian_agent, storyteller_agent],
 )
 
 

@@ -128,6 +128,7 @@ def search_nara_catalog(
             headers={
                 "User-Agent": "GhostInTheArchive/1.0 (Historical Research Project)",
                 "Accept": "application/json",
+                "Content-Type": "application/json",
                 "x-api-key": api_key,
             },
         )
