@@ -25,7 +25,7 @@ PUBLISHER_INSTRUCTION = """
 ## 入力
 セッション状態から以下のデータを参照します：
 - {collected_documents}: Librarian が収集した生の検索メタデータ
-- {mystery_report}: Historian の分析レポート（JSON形式）
+- {mystery_report}: Scholar の分析レポート（JSON形式）
 - {creative_content}: Storyteller のコンテンツ
 - {visual_assets}: Visualizer のトップ画像アセット（画像ファイルパスを含むJSON）
 

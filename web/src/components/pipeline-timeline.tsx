@@ -18,7 +18,7 @@ import {
 
 const AGENT_ICONS: Record<string, React.ReactNode> = {
   librarian: <FileSearch className="w-4 h-4" />,
-  historian: <BookOpen className="w-4 h-4" />,
+  scholar: <BookOpen className="w-4 h-4" />,
   storyteller: <Pen className="w-4 h-4" />,
   scriptwriter: <FileText className="w-4 h-4" />,
   visualizer: <Palette className="w-4 h-4" />,

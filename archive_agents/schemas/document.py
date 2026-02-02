@@ -28,7 +28,7 @@ class SourceType(str, Enum):
 class ArchiveDocument(BaseModel):
     """Schema for documents retrieved from archive sources.
 
-    This is the standard output format passed to the Historian Agent.
+    This is the standard output format passed to the Scholar Agent.
     """
 
     title: str = Field(..., description="Document title")

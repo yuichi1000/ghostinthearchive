@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test script for Librarian -> Historian -> Analyst Agent handover.
+"""Test script for Librarian -> Scholar -> Analyst Agent handover.
 
 This script validates that:
 1. Librarian search results can be loaded correctly
@@ -259,7 +259,7 @@ async def test_analyst_analysis() -> bool:
 def main():
     """Run all handover tests."""
     parser = argparse.ArgumentParser(
-        description="Test Librarian -> Historian -> Analyst Agent handover"
+        description="Test Librarian -> Scholar -> Analyst Agent handover"
     )
     parser.add_argument(
         "--full",

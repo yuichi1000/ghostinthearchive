@@ -6,7 +6,7 @@ records (Fact) and folkloric materials (Folklore) to support the hybrid
 analysis approach.
 
 As a sub-agent, it returns structured search results via session state
-for the Historian to analyze with cross-reference between fact and legend.
+for the Scholar to analyze with cross-reference between fact and legend.
 """
 
 from pathlib import Path
@@ -98,7 +98,7 @@ LIBRARIAN_INSTRUCTION = """
 ## 重要
 - **各ツールは1回ずつ呼び出してください。リトライは不要です**（フォールバックはツール内部で自動実行されます）
 - 資料を収集したら、その内容を詳細に報告してください
-- 分析や推論は行わないでください。それは Historian Agent の役割です
+- 分析や推論は行わないでください。それは Scholar Agent の役割です
 - 収集した資料は次のエージェントが分析できるよう、詳細に記述してください
 - **Fact と Folklore の両方の素材を意識的に集めてください**
 - 怪異や伝説に関する記述を見つけた場合、それも重要な素材として報告してください

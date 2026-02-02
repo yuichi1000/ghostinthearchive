@@ -1,4 +1,4 @@
-"""LLM-facing tool functions for the Historian Agent.
+"""LLM-facing tool functions for the Scholar Agent.
 
 These functions provide file I/O operations for loading Librarian search
 results and saving Mystery Reports.
@@ -16,7 +16,7 @@ def load_search_results(filepath: str) -> str:
     """Load search results from the data directory.
 
     Reads and parses the JSON file containing Librarian Agent's search results
-    for analysis by the Historian Agent.
+    for analysis by the Scholar Agent.
 
     Args:
         filepath: Path to the search results file (relative to data/ or absolute)
@@ -187,7 +187,7 @@ def save_mystery_report(
     # Add metadata
     output = {
         "report_type": "mystery_report",
-        "generated_by": "historian_agent",
+        "generated_by": "scholar_agent",
         "generated_at": datetime.now().isoformat(),
         "report": report_data,
     }
@@ -299,7 +299,7 @@ def build_analysis_context(filepaths: list[str] | None = None) -> str:
     """Build a unified analysis context from Librarian search results.
 
     Extracts dates, keywords, locations, and key information from English
-    and Spanish sources to create a structured context for Historian analysis.
+    and Spanish sources to create a structured context for Scholar analysis.
 
     Args:
         filepaths: List of file paths to analyze. If None, loads all JSON files in data/

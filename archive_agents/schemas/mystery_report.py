@@ -1,4 +1,4 @@
-"""Mystery Report schemas for Historian Agent output."""
+"""Mystery Report schemas for Scholar Agent output."""
 
 from datetime import datetime
 from enum import Enum
@@ -75,7 +75,7 @@ class HistoricalContext(BaseModel):
 class AgentLogEntry(BaseModel):
     """パイプライン実行中の単一エージェントのログエントリ。"""
 
-    agent_name: str = Field(..., description="エージェント名 (librarian, historian, etc.)")
+    agent_name: str = Field(..., description="エージェント名 (librarian, scholar, etc.)")
     status: Literal["running", "completed", "error"] = Field(..., description="実行ステータス")
     start_time: str = Field(..., description="開始タイムスタンプ (ISO format)")
     end_time: Optional[str] = Field(None, description="終了タイムスタンプ (ISO format)")
@@ -84,7 +84,7 @@ class AgentLogEntry(BaseModel):
 
 
 class MysteryReport(BaseModel):
-    """Complete mystery report output from the Historian Agent.
+    """Complete mystery report output from the Scholar Agent.
 
     This schema structures the analysis of historical discrepancies found
     between English newspaper sources and Spanish archival records.

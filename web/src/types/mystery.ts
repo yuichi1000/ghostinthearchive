@@ -31,7 +31,7 @@ export type AgentStatus = "running" | "completed" | "error";
  * パイプライン実行ログの単一エントリ
  */
 export interface AgentLogEntry {
-  /** エージェント名 (librarian, historian, etc.) */
+  /** エージェント名 (librarian, scholar, etc.) */
   agent_name: string;
   /** 実行ステータス */
   status: AgentStatus;
@@ -85,7 +85,7 @@ export interface HistoricalContext {
 
 /**
  * ミステリーレポート
- * Historian Agentの出力結果
+ * Scholar Agentの出力結果
  */
 export interface MysteryReport {
   /** 一意識別子（例: "MYSTERY-1820-BOSTON-001"） */
@@ -204,7 +204,7 @@ export const CONFIDENCE_LEVEL_LABELS: Record<ConfidenceLevel, string> = {
  */
 export const AGENT_NAME_LABELS: Record<string, string> = {
   librarian: "資料収集",
-  historian: "矛盾分析",
+  scholar: "学際分析",
   storyteller: "物語生成",
   scriptwriter: "脚本作成",
   visualizer: "画像生成",

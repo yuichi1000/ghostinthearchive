@@ -5,14 +5,14 @@ Scriptwriter and Producer have been moved to podcast_agents package.
 """
 
 from .visualizer import visualizer_agent
-from .historian import historian_agent
+from .scholar import scholar_agent
 from .librarian import librarian_agent
 from .publisher import publisher_agent
 from .storyteller import storyteller_agent
 
 __all__ = [
     "librarian_agent",
-    "historian_agent",
+    "scholar_agent",
     "storyteller_agent",
     "visualizer_agent",
     "publisher_agent",

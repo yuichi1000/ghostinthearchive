@@ -16,7 +16,7 @@ __all__ = [
     "SearchResults",
     "SourceLanguage",
     "SourceType",
-    # Mystery Report schemas (Historian output)
+    # Mystery Report schemas (Scholar output)
     "AnalysisResults",
     "ConfidenceLevel",
     "DiscrepancyType",

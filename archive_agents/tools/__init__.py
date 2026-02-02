@@ -20,8 +20,8 @@ from .librarian_tools import (
 # Visualizer Agent LLM-facing tools
 from .visualizer_tools import generate_image
 
-# Historian Agent LLM-facing tools
-from .historian_tools import (
+# Scholar Agent LLM-facing tools
+from .scholar_tools import (
     build_analysis_context,
     list_available_results,
     load_multiple_search_results,
@@ -46,7 +46,7 @@ __all__ = [
     "get_available_keywords",
     # Visualizer LLM tools
     "generate_image",
-    # Historian LLM tools
+    # Scholar LLM tools
     "load_search_results",
     "load_multiple_search_results",
     "build_analysis_context",

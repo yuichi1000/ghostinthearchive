@@ -147,7 +147,7 @@ def save_search_results(
     """Save search results to the data directory.
 
     Saves the collected search results to a JSON file in the data/ directory
-    for later processing by the Historian Agent.
+    for later processing by the Scholar Agent.
 
     Args:
         theme: The original search theme (e.g., "Spanish ship disappearance in Boston Harbor")
