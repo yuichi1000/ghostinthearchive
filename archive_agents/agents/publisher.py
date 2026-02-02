@@ -74,7 +74,7 @@ PUBLISHER_INSTRUCTION = """
   "story_hooks": ["[フック1]"],
   "narrative_content": "[Storytellerが生成した物語テキスト]",
   "pipeline_log": {pipeline_log},
-  "status": "published"
+  "status": "pending"
 }
 ```
 

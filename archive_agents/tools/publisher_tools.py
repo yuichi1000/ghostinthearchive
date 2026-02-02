@@ -41,7 +41,7 @@ def publish_mystery(mystery_json: str) -> str:
         now = datetime.now(timezone.utc)
 
         # Set timestamps and status
-        data["status"] = data.get("status", "published")
+        data["status"] = data.get("status", "pending")
         data["createdAt"] = now
         data["updatedAt"] = now
         if data["status"] == "published":
