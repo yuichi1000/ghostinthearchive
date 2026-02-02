@@ -16,6 +16,7 @@ import {
   Lightbulb
 } from "lucide-react"
 import Markdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
 export const revalidate = 3600
 
@@ -133,8 +134,10 @@ export default async function MysteryDetailPage({
             <div className="lg:col-span-2 space-y-12">
               {/* Narrative Content (primary) */}
               {mystery.narrative_content ? (
-                <section className="prose prose-invert prose-parchment max-w-none prose-headings:font-serif prose-headings:text-parchment prose-p:text-foreground/90 prose-p:leading-relaxed prose-a:text-gold prose-blockquote:border-gold/30 prose-blockquote:text-foreground/70">
-                  <Markdown>{mystery.narrative_content}</Markdown>
+                <section className="prose prose-lg prose-invert max-w-none prose-headings:font-serif prose-headings:text-parchment prose-headings:mt-12 prose-headings:mb-4 prose-p:text-foreground/90 prose-p:leading-loose prose-p:mb-6 prose-a:text-gold prose-blockquote:border-gold/30 prose-blockquote:bg-card prose-blockquote:px-6 prose-blockquote:py-4 prose-blockquote:rounded-sm prose-blockquote:text-foreground/70 prose-blockquote:italic prose-blockquote:font-serif prose-strong:text-parchment prose-hr:border-border">
+                  <Markdown remarkPlugins={[remarkGfm]}>
+                    {mystery.narrative_content.replace(/\*\*(.+?)\*\*/g, ' **$1** ')}
+                  </Markdown>
                 </section>
               ) : (
                 /* Fallback: show summary if no narrative */
