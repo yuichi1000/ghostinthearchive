@@ -1,4 +1,4 @@
-"""Theme Suggester Agent - 調査テーマの提案
+"""Curator Agent - 調査テーマの提案（学芸員）
 
 管理者がテーマに悩んだ際に、Fact × Folklore のハイブリッドな
 調査テーマを提案するエージェント。既存のミステリーと重複しない
@@ -7,7 +7,7 @@
 
 from google.adk.agents import LlmAgent
 
-THEME_SUGGESTER_INSTRUCTION = """
+CURATOR_INSTRUCTION = """
 あなたは「Ghost in the Archive」プロジェクトのテーマ提案エージェントです。
 管理者が次の調査テーマを選ぶ際に、興味深いテーマを5件提案してください。
 
@@ -41,10 +41,10 @@ THEME_SUGGESTER_INSTRUCTION = """
 5件のテーマを提案してください。
 """
 
-theme_suggester_agent = LlmAgent(
-    name="theme_suggester",
+curator_agent = LlmAgent(
+    name="curator",
     model="gemini-3-pro-preview",
     description="Fact × Folklore のハイブリッドな調査テーマを提案するエージェント。",
-    instruction=THEME_SUGGESTER_INSTRUCTION,
+    instruction=CURATOR_INSTRUCTION,
     output_key="suggested_themes",
 )

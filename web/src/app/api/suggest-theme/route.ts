@@ -1,7 +1,7 @@
 /**
  * POST /api/suggest-theme
  *
- * Runs the Theme Suggester agent and returns theme suggestions.
+ * Runs the Curator agent and returns theme suggestions.
  * Synchronous call - waits for the agent to complete and returns JSON.
  */
 
@@ -13,7 +13,7 @@ export async function POST() {
   try {
     const projectRoot = path.resolve(process.cwd(), "..");
     const pythonPath = path.join(projectRoot, ".venv", "bin", "python");
-    const command = `cd ${JSON.stringify(projectRoot)} && ${JSON.stringify(pythonPath)} theme_suggester_main.py`;
+    const command = `cd ${JSON.stringify(projectRoot)} && ${JSON.stringify(pythonPath)} curator_main.py`;
 
     const stdout = execSync(command, {
       timeout: 120000,

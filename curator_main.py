@@ -1,13 +1,13 @@
-"""Theme Suggester - CLI Entry Point
+"""Curator - CLI Entry Point
 
 Suggests investigation themes for the Ghost in the Archive blog pipeline.
 Fetches existing mystery titles from Firestore to avoid duplicates,
-then runs the Theme Suggester agent to generate new theme ideas.
+then runs the Curator agent to generate new theme ideas.
 
 Outputs JSON to stdout (last line) for consumption by the web API.
 
 Usage:
-    python theme_suggester_main.py
+    python curator_main.py
 """
 
 import asyncio
@@ -23,7 +23,7 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from archive_agents.agents.theme_suggester import theme_suggester_agent
+from archive_agents.agents.curator import curator_agent
 from shared.firestore import get_firestore_client
 
 
@@ -39,22 +39,22 @@ def get_existing_titles() -> list[str]:
 
 
 async def suggest_themes() -> None:
-    """Run the Theme Suggester agent and output JSON to stdout."""
+    """Run the Curator agent and output JSON to stdout."""
     existing_titles = get_existing_titles()
     titles_text = "\n".join(f"- {t}" for t in existing_titles) if existing_titles else "(なし - まだ調査済みのテーマはありません)"
 
     session_service = InMemorySessionService()
     runner = Runner(
-        agent=theme_suggester_agent,
-        app_name="ghost_in_the_archive_theme_suggester",
+        agent=curator_agent,
+        app_name="ghost_in_the_archive_curator",
         session_service=session_service,
     )
 
-    user_id = "theme_suggester"
+    user_id = "curator"
     session_id = "theme_suggestion"
 
     await session_service.create_session(
-        app_name="ghost_in_the_archive_theme_suggester",
+        app_name="ghost_in_the_archive_curator",
         user_id=user_id,
         session_id=session_id,
         state={"existing_titles": titles_text},
