@@ -23,12 +23,17 @@ def search_newspapers(
     date_end: str = "1899",
     states: Optional[str] = None,
     max_results: int = 20,
+    min_results: int = 3,
 ) -> str:
-    """Search historical newspapers in Chronicling America.
+    """Search historical newspapers in Chronicling America with automatic fallback.
 
     Searches the Library of Congress Chronicling America database for
     18th-19th century newspaper articles. Automatically expands keywords
     to include both English and Spanish variants.
+
+    If fewer than min_results documents are found, automatically applies
+    progressive fallback strategies: individual keyword search, geographic
+    expansion (all US states), and date range expansion (±10 years).
 
     Args:
         keywords: Comma-separated list of search keywords related to historical mysteries
@@ -36,6 +41,7 @@ def search_newspapers(
         date_end: End year (default: 1899)
         states: Comma-separated US states to search (default: East Coast states)
         max_results: Maximum number of results to return (default: 20)
+        min_results: Minimum documents before stopping fallback (default: 3)
 
     Returns:
         JSON string containing search results with documents matching the query
@@ -53,22 +59,22 @@ def search_newspapers(
     if states:
         state_list = [s.strip() for s in states.split(",") if s.strip()]
 
-    # Search English and Spanish separately, then merge
     all_docs = []
     total_hits = 0
-    seen_urls = set()
+    seen_urls: set[str] = set()
     all_keywords_used = en_keywords + es_keywords
     error = None
+    levels_used: list[str] = []
 
-    def _search_and_collect(kw_list):
+    def _search_and_collect(kw_list, *, search_states=state_list, start=date_start, end=date_end):
         nonlocal total_hits, error
         if not kw_list:
             return
         results = search_chronicling_america(
             keywords=kw_list,
-            date_start=date_start,
-            date_end=date_end,
-            states=state_list,
+            date_start=start,
+            date_end=end,
+            states=search_states,
             rows=max_results,
         )
         total_hits += results["total_hits"]
@@ -79,16 +85,42 @@ def search_newspapers(
                 seen_urls.add(doc.source_url)
                 all_docs.append(doc)
 
-    # First attempt: all keywords together
+    # Level 1: All keywords together (bilingual)
+    levels_used.append("L1_bilingual_combined")
     for kw_list in [en_keywords, es_keywords]:
         _search_and_collect(kw_list)
 
-    # Fallback: if no results and multiple keywords, try each keyword individually
-    if not all_docs and len(en_keywords) > 1:
+    # Level 2: Individual keywords (if not enough results)
+    if len(all_docs) < min_results and len(en_keywords) > 1:
+        levels_used.append("L2_individual_keywords")
         for kw in en_keywords:
             _search_and_collect([kw])
-        for kw in es_keywords:
-            _search_and_collect([kw])
+            if len(all_docs) >= min_results:
+                break
+        if len(all_docs) < min_results:
+            for kw in es_keywords:
+                _search_and_collect([kw])
+                if len(all_docs) >= min_results:
+                    break
+
+    # Level 3: Remove geographic restriction (search all states)
+    if len(all_docs) < min_results and state_list is not None:
+        levels_used.append("L3_all_states")
+        for kw_list in [en_keywords, es_keywords]:
+            _search_and_collect(kw_list, search_states=None)
+            if len(all_docs) >= min_results:
+                break
+
+    # Level 4: Expand date range ±10 years
+    if len(all_docs) < min_results:
+        expanded_start = str(max(1700, int(date_start) - 10))
+        expanded_end = str(min(1920, int(date_end) + 10))
+        if expanded_start != date_start or expanded_end != date_end:
+            levels_used.append(f"L4_date_expanded_{expanded_start}_{expanded_end}")
+            for kw_list in [en_keywords, es_keywords]:
+                _search_and_collect(kw_list, search_states=None, start=expanded_start, end=expanded_end)
+                if len(all_docs) >= min_results:
+                    break
 
     docs = [doc.model_dump() for doc in all_docs]
 
@@ -100,7 +132,7 @@ def search_newspapers(
             "documents_returned": len(docs),
             "documents": docs,
             "error": error,
-            "fallback_used": not all_docs and len(en_keywords) > 1,
+            "search_levels_used": levels_used,
         },
         ensure_ascii=False,
         indent=2,
