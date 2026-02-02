@@ -6,7 +6,7 @@ import { MysteryCard } from "@/components/mystery-card"
 import { getPublishedMysteries } from "@/lib/firestore/mysteries"
 import { FileStack, Search } from "lucide-react"
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 async function MysteryList() {
   const mysteries = await getPublishedMysteries(20)

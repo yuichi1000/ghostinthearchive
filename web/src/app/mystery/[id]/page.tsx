@@ -18,7 +18,7 @@ import {
 import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 export async function generateStaticParams() {
   const ids = await getPublishedMysteryIds()

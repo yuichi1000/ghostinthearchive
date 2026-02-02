@@ -23,74 +23,74 @@
 
 ## 3. マルチエージェント構成 (Multi-Agent System)
 
-ADK (Agent Development Kit) を活用し、以下の 6 つの専門エージェントが協調動作します。
+ADK (Agent Development Kit) を活用した 2 つの独立したパイプラインで構成されます。
+
+### ブログ作成パイプライン（`archive_agents/`）
+
+```
+Librarian → Historian → Storyteller → Visualizer → Publisher → Firestore
+```
 
 | エージェント | 役割 | 入力 | 出力 |
 |------------|------|------|------|
-| **Librarian** | 資料調査・収集（デジタルアーカイブ＋民俗資料） | 調査クエリ | 収集資料（Fact＋Folklore） |
-| **Historian** | 矛盾検出＋民俗学的アノマリー分析 | 収集資料 | Mystery Report（事実と伝説の相関分析を含む） |
-| **Storyteller** | 歴史的厳密さと怪異的情緒の融合 | Mystery Report | ブログ原稿、ポッドキャスト台本、デザインコンセプト案 |
-| **Visualizer** | トップ画像生成 | ブログ原稿 | Imagen 3 によるトップ画像1枚 |
-| **Producer** | 音声表現 | ポッドキャスト台本 | Chirp 3 / TTS によるバイリンガル音声ファイル |
-| **Publisher** | 納品・公開 | 全アセット | Firestore 保存、管理画面反映 |
+| **Librarian** | 資料調査・収集（デジタルアーカイブ＋民俗資料） | 調査クエリ | collected_documents |
+| **Historian** | 矛盾検出＋民俗学的アノマリー分析 | collected_documents | mystery_report |
+| **Storyteller** | 歴史的厳密さと怪異的情緒の融合（ブログ記事） | mystery_report | creative_content |
+| **Visualizer** | トップ画像生成 | creative_content | visual_assets (Imagen 3) |
+| **Publisher** | Firestore 保存・公開 | 全アセット | published_episode |
 
-### Agent Workflow
+### Podcast 作成パイプライン（`podcast_agents/`）
+
+管理画面から公開済み記事に対してオンデマンドで実行。
 
 ```
-                    ┌─────────────────────────────────────┐
-                    │            Librarian                │
-                    │   Fact（アーカイブ）＋ Folklore（民俗）  │
-                    └─────────────────┬───────────────────┘
-                                      │
-                                      ▼
-                    ┌─────────────────────────────────────┐
-                    │            Historian                │
-                    │  矛盾検出 ╳ 民俗学的アノマリー分析    │
-                    │    （事実と伝説の Cross-reference）   │
-                    └─────────────────┬───────────────────┘
-                                      │
-                                      ▼
-                    ┌─────────────────────────────────────┐
-                    │           Storyteller               │
-                    │   歴史的厳密さ ⚖ 怪異的情緒の融合    │
-                    └──────────┬──────────────────────────┘
-                               │
-              ┌────────────────┼────────────────┐
-              ▼                ▼                ▼
-         Visualizer        Producer         Publisher → Firestore
+Firestore (narrative_content) → Scriptwriter → Producer → Firestore
 ```
+
+| エージェント | 役割 | 入力 | 出力 |
+|------------|------|------|------|
+| **Scriptwriter** | ポッドキャスト脚本作成 | creative_content | podcast_script |
+| **Producer** | 音声表現 | podcast_script | audio_assets (Chirp 3 / TTS) |
 
 ## 4. 技術スタック (Tech Stack)
 
 - **Infrastructure:** Google Cloud (Cloud Run, Cloud Scheduler)
-- **AI/ML:** Vertex AI (Gemini Pro/Flash, Imagen 3, Chirp 3, Text-to-Speech)
+- **AI/ML:** Vertex AI (Gemini Pro, Imagen 3, Chirp 3, Text-to-Speech)
 - **Agent Framework:** Agent Development Kit (ADK)
-- **Data:** BigQuery, Cloud Storage, Firestore
-- **Web:** Next.js
+- **Data:** Cloud Storage, Firestore
+- **Web:** Next.js (ISR: `revalidate = 86400`)
+
+### Web Architecture
+
+- 公開ページは ISR（Incremental Static Regeneration）でキャッシュ（24時間）
+- 24時間以内のアクセスは Firestore にアクセスせずキャッシュを返す
+- 記事公開・承認時は `/api/revalidate` で即座にキャッシュ破棄
+- 管理画面はクライアントサイドレンダリング
 
 ## 5. プロジェクト構成 (Project Structure)
 
 ```
 ghostinthearchive/
-├── agents/                 # エージェントモジュール
-│   ├── __init__.py
-│   ├── librarian.py       # 司書エージェント（資料調査・収集）
-│   ├── historian.py       # 歴史家エージェント（分析・矛盾発見）
-│   ├── storyteller.py     # 物語作家エージェント（コンテンツ生成）
-│   ├── visualizer.py      # ビジュアライザーエージェント（トップ画像生成）
-│   ├── producer.py        # プロデューサーエージェント（音声生成）
-│   └── publisher.py       # 発行者エージェント（配信）
-├── tools/                  # エージェント用ツール
-│   └── __init__.py
-├── data/                   # 取得データの保存用
-├── web/                    # Next.js フロントエンド
-├── .env                    # 環境変数（Git管理外）
-├── .gitignore
-├── CLAUDE.md              # Claude Code向けガイド
-├── main.py                # エントリーポイント
-├── pyproject.toml         # プロジェクト設定・依存関係
-├── README.md
-└── uv.lock                # 依存関係ロックファイル
+├── shared/                       # インフラ共有層
+│   └── firestore.py              # Firebase Admin 初期化, Firestore/Storage クライアント
+│
+├── archive_agents/               # ブログ作成パイプライン
+│   ├── agent.py                  # root_agent = ghost_commander
+│   ├── agents/                   # 各エージェント定義
+│   ├── tools/                    # Publisher 用 Firestore/Storage ツール
+│   └── utils/                    # PipelineLogger 等
+│
+├── podcast_agents/               # Podcast 作成パイプライン
+│   ├── agent.py                  # root_agent = podcast_commander
+│   ├── agents/                   # Scriptwriter, Producer
+│   └── tools/                    # Podcast 用 Firestore ツール
+│
+├── web/                          # Next.js 管理画面・公開サイト
+├── main.py                       # ブログパイプライン CLI
+├── podcast_main.py               # Podcast パイプライン CLI
+├── CLAUDE.md                     # Claude Code 向けガイド
+├── pyproject.toml                # プロジェクト設定・依存関係
+└── uv.lock                       # 依存関係ロックファイル
 ```
 
 ## 6. セットアップ (Setup)

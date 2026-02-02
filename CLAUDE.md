@@ -20,8 +20,21 @@ Ghost in the Archive - 公開デジタルアーカイブから歴史的ミステ
 - **Infrastructure:** Google Cloud (Cloud Run, Cloud Scheduler)
 - **AI/ML:** Vertex AI (Gemini Pro/Flash, Imagen 3, Chirp 3, Text-to-Speech)
 - **Agent Framework:** Agent Development Kit (ADK)
-- **Data:** BigQuery, Cloud Storage, Firestore
+- **Data:** Cloud Storage, Firestore
 - **Web:** Next.js
+
+## Web Architecture (ISR)
+
+- Next.js は ISR（Incremental Static Regeneration）で動作
+- 公開ページ（`/`, `/mystery/[id]`）: `revalidate = 86400`（24時間キャッシュ）
+  - 24時間以内のアクセスは Firestore にアクセスせずキャッシュを返す
+  - 記事公開・承認時は `/api/revalidate` で即座にキャッシュ破棄
+- 管理画面（`/admin`）: クライアントサイドレンダリング（毎回 Firestore アクセス）
+- 記事更新頻度: 1日最大1回
+
+## TODO
+
+- [ ] Cloud Run の `min-instances` 設定検討（コールドスタート vs 常時起動コスト）
 
 ## Multi-Agent System
 
