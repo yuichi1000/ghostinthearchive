@@ -25,6 +25,8 @@ import {
   Mic,
   Loader2,
   AlertCircle,
+  Search,
+  Sparkles,
 } from "lucide-react"
 
 type FilterStatus = "all" | MysteryStatus
@@ -34,6 +36,10 @@ export default function AdminPage() {
   const [mysteries, setMysteries] = useState<FirestoreMystery[]>([])
   const [loading, setLoading] = useState(true)
   const [actionFeedback, setActionFeedback] = useState<string | null>(null)
+  const [themeInput, setThemeInput] = useState("")
+  const [suggestions, setSuggestions] = useState<{ theme: string; description: string }[]>([])
+  const [suggestLoading, setSuggestLoading] = useState(false)
+  const [pipelineLoading, setPipelineLoading] = useState(false)
 
   const fetchMysteries = useCallback(async () => {
     try {
@@ -102,6 +108,46 @@ export default function AdminPage() {
     }
   }
 
+  const handleStartPipeline = async () => {
+    if (!themeInput.trim()) return
+    setPipelineLoading(true)
+    try {
+      const res = await fetch("/api/pipeline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: themeInput.trim() }),
+      })
+      if (!res.ok) throw new Error("API request failed")
+      setActionFeedback("調査パイプラインを開始しました")
+      setThemeInput("")
+      setSuggestions([])
+      setTimeout(() => setActionFeedback(null), 3000)
+    } catch (error) {
+      console.error("Failed to start pipeline:", error)
+      setActionFeedback("パイプラインの開始に失敗しました")
+      setTimeout(() => setActionFeedback(null), 3000)
+    } finally {
+      setPipelineLoading(false)
+    }
+  }
+
+  const handleSuggestThemes = async () => {
+    setSuggestLoading(true)
+    setSuggestions([])
+    try {
+      const res = await fetch("/api/suggest-theme", { method: "POST" })
+      if (!res.ok) throw new Error("API request failed")
+      const data = await res.json()
+      setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : [])
+    } catch (error) {
+      console.error("Failed to get suggestions:", error)
+      setActionFeedback("テーマ提案の取得に失敗しました")
+      setTimeout(() => setActionFeedback(null), 3000)
+    } finally {
+      setSuggestLoading(false)
+    }
+  }
+
   return (
     <div className="py-8 md:py-12">
       <div className="container mx-auto px-4">
@@ -123,6 +169,64 @@ export default function AdminPage() {
           <p className="text-muted-foreground">
             Review, approve, or archive pending mystery discoveries before publication.
           </p>
+        </div>
+
+        {/* New Investigation section */}
+        <div className="aged-card letterpress-border rounded-sm p-5 mb-8">
+          <h2 className="font-serif text-xl text-parchment mb-4">
+            新規調査
+          </h2>
+          <div className="flex gap-3 mb-3">
+            <input
+              type="text"
+              value={themeInput}
+              onChange={(e) => setThemeInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleStartPipeline() }}
+              placeholder="調査テーマを入力（例: 1840年代のボストンにおけるスペイン関連の歴史的矛盾を調査せよ）"
+              className="flex-1 px-3 py-2 bg-background border border-border rounded-sm text-sm text-parchment placeholder:text-muted-foreground focus:outline-none focus:border-gold/50"
+            />
+            <Button
+              size="sm"
+              onClick={handleStartPipeline}
+              disabled={!themeInput.trim() || pipelineLoading}
+              className="bg-teal/20 border border-teal/30 text-[#5fb3a1] hover:bg-teal/30"
+            >
+              {pipelineLoading ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <Search className="w-4 h-4 mr-1" />
+              )}
+              調査開始
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSuggestThemes}
+              disabled={suggestLoading}
+              className="border-gold/30 text-gold hover:bg-gold/20 hover:text-gold bg-transparent"
+            >
+              {suggestLoading ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4 mr-1" />
+              )}
+              テーマ提案
+            </Button>
+          </div>
+          {suggestions.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-4">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => { setThemeInput(s.theme); setSuggestions([]) }}
+                  className="text-left p-3 border border-border/50 rounded-sm hover:border-gold/30 hover:bg-gold/5 transition-colors"
+                >
+                  <p className="text-sm font-medium text-parchment mb-1">{s.theme}</p>
+                  <p className="text-xs text-muted-foreground">{s.description}</p>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Action feedback toast */}

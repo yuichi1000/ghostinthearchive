@@ -1,8 +1,8 @@
 /**
- * POST /api/podcast
+ * POST /api/pipeline
  *
- * Triggers podcast generation for a published mystery article.
- * Updates Firestore status to "generating" and launches the Python pipeline.
+ * Triggers the blog creation pipeline with a given investigation theme/query.
+ * Launches the Python pipeline as a background process (fire-and-forget).
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -12,37 +12,37 @@ import path from "path";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { mysteryId } = body;
+    const { query } = body;
 
-    if (!mysteryId || typeof mysteryId !== "string") {
+    if (!query || typeof query !== "string") {
       return NextResponse.json(
-        { error: "mysteryId is required" },
+        { error: "query is required" },
         { status: 400 }
       );
     }
 
-    // Launch podcast generation as a background process
+    // Launch blog pipeline as a background process
     const projectRoot = path.resolve(process.cwd(), "..");
     const pythonPath = path.join(projectRoot, ".venv", "bin", "python");
-    const command = `cd ${JSON.stringify(projectRoot)} && ${JSON.stringify(pythonPath)} podcast_main.py ${JSON.stringify(mysteryId)}`;
+    const command = `cd ${JSON.stringify(projectRoot)} && ${JSON.stringify(pythonPath)} main.py ${JSON.stringify(query)}`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
-        console.error(`Podcast generation error for ${mysteryId}:`, error.message);
+        console.error(`Pipeline error for query "${query}":`, error.message);
         if (stderr) console.error("stderr:", stderr);
       } else {
-        console.log(`Podcast generation completed for ${mysteryId}`);
+        console.log(`Pipeline completed for query "${query}"`);
         if (stdout) console.log("stdout:", stdout);
       }
     });
 
     return NextResponse.json({
       status: "accepted",
-      mysteryId,
-      message: "Podcast generation started",
+      query,
+      message: "Pipeline started",
     });
   } catch (error) {
-    console.error("Failed to start podcast generation:", error);
+    console.error("Failed to start pipeline:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
