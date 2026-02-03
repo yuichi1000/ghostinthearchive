@@ -35,6 +35,7 @@ Ghost in the Archive - 公開デジタルアーカイブから歴史的ミステ
 ## TODO
 
 - [ ] Cloud Run の `min-instances` 設定検討（コールドスタート vs 常時起動コスト）
+- [ ] ADK 評価実行テストの CI/CD 統合（`GOOGLE_CLOUD_PROJECT` 環境変数設定、Vertex AI API 認証）
 
 ## Multi-Agent System
 

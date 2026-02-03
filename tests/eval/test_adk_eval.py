@@ -113,6 +113,10 @@ class TestADKEvaluationSetup:
             assert "eval_cases" in data, f"{eval_file.name} missing 'eval_cases' key"
 
 
+# TODO: CI/CD パイプラインで以下の環境変数を設定して実行テストを有効化する
+#   - GOOGLE_CLOUD_PROJECT: GCP プロジェクト ID
+#   - GOOGLE_APPLICATION_CREDENTIALS または gcloud auth application-default login
+# 参考: https://google.github.io/adk-docs/evaluate/
 @pytest.mark.skipif(
     not os.environ.get("GOOGLE_CLOUD_PROJECT"),
     reason="GOOGLE_CLOUD_PROJECT not set - skipping ADK evaluation tests"
