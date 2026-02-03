@@ -1,0 +1,27 @@
+{
+  "criteria": {
+    "tool_trajectory_avg_score": {
+      "threshold": 0.7,
+      "match_type": "IN_ORDER",
+      "description": "Minimum score for tool usage trajectory matching"
+    },
+    "response_match_score": {
+      "threshold": 0.5,
+      "method": "ROUGE_1",
+      "description": "Minimum score for response content matching"
+    }
+  },
+  "judge_model": "gemini-2.0-flash",
+  "num_samples": 1,
+  "timeout_seconds": 300,
+  "advanced_metrics": {
+    "hallucinations_v1": {
+      "enabled": false,
+      "description": "Check if agent response is supported by tool outputs"
+    },
+    "safety_v1": {
+      "enabled": false,
+      "description": "Check for harmful content"
+    }
+  }
+}

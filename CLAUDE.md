@@ -160,4 +160,166 @@ podcast_agents/               # Podcast 作成パイプライン
 web/                          # Next.js 管理画面・公開サイト
 main.py                       # ブログパイプライン CLI
 podcast_main.py               # Podcast パイプライン CLI
+
+tests/                        # テストスイート
+├── conftest.py               # pytest fixtures
+├── unit/                     # 単体テスト
+├── integration/              # 統合テスト（Firebase Emulator）
+├── eval/                     # ADK 評価フレームワーク
+└── fixtures/                 # テストデータ
 ```
+
+## Testing
+
+### Google ADK 公式テスト方針
+
+本プロジェクトは [Google ADK 公式ドキュメント](https://google.github.io/adk-docs/evaluate/) に準拠したテスト戦略を採用する。
+
+ADK が提供する3つのテスト方法：
+1. **adk web** - インタラクティブな手動テスト・デバッグ
+2. **adk eval** - Golden Dataset を使った CLI 評価
+3. **pytest** - CI/CD 統合のための自動テスト
+
+### テスト3層構造
+
+| レイヤー | 目的 | 外部依存 | 実行頻度 |
+|---------|------|---------|---------|
+| **Unit** | スキーマ・ユーティリティの検証 | なし（全モック） | 毎コミット |
+| **Integration** | ツール間・エージェント間の連携 | Firebase Emulator | PR 時 |
+| **ADK Eval** | エージェント品質評価（Golden Dataset） | Vertex AI API | リリース前 |
+
+### テスト実行コマンド
+
+```bash
+# 全ユニットテスト
+pytest tests/unit/ -v
+
+# 統合テスト（Firebase Emulator 起動前提）
+pytest tests/integration/ -m integration -v
+
+# ADK 評価（API キー必要、時間がかかる）
+pytest tests/eval/ -m adk_eval
+
+# カバレッジ付き
+pytest tests/unit/ --cov=archive_agents --cov=podcast_agents --cov-report=html
+
+# ADK CLI での評価
+adk eval archive_agents tests/eval/eval_sets/
+```
+
+### Firebase Emulator Setup
+
+統合テストには Firebase Emulator が必要：
+
+```bash
+# Emulator 起動
+firebase emulators:start --only firestore,storage
+
+# 環境変数設定（別ターミナルで）
+export FIRESTORE_EMULATOR_HOST=localhost:8080
+export STORAGE_EMULATOR_HOST=localhost:9199
+
+# 統合テスト実行
+pytest tests/integration/ -v
+```
+
+### ADK Evaluation（Golden Dataset）
+
+ADK 公式評価フレームワークの概念：
+
+- **Golden Dataset** (`tests/eval/eval_sets/`) - エージェントの期待される動作を定義した「正解」データ
+- **Trajectory Evaluation** - ツール呼び出しの経路が期待通りか評価
+- **評価メトリクス**:
+  - `tool_trajectory_avg_score` - ツール使用の正確性
+  - `response_match_score` - 最終回答の品質（ROUGE-1）
+
+### Mocking Strategy
+
+- **外部 API** (`requests`): `responses` ライブラリでモック
+- **Firestore/Storage**: 統合テストでは Emulator、ユニットテストでは `pytest-mock`
+- **Gemini/Imagen**: `google.genai.Client` をモック
+- **時刻**: `freezegun` でタイムスタンプ固定
+
+### CI/CD Integration
+
+GitHub Actions での推奨設定：
+
+```yaml
+# .github/workflows/test.yml
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -e ".[dev]"
+      - run: pytest tests/unit/ --cov
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm install -g firebase-tools
+      - run: firebase emulators:exec --only firestore,storage "pytest tests/integration/"
+```
+
+### TDD（テスト駆動開発）方針
+
+本プロジェクトでは TDD の原則に従って開発を進める。
+
+#### コード修正時のワークフロー
+
+1. **既存テストの確認**
+   - 修正対象のコードに関連するテストが存在するか確認
+   - `pytest tests/ -v --collect-only` で関連テストを特定
+   - 既存テストがある場合は、まずそのテストを実行して現状を把握
+
+2. **テスト追加の判断基準**
+   以下のいずれかに該当する場合、先にテストを作成または更新する：
+   - 新機能の追加（新しい関数・クラス・エンドポイント）
+   - バグ修正（再発防止のためのリグレッションテスト）
+   - 既存ロジックの変更（振る舞いが変わる修正）
+   - リファクタリング（既存テストで振る舞いが保たれることを確認）
+
+3. **テスト不要のケース**
+   - ドキュメントのみの変更
+   - コメントの追加・修正
+   - 型ヒントの追加（ロジック変更なし）
+   - 設定ファイルの軽微な調整
+
+#### Red-Green-Refactor サイクル
+
+```
+1. Red:    失敗するテストを書く（期待する振る舞いを定義）
+2. Green:  テストが通る最小限のコードを実装
+3. Refactor: コードを整理（テストが通り続けることを確認）
+```
+
+#### 修正前チェックリスト
+
+```bash
+# 1. 関連テストの確認
+pytest tests/ -v --collect-only -k "関連キーワード"
+
+# 2. 既存テストの実行
+pytest tests/unit/ -v
+
+# 3. 修正後のテスト実行
+pytest tests/unit/ -v --tb=short
+```
+
+#### テストファイルの配置規則
+
+| 対象コード | テストファイル |
+|-----------|---------------|
+| `archive_agents/schemas/*.py` | `tests/unit/test_schemas.py` |
+| `archive_agents/tools/*.py` | `tests/unit/test_*.py` or `tests/integration/test_*.py` |
+| `archive_agents/utils/*.py` | `tests/unit/test_*.py` |
+| `podcast_agents/**/*.py` | `tests/unit/test_*.py` or `tests/integration/test_*.py` |
+| エージェント間連携 | `tests/integration/test_agent_handover.py` |
+| エージェント品質 | `tests/eval/eval_sets/*.json` |

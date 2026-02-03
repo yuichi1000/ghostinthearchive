@@ -1,0 +1,44 @@
+{
+  "theme": "Boston maritime mysteries 1840s",
+  "documents": [
+    {
+      "title": "The Mysterious Disappearance of the Santa Maria",
+      "date": "1842-03-15",
+      "source_url": "https://chroniclingamerica.loc.gov/lccn/sn83030214/1842-03-15/ed-1/seq-2/",
+      "summary": "A Spanish merchant vessel vanished near Boston Harbor under mysterious circumstances. Witnesses report seeing the ship enter the fog but it never emerged.",
+      "language": "en",
+      "location": "Boston, Massachusetts",
+      "source_type": "newspaper",
+      "raw_text": "MARITIME MYSTERY - The Spanish brig Santa Maria, commanded by Captain José Mendoza, was last seen entering Boston Harbor on the morning of March 10th. Despite extensive searches by the harbor patrol, no trace of the vessel or its crew of 23 men has been found. Local fishermen report seeing strange lights in the fog that night...",
+      "record_group": null,
+      "keywords_matched": ["mystery", "disappearance", "spanish"]
+    },
+    {
+      "title": "El buque Santa María llega a La Habana",
+      "date": "1842-03-25",
+      "source_url": "https://archive.org/details/diariodelamarina1842",
+      "summary": "Spanish records indicate the Santa Maria arrived safely in Havana with its cargo intact, contradicting American newspaper reports of its disappearance.",
+      "language": "es",
+      "location": "Havana, Cuba",
+      "source_type": "internet_archive",
+      "raw_text": "PUERTO DE LA HABANA - El bergantín Santa María, al mando del Capitán José Mendoza, llegó ayer al puerto de La Habana sin novedad. El cargamento de mercancías fue descargado según lo previsto...",
+      "record_group": null,
+      "keywords_matched": ["spanish", "cargo", "captain"]
+    },
+    {
+      "title": "Ghost Ship Sightings Continue",
+      "date": "1842-04-02",
+      "source_url": "https://chroniclingamerica.loc.gov/lccn/sn83030214/1842-04-02/ed-1/seq-3/",
+      "summary": "Multiple witnesses report seeing a phantom vessel resembling the Santa Maria in Boston Harbor at night, adding to the maritime mystery.",
+      "language": "en",
+      "location": "Boston, Massachusetts",
+      "source_type": "newspaper",
+      "raw_text": "SPECTRAL SHIP RETURNS - Several reliable witnesses, including Harbormaster William Davis, report sightings of a ghostly vessel in Boston Harbor. The ship, appearing only at night and in heavy fog, bears a striking resemblance to the missing Santa Maria...",
+      "record_group": null,
+      "keywords_matched": ["ghost", "mystery", "harbor"]
+    }
+  ],
+  "total_found": 3,
+  "sources_searched": ["chronicling_america", "internet_archive", "loc_digital"],
+  "search_timestamp": "2024-01-15T12:00:00"
+}

@@ -1,0 +1,137 @@
+{
+  "eval_set_id": "librarian_eval_v1",
+  "name": "Librarian Agent Evaluation",
+  "description": "Tests Librarian's document collection capabilities from digital archives",
+  "evals": [
+    {
+      "eval_id": "librarian_basic_search",
+      "name": "Basic Maritime Mystery Search",
+      "conversation": [
+        {
+          "invocation_id": "inv_001",
+          "user_content": "1840年代のボストン港周辺における謎の船舶消失事件について調査してください。英語とスペイン語の両方の資料を検索し、矛盾する記録を探してください。"
+        }
+      ],
+      "expected_tool_use": [
+        {
+          "tool_name": "search_newspapers",
+          "tool_input_matcher": {
+            "type": "CONTAINS",
+            "keywords": ["Boston", "ship", "1840"]
+          }
+        },
+        {
+          "tool_name": "search_archives",
+          "tool_input_matcher": {
+            "type": "CONTAINS",
+            "keywords": ["maritime", "mystery"]
+          }
+        }
+      ],
+      "expected_intermediate_agent_responses": [],
+      "reference": {
+        "type": "CONTAINS_ALL",
+        "values": [
+          "collected_documents",
+          "total_found"
+        ]
+      }
+    },
+    {
+      "eval_id": "librarian_folklore_search",
+      "name": "Folklore and Legend Search",
+      "conversation": [
+        {
+          "invocation_id": "inv_002",
+          "user_content": "ニューイングランド地方の幽霊船伝説と地元の禁忌について調査してください。歴史的記録と民俗資料の両方を収集してください。"
+        }
+      ],
+      "expected_tool_use": [
+        {
+          "tool_name": "get_available_keywords",
+          "tool_input_matcher": {
+            "type": "ANY"
+          }
+        },
+        {
+          "tool_name": "search_newspapers",
+          "tool_input_matcher": {
+            "type": "CONTAINS",
+            "keywords": ["ghost", "legend", "folklore"]
+          }
+        }
+      ],
+      "expected_intermediate_agent_responses": [],
+      "reference": {
+        "type": "CONTAINS_ANY",
+        "values": [
+          "ghost",
+          "legend",
+          "folklore",
+          "fantasma",
+          "leyenda"
+        ]
+      }
+    },
+    {
+      "eval_id": "librarian_no_results",
+      "name": "Graceful Handling of No Results",
+      "conversation": [
+        {
+          "invocation_id": "inv_003",
+          "user_content": "2099年の火星植民地における歴史的事件を調査してください。"
+        }
+      ],
+      "expected_tool_use": [
+        {
+          "tool_name": "search_newspapers",
+          "tool_input_matcher": {
+            "type": "ANY"
+          }
+        }
+      ],
+      "expected_intermediate_agent_responses": [],
+      "reference": {
+        "type": "CONTAINS_ANY",
+        "values": [
+          "NO_DOCUMENTS_FOUND",
+          "total_found\": 0",
+          "該当する資料が見つかりませんでした"
+        ]
+      }
+    },
+    {
+      "eval_id": "librarian_bilingual_expansion",
+      "name": "Bilingual Keyword Expansion",
+      "conversation": [
+        {
+          "invocation_id": "inv_004",
+          "user_content": "スペイン植民地時代のカリブ海における海賊と密輸について調査してください。"
+        }
+      ],
+      "expected_tool_use": [
+        {
+          "tool_name": "search_newspapers",
+          "tool_input_matcher": {
+            "type": "CONTAINS",
+            "keywords": ["piracy", "smuggling"]
+          }
+        },
+        {
+          "tool_name": "search_archives",
+          "tool_input_matcher": {
+            "type": "CONTAINS",
+            "keywords": ["piratería", "contrabando"]
+          }
+        }
+      ],
+      "expected_intermediate_agent_responses": [],
+      "reference": {
+        "type": "CONTAINS_ALL",
+        "values": [
+          "sources_searched"
+        ]
+      }
+    }
+  ]
+}

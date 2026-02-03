@@ -1,0 +1,69 @@
+{
+  "mystery_id": "MYSTERY-1842-BOSTON-001",
+  "title": "The Vanishing of the Santa Maria: A Tale of Two Records",
+  "summary": "In March 1842, a Spanish merchant vessel named Santa Maria allegedly disappeared in Boston Harbor, sparking weeks of speculation and ghost sightings. However, Spanish colonial records tell a completely different story - the ship arrived safely in Havana just two weeks later with its cargo intact.",
+  "discrepancy_detected": "American newspapers report the Santa Maria disappeared in Boston Harbor on March 10, 1842, while Spanish records from Havana show the same vessel arrived safely on March 25, 1842.",
+  "discrepancy_type": "event_outcome",
+  "evidence_a": {
+    "source_type": "newspaper",
+    "source_language": "en",
+    "source_title": "Boston Daily Advertiser",
+    "source_date": "1842-03-15",
+    "source_url": "https://chroniclingamerica.loc.gov/lccn/sn83030214/1842-03-15/ed-1/seq-2/",
+    "relevant_excerpt": "The Spanish brig Santa Maria, commanded by Captain José Mendoza, was last seen entering Boston Harbor on the morning of March 10th. Despite extensive searches by the harbor patrol, no trace of the vessel or its crew of 23 men has been found.",
+    "location_context": "Boston Harbor"
+  },
+  "evidence_b": {
+    "source_type": "internet_archive",
+    "source_language": "es",
+    "source_title": "Diario de la Marina",
+    "source_date": "1842-03-25",
+    "source_url": "https://archive.org/details/diariodelamarina1842",
+    "relevant_excerpt": "El bergantín Santa María, al mando del Capitán José Mendoza, llegó ayer al puerto de La Habana sin novedad. El cargamento de mercancías fue descargado según lo previsto.",
+    "location_context": "Havana Harbor"
+  },
+  "additional_evidence": [
+    {
+      "source_type": "newspaper",
+      "source_language": "en",
+      "source_title": "Boston Daily Advertiser",
+      "source_date": "1842-04-02",
+      "source_url": "https://chroniclingamerica.loc.gov/lccn/sn83030214/1842-04-02/ed-1/seq-3/",
+      "relevant_excerpt": "Several reliable witnesses, including Harbormaster William Davis, report sightings of a ghostly vessel in Boston Harbor. The ship, appearing only at night and in heavy fog, bears a striking resemblance to the missing Santa Maria.",
+      "location_context": "Boston Harbor"
+    }
+  ],
+  "hypothesis": "The Santa Maria likely used the cover of fog to secretly depart Boston Harbor without clearing customs, possibly engaged in smuggling operations. The 'disappearance' may have been a deliberate deception to avoid tariffs or inspection of illicit cargo.",
+  "alternative_hypotheses": [
+    "Mistaken identity: Two different ships named Santa Maria may have existed, causing confusion in records",
+    "Clerical error in American port records regarding the ship's departure",
+    "The ghost sightings were deliberate fabrications to maintain the mystery and distract from the ship's true activities"
+  ],
+  "confidence_level": "medium",
+  "historical_context": {
+    "time_period": "Early 19th Century (1840s)",
+    "geographic_scope": ["Boston", "Havana", "Caribbean"],
+    "relevant_events": [
+      "US-Spain tensions over Cuba",
+      "Rising American maritime trade",
+      "Caribbean smuggling networks"
+    ],
+    "key_figures": [
+      "Captain José Mendoza",
+      "Harbormaster William Davis"
+    ],
+    "political_climate": "The 1840s saw increasing American interest in Cuba and tensions with Spain. Smuggling between US ports and Spanish colonies was common, with both governments struggling to enforce customs regulations."
+  },
+  "research_questions": [
+    "What cargo was the Santa Maria officially carrying, and was any of it contraband?",
+    "Are there Spanish diplomatic records mentioning this incident?",
+    "Did Captain Mendoza have any prior history of smuggling or customs evasion?"
+  ],
+  "story_hooks": [
+    "The ghost ship that never sank - a tale of maritime deception",
+    "When American newspapers reported a tragedy that Spanish records prove never happened",
+    "The fog of Boston Harbor hid more than ships that night"
+  ],
+  "narrative_content": null,
+  "analysis_timestamp": "2024-01-15T14:30:00"
+}
