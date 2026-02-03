@@ -116,3 +116,12 @@ uv run python main.py
 # カスタムクエリで実行
 uv run python main.py "1840年代のボストンにおけるスペイン関連の歴史的矛盾を調査せよ"
 ```
+
+## 8. TODO
+
+- [ ] **CI/CD パイプライン構築**
+  - [ ] `.github/workflows/test.yml` の作成
+  - [ ] develop → main への PR 時に単体テスト自動実行
+  - [ ] main へのマージ後に統合テスト実行（オプション）
+  - [ ] テスト依存関係のインストール方法を修正（`pip install -e ".[dev]"` の代替）
+- [ ] Cloud Run の `min-instances` 設定検討（コールドスタート vs 常時起動コスト）
