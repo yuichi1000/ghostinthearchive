@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { EvidenceBlock } from "@/components/evidence-block"
@@ -120,11 +121,13 @@ export default async function MysteryDetailPage({
           {/* Hero image */}
           {mystery.images?.hero && (
             <div className="mb-12 rounded-sm overflow-hidden border border-border">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={mystery.images.hero}
                 alt={mystery.title}
+                width={1200}
+                height={675}
                 className="w-full h-auto"
+                priority
               />
             </div>
           )}
