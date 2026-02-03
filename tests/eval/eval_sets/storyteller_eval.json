@@ -1,10 +1,10 @@
 {
-  "eval_set_id": "librarian_eval_v1",
-  "name": "Librarian Agent Evaluation",
-  "description": "Tests Librarian's document collection capabilities from digital archives",
+  "eval_set_id": "storyteller_eval_v1",
+  "name": "Storyteller Agent Evaluation",
+  "description": "Tests Storyteller's narrative generation via full pipeline execution",
   "eval_cases": [
     {
-      "eval_id": "librarian_basic_search",
+      "eval_id": "storyteller_complete_narrative",
       "conversation": [
         {
           "invocation_id": "inv_001",
@@ -12,22 +12,19 @@
             "role": "user",
             "parts": [
               {
-                "text": "1840年代のボストン港周辺における謎の船舶消失事件について調査してください。英語とスペイン語の両方の資料を検索し、矛盾する記録を探してください。"
+                "text": "1842年のボストン港でスペイン船サンタマリア号が消失したとされる事件について、アメリカの新聞とスペインの記録が異なる結末を伝えています。地元では幽霊船の目撃談が伝わっています。ブログ記事を作成してください。"
               }
             ]
           },
           "intermediate_data": {
-            "tool_uses": [
-              {"name": "search_newspapers", "args": {}},
-              {"name": "search_archives", "args": {}}
-            ],
+            "tool_uses": [],
             "intermediate_responses": []
           },
           "final_response": {
             "role": "model",
             "parts": [
               {
-                "text": "collected_documents total_found"
+                "text": "creative_content Sources Firestore"
               }
             ]
           }
@@ -35,7 +32,7 @@
       ]
     },
     {
-      "eval_id": "librarian_folklore_search",
+      "eval_id": "storyteller_fact_folklore_balance",
       "conversation": [
         {
           "invocation_id": "inv_002",
@@ -43,22 +40,19 @@
             "role": "user",
             "parts": [
               {
-                "text": "ニューイングランド地方の幽霊船伝説と地元の禁忌について調査してください。歴史的記録と民俗資料の両方を収集してください。"
+                "text": "ニューイングランドの漁村で1850年代に発生した船員失踪事件について、公式記録と地元の「悪魔の入江」伝説の両方を含めた記事を作成してください。"
               }
             ]
           },
           "intermediate_data": {
-            "tool_uses": [
-              {"name": "get_available_keywords", "args": {}},
-              {"name": "search_newspapers", "args": {}}
-            ],
+            "tool_uses": [],
             "intermediate_responses": []
           },
           "final_response": {
             "role": "model",
             "parts": [
               {
-                "text": "ghost legend folklore fantasma leyenda"
+                "text": "伝説 記録 Firestore"
               }
             ]
           }
@@ -66,7 +60,7 @@
       ]
     },
     {
-      "eval_id": "librarian_no_results",
+      "eval_id": "storyteller_four_part_structure",
       "conversation": [
         {
           "invocation_id": "inv_003",
@@ -74,21 +68,19 @@
             "role": "user",
             "parts": [
               {
-                "text": "2099年の火星植民地における歴史的事件を調査してください。"
+                "text": "1845年のボルチモア港での謎の事件について、アーカイブからの発掘体験、証拠の詳細、民俗学的文脈、そして解明されない余韻を含む物語を作成してください。"
               }
             ]
           },
           "intermediate_data": {
-            "tool_uses": [
-              {"name": "search_newspapers", "args": {}}
-            ],
+            "tool_uses": [],
             "intermediate_responses": []
           },
           "final_response": {
             "role": "model",
             "parts": [
               {
-                "text": "NO_DOCUMENTS_FOUND"
+                "text": "アーカイブ Sources Firestore"
               }
             ]
           }
@@ -96,7 +88,7 @@
       ]
     },
     {
-      "eval_id": "librarian_bilingual_expansion",
+      "eval_id": "storyteller_insufficient_data",
       "conversation": [
         {
           "invocation_id": "inv_004",
@@ -104,22 +96,19 @@
             "role": "user",
             "parts": [
               {
-                "text": "スペイン植民地時代のカリブ海における海賊と密輸について調査してください。"
+                "text": "2099年の火星植民地における歴史的事件についてブログ記事を作成してください。"
               }
             ]
           },
           "intermediate_data": {
-            "tool_uses": [
-              {"name": "search_newspapers", "args": {}},
-              {"name": "search_archives", "args": {}}
-            ],
+            "tool_uses": [],
             "intermediate_responses": []
           },
           "final_response": {
             "role": "model",
             "parts": [
               {
-                "text": "sources_searched"
+                "text": "NO_CONTENT INSUFFICIENT_DATA"
               }
             ]
           }

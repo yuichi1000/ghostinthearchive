@@ -1,0 +1,91 @@
+{
+  "eval_set_id": "producer_eval_v1",
+  "name": "Producer Agent Evaluation",
+  "description": "Tests Producer's audio production planning via full pipeline execution",
+  "eval_cases": [
+    {
+      "eval_id": "producer_audio_plan",
+      "conversation": [
+        {
+          "invocation_id": "inv_001",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "1842年のボストン港の事件についてのポッドキャスト台本から音声生成計画を作成してください。日本語と英語の両方の音声を生成するための計画を立ててください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "AUDIO PRODUCTION PLAN Japanese English"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "producer_bilingual_text",
+      "conversation": [
+        {
+          "invocation_id": "inv_002",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "ニューイングランドの幽霊船伝説についてのポッドキャスト台本を日本語と英語に分割してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "Text JA Text EN"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "producer_voice_sfx_settings",
+      "conversation": [
+        {
+          "invocation_id": "inv_003",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "ポッドキャスト台本から音声生成計画を作成してください。ボイス設定と効果音（SFX）マーカーを含めてください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "Voice SFX"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

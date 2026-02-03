@@ -1,0 +1,96 @@
+{
+  "eval_set_id": "publisher_eval_v1",
+  "name": "Publisher Agent Evaluation",
+  "description": "Tests Publisher's Firestore publishing via full pipeline execution",
+  "eval_cases": [
+    {
+      "eval_id": "publisher_full_workflow",
+      "conversation": [
+        {
+          "invocation_id": "inv_001",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "1842年のボストン港の事件についてFirestoreに公開してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "upload_images", "args": {}},
+              {"name": "publish_mystery", "args": {}}
+            ],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "published_episode Firestore mystery_id"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "publisher_document_structure",
+      "conversation": [
+        {
+          "invocation_id": "inv_002",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "ニューイングランドの幽霊船伝説についてFirestoreに保存してください。必須フィールドがすべて含まれていることを確認してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "publish_mystery", "args": {}}
+            ],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "mystery_id status Firestore"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "publisher_failure_handling",
+      "conversation": [
+        {
+          "invocation_id": "inv_003",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "2099年の火星植民地における歴史的事件についてFirestoreに公開してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "INSUFFICIENT_DATA NO_CONTENT"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

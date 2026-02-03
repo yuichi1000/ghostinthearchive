@@ -1,0 +1,91 @@
+{
+  "eval_set_id": "scriptwriter_eval_v1",
+  "name": "Scriptwriter Agent Evaluation",
+  "description": "Tests Scriptwriter's podcast script generation via full pipeline execution",
+  "eval_cases": [
+    {
+      "eval_id": "scriptwriter_complete_script",
+      "conversation": [
+        {
+          "invocation_id": "inv_001",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "1842年のボストン港におけるスペイン船サンタマリア号の消失事件について、歴史的事実と地元の幽霊船伝説を織り交ぜたポッドキャスト台本を作成してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "podcast_script EPISODE TITLE DURATION Host"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "scriptwriter_segment_structure",
+      "conversation": [
+        {
+          "invocation_id": "inv_002",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "ニューイングランドの幽霊船伝説についてポッドキャスト台本を作成してください。INTRO、SEGMENT、OUTROの構造に従ってください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "INTRO SEGMENT OUTRO"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "scriptwriter_no_content_failure",
+      "conversation": [
+        {
+          "invocation_id": "inv_003",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "2099年の火星植民地における歴史的事件についてポッドキャスト台本を作成してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "NO_SCRIPT NO_CONTENT"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

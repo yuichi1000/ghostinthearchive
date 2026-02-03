@@ -1,0 +1,95 @@
+{
+  "eval_set_id": "visualizer_eval_v1",
+  "name": "Visualizer Agent Evaluation",
+  "description": "Tests Visualizer's image generation via full pipeline execution",
+  "eval_cases": [
+    {
+      "eval_id": "visualizer_fact_style",
+      "conversation": [
+        {
+          "invocation_id": "inv_001",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "1842年のボストン港におけるスペイン船サンタマリア号の公式記録の矛盾について、歴史的事実を中心に構成された記事用の画像を生成してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "generate_image", "args": {}}
+            ],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "visual_assets header Firestore"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "visualizer_folklore_style",
+      "conversation": [
+        {
+          "invocation_id": "inv_002",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "ニューイングランドの幽霊船伝説と「悪魔の入江」の禁忌について、民俗学的要素を中心に構成された記事用の画像を生成してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "generate_image", "args": {}}
+            ],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "visual_assets header Firestore"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "visualizer_no_content_skip",
+      "conversation": [
+        {
+          "invocation_id": "inv_003",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "2099年の火星植民地における歴史的事件について画像を生成してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "NO_CONTENT"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

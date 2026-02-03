@@ -1,0 +1,147 @@
+{
+  "eval_set_id": "scholar_eval_v1",
+  "name": "Scholar Agent Evaluation",
+  "description": "Tests Scholar's interdisciplinary analysis capabilities via full pipeline execution",
+  "eval_cases": [
+    {
+      "eval_id": "scholar_fact_based_analysis",
+      "conversation": [
+        {
+          "invocation_id": "inv_001",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "1842年3月のボストン港におけるスペイン船サンタマリア号の記録を分析してください。英語の新聞記事では船が消失したと報じていますが、スペイン語の記録では同じ船が2週間後にハバナに到着したと記載されています。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "mystery_report DATE_MISMATCH EVENT_OUTCOME 仮説 Firestore"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "scholar_folklore_analysis",
+      "conversation": [
+        {
+          "invocation_id": "inv_002",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "ニューイングランドの漁村で1850年代に複数の漁師が同じ場所で不可解な現象を報告しています。地元では「悪魔の入江」と呼ばれ、禁忌とされています。この民俗学的アノマリーを分析してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "Folkloric Context RECURRING_PATTERN LOCAL_TABOO Firestore"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "scholar_anthropological_analysis",
+      "conversation": [
+        {
+          "invocation_id": "inv_003",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "1830年代のニューオーリンズにおける奴隷コミュニティの儀礼と、プランテーション主の公式記録との間の乖離を分析してください。権力構造による記録の改竄や消去の痕跡を探してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "Anthropological Context POWER_ERASURE 社会構造 Firestore"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "scholar_insufficient_data",
+      "conversation": [
+        {
+          "invocation_id": "inv_004",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "2099年の火星植民地における歴史的事件について分析してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "INSUFFICIENT_DATA NO_DOCUMENTS_FOUND"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "scholar_cross_reference_analysis",
+      "conversation": [
+        {
+          "invocation_id": "inv_005",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "1845年のボルチモア港での船員失踪事件について、公式記録、新聞報道、地元の幽霊船伝説、そしてアフリカ系住民コミュニティの口承伝統の三面から分析してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "Folkloric Context Anthropological Context 仮説 歴史的背景 Firestore"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
