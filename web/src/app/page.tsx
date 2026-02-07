@@ -93,9 +93,7 @@ export default function HomePage() {
                 Research Methodology
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                Our AI agents systematically analyze digitized records from the Library of Congress, DPLA, NYPL, and Internet Archive,
-                identifying discrepancies, temporal anomalies, and patterns that correlate with documented folklore.
-                Each discovery undergoes human review before publication.
+                AI agents systematically analyze public information, identifying discrepancies, temporal anomalies, and patterns that correlate with documented folklore.
               </p>
               <div className="flex items-center justify-center gap-4 text-xs font-mono text-muted-foreground">
                 <span>Sources verified</span>
