@@ -12,6 +12,35 @@ from pathlib import Path
 from shared.firestore import get_firestore_client, get_storage_bucket
 
 
+def _generate_mystery_id(db, era: str, city: str) -> str:
+    """Generate a unique mystery_id by counting existing documents.
+
+    Args:
+        db: Firestore client instance.
+        era: The era/year of the mystery (e.g., "1842").
+        city: The city name (e.g., "BOSTON").
+
+    Returns:
+        Auto-generated mystery_id (e.g., "MYSTERY-1842-BOSTON-002").
+    """
+    prefix = f"MYSTERY-{era}-{city.upper()}-"
+
+    # Count existing documents with the same era-city prefix
+    docs = db.collection("mysteries").stream()
+
+    max_seq = 0
+    for doc in docs:
+        doc_id = doc.id
+        if doc_id.startswith(prefix):
+            seq_str = doc_id[len(prefix):]
+            try:
+                max_seq = max(max_seq, int(seq_str))
+            except ValueError:
+                continue
+
+    return f"{prefix}{max_seq + 1:03d}"
+
+
 def publish_mystery(mystery_json: str) -> str:
     """Save a mystery document to Firestore.
 
@@ -31,11 +60,31 @@ def publish_mystery(mystery_json: str) -> str:
     try:
         data = json.loads(mystery_json, strict=False)
 
-        mystery_id = data.get("mystery_id")
-        if not mystery_id:
+        db = get_firestore_client()
+
+        # Auto-generate mystery_id from era and city
+        era = data.get("era")
+        city = data.get("city")
+
+        if era and city:
+            # Generate mystery_id automatically
+            mystery_id = _generate_mystery_id(db, str(era), city)
+            data["mystery_id"] = mystery_id
+        else:
+            # Fallback: try to extract era/city from provided mystery_id
+            mystery_id = data.get("mystery_id")
+            if mystery_id and mystery_id.startswith("MYSTERY-"):
+                parts = mystery_id.split("-")
+                if len(parts) >= 4:
+                    era = parts[1]
+                    city = parts[2]
+                    mystery_id = _generate_mystery_id(db, era, city)
+                    data["mystery_id"] = mystery_id
+
+        if not data.get("mystery_id"):
             return json.dumps({
                 "status": "error",
-                "error": "mystery_id is required",
+                "error": "era and city are required for mystery_id generation",
             }, ensure_ascii=False)
 
         now = datetime.now(timezone.utc)
@@ -55,7 +104,7 @@ def publish_mystery(mystery_json: str) -> str:
         data.setdefault("story_hooks", [])
         data.setdefault("pipeline_log", [])
 
-        db = get_firestore_client()
+        mystery_id = data["mystery_id"]
         db.collection("mysteries").document(mystery_id).set(data)
 
         return json.dumps({

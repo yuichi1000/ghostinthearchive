@@ -43,7 +43,8 @@ PUBLISHER_INSTRUCTION = """
 
 ```json
 {
-  "mystery_id": "MYSTERY-[年代]-[都市]-[連番]",
+  "era": "[年代 例: 1842]",
+  "city": "[都市名 例: BOSTON, NYC, PHILADELPHIA など英語表記]",
   "title": "[日本語タイトル]",
   "summary": "[2-3文の要約]",
   "discrepancy_detected": "[矛盾の説明]",

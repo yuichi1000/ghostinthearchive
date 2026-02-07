@@ -34,8 +34,8 @@ class TestPublishMystery:
             # Verify Firestore was called
             mock_firestore_client.collection.assert_called_with("mysteries")
 
-    def test_publish_mystery_missing_id(self, mock_firestore_client):
-        """publish_mystery should return error if mystery_id is missing."""
+    def test_publish_mystery_missing_era_city(self, mock_firestore_client):
+        """publish_mystery should return error if era/city is missing."""
         with patch("archive_agents.tools.publisher_tools.get_firestore_client", return_value=mock_firestore_client):
             from archive_agents.tools.publisher_tools import publish_mystery
 
@@ -43,7 +43,7 @@ class TestPublishMystery:
             result = json.loads(publish_mystery(mystery_json))
 
             assert result["status"] == "error"
-            assert "mystery_id is required" in result["error"]
+            assert "era and city are required" in result["error"]
 
     def test_publish_mystery_sets_timestamps(self, mock_firestore_client, sample_mystery_report_data):
         """publish_mystery should automatically set timestamps."""
@@ -213,9 +213,9 @@ class TestPublisherToolsWithEmulator:
         result = json.loads(publish_mystery(mystery_json))
         assert result["status"] == "success"
 
-        # Retrieve
+        # Retrieve using the auto-generated mystery_id
         db = get_firestore_client()
-        doc = db.collection("mysteries").document(sample_mystery_report_data["mystery_id"]).get()
+        doc = db.collection("mysteries").document(result["mystery_id"]).get()
         assert doc.exists
         data = doc.to_dict()
         assert data["title"] == sample_mystery_report_data["title"]
