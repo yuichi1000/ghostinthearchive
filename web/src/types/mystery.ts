@@ -207,7 +207,7 @@ export const AGENT_NAME_LABELS: Record<string, string> = {
   scholar: "学際分析",
   storyteller: "物語生成",
   scriptwriter: "脚本作成",
-  visualizer: "画像生成",
+  illustrator: "画像生成",
   producer: "音声生成",
   publisher: "公開処理",
 };

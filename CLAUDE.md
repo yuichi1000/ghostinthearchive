@@ -48,7 +48,7 @@ Ghost in the Archive - 公開デジタルアーカイブから歴史的ミステ
 | **Librarian** | 資料調査・収集（デジタルアーカイブ＋民俗資料） | 調査クエリ | collected_documents |
 | **Scholar** | 歴史学×民俗学×文化人類学の学際分析 | collected_documents | mystery_report |
 | **Storyteller** | 歴史的厳密さと怪異的情緒の融合（ブログ記事） | mystery_report | creative_content (ブログ原稿) |
-| **Visualizer** | トップ画像生成 | creative_content | visual_assets (Imagen 3 によるトップ画像1枚) |
+| **Illustrator** | トップ画像生成 | creative_content | visual_assets (Imagen 3 によるトップ画像1枚) |
 | **Publisher** | 納品・公開 | 全アセット | published_episode (Firestore 保存、管理画面反映) |
 
 ### Podcast 作成パイプライン（`podcast_agents/`）
@@ -85,7 +85,7 @@ Ghost in the Archive - 公開デジタルアーカイブから歴史的ミステ
 #### ブログ作成パイプライン（`archive_agents/`）
 
 ```
-Librarian → Scholar → Storyteller → Visualizer → Publisher → Firestore
+Librarian → Scholar → Storyteller → Illustrator → Publisher → Firestore
 ```
 
 #### Podcast 作成パイプライン（`podcast_agents/`）
@@ -104,7 +104,7 @@ Firestore (narrative_content) → Scriptwriter → Producer → Firestore (podca
 - `collected_documents` - Librarian が収集した資料（デジタルアーカイブ＋Folklore両方を含む）
 - `mystery_report` - Scholar の分析レポート（Folkloric Context + Anthropological Context を含む）
 - `creative_content` - Storyteller のブログ原稿
-- `visual_assets` - Visualizer のトップ画像アセット
+- `visual_assets` - Illustrator のトップ画像アセット
 - `published_episode` - Publisher の公開結果
 
 **Podcast パイプライン（`podcast_agents`）:**
@@ -118,7 +118,7 @@ Firestore (narrative_content) → Scriptwriter → Producer → Firestore (podca
 - **Scholar:** gemini-3-pro-preview (学際的分析)
 - **Storyteller:** gemini-3-pro-preview (ブログ記事生成)
 - **Scriptwriter:** gemini-3-pro-preview (ポッドキャスト脚本)
-- **Visualizer:** gemini-3-pro-preview + Imagen 3 (トップ画像生成)
+- **Illustrator:** gemini-3-pro-preview + Imagen 3 (トップ画像生成)
 - **Producer:** gemini-3-pro-preview + Chirp 3 / TTS (音声生成)
 - **Publisher:** gemini-3-pro-preview (データ整理・公開)
 

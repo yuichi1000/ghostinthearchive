@@ -21,7 +21,7 @@ const AGENT_ICONS: Record<string, React.ReactNode> = {
   scholar: <BookOpen className="w-4 h-4" />,
   storyteller: <Pen className="w-4 h-4" />,
   scriptwriter: <FileText className="w-4 h-4" />,
-  visualizer: <Palette className="w-4 h-4" />,
+  illustrator: <Palette className="w-4 h-4" />,
   producer: <Mic className="w-4 h-4" />,
   publisher: <Upload className="w-4 h-4" />,
 }

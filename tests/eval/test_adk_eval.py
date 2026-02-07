@@ -71,10 +71,10 @@ class TestADKEvaluationSetup:
         storyteller_eval = EVAL_SETS_DIR / "storyteller_eval.json"
         assert storyteller_eval.exists()
 
-    def test_visualizer_eval_exists(self):
-        """visualizer_eval.json should exist."""
-        visualizer_eval = EVAL_SETS_DIR / "visualizer_eval.json"
-        assert visualizer_eval.exists()
+    def test_illustrator_eval_exists(self):
+        """illustrator_eval.json should exist."""
+        illustrator_eval = EVAL_SETS_DIR / "illustrator_eval.json"
+        assert illustrator_eval.exists()
 
     def test_publisher_eval_exists(self):
         """publisher_eval.json should exist."""
@@ -272,9 +272,9 @@ class TestEvalSetContent:
         # Should have NO_CONTENT handling test
         assert any("insufficient" in eid.lower() or "no_content" in eid.lower() for eid in eval_ids)
 
-    def test_visualizer_eval_covers_style_selection(self):
-        """Visualizer eval should cover Fact/Folklore style selection."""
-        with open(EVAL_SETS_DIR / "visualizer_eval.json") as f:
+    def test_illustrator_eval_covers_style_selection(self):
+        """Illustrator eval should cover Fact/Folklore style selection."""
+        with open(EVAL_SETS_DIR / "illustrator_eval.json") as f:
             data = json.load(f)
 
         eval_ids = [e["eval_id"] for e in data["eval_cases"]]

@@ -1,4 +1,4 @@
-"""Visualizer Agent - ブログ記事用トップ画像生成
+"""Illustrator Agent - ブログ記事用トップ画像生成
 
 Storyteller が作成したブログ記事を読み、記事の核心を表現する
 トップ画像1枚を Imagen 3 で生成するエージェント。
@@ -17,8 +17,8 @@ from ..tools import generate_image
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-VISUALIZER_INSTRUCTION = """
-あなたは「Ghost in the Archive」プロジェクトのビジュアライザー（Visualizer Agent）です。
+ILLUSTRATOR_INSTRUCTION = """
+あなたは「Ghost in the Archive」プロジェクトのイラストレーター（Illustrator Agent）です。
 Storyteller Agent が作成したブログ記事を読み、記事の核心を表現するトップ画像1枚を生成します。
 
 ## 入力
@@ -82,14 +82,14 @@ Folklore: "A ghostly sailing ship emerging from thick fog near a rocky New Engla
 - {creative_content} が "NO_CONTENT" を含む場合は画像を生成せず、その旨を報告すること
 """
 
-visualizer_agent = LlmAgent(
-    name="visualizer",
+illustrator_agent = LlmAgent(
+    name="illustrator",
     model="gemini-3-pro-preview",
     description=(
         "Storyteller のブログ記事を読み、記事の核心を表現するトップ画像1枚を Imagen 3 で生成する。"
         "Fact ベースは白黒写真風、Folklore ベースは木版画風イラストで使い分ける。"
     ),
-    instruction=VISUALIZER_INSTRUCTION,
+    instruction=ILLUSTRATOR_INSTRUCTION,
     tools=[generate_image],
     output_key="visual_assets",
 )

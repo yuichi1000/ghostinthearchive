@@ -1,7 +1,7 @@
 """Integration tests for agent-to-agent session state handover.
 
 Tests verify that session state is correctly passed between agents
-in the pipeline: Librarian → Scholar → Storyteller → Visualizer → Publisher
+in the pipeline: Librarian → Scholar → Storyteller → Illustrator → Publisher
 """
 
 import json
@@ -32,11 +32,11 @@ class TestSessionStateKeys:
 
         assert storyteller_agent.output_key == "creative_content"
 
-    def test_visualizer_output_key(self):
-        """Visualizer agent should use 'visual_assets' output key."""
-        from archive_agents.agents.visualizer import visualizer_agent
+    def test_illustrator_output_key(self):
+        """Illustrator agent should use 'visual_assets' output key."""
+        from archive_agents.agents.illustrator import illustrator_agent
 
-        assert visualizer_agent.output_key == "visual_assets"
+        assert illustrator_agent.output_key == "visual_assets"
 
     def test_publisher_output_key(self):
         """Publisher agent should use 'published_episode' output key."""
@@ -98,11 +98,11 @@ class TestInstructionPlaceholders:
 
         assert "{mystery_report}" in storyteller_agent.instruction
 
-    def test_visualizer_references_creative_content(self):
-        """Visualizer instruction should reference {creative_content}."""
-        from archive_agents.agents.visualizer import visualizer_agent
+    def test_illustrator_references_creative_content(self):
+        """Illustrator instruction should reference {creative_content}."""
+        from archive_agents.agents.illustrator import illustrator_agent
 
-        assert "{creative_content}" in visualizer_agent.instruction
+        assert "{creative_content}" in illustrator_agent.instruction
 
     def test_publisher_references_required_keys(self):
         """Publisher instruction should reference all required session state keys."""
@@ -139,7 +139,7 @@ class TestAgentModels:
         from archive_agents.agents.librarian import librarian_agent
         from archive_agents.agents.scholar import scholar_agent
         from archive_agents.agents.storyteller import storyteller_agent
-        from archive_agents.agents.visualizer import visualizer_agent
+        from archive_agents.agents.illustrator import illustrator_agent
         from archive_agents.agents.publisher import publisher_agent
 
         expected_model = "gemini-3-pro-preview"
@@ -148,7 +148,7 @@ class TestAgentModels:
             librarian_agent,
             scholar_agent,
             storyteller_agent,
-            visualizer_agent,
+            illustrator_agent,
             publisher_agent,
         ]
 
@@ -181,7 +181,7 @@ class TestRootAgentConfiguration:
         from archive_agents.agent import root_agent
 
         agent_names = [agent.name for agent in root_agent.sub_agents]
-        expected_order = ["librarian", "scholar", "storyteller", "visualizer", "publisher"]
+        expected_order = ["librarian", "scholar", "storyteller", "illustrator", "publisher"]
 
         assert agent_names == expected_order
 

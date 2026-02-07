@@ -1,4 +1,4 @@
-"""LLM-facing tool functions for the Visualizer Agent.
+"""LLM-facing tool functions for the Illustrator Agent.
 
 Generates images using Imagen 3 and saves them to local storage.
 """

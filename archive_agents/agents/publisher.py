@@ -27,7 +27,7 @@ PUBLISHER_INSTRUCTION = """
 - {collected_documents}: Librarian が収集した生の検索メタデータ
 - {mystery_report}: Scholar の分析レポート（JSON形式）
 - {creative_content}: Storyteller のコンテンツ
-- {visual_assets}: Visualizer のトップ画像アセット（画像ファイルパスを含むJSON）
+- {visual_assets}: Illustrator のトップ画像アセット（画像ファイルパスを含むJSON）
 
 ## あなたのタスク
 

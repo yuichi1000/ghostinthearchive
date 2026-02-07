@@ -1,10 +1,10 @@
 {
-  "eval_set_id": "visualizer_eval_v1",
-  "name": "Visualizer Agent Evaluation",
-  "description": "Tests Visualizer's image generation via full pipeline execution",
+  "eval_set_id": "illustrator_eval_v1",
+  "name": "Illustrator Agent Evaluation",
+  "description": "Tests Illustrator's image generation via full pipeline execution",
   "eval_cases": [
     {
-      "eval_id": "visualizer_fact_style",
+      "eval_id": "illustrator_fact_style",
       "conversation": [
         {
           "invocation_id": "inv_001",
@@ -34,7 +34,7 @@
       ]
     },
     {
-      "eval_id": "visualizer_folklore_style",
+      "eval_id": "illustrator_folklore_style",
       "conversation": [
         {
           "invocation_id": "inv_002",
@@ -64,7 +64,7 @@
       ]
     },
     {
-      "eval_id": "visualizer_no_content_skip",
+      "eval_id": "illustrator_no_content_skip",
       "conversation": [
         {
           "invocation_id": "inv_003",

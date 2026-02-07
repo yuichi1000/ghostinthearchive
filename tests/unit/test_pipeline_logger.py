@@ -103,7 +103,7 @@ class TestErrorAgent:
     def test_error_agent_marks_error(self):
         """error_agent should update status to error."""
         logger = PipelineLogger()
-        logger.start_agent("visualizer")
+        logger.start_agent("illustrator")
 
         with freeze_time("2024-01-15 12:00:30", tz_offset=0):
             logger.error_agent("Image generation failed")
