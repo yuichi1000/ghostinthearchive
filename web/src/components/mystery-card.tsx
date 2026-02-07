@@ -23,7 +23,7 @@ export function MysteryCard({ mystery, className }: MysteryCardProps) {
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono uppercase tracking-wider">
             <FileText className="w-3.5 h-3.5 text-gold" />
-            <span>Case File #{mystery.mystery_id.slice(-3).padStart(4, '0')}</span>
+            <span>{mystery.mystery_id}</span>
           </div>
           <time className="text-xs text-muted-foreground font-mono">
             {mystery.publishedAt

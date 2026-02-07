@@ -12,44 +12,37 @@ from pathlib import Path
 from shared.firestore import get_firestore_client, get_storage_bucket
 
 
-def _generate_mystery_id(db, era: str, city: str) -> str:
-    """Generate a unique mystery_id by counting existing documents.
+def _generate_mystery_id(classification: str, state_code: str, area_code: str) -> str:
+    """Generate a unique mystery_id with timestamp.
 
     Args:
-        db: Firestore client instance.
-        era: The era/year of the mystery (e.g., "1842").
-        city: The city name (e.g., "BOSTON").
+        classification: 3-letter classification code (e.g., "OCC", "HIS", "FLK").
+        state_code: 2-letter US state code (e.g., "MA", "NY").
+        area_code: 3-digit telephone area code (e.g., "617", "212").
 
     Returns:
-        Auto-generated mystery_id (e.g., "MYSTERY-1842-BOSTON-002").
+        Mystery ID in format: {CLS}-{ST}-{AREA}-{YYYYMMDDHHMMSS}
+        Example: OCC-MA-617-20260207143025
     """
-    prefix = f"MYSTERY-{era}-{city.upper()}-"
-
-    # Count existing documents with the same era-city prefix
-    docs = db.collection("mysteries").stream()
-
-    max_seq = 0
-    for doc in docs:
-        doc_id = doc.id
-        if doc_id.startswith(prefix):
-            seq_str = doc_id[len(prefix):]
-            try:
-                max_seq = max(max_seq, int(seq_str))
-            except ValueError:
-                continue
-
-    return f"{prefix}{max_seq + 1:03d}"
+    now = datetime.now(timezone.utc)
+    timestamp = now.strftime("%Y%m%d%H%M%S")
+    return f"{classification.upper()}-{state_code.upper()}-{area_code}-{timestamp}"
 
 
 def publish_mystery(mystery_json: str) -> str:
     """Save a mystery document to Firestore.
 
     Writes the complete mystery data to the 'mysteries' collection in Firestore.
-    Automatically sets timestamps and status fields.
+    Automatically generates mystery_id from classification, state_code, and area_code.
 
     Args:
         mystery_json: JSON string containing the full mystery data.
-            Required fields: mystery_id, title, summary, discrepancy_detected,
+            Required fields for ID generation:
+            - classification: 3-letter code (HIS, FLK, ANT, OCC, URB, CRM, REL, LOC)
+            - state_code: 2-letter US state code (MA, NY, CA, etc.)
+            - area_code: 3-digit telephone area code (617, 212, etc.)
+
+            Other required fields: title, summary, discrepancy_detected,
             discrepancy_type, evidence_a, evidence_b, hypothesis,
             alternative_hypotheses, confidence_level, historical_context,
             research_questions, story_hooks.
@@ -62,29 +55,19 @@ def publish_mystery(mystery_json: str) -> str:
 
         db = get_firestore_client()
 
-        # Auto-generate mystery_id from era and city
-        era = data.get("era")
-        city = data.get("city")
+        # Auto-generate mystery_id from classification, state_code, and area_code
+        classification = data.get("classification")
+        state_code = data.get("state_code")
+        area_code = data.get("area_code")
 
-        if era and city:
+        if classification and state_code and area_code:
             # Generate mystery_id automatically
-            mystery_id = _generate_mystery_id(db, str(era), city)
+            mystery_id = _generate_mystery_id(classification, state_code, str(area_code))
             data["mystery_id"] = mystery_id
         else:
-            # Fallback: try to extract era/city from provided mystery_id
-            mystery_id = data.get("mystery_id")
-            if mystery_id and mystery_id.startswith("MYSTERY-"):
-                parts = mystery_id.split("-")
-                if len(parts) >= 4:
-                    era = parts[1]
-                    city = parts[2]
-                    mystery_id = _generate_mystery_id(db, era, city)
-                    data["mystery_id"] = mystery_id
-
-        if not data.get("mystery_id"):
             return json.dumps({
                 "status": "error",
-                "error": "era and city are required for mystery_id generation",
+                "error": "classification, state_code, and area_code are required for mystery_id generation",
             }, ensure_ascii=False)
 
         now = datetime.now(timezone.utc)

@@ -93,7 +93,7 @@ export default async function MysteryDetailPage({
               <div className="flex items-center gap-2 px-3 py-1.5 border border-border bg-card rounded-sm">
                 <FileText className="w-4 h-4 text-gold" />
                 <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                  Case File #{mystery.mystery_id.slice(-3).padStart(4, '0')}
+                  {mystery.mystery_id}
                 </span>
               </div>
               <div className="h-px flex-1 bg-border" />

@@ -345,7 +345,7 @@ function AdminMysteryCard({ mystery, onApprove, onArchive, onPodcast }: AdminMys
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
           <FileText className="w-3.5 h-3.5 text-gold" />
-          <span>Case #{mystery.mystery_id.slice(-3).padStart(4, '0')}</span>
+          <span>{mystery.mystery_id}</span>
         </div>
         <StatusBadge status={mystery.status} />
       </div>

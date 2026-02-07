@@ -169,6 +169,43 @@ Firestore (narrative_content) → Scriptwriter → Producer → Firestore (podca
 - **Producer:** gemini-3-pro-preview + Chirp 3 / TTS (音声生成)
 - **Publisher:** gemini-3-pro-preview (データ整理・公開)
 
+## Mystery ID 命名規則
+
+記事IDは FBI Central Records System および米国議会図書館分類法を参考に設計。
+
+### ID形式
+
+```
+{分類3文字}-{州2文字}-{エリア3桁}-{YYYYMMDDHHMMSS}
+例: OCC-MA-617-20260207143025
+```
+
+### 分類コード（Classification）
+
+| コード | 分類 | 説明 |
+|-------|------|------|
+| HIS | 歴史 | 歴史的記録の矛盾、消失した人物、文書の欠落 |
+| FLK | 民俗 | 地方伝承、祭り、口承伝統、民間信仰 |
+| ANT | 人類学 | 儀礼、社会構造、物質文化、異文化接触 |
+| OCC | 怪奇 | 説明不能な現象、超常的事象 |
+| URB | 都市伝説 | 近代の噂話、現代の怪談 |
+| CRM | 未解決事件 | 未解決犯罪、失踪事件、謎の死 |
+| REL | 信仰・禁忌 | 宗教的タブー、呪い、カルト |
+| LOC | 地霊・場所 | 特定の場所に紐づく怪異、心霊スポット |
+
+### 地域コード
+
+- **州コード**: USPS/ISO 3166-2:US 標準（2文字）
+- **エリアコード**: 米国電話エリアコード（3桁）
+
+主要エリアコード:
+- BOSTON: MA-617, SALEM: MA-978
+- NEW_YORK: NY-212, BROOKLYN: NY-718
+- PHILADELPHIA: PA-215, CHICAGO: IL-312
+- NEW_ORLEANS: LA-504, SAN_FRANCISCO: CA-415
+
+詳細定義: `archive_agents/schemas/mystery_id.py`
+
 ## ADK 規約・ベストプラクティス
 
 本プロジェクトでは ADK（Agent Development Kit）の規約とベストプラクティスに必ず従うこと。

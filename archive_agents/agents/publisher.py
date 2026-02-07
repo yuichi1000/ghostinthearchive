@@ -41,10 +41,32 @@ PUBLISHER_INSTRUCTION = """
 
 {mystery_report} の内容を解析し、以下のフィールドを含む JSON を構築してください：
 
+**分類コード（classification）の選択基準:**
+- HIS: 歴史的記録の矛盾、消失した人物、文書の欠落
+- FLK: 地方伝承、祭り、口承伝統、民間信仰
+- ANT: 儀礼、社会構造、物質文化、異文化接触
+- OCC: 説明不能な現象、超常的事象、怪異
+- URB: 近代の噂話、現代の怪談、都市伝説
+- CRM: 未解決犯罪、失踪事件、謎の死
+- REL: 宗教的タブー、呪い、カルト、禁忌
+- LOC: 特定の場所に紐づく怪異、心霊スポット
+
+**地域コード:**
+- state_code: 米国州コード2文字（例: MA, NY, CA, PA）
+- area_code: 電話エリアコード3桁（例: 617=ボストン, 212=NYC, 215=フィラデルフィア）
+
+主要エリアコード参考:
+- BOSTON: MA-617, SALEM: MA-978
+- NEW_YORK: NY-212, BROOKLYN: NY-718
+- PHILADELPHIA: PA-215, CHICAGO: IL-312
+- NEW_ORLEANS: LA-504, SAN_FRANCISCO: CA-415
+- LOS_ANGELES: CA-213, WASHINGTON_DC: DC-202
+
 ```json
 {
-  "era": "[年代 例: 1842]",
-  "city": "[都市名 例: BOSTON, NYC, PHILADELPHIA など英語表記]",
+  "classification": "[分類コード: HIS/FLK/ANT/OCC/URB/CRM/REL/LOC]",
+  "state_code": "[州コード2文字: MA/NY/CA など]",
+  "area_code": "[エリアコード3桁: 617/212/215 など]",
   "title": "[日本語タイトル]",
   "summary": "[2-3文の要約]",
   "discrepancy_detected": "[矛盾の説明]",
