@@ -135,6 +135,7 @@ export default async function MysteryDetailPage({
                 height={675}
                 className="w-full h-auto"
                 priority
+                unoptimized={mystery.images.hero.includes('localhost')}
               />
             </div>
           )}
