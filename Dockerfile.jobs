@@ -1,0 +1,36 @@
+# Cloud Run Jobs Dockerfile for Python pipelines
+# Supports: blog-pipeline, translate-pipeline, podcast-pipeline
+
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY pyproject.toml ./
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code
+COPY shared/ ./shared/
+COPY archive_agents/ ./archive_agents/
+COPY translator_agents/ ./translator_agents/
+COPY podcast_agents/ ./podcast_agents/
+COPY main.py ./
+COPY translate_main.py ./
+COPY podcast_main.py ./
+
+# Environment variables
+ENV PYTHONUNBUFFERED=1
+ENV GOOGLE_CLOUD_PROJECT=ghostinthearchive
+ENV GOOGLE_GENAI_USE_VERTEXAI=TRUE
+
+# Default entrypoint (overridden by Cloud Run Jobs configuration)
+# blog-pipeline: python main.py "<query>"
+# translate-pipeline: python translate_main.py "<mystery_id>"
+# podcast-pipeline: python podcast_main.py "<mystery_id>"
+ENTRYPOINT ["python"]
