@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
-import { DiscrepancyBadge, ConfidenceBadge, StatusBadge } from "@/components/status-badge"
+import { StatusBadge } from "@/components/status-badge"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { getAllMysteries, approveMystery, archiveMystery, requestPodcast } from "@/lib/firestore/mysteries"
@@ -347,12 +347,6 @@ function AdminMysteryCard({ mystery, onApprove, onArchive, onPodcast }: AdminMys
       <p className="text-sm text-foreground/80 leading-relaxed mb-4 line-clamp-2">
         {mystery.summary}
       </p>
-
-      {/* Badges */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <DiscrepancyBadge type={mystery.discrepancy_type} />
-        <ConfidenceBadge level={mystery.confidence_level} />
-      </div>
 
       {/* Metadata */}
       <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4 pb-4 border-b border-border/50">
