@@ -249,6 +249,28 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* TODO: 記事一覧 UI 改善（段階的対応）
+         * 記事数が増えた場合の対応計画:
+         *
+         * Phase 1（30件〜）: 検索バー + 人気タグ
+         * - タイトル・サマリーのインクリメンタル検索
+         * - 人気のテーマをチップ表示（失踪事件, 禁忌, 都市伝説 等）
+         * - 検索キーワードが思いつかないユーザー向けの Discovery UI
+         *
+         * Phase 2（50件〜）: Era/地域ファセットフィルタ
+         * - historical_context.time_period でのフィルタ
+         * - historical_context.geographic_scope でのフィルタ
+         * - フィルタチップで適用中のフィルタを可視化
+         *
+         * Phase 3（100件〜）: ページネーション
+         * - Firestore のカーソルベースページング
+         * - 現在の limit(100) を解除
+         * - 無限スクロールまたはページ番号方式
+         *
+         * 参考: Ghost CMS, Algolia の検索 UX
+         * 参考: https://www.pencilandpaper.io/articles/ux-pattern-analysis-enterprise-filtering
+         */}
+
         {/* Filter tabs */}
         <div className="flex flex-wrap items-center gap-2 mb-8 pb-4 border-b border-border">
           <Filter className="w-4 h-4 text-muted-foreground mr-2" />
