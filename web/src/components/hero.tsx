@@ -96,8 +96,8 @@ export function Hero() {
           Ghost in the Archive
         </h1>
 
-        <p className="text-lg md:text-xl text-muted-foreground mb-6 font-jp">
-          AI がアーカイブの闇から発掘する、歴史の亡霊たち
+        <p className="text-lg md:text-xl text-muted-foreground mb-6">
+          AI-driven excavation of historical ghosts from the depths of the archives
         </p>
 
         <p className="text-base md:text-lg text-foreground/70 max-w-2xl mx-auto leading-relaxed mb-8 text-pretty">

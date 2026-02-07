@@ -20,14 +20,9 @@ export function Header() {
               <Archive className="w-6 h-6 text-gold" />
               <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blood-red rounded-full animate-pulse" />
             </div>
-            <div className="flex flex-col">
-              <span className="font-serif text-lg text-parchment leading-tight group-hover:text-gold transition-colors">
-                Ghost in the Archive
-              </span>
-              <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest hidden sm:block">
-                アーカイブの亡霊
-              </span>
-            </div>
+            <span className="font-serif text-lg text-parchment leading-tight group-hover:text-gold transition-colors">
+              Ghost in the Archive
+            </span>
           </Link>
 
           {/* Navigation */}
