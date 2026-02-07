@@ -4,7 +4,6 @@ import Image from "next/image"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { EvidenceBlock } from "@/components/evidence-block"
-import { DiscrepancyBadge, ConfidenceBadge } from "@/components/status-badge"
 import { getMysteryById, getPublishedMysteryIds } from "@/lib/firestore/mysteries"
 import {
   ArrowLeft,
@@ -87,14 +86,9 @@ export default async function MysteryDetailPage({
               <div className="h-px flex-1 bg-border" />
             </div>
 
-            <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl text-parchment mb-3 leading-tight text-balance">
+            <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl text-parchment mb-6 leading-tight text-balance">
               {mystery.title}
             </h1>
-
-            <div className="flex flex-wrap items-center gap-3 mb-6">
-              <DiscrepancyBadge type={mystery.discrepancy_type} />
-              <ConfidenceBadge level={mystery.confidence_level} />
-            </div>
 
             <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
               {location && (
@@ -254,43 +248,6 @@ export default async function MysteryDetailPage({
             {/* Sidebar */}
             <aside className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
-                {/* Quick stats card */}
-                <div className="aged-card letterpress-border rounded-sm p-5">
-                  <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-4">
-                    Case Metadata
-                  </h3>
-                  <dl className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Status</dt>
-                      <dd className="text-parchment capitalize">{mystery.status}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Confidence</dt>
-                      <dd className="text-parchment capitalize">{mystery.confidence_level}</dd>
-                    </div>
-                    {timePeriod && (
-                      <div className="flex justify-between">
-                        <dt className="text-muted-foreground">Time Period</dt>
-                        <dd className="text-parchment">{timePeriod}</dd>
-                      </div>
-                    )}
-                    {location && (
-                      <div className="flex justify-between">
-                        <dt className="text-muted-foreground">Location</dt>
-                        <dd className="text-parchment text-right">{location}</dd>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Created</dt>
-                      <dd className="text-parchment">{mystery.createdAt.toLocaleDateString()}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Evidence Items</dt>
-                      <dd className="text-parchment">{allEvidence.length}</dd>
-                    </div>
-                  </dl>
-                </div>
-
                 {/* Story hooks */}
                 {mystery.story_hooks.length > 0 && (
                   <div className="aged-card letterpress-border rounded-sm p-5">

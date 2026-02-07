@@ -1,33 +1,7 @@
-import React from "react"
 import Link from "next/link"
-import { FileText, MapPin, Clock, Ghost, FileQuestion, AlertTriangle, User, Calendar } from "lucide-react"
-import type { FirestoreMystery, DiscrepancyType, ConfidenceLevel } from "@/types/mystery"
-import { DISCREPANCY_TYPE_LABELS } from "@/types/mystery"
+import { FileText, MapPin, Calendar } from "lucide-react"
+import type { FirestoreMystery } from "@/types/mystery"
 import { cn } from "@/lib/utils"
-
-const discrepancyIcons: Record<DiscrepancyType, React.ReactNode> = {
-  date_mismatch: <Clock className="w-3.5 h-3.5" />,
-  person_missing: <User className="w-3.5 h-3.5" />,
-  event_outcome: <AlertTriangle className="w-3.5 h-3.5" />,
-  location_conflict: <MapPin className="w-3.5 h-3.5" />,
-  narrative_gap: <Ghost className="w-3.5 h-3.5" />,
-  name_variant: <FileQuestion className="w-3.5 h-3.5" />,
-}
-
-const discrepancyColors: Record<DiscrepancyType, string> = {
-  date_mismatch: "bg-blood-red/20 text-[#ff6b6b] border-blood-red/30",
-  person_missing: "bg-gold/20 text-[#d4af37] border-gold/30",
-  event_outcome: "bg-blood-red/20 text-[#ff6b6b] border-blood-red/30",
-  location_conflict: "bg-teal/20 text-[#5fb3a1] border-teal/30",
-  narrative_gap: "bg-parchment/20 text-parchment border-parchment/30",
-  name_variant: "bg-gold/20 text-[#d4af37] border-gold/30",
-}
-
-const confidenceColors: Record<ConfidenceLevel, string> = {
-  high: "text-[#ff6b6b]",
-  medium: "text-[#d4af37]",
-  low: "text-muted-foreground",
-}
 
 interface MysteryCardProps {
   mystery: FirestoreMystery
@@ -64,39 +38,20 @@ export function MysteryCard({ mystery, className }: MysteryCardProps) {
           {mystery.summary}
         </p>
 
-        {/* Badges */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <span className={cn(
-            "inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-sm border font-mono uppercase tracking-wide",
-            discrepancyColors[mystery.discrepancy_type]
-          )}>
-            {discrepancyIcons[mystery.discrepancy_type]}
-            {DISCREPANCY_TYPE_LABELS[mystery.discrepancy_type]}
-          </span>
-        </div>
-
         {/* Footer metadata */}
-        <div className="flex items-center justify-between pt-3 border-t border-border/50">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {location && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                {location}
-              </span>
-            )}
-            {timePeriod && (
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {timePeriod}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1 text-xs font-mono uppercase">
-            <span className="text-muted-foreground">Confidence:</span>
-            <span className={cn("font-medium", confidenceColors[mystery.confidence_level])}>
-              {mystery.confidence_level}
+        <div className="flex items-center gap-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
+          {location && (
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3" />
+              {location}
             </span>
-          </div>
+          )}
+          {timePeriod && (
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {timePeriod}
+            </span>
+          )}
         </div>
       </article>
     </Link>
