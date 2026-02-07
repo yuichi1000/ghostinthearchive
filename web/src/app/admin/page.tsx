@@ -29,7 +29,7 @@ import {
   Sparkles,
 } from "lucide-react"
 
-type FilterStatus = "all" | MysteryStatus
+type FilterStatus = "all" | MysteryStatus | "translating"
 
 export default function AdminPage() {
   const [filter, setFilter] = useState<FilterStatus>("all")
@@ -63,18 +63,29 @@ export default function AdminPage() {
   const counts = {
     all: mysteries.length,
     pending: mysteries.filter((m) => m.status === "pending").length,
+    translating: mysteries.filter((m) => m.status === "translating").length,
     published: mysteries.filter((m) => m.status === "published").length,
     archived: mysteries.filter((m) => m.status === "archived").length,
+    error: mysteries.filter((m) => m.status === "error").length,
   }
 
   const handleApprove = async (id: string) => {
     try {
       await approveMystery(id)
-      setActionFeedback(`Case ${id} approved for publication`)
+      // Trigger translation pipeline
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mysteryId: id }),
+      })
+      if (!res.ok) throw new Error("Translation API request failed")
+      setActionFeedback(`Case ${id} approved - translation started`)
       fetchMysteries()
       setTimeout(() => setActionFeedback(null), 3000)
     } catch (error) {
       console.error("Failed to approve:", error)
+      setActionFeedback(`Failed to start translation`)
+      setTimeout(() => setActionFeedback(null), 3000)
     }
   }
 
@@ -241,7 +252,7 @@ export default function AdminPage() {
         {/* Filter tabs */}
         <div className="flex flex-wrap items-center gap-2 mb-8 pb-4 border-b border-border">
           <Filter className="w-4 h-4 text-muted-foreground mr-2" />
-          {(["all", "pending", "published", "archived"] as FilterStatus[]).map((status) => (
+          {(["all", "pending", "translating", "published", "archived", "error"] as FilterStatus[]).map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
@@ -323,6 +334,7 @@ interface AdminMysteryCardProps {
 function AdminMysteryCard({ mystery, onApprove, onArchive, onPodcast }: AdminMysteryCardProps) {
   const [showPipeline, setShowPipeline] = useState(false)
   const isPending = mystery.status === "pending"
+  const isTranslating = mystery.status === "translating"
   const location = mystery.historical_context?.geographic_scope?.[0] || ""
   const timePeriod = mystery.historical_context?.time_period || ""
   const hasPipelineLog = mystery.pipeline_log && mystery.pipeline_log.length > 0
@@ -453,6 +465,13 @@ function AdminMysteryCard({ mystery, onApprove, onArchive, onPodcast }: AdminMys
           </div>
         )}
 
+        {isTranslating && (
+          <span className="inline-flex items-center gap-1.5 text-xs text-gold font-mono">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            Translating...
+          </span>
+        )}
+
         {mystery.status === "archived" && (
           <Button
             variant="ghost"
@@ -462,6 +481,28 @@ function AdminMysteryCard({ mystery, onApprove, onArchive, onPodcast }: AdminMys
             <RefreshCw className="w-4 h-4 mr-1" />
             Reconsider
           </Button>
+        )}
+
+        {mystery.status === "error" && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onArchive}
+              className="border-blood-red/30 text-[#ff6b6b] hover:bg-blood-red/20 hover:text-[#ff6b6b] bg-transparent"
+            >
+              <XCircle className="w-4 h-4 mr-1" />
+              Archive
+            </Button>
+            <Button
+              size="sm"
+              onClick={onApprove}
+              className="bg-teal/20 border border-teal/30 text-[#5fb3a1] hover:bg-teal/30"
+            >
+              <RefreshCw className="w-4 h-4 mr-1" />
+              Retry Translation
+            </Button>
+          </div>
         )}
       </div>
     </article>

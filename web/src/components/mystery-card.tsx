@@ -9,6 +9,10 @@ interface MysteryCardProps {
 }
 
 export function MysteryCard({ mystery, className }: MysteryCardProps) {
+  // Prefer English fields for public display
+  const title = mystery.title_en || mystery.title
+  const summary = mystery.summary_en || mystery.summary
+
   const location = mystery.historical_context?.geographic_scope?.[0] || ""
   const timePeriod = mystery.historical_context?.time_period || ""
 
@@ -30,12 +34,12 @@ export function MysteryCard({ mystery, className }: MysteryCardProps) {
 
         {/* Title */}
         <h3 className="font-serif text-lg text-parchment mb-1 leading-tight group-hover:text-gold transition-colors text-balance">
-          {mystery.title}
+          {title}
         </h3>
 
         {/* Summary */}
         <p className="text-sm text-foreground/80 leading-relaxed mb-4 line-clamp-3">
-          {mystery.summary}
+          {summary}
         </p>
 
         {/* Footer metadata */}

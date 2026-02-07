@@ -103,8 +103,9 @@ export async function getMysteryById(
 }
 
 /**
- * ミステリーを公開（承認）
- * status を pending → published に更新
+ * ミステリーを承認（翻訳開始）
+ * status を pending → translating に更新
+ * 翻訳完了後に status は published になる
  */
 export async function approveMystery(mysteryId: string): Promise<void> {
   const { doc, updateDoc, Timestamp } = await import("firebase/firestore");
@@ -114,8 +115,7 @@ export async function approveMystery(mysteryId: string): Promise<void> {
   const docRef = doc(db, COLLECTIONS.MYSTERIES, mysteryId);
 
   await updateDoc(docRef, {
-    status: "published" as MysteryStatus,
-    publishedAt: Timestamp.now(),
+    status: "translating" as MysteryStatus,
     updatedAt: Timestamp.now(),
   });
 }

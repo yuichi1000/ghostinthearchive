@@ -22,7 +22,7 @@ export type SourceType = "newspaper";
 export type SourceLanguage = "en" | "es";
 
 /** ミステリーのステータス */
-export type MysteryStatus = "pending" | "published" | "archived";
+export type MysteryStatus = "pending" | "translating" | "published" | "archived" | "error";
 
 /** エージェント実行ステータス */
 export type AgentStatus = "running" | "completed" | "error";
@@ -137,7 +137,7 @@ export interface MysteryReport {
 export type PodcastStatus = "generating" | "completed" | "error";
 
 export interface FirestoreMystery extends MysteryReport {
-  /** ステータス: pending, published, archived */
+  /** ステータス: pending, translating, published, archived */
   status: MysteryStatus;
   /** 作成日時（Firestoreタイムスタンプ） */
   createdAt: Date;
@@ -145,6 +145,8 @@ export interface FirestoreMystery extends MysteryReport {
   updatedAt: Date;
   /** 公開日時（publishedの場合のみ） */
   publishedAt?: Date;
+  /** 翻訳完了日時 */
+  translatedAt?: Date;
   /** 画像アセット（Cloud Storage URLs） */
   images?: {
     hero?: string;
@@ -162,6 +164,24 @@ export interface FirestoreMystery extends MysteryReport {
   };
   /** ポッドキャスト生成ステータス */
   podcast_status?: PodcastStatus;
+
+  // === 英語翻訳フィールド ===
+  /** タイトル（英語） */
+  title_en?: string;
+  /** サマリー（英語） */
+  summary_en?: string;
+  /** 物語的ブログ原稿（英語、マークダウン形式） */
+  narrative_content_en?: string;
+  /** 発見された矛盾の説明（英語） */
+  discrepancy_detected_en?: string;
+  /** 主要仮説（英語） */
+  hypothesis_en?: string;
+  /** 代替仮説リスト（英語） */
+  alternative_hypotheses_en?: string[];
+  /** 歴史的コンテキスト（英語） */
+  historical_context_en?: {
+    political_climate?: string;
+  };
 }
 
 /**

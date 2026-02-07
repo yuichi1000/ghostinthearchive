@@ -57,6 +57,28 @@ Ghost in the Archive - 公開デジタルアーカイブから歴史的ミステ
 | **Illustrator** | トップ画像生成 | creative_content | visual_assets (Imagen 3 によるトップ画像1枚) |
 | **Publisher** | 納品・公開 | 全アセット | published_episode (Firestore 保存、管理画面反映) |
 
+### 翻訳パイプライン（`translator_agents/`）
+
+管理画面で Approve ボタン押下時に自動実行。翻訳完了後に公開される。
+
+| エージェント | 役割 | 入力 | 出力 |
+|------------|------|------|------|
+| **Translator** | 日本語→英語翻訳 | narrative_content, title, summary 等 | 英語翻訳フィールド（*_en） |
+
+**状態遷移:**
+```
+pending → (Approve) → translating → (翻訳完了) → published
+```
+
+**翻訳対象フィールド:**
+- `title` → `title_en`
+- `summary` → `summary_en`
+- `narrative_content` → `narrative_content_en`
+- `discrepancy_detected` → `discrepancy_detected_en`
+- `hypothesis` → `hypothesis_en`
+- `alternative_hypotheses` → `alternative_hypotheses_en`
+- `historical_context.political_climate` → `historical_context_en.political_climate`
+
 ### Podcast 作成パイプライン（`podcast_agents/`）
 
 管理画面から公開済み記事に対してオンデマンドで実行。
@@ -82,6 +104,12 @@ Ghost in the Archive - 公開デジタルアーカイブから歴史的ミステ
 - **歴史的厳密さ**と**怪異的情緒**を両立させたブログ記事の作成
 - センセーショナリズムに走らず、学術的誠実さを保ちながらも、読者の好奇心を刺激する構成
 
+**Translator（翻訳家）**
+- 日本語記事を英語圏読者向けに翻訳
+- 歴史用語・民俗学用語の正確な翻訳
+- Fact × Folklore のニュアンス維持
+- Atlas Obscura, Smithsonian Magazine のような読みやすさ
+
 **Scriptwriter（脚本家）**
 - Storyteller のブログ記事をベースにポッドキャスト用の脚本を作成
 - 音声で聴いて理解しやすい形にコンテンツを再構成
@@ -93,6 +121,14 @@ Ghost in the Archive - 公開デジタルアーカイブから歴史的ミステ
 ```
 Librarian → Scholar → Storyteller → Illustrator → Publisher → Firestore
 ```
+
+#### 翻訳パイプライン（`translator_agents/`）
+
+```
+Firestore (日本語記事) → Translator → Firestore (英語翻訳 + status=published)
+```
+
+管理画面の「Approve」ボタン押下時に自動起動。翻訳完了後に公開される。
 
 #### Podcast 作成パイプライン（`podcast_agents/`）
 
@@ -113,6 +149,10 @@ Firestore (narrative_content) → Scriptwriter → Producer → Firestore (podca
 - `visual_assets` - Illustrator のトップ画像アセット
 - `published_episode` - Publisher の公開結果
 
+**翻訳パイプライン（`translator_agents`）:**
+- `title`, `summary`, `narrative_content` 等 - Firestore から事前セット
+- `translation_result` - Translator の翻訳結果（JSON形式）
+
 **Podcast パイプライン（`podcast_agents`）:**
 - `creative_content` - Firestore の narrative_content から事前セット
 - `podcast_script` - Scriptwriter のポッドキャスト台本
@@ -123,6 +163,7 @@ Firestore (narrative_content) → Scriptwriter → Producer → Firestore (podca
 - **Librarian:** gemini-3-pro-preview (資料検索)
 - **Scholar:** gemini-3-pro-preview (学際的分析)
 - **Storyteller:** gemini-3-pro-preview (ブログ記事生成)
+- **Translator:** gemini-3-pro-preview (日英翻訳)
 - **Scriptwriter:** gemini-3-pro-preview (ポッドキャスト脚本)
 - **Illustrator:** gemini-3-pro-preview + Imagen 3 (トップ画像生成)
 - **Producer:** gemini-3-pro-preview + Chirp 3 / TTS (音声生成)
@@ -133,7 +174,7 @@ Firestore (narrative_content) → Scriptwriter → Producer → Firestore (podca
 本プロジェクトでは ADK（Agent Development Kit）の規約とベストプラクティスに必ず従うこと。
 
 ### エージェントパッケージ構成
-- 各パイプラインは独立したパッケージ（`archive_agents/`, `podcast_agents/`）として構成する
+- 各パイプラインは独立したパッケージ（`archive_agents/`, `podcast_agents/`, `translator_agents/`）として構成する
 - パッケージ直下の `agent.py` に `root_agent` 変数を定義する（ADK ローダーの発見規約）
 - `__init__.py` で `from . import agent` をエクスポートする
 
@@ -164,9 +205,15 @@ podcast_agents/               # Podcast 作成パイプライン
 ├── agents/                   # Scriptwriter, Producer
 └── tools/                    # Podcast 用 Firestore ツール
 
+translator_agents/            # 翻訳パイプライン
+├── agent.py                  # root_agent = translator_commander
+├── agents/                   # Translator
+└── tools/                    # 翻訳用 Firestore ツール
+
 web/                          # Next.js 管理画面・公開サイト
 main.py                       # ブログパイプライン CLI
 podcast_main.py               # Podcast パイプライン CLI
+translate_main.py             # 翻訳パイプライン CLI
 
 tests/                        # テストスイート
 ├── conftest.py               # pytest fixtures

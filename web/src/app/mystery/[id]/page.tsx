@@ -37,9 +37,13 @@ export async function generateMetadata({
     return { title: "Mystery Not Found | Ghost in the Archive" }
   }
 
+  // Prefer English fields for public display
+  const title = mystery.title_en || mystery.title
+  const summary = mystery.summary_en || mystery.summary
+
   return {
-    title: `${mystery.title} | Ghost in the Archive`,
-    description: mystery.summary,
+    title: `${title} | Ghost in the Archive`,
+    description: summary,
   }
 }
 
@@ -54,6 +58,15 @@ export default async function MysteryDetailPage({
   if (!mystery || mystery.status !== "published") {
     notFound()
   }
+
+  // Prefer English fields for public display
+  const title = mystery.title_en || mystery.title
+  const summary = mystery.summary_en || mystery.summary
+  const narrativeContent = mystery.narrative_content_en || mystery.narrative_content
+  const discrepancyDetected = mystery.discrepancy_detected_en || mystery.discrepancy_detected
+  const hypothesis = mystery.hypothesis_en || mystery.hypothesis
+  const alternativeHypotheses = mystery.alternative_hypotheses_en || mystery.alternative_hypotheses
+  const politicalClimate = mystery.historical_context_en?.political_climate || mystery.historical_context?.political_climate
 
   const location = mystery.historical_context?.geographic_scope?.join(", ") || ""
   const timePeriod = mystery.historical_context?.time_period || ""
@@ -87,7 +100,7 @@ export default async function MysteryDetailPage({
             </div>
 
             <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl text-parchment mb-6 leading-tight text-balance">
-              {mystery.title}
+              {title}
             </h1>
 
             <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
@@ -117,7 +130,7 @@ export default async function MysteryDetailPage({
             <div className="mb-12 rounded-sm overflow-hidden border border-border">
               <Image
                 src={mystery.images.hero}
-                alt={mystery.title}
+                alt={title}
                 width={1200}
                 height={675}
                 className="w-full h-auto"
@@ -130,17 +143,17 @@ export default async function MysteryDetailPage({
             {/* Main content */}
             <div className="lg:col-span-2 space-y-12">
               {/* Narrative Content (primary) */}
-              {mystery.narrative_content ? (
+              {narrativeContent ? (
                 <section className="prose prose-lg prose-invert max-w-none prose-headings:font-serif prose-headings:text-parchment prose-headings:mt-12 prose-headings:mb-4 prose-p:text-foreground/90 prose-p:leading-loose prose-p:mb-6 prose-a:text-gold prose-blockquote:border-gold/30 prose-blockquote:bg-card prose-blockquote:px-6 prose-blockquote:py-4 prose-blockquote:rounded-sm prose-blockquote:text-foreground/70 prose-blockquote:italic prose-blockquote:font-serif prose-strong:text-parchment prose-hr:border-border">
                   <Markdown remarkPlugins={[remarkGfm]}>
-                    {mystery.narrative_content.replace(/\*\*(.+?)\*\*/g, ' **$1** ')}
+                    {narrativeContent.replace(/\*\*(.+?)\*\*/g, ' **$1** ')}
                   </Markdown>
                 </section>
               ) : (
                 /* Fallback: show summary if no narrative */
                 <section>
                   <p className="text-lg text-foreground/90 leading-relaxed">
-                    {mystery.summary}
+                    {summary}
                   </p>
                 </section>
               )}
@@ -153,7 +166,7 @@ export default async function MysteryDetailPage({
               </div>
 
               {/* Discovered Discrepancy */}
-              {mystery.discrepancy_detected && (
+              {discrepancyDetected && (
                 <section>
                   <div className="flex items-center gap-3 mb-4">
                     <AlertTriangle className="w-5 h-5 text-blood-red" />
@@ -161,7 +174,7 @@ export default async function MysteryDetailPage({
                   </div>
                   <div className="pl-8 border-l-2 border-blood-red/30">
                     <p className="text-foreground/80 leading-relaxed">
-                      {mystery.discrepancy_detected}
+                      {discrepancyDetected}
                     </p>
                   </div>
                 </section>
@@ -183,7 +196,7 @@ export default async function MysteryDetailPage({
               </section>
 
               {/* Hypothesis */}
-              {mystery.hypothesis && (
+              {hypothesis && (
                 <section>
                   <div className="flex items-center gap-3 mb-4">
                     <Lightbulb className="w-5 h-5 text-gold" />
@@ -191,14 +204,14 @@ export default async function MysteryDetailPage({
                   </div>
                   <div className="pl-8 border-l-2 border-gold/30">
                     <p className="text-foreground/80 leading-relaxed">
-                      {mystery.hypothesis}
+                      {hypothesis}
                     </p>
                   </div>
-                  {mystery.alternative_hypotheses.length > 0 && (
+                  {alternativeHypotheses.length > 0 && (
                     <div className="mt-4 pl-8">
                       <p className="text-sm text-muted-foreground mb-2 font-mono uppercase tracking-wide">Alternative Hypotheses:</p>
                       <ul className="space-y-2">
-                        {mystery.alternative_hypotheses.map((alt, i) => (
+                        {alternativeHypotheses.map((alt, i) => (
                           <li key={i} className="flex items-start gap-2 text-sm text-foreground/70">
                             <span className="text-gold font-mono text-xs mt-0.5">{(i + 1).toString().padStart(2, '0')}.</span>
                             <span>{alt}</span>
@@ -218,9 +231,9 @@ export default async function MysteryDetailPage({
                     <h2 className="font-serif text-xl text-parchment">Historical Context</h2>
                   </div>
                   <div className="pl-8 border-l-2 border-parchment/30">
-                    {mystery.historical_context.political_climate && (
+                    {politicalClimate && (
                       <p className="text-foreground/80 leading-relaxed">
-                        {mystery.historical_context.political_climate}
+                        {politicalClimate}
                       </p>
                     )}
                     {mystery.historical_context.relevant_events.length > 0 && (

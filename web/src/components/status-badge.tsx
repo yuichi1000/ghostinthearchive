@@ -2,7 +2,7 @@ import React from "react"
 import { cn } from "@/lib/utils"
 import type { DiscrepancyType, ConfidenceLevel, MysteryStatus } from "@/types/mystery"
 import { DISCREPANCY_TYPE_LABELS } from "@/types/mystery"
-import { Clock, Ghost, FileQuestion, AlertTriangle, MapPin, User, CheckCircle, XCircle, Clock3 } from "lucide-react"
+import { Clock, Ghost, FileQuestion, AlertTriangle, MapPin, User, CheckCircle, XCircle, Clock3, Languages } from "lucide-react"
 
 // Discrepancy type badge
 const discrepancyConfig: Record<DiscrepancyType, { icon: React.ReactNode; className: string }> = {
@@ -96,6 +96,11 @@ const statusConfig: Record<MysteryStatus, { icon: React.ReactNode; label: string
     label: "Pending Review",
     className: "bg-gold/20 text-[#d4af37] border-gold/30",
   },
+  translating: {
+    icon: <Languages className="w-3.5 h-3.5" />,
+    label: "Translating",
+    className: "bg-gold/20 text-[#d4af37] border-gold/30",
+  },
   published: {
     icon: <CheckCircle className="w-3.5 h-3.5" />,
     label: "Published",
@@ -104,6 +109,11 @@ const statusConfig: Record<MysteryStatus, { icon: React.ReactNode; label: string
   archived: {
     icon: <XCircle className="w-3.5 h-3.5" />,
     label: "Archived",
+    className: "bg-blood-red/20 text-[#ff6b6b] border-blood-red/30",
+  },
+  error: {
+    icon: <AlertTriangle className="w-3.5 h-3.5" />,
+    label: "Error",
     className: "bg-blood-red/20 text-[#ff6b6b] border-blood-red/30",
   },
 }
