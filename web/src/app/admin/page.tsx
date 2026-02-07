@@ -438,9 +438,18 @@ function AdminMysteryCard({ mystery, onApprove, onArchive, onPodcast }: AdminMys
             )}
           </div>
         ) : (
-          <span className="text-xs text-muted-foreground">
-            Created: {mystery.createdAt.toLocaleDateString()}
-          </span>
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/admin/preview/${mystery.mystery_id}`}
+              className="inline-flex items-center gap-2 text-sm text-gold hover:text-parchment transition-colors no-underline"
+            >
+              <Eye className="w-4 h-4" />
+              Preview
+            </Link>
+            <span className="text-xs text-muted-foreground">
+              Created: {mystery.createdAt.toLocaleDateString()}
+            </span>
+          </div>
         )}
 
         {isPending && (
