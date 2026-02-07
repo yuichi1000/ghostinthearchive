@@ -34,6 +34,39 @@ export function Footer() {
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </li>
+              <li>
+                <a
+                  href="https://dp.la/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-muted-foreground hover:text-gold transition-colors inline-flex items-center gap-1.5 no-underline"
+                >
+                  Digital Public Library of America
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://digitalcollections.nypl.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-muted-foreground hover:text-gold transition-colors inline-flex items-center gap-1.5 no-underline"
+                >
+                  New York Public Library
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://archive.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-muted-foreground hover:text-gold transition-colors inline-flex items-center gap-1.5 no-underline"
+                >
+                  Internet Archive
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </li>
             </ul>
           </div>
 
