@@ -182,6 +182,8 @@ export interface FirestoreMystery extends MysteryReport {
   historical_context_en?: {
     political_climate?: string;
   };
+  /** ナラティブフック（英語） */
+  story_hooks_en?: string[];
 }
 
 /**

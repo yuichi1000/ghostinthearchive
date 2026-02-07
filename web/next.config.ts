@@ -14,6 +14,13 @@ const nextConfig: NextConfig = {
         hostname: "storage.googleapis.com",
         pathname: "/**",
       },
+      // 開発環境: Firebase Storage エミュレータ
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "9199",
+        pathname: "/v0/b/**",
+      },
     ],
     minimumCacheTTL: 86400, // 24時間（ISRと整合）
     formats: ["image/avif", "image/webp"],

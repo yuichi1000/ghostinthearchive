@@ -78,6 +78,12 @@ async def translate_mystery(mystery_id: str) -> None:
     else:
         alternative_hypotheses_str = str(alternative_hypotheses)
 
+    story_hooks = mystery.get("story_hooks", [])
+    if isinstance(story_hooks, list):
+        story_hooks_str = json.dumps(story_hooks, ensure_ascii=False)
+    else:
+        story_hooks_str = str(story_hooks)
+
     await session_service.create_session(
         app_name="ghost_in_the_archive_translator",
         user_id=user_id,
@@ -90,6 +96,7 @@ async def translate_mystery(mystery_id: str) -> None:
             "hypothesis": mystery.get("hypothesis", ""),
             "alternative_hypotheses": alternative_hypotheses_str,
             "political_climate": mystery.get("political_climate", ""),
+            "story_hooks": story_hooks_str,
             "pipeline_log": [],
         },
     )

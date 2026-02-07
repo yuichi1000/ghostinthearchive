@@ -262,13 +262,13 @@ export default async function MysteryDetailPage({
             <aside className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
                 {/* Story hooks */}
-                {mystery.story_hooks.length > 0 && (
+                {(mystery.story_hooks_en?.length ?? mystery.story_hooks.length) > 0 && (
                   <div className="aged-card letterpress-border rounded-sm p-5">
                     <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-4">
                       Story Angles
                     </h3>
                     <ul className="space-y-2">
-                      {mystery.story_hooks.map((hook, i) => (
+                      {(mystery.story_hooks_en ?? mystery.story_hooks).map((hook, i) => (
                         <li key={i} className="text-sm text-gold font-mono">
                           • {hook}
                         </li>

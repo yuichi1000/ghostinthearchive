@@ -39,6 +39,7 @@ NO_TRANSLATION: ブログ原稿がないため、翻訳を中止します。
 - hypothesis: 主要仮説 → {hypothesis}
 - alternative_hypotheses: 代替仮説リスト → {alternative_hypotheses}
 - political_climate: 政治的背景 → {political_climate}
+- story_hooks: ナラティブフック（物語の切り口）→ {story_hooks}
 
 ## 翻訳ガイドライン
 
@@ -85,7 +86,8 @@ JSON形式で出力してください：
   "discrepancy_detected_en": "...",
   "hypothesis_en": "...",
   "alternative_hypotheses_en": ["...", "..."],
-  "political_climate_en": "..."
+  "political_climate_en": "...",
+  "story_hooks_en": ["...", "..."]
 }
 ```
 

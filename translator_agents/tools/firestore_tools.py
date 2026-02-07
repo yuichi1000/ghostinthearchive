@@ -64,6 +64,7 @@ def load_mystery_for_translation(mystery_id: str) -> dict | None:
         "hypothesis": data.get("hypothesis", ""),
         "alternative_hypotheses": data.get("alternative_hypotheses", []),
         "political_climate": historical_context.get("political_climate", ""),
+        "story_hooks": data.get("story_hooks", []),
     }
 
 
@@ -101,6 +102,7 @@ def save_translation_result(mystery_id: str, translation_json: str) -> str:
             "historical_context_en": {
                 "political_climate": translation.get("political_climate_en", ""),
             },
+            "story_hooks_en": translation.get("story_hooks_en", []),
             "status": "published",
             "translatedAt": now,
             "publishedAt": now,
