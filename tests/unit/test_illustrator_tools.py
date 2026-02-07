@@ -175,7 +175,7 @@ class TestGenerateImageFallback:
             result_data = json.loads(result)
 
         assert result_data["status"] == "fallback"
-        assert "fallback_header.png" in result_data["filename"]
+        assert "fallback_header.webp" in result_data["filename"]
         assert result_data["note"] == "Using fallback image due to generation failure"
 
     @patch("archive_agents.tools.illustrator_tools._get_client")

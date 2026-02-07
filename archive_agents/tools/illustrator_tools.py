@@ -18,7 +18,7 @@ MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 2
 
 # Fallback image path
-FALLBACK_IMAGE_PATH = Path(__file__).parent.parent / "data" / "fallback_header.png"
+FALLBACK_IMAGE_PATH = Path(__file__).parent.parent / "assets" / "fallback_header.webp"
 
 # Prompt sanitization mapping for safety filter avoidance
 _SANITIZE_REPLACEMENTS = {
