@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { stripSourcesSection } from "../strip-sources"
+import { stripSourcesSection, extractSourcesSection } from "../strip-sources"
 
 describe("stripSourcesSection", () => {
   it("removes a trailing Sources section with single-line list", () => {
@@ -70,7 +70,72 @@ Part 2.`
     expect(stripSourcesSection(input)).toBe(input)
   })
 
+  it("removes bold markdown **Sources:** format", () => {
+    const input = `# Title
+
+Content here.
+
+---
+**Sources:**
+
+*   Source A. Library of Congress.
+*   Source B. NYPL Digital Collections.`
+
+    expect(stripSourcesSection(input)).toBe(
+      `# Title
+
+Content here.`
+    )
+  })
+
   it("handles empty string", () => {
     expect(stripSourcesSection("")).toBe("")
+  })
+})
+
+describe("extractSourcesSection", () => {
+  it("extracts citation list from bold Sources format", () => {
+    const input = `# Title
+
+Content here.
+
+---
+**Sources:**
+
+*   Source A. Library of Congress.
+*   Source B. NYPL Digital Collections.`
+
+    expect(extractSourcesSection(input)).toBe(
+      `*   Source A. Library of Congress.
+*   Source B. NYPL Digital Collections.`
+    )
+  })
+
+  it("extracts citation list from plain Sources format", () => {
+    const input = `# Title
+
+Content.
+
+---
+Sources:
+- Library of Congress Digital Archive
+- DPLA: Boston Historical Society`
+
+    expect(extractSourcesSection(input)).toBe(
+      `- Library of Congress Digital Archive
+- DPLA: Boston Historical Society`
+    )
+  })
+
+  it("returns null when no Sources section exists", () => {
+    const input = `# Title
+
+Some content without sources.`
+
+    expect(extractSourcesSection(input)).toBeNull()
+  })
+
+  it("returns null for empty string", () => {
+    expect(extractSourcesSection("")).toBeNull()
   })
 })
