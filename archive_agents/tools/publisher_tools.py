@@ -160,15 +160,34 @@ def upload_images(mystery_id: str, image_paths: str) -> str:
 
             uploaded.append({
                 "path": local_path,
+                "label": variant_suffix.lstrip("_") if variant_suffix else "original",
                 "status": "success",
                 "storage_path": f"gs://{bucket.name}/{blob_name}",
                 "public_url": public_url,
             })
 
+        # Build structured images object for direct use in Firestore
+        images = {}
+        variants = {}
+        for entry in uploaded:
+            if entry["status"] != "success":
+                continue
+            lbl = entry["label"]
+            if lbl == "original":
+                images["hero"] = entry["public_url"]
+            else:
+                variants[lbl] = entry["public_url"]
+        if variants:
+            # Use lg variant as hero if available (higher quality)
+            if "lg" in variants:
+                images["hero"] = variants["lg"]
+            images["variants"] = variants
+
         return json.dumps({
             "status": "success",
             "mystery_id": mystery_id,
             "uploaded": uploaded,
+            "images": images,
         }, ensure_ascii=False)
 
     except Exception as e:
