@@ -71,9 +71,11 @@ export default async function MysteryDetailPage({
   const alternativeHypotheses = mystery.alternative_hypotheses_en || mystery.alternative_hypotheses
   const politicalClimate = mystery.historical_context_en?.political_climate || mystery.historical_context?.political_climate
 
-  const evidenceA = mystery.evidence_a_en || mystery.evidence_a
-  const evidenceB = mystery.evidence_b_en || mystery.evidence_b
-  const additionalEvidence = mystery.additional_evidence_en || mystery.additional_evidence
+  const allEvidence = [
+    mystery.evidence_a_en || mystery.evidence_a,
+    mystery.evidence_b_en || mystery.evidence_b,
+    ...(mystery.additional_evidence_en || mystery.additional_evidence),
+  ].filter(ev => ev?.relevant_excerpt).slice(0, 10)
 
   const location = mystery.historical_context?.geographic_scope?.join(", ") || ""
   const timePeriod = mystery.historical_context?.time_period || ""
@@ -194,10 +196,8 @@ export default async function MysteryDetailPage({
                   <h2 className="font-serif text-xl text-parchment">Sources &amp; Evidence</h2>
                 </div>
                 <div className="space-y-8">
-                  <EvidenceBlock evidence={evidenceA} label="Primary Source" />
-                  <EvidenceBlock evidence={evidenceB} label="Contrasting Source" />
-                  {additionalEvidence.map((ev, i) => (
-                    <EvidenceBlock key={i} evidence={ev} label={`Additional Evidence ${i + 1}`} />
+                  {allEvidence.map((ev, i) => (
+                    <EvidenceBlock key={i} evidence={ev} label={`Source ${i + 1}`} />
                   ))}
                 </div>
                 {sourcesMarkdown && (
