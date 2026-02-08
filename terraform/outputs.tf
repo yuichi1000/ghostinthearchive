@@ -19,6 +19,11 @@ output "service_accounts" {
   }
 }
 
+output "cloud_build_push_trigger_id" {
+  description = "Cloud Build trigger ID for web-public auto-deploy on push"
+  value       = google_cloudbuild_trigger.web_public_on_push.trigger_id
+}
+
 output "cloud_run_jobs" {
   description = "Cloud Run Jobs names"
   value = {

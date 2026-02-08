@@ -61,3 +61,29 @@ output "cloud_build_trigger_id" {
   description = "Cloud Build trigger ID for web-public deployment"
   value       = google_cloudbuild_trigger.web_public.trigger_id
 }
+
+# Cloud Build trigger for web-public auto-deploy on push to main
+resource "google_cloudbuild_trigger" "web_public_on_push" {
+  name        = "web-public-auto-deploy"
+  description = "Auto deploy web-public on push to main"
+
+  github {
+    owner = split("/", var.github_repo)[0]
+    name  = split("/", var.github_repo)[1]
+    push {
+      branch = "^main$"
+    }
+  }
+
+  included_files = [
+    "web-public/**",
+    "shared/**",
+    "firebase.json",
+  ]
+
+  filename = "web-public/cloudbuild.yaml"
+
+  service_account = google_service_account.cloud_build.id
+
+  depends_on = [google_project_service.apis]
+}
