@@ -113,6 +113,8 @@ def search_dpla(
                     lang = SourceLanguage.ES
 
             url = item.get("isShownAt", item.get("@id", ""))
+            if not url:
+                continue
 
             doc = ArchiveDocument(
                 title=str(title)[:500],
