@@ -18,8 +18,8 @@ resource "google_dns_record_set" "admin" {
   rrdatas      = ["ghs.googlehosted.com."]
 }
 
-# Output nameservers for GoDaddy configuration
+# Output nameservers for Spaceship configuration
 output "nameservers" {
-  description = "Nameservers to configure in GoDaddy"
+  description = "Nameservers to configure in Spaceship"
   value       = google_dns_managed_zone.main.name_servers
 }
