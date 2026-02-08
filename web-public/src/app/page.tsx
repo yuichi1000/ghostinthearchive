@@ -7,7 +7,12 @@ import { getPublishedMysteries } from "@/lib/firestore/mysteries"
 import { FileStack, Search } from "lucide-react"
 
 async function MysteryList() {
-  const mysteries = await getPublishedMysteries(20)
+  let mysteries: Awaited<ReturnType<typeof getPublishedMysteries>> = []
+  try {
+    mysteries = await getPublishedMysteries(20)
+  } catch {
+    // Firestore 接続エラー時は空リストで表示
+  }
 
   if (mysteries.length === 0) {
     return (

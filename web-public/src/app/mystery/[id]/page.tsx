@@ -21,9 +21,17 @@ import remarkGfm from "remark-gfm"
 // SSG: ビルド時に生成されたページ以外は 404
 export const dynamicParams = false
 
+// output: "export" では generateStaticParams が空配列だとビルドエラーになる
+// revalidate = 0 でこのチェックをバイパス（静的出力では実行時に影響なし）
+export const revalidate = 0
+
 export async function generateStaticParams() {
-  const ids = await getPublishedMysteryIds()
-  return ids.map((id) => ({ id }))
+  try {
+    const ids = await getPublishedMysteryIds()
+    return ids.map((id) => ({ id }))
+  } catch {
+    return []
+  }
 }
 
 export async function generateMetadata({
