@@ -184,6 +184,12 @@ export interface FirestoreMystery extends MysteryReport {
   };
   /** ナラティブフック（英語） */
   story_hooks_en?: string[];
+  /** 主要証拠A（英語） */
+  evidence_a_en?: Evidence;
+  /** 対比証拠B（英語） */
+  evidence_b_en?: Evidence;
+  /** 追加証拠（英語） */
+  additional_evidence_en?: Evidence[];
 }
 
 /**

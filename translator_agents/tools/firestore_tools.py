@@ -36,6 +36,26 @@ def _extract_json_from_markdown(text: str) -> str:
     return text.strip()
 
 
+def _extract_translatable_evidence(evidence: dict) -> dict:
+    """Extract translatable fields from an Evidence object.
+
+    Args:
+        evidence: Evidence dictionary from Firestore.
+
+    Returns:
+        Dictionary with evidence fields for translation.
+    """
+    return {
+        "source_type": evidence.get("source_type", ""),
+        "source_language": evidence.get("source_language", ""),
+        "source_title": evidence.get("source_title", ""),
+        "source_date": evidence.get("source_date"),
+        "source_url": evidence.get("source_url", ""),
+        "relevant_excerpt": evidence.get("relevant_excerpt", ""),
+        "location_context": evidence.get("location_context"),
+    }
+
+
 def load_mystery_for_translation(mystery_id: str) -> dict | None:
     """Load a mystery document from Firestore for translation.
 
@@ -65,6 +85,12 @@ def load_mystery_for_translation(mystery_id: str) -> dict | None:
         "alternative_hypotheses": data.get("alternative_hypotheses", []),
         "political_climate": historical_context.get("political_climate", ""),
         "story_hooks": data.get("story_hooks", []),
+        "evidence_a": _extract_translatable_evidence(data.get("evidence_a", {})),
+        "evidence_b": _extract_translatable_evidence(data.get("evidence_b", {})),
+        "additional_evidence": [
+            _extract_translatable_evidence(ev)
+            for ev in data.get("additional_evidence", [])
+        ],
     }
 
 
@@ -103,6 +129,9 @@ def save_translation_result(mystery_id: str, translation_json: str) -> str:
                 "political_climate": translation.get("political_climate_en", ""),
             },
             "story_hooks_en": translation.get("story_hooks_en", []),
+            "evidence_a_en": translation.get("evidence_a_en", {}),
+            "evidence_b_en": translation.get("evidence_b_en", {}),
+            "additional_evidence_en": translation.get("additional_evidence_en", []),
             "status": "published",
             "translatedAt": now,
             "publishedAt": now,
