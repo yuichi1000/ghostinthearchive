@@ -1,242 +1,242 @@
-# Agent Catalog
+# エージェントカタログ
 
-All ADK agents in the project with their properties and expected eval scenarios.
+プロジェクト内の全 ADK エージェントのプロパティと期待される eval シナリオの一覧。
 
-## Archive Pipeline (`archive_agents/`)
+## Archive パイプライン（`archive_agents/`）
 
-Pipeline order: Librarian → Scholar → Storyteller → Illustrator → Publisher
+パイプライン順序: Librarian → Scholar → Storyteller → Illustrator → Publisher
 
-Curator is a standalone agent (not in the sequential pipeline).
+Curator はスタンドアロンエージェント（シーケンシャルパイプラインには含まれない）。
 
 ### Librarian
 
-| Property | Value |
+| プロパティ | 値 |
 |----------|-------|
-| Module | `archive_agents/agents/librarian.py` |
-| Variable | `librarian_agent` |
-| Model | `gemini-3-pro-preview` |
-| Output Key | `collected_documents` |
-| Tools | `search_newspapers`, `search_archives`, `get_available_keywords` |
-| Predecessor | (none — first agent) |
-| Checks Marker | (none) |
-| Emits Marker | `NO_DOCUMENTS_FOUND` |
-| Placeholders | (none) |
+| モジュール | `archive_agents/agents/librarian.py` |
+| 変数名 | `librarian_agent` |
+| モデル | `gemini-3-pro-preview` |
+| 出力キー | `collected_documents` |
+| ツール | `search_newspapers`, `search_archives`, `get_available_keywords` |
+| 前段 | （なし — 最初のエージェント） |
+| チェックするマーカー | （なし） |
+| 出力するマーカー | `NO_DOCUMENTS_FOUND` |
+| プレースホルダー | （なし） |
 
-**Eval Scenarios:**
+**Eval シナリオ:**
 
-| eval_id | Description | tool_uses | final_response keywords |
-|---------|-------------|-----------|------------------------|
-| `librarian_basic_search` | Basic historical document search | `search_newspapers`, `search_archives` | `collected_documents total_found` |
-| `librarian_folklore_search` | Folklore/legend search with keyword discovery | `get_available_keywords`, `search_newspapers` | `ghost legend folklore` |
-| `librarian_no_results` | No documents found (impossible query) | `search_newspapers` | `NO_DOCUMENTS_FOUND` |
-| `librarian_bilingual_expansion` | Bilingual (English + Spanish) search | `search_newspapers`, `search_archives` | `sources_searched` |
+| eval_id | 説明 | tool_uses | final_response キーワード |
+|---------|------|-----------|------------------------|
+| `librarian_basic_search` | 基本的な歴史文書検索 | `search_newspapers`, `search_archives` | `collected_documents total_found` |
+| `librarian_folklore_search` | 民俗・伝説検索（キーワード探索あり） | `get_available_keywords`, `search_newspapers` | `ghost legend folklore` |
+| `librarian_no_results` | 文書なし（不可能なクエリ） | `search_newspapers` | `NO_DOCUMENTS_FOUND` |
+| `librarian_bilingual_expansion` | バイリンガル（英語＋スペイン語）検索 | `search_newspapers`, `search_archives` | `sources_searched` |
 
 ---
 
 ### Scholar
 
-| Property | Value |
+| プロパティ | 値 |
 |----------|-------|
-| Module | `archive_agents/agents/scholar.py` |
-| Variable | `scholar_agent` |
-| Model | `gemini-3-pro-preview` |
-| Output Key | `mystery_report` |
-| Tools | (none) |
-| Predecessor | Librarian (`collected_documents`) |
-| Checks Marker | `NO_DOCUMENTS_FOUND` |
-| Emits Marker | `INSUFFICIENT_DATA` |
-| Placeholders | `{collected_documents}` |
+| モジュール | `archive_agents/agents/scholar.py` |
+| 変数名 | `scholar_agent` |
+| モデル | `gemini-3-pro-preview` |
+| 出力キー | `mystery_report` |
+| ツール | （なし） |
+| 前段 | Librarian（`collected_documents`） |
+| チェックするマーカー | `NO_DOCUMENTS_FOUND` |
+| 出力するマーカー | `INSUFFICIENT_DATA` |
+| プレースホルダー | `{collected_documents}` |
 
-**Eval Scenarios:**
+**Eval シナリオ:**
 
-| eval_id | Description | tool_uses | final_response keywords |
-|---------|-------------|-----------|------------------------|
-| `scholar_fact_based_analysis` | Historical fact analysis with date/event discrepancies | `[]` | `mystery_report DATE_MISMATCH` |
-| `scholar_folklore_analysis` | Folklore anomaly analysis (recurring patterns, taboos) | `[]` | `Folkloric Context RECURRING_PATTERN` |
-| `scholar_anthropological_analysis` | Cultural anthropology analysis (power structures, rituals) | `[]` | `Anthropological Context POWER_ERASURE` |
-| `scholar_insufficient_data` | Insufficient data handling | `[]` | `INSUFFICIENT_DATA NO_DOCUMENTS_FOUND` |
-| `scholar_cross_reference_analysis` | Cross-reference of fact, folklore, and anthropology | `[]` | `Folkloric Context Anthropological Context` |
+| eval_id | 説明 | tool_uses | final_response キーワード |
+|---------|------|-----------|------------------------|
+| `scholar_fact_based_analysis` | 歴史的事実の分析（日付・事象の矛盾） | `[]` | `mystery_report DATE_MISMATCH` |
+| `scholar_folklore_analysis` | 民俗学的アノマリー分析（反復パターン、禁忌） | `[]` | `Folkloric Context RECURRING_PATTERN` |
+| `scholar_anthropological_analysis` | 文化人類学分析（権力構造、儀礼） | `[]` | `Anthropological Context POWER_ERASURE` |
+| `scholar_insufficient_data` | データ不足時の処理 | `[]` | `INSUFFICIENT_DATA NO_DOCUMENTS_FOUND` |
+| `scholar_cross_reference_analysis` | 事実・民俗・人類学の相互参照 | `[]` | `Folkloric Context Anthropological Context` |
 
 ---
 
 ### Storyteller
 
-| Property | Value |
+| プロパティ | 値 |
 |----------|-------|
-| Module | `archive_agents/agents/storyteller.py` |
-| Variable | `storyteller_agent` |
-| Model | `gemini-3-pro-preview` |
-| Output Key | `creative_content` |
-| Tools | (none) |
-| Predecessor | Scholar (`mystery_report`) |
-| Checks Marker | `INSUFFICIENT_DATA` |
-| Emits Marker | `NO_CONTENT` |
-| Placeholders | `{mystery_report}` |
+| モジュール | `archive_agents/agents/storyteller.py` |
+| 変数名 | `storyteller_agent` |
+| モデル | `gemini-3-pro-preview` |
+| 出力キー | `creative_content` |
+| ツール | （なし） |
+| 前段 | Scholar（`mystery_report`） |
+| チェックするマーカー | `INSUFFICIENT_DATA` |
+| 出力するマーカー | `NO_CONTENT` |
+| プレースホルダー | `{mystery_report}` |
 
-**Eval Scenarios:**
+**Eval シナリオ:**
 
-| eval_id | Description | tool_uses | final_response keywords |
-|---------|-------------|-----------|------------------------|
-| `storyteller_complete_narrative` | Full blog article generation | `[]` | `creative_content Sources Firestore` |
-| `storyteller_fact_folklore_balance` | Balance of historical fact and folklore elements | `[]` | `伝説 記録 Firestore` |
-| `storyteller_four_part_structure` | Four-part narrative structure (discovery, evidence, context, mystery) | `[]` | `アーカイブ Sources Firestore` |
-| `storyteller_insufficient_data` | NO_CONTENT emission on insufficient input | `[]` | `NO_CONTENT INSUFFICIENT_DATA` |
+| eval_id | 説明 | tool_uses | final_response キーワード |
+|---------|------|-----------|------------------------|
+| `storyteller_complete_narrative` | 完全なブログ記事生成 | `[]` | `creative_content Sources Firestore` |
+| `storyteller_fact_folklore_balance` | 歴史的事実と民俗要素のバランス | `[]` | `伝説 記録 Firestore` |
+| `storyteller_four_part_structure` | 4部構成（発掘、証拠、文脈、余韻） | `[]` | `アーカイブ Sources Firestore` |
+| `storyteller_insufficient_data` | 入力不足時の NO_CONTENT 出力 | `[]` | `NO_CONTENT INSUFFICIENT_DATA` |
 
 ---
 
 ### Illustrator
 
-| Property | Value |
+| プロパティ | 値 |
 |----------|-------|
-| Module | `archive_agents/agents/illustrator.py` |
-| Variable | `illustrator_agent` |
-| Model | `gemini-3-pro-preview` |
-| Output Key | `visual_assets` |
-| Tools | `generate_image` |
-| Predecessor | Storyteller (`creative_content`) |
-| Checks Marker | `NO_CONTENT` |
-| Emits Marker | (none) |
-| Placeholders | `{creative_content}` |
+| モジュール | `archive_agents/agents/illustrator.py` |
+| 変数名 | `illustrator_agent` |
+| モデル | `gemini-3-pro-preview` |
+| 出力キー | `visual_assets` |
+| ツール | `generate_image` |
+| 前段 | Storyteller（`creative_content`） |
+| チェックするマーカー | `NO_CONTENT` |
+| 出力するマーカー | （なし） |
+| プレースホルダー | `{creative_content}` |
 
-**Eval Scenarios:**
+**Eval シナリオ:**
 
-| eval_id | Description | tool_uses | final_response keywords |
-|---------|-------------|-----------|------------------------|
-| `illustrator_fact_style` | Fact-based image (white/black photo style) | `generate_image` | `visual_assets Fact` |
-| `illustrator_folklore_style` | Folklore-based image (19th-century engraving style) | `generate_image` | `visual_assets Folklore` |
-| `illustrator_no_content_skip` | Skip generation when NO_CONTENT | `[]` | `NO_CONTENT` |
+| eval_id | 説明 | tool_uses | final_response キーワード |
+|---------|------|-----------|------------------------|
+| `illustrator_fact_style` | Fact 系画像（白黒写真風） | `generate_image` | `visual_assets Fact` |
+| `illustrator_folklore_style` | Folklore 系画像（19世紀版画風） | `generate_image` | `visual_assets Folklore` |
+| `illustrator_no_content_skip` | NO_CONTENT 時の生成スキップ | `[]` | `NO_CONTENT` |
 
 ---
 
 ### Publisher
 
-| Property | Value |
+| プロパティ | 値 |
 |----------|-------|
-| Module | `archive_agents/agents/publisher.py` |
-| Variable | `publisher_agent` |
-| Model | `gemini-3-pro-preview` |
-| Output Key | `published_episode` |
-| Tools | `upload_images`, `publish_mystery` |
-| Predecessor | Illustrator (`visual_assets`) + all upstream keys |
-| Checks Marker | All upstream markers (`NO_DOCUMENTS_FOUND`, `INSUFFICIENT_DATA`, `NO_CONTENT`) |
-| Emits Marker | (none) |
-| Placeholders | `{collected_documents}`, `{mystery_report}`, `{creative_content}`, `{visual_assets}` |
+| モジュール | `archive_agents/agents/publisher.py` |
+| 変数名 | `publisher_agent` |
+| モデル | `gemini-3-pro-preview` |
+| 出力キー | `published_episode` |
+| ツール | `upload_images`, `publish_mystery` |
+| 前段 | Illustrator（`visual_assets`）+ 全上流キー |
+| チェックするマーカー | 全上流マーカー（`NO_DOCUMENTS_FOUND`, `INSUFFICIENT_DATA`, `NO_CONTENT`） |
+| 出力するマーカー | （なし） |
+| プレースホルダー | `{collected_documents}`, `{mystery_report}`, `{creative_content}`, `{visual_assets}` |
 
-**Eval Scenarios:**
+**Eval シナリオ:**
 
-| eval_id | Description | tool_uses | final_response keywords |
-|---------|-------------|-----------|------------------------|
-| `publisher_full_workflow` | Full publish workflow with image upload | `upload_images`, `publish_mystery` | `published_episode Firestore mystery_id` |
-| `publisher_document_structure` | Verify required Firestore fields | `publish_mystery` | `mystery_id status Firestore` |
-| `publisher_failure_handling` | Skip publish when upstream failures detected | `[]` | `INSUFFICIENT_DATA NO_CONTENT` |
+| eval_id | 説明 | tool_uses | final_response キーワード |
+|---------|------|-----------|------------------------|
+| `publisher_full_workflow` | 画像アップロード付きフル公開ワークフロー | `upload_images`, `publish_mystery` | `published_episode Firestore mystery_id` |
+| `publisher_document_structure` | Firestore 必須フィールドの検証 | `publish_mystery` | `mystery_id status Firestore` |
+| `publisher_failure_handling` | 上流失敗検出時の公開スキップ | `[]` | `INSUFFICIENT_DATA NO_CONTENT` |
 
 ---
 
 ### Curator
 
-| Property | Value |
+| プロパティ | 値 |
 |----------|-------|
-| Module | `archive_agents/agents/curator.py` |
-| Variable | `curator_agent` |
-| Model | `gemini-3-pro-preview` |
-| Output Key | `suggested_themes` |
-| Tools | (none) |
-| Predecessor | (standalone — not in sequential pipeline) |
-| Checks Marker | (none) |
-| Emits Marker | (none) |
-| Placeholders | `{existing_titles}` |
+| モジュール | `archive_agents/agents/curator.py` |
+| 変数名 | `curator_agent` |
+| モデル | `gemini-3-pro-preview` |
+| 出力キー | `suggested_themes` |
+| ツール | （なし） |
+| 前段 | （スタンドアロン — シーケンシャルパイプライン外） |
+| チェックするマーカー | （なし） |
+| 出力するマーカー | （なし） |
+| プレースホルダー | `{existing_titles}` |
 
-**Eval Scenarios:**
+**Eval シナリオ:**
 
-| eval_id | Description | tool_uses | final_response keywords |
-|---------|-------------|-----------|------------------------|
-| `curator_theme_suggestion` | Generate investigation themes | `[]` | `suggested_themes Fact Folklore` |
-| `curator_duplicate_avoidance` | Avoid suggesting existing titles | `[]` | `suggested_themes 重複なし` |
+| eval_id | 説明 | tool_uses | final_response キーワード |
+|---------|------|-----------|------------------------|
+| `curator_theme_suggestion` | 調査テーマの提案 | `[]` | `suggested_themes Fact Folklore` |
+| `curator_duplicate_avoidance` | 既存タイトルとの重複回避 | `[]` | `suggested_themes 重複なし` |
 
 ---
 
-## Podcast Pipeline (`podcast_agents/`)
+## Podcast パイプライン（`podcast_agents/`）
 
-Pipeline order: Scriptwriter → Producer
+パイプライン順序: Scriptwriter → Producer
 
 ### Scriptwriter
 
-| Property | Value |
+| プロパティ | 値 |
 |----------|-------|
-| Module | `podcast_agents/agents/scriptwriter.py` |
-| Variable | `scriptwriter_agent` |
-| Model | `gemini-3-pro-preview` |
-| Output Key | `podcast_script` |
-| Tools | (none) |
-| Predecessor | (reads `creative_content` from Firestore pre-set) |
-| Checks Marker | `NO_CONTENT` |
-| Emits Marker | `NO_SCRIPT` |
-| Placeholders | `{creative_content}` |
+| モジュール | `podcast_agents/agents/scriptwriter.py` |
+| 変数名 | `scriptwriter_agent` |
+| モデル | `gemini-3-pro-preview` |
+| 出力キー | `podcast_script` |
+| ツール | （なし） |
+| 前段 | （Firestore から `creative_content` を事前セット） |
+| チェックするマーカー | `NO_CONTENT` |
+| 出力するマーカー | `NO_SCRIPT` |
+| プレースホルダー | `{creative_content}` |
 
-**Eval Scenarios:**
+**Eval シナリオ:**
 
-| eval_id | Description | tool_uses | final_response keywords |
-|---------|-------------|-----------|------------------------|
-| `scriptwriter_complete_script` | Full podcast script generation | `[]` | `podcast_script INTRO OUTRO` |
-| `scriptwriter_segment_structure` | Verify INTRO/SEGMENTS/OUTRO structure | `[]` | `INTRO SEGMENTS OUTRO` |
-| `scriptwriter_no_content_failure` | NO_SCRIPT emission on NO_CONTENT input | `[]` | `NO_SCRIPT NO_CONTENT` |
+| eval_id | 説明 | tool_uses | final_response キーワード |
+|---------|------|-----------|------------------------|
+| `scriptwriter_complete_script` | 完全なポッドキャスト脚本生成 | `[]` | `podcast_script INTRO OUTRO` |
+| `scriptwriter_segment_structure` | INTRO/SEGMENTS/OUTRO 構成の検証 | `[]` | `INTRO SEGMENTS OUTRO` |
+| `scriptwriter_no_content_failure` | NO_CONTENT 入力時の NO_SCRIPT 出力 | `[]` | `NO_SCRIPT NO_CONTENT` |
 
 ---
 
 ### Producer
 
-| Property | Value |
+| プロパティ | 値 |
 |----------|-------|
-| Module | `podcast_agents/agents/producer.py` |
-| Variable | `producer_agent` |
-| Model | `gemini-3-pro-preview` |
-| Output Key | `audio_assets` |
-| Tools | (none) |
-| Predecessor | Scriptwriter (`podcast_script`) |
-| Checks Marker | (none) |
-| Emits Marker | (none) |
-| Placeholders | `{podcast_script}` |
+| モジュール | `podcast_agents/agents/producer.py` |
+| 変数名 | `producer_agent` |
+| モデル | `gemini-3-pro-preview` |
+| 出力キー | `audio_assets` |
+| ツール | （なし） |
+| 前段 | Scriptwriter（`podcast_script`） |
+| チェックするマーカー | （なし） |
+| 出力するマーカー | （なし） |
+| プレースホルダー | `{podcast_script}` |
 
-**Eval Scenarios:**
+**Eval シナリオ:**
 
-| eval_id | Description | tool_uses | final_response keywords |
-|---------|-------------|-----------|------------------------|
-| `producer_audio_plan` | Audio production plan generation | `[]` | `audio_assets voice SFX` |
-| `producer_bilingual_text` | Bilingual (Japanese/English) text segments | `[]` | `bilingual 日本語 English` |
-| `producer_voice_sfx_settings` | Voice and SFX configuration | `[]` | `voice SFX BGM` |
+| eval_id | 説明 | tool_uses | final_response キーワード |
+|---------|------|-----------|------------------------|
+| `producer_audio_plan` | 音声制作プランの生成 | `[]` | `audio_assets voice SFX` |
+| `producer_bilingual_text` | バイリンガル（日本語/英語）テキストセグメント | `[]` | `bilingual 日本語 English` |
+| `producer_voice_sfx_settings` | ボイスと SFX の設定 | `[]` | `voice SFX BGM` |
 
 ---
 
-## Translator Pipeline (`translator_agents/`)
+## Translator パイプライン（`translator_agents/`）
 
 ### Translator
 
-| Property | Value |
+| プロパティ | 値 |
 |----------|-------|
-| Module | `translator_agents/agents/translator.py` |
-| Variable | `translator_agent` |
-| Model | `gemini-3-pro-preview` |
-| Output Key | `translation_result` |
-| Tools | (none) |
-| Predecessor | (reads from Firestore pre-set fields) |
-| Checks Marker | `NO_CONTENT` |
-| Emits Marker | `NO_TRANSLATION` |
-| Placeholders | `{title}`, `{summary}`, `{narrative_content}`, `{discrepancy_detected}`, `{hypothesis}`, `{alternative_hypotheses}`, `{political_climate}`, `{story_hooks}` |
+| モジュール | `translator_agents/agents/translator.py` |
+| 変数名 | `translator_agent` |
+| モデル | `gemini-3-pro-preview` |
+| 出力キー | `translation_result` |
+| ツール | （なし） |
+| 前段 | （Firestore から事前セットされたフィールドを読み取り） |
+| チェックするマーカー | `NO_CONTENT` |
+| 出力するマーカー | `NO_TRANSLATION` |
+| プレースホルダー | `{title}`, `{summary}`, `{narrative_content}`, `{discrepancy_detected}`, `{hypothesis}`, `{alternative_hypotheses}`, `{political_climate}`, `{story_hooks}` |
 
-**Eval Scenarios:**
+**Eval シナリオ:**
 
-| eval_id | Description | tool_uses | final_response keywords |
-|---------|-------------|-----------|------------------------|
-| `translator_complete_translation` | Full Japanese-to-English translation | `[]` | `translation_result title_en summary_en narrative_content_en` |
-| `translator_no_content_skip` | NO_TRANSLATION emission on NO_CONTENT input | `[]` | `NO_TRANSLATION NO_CONTENT` |
-| `translator_json_output_format` | Verify JSON output structure with _en fields | `[]` | `translation_result JSON title_en` |
+| eval_id | 説明 | tool_uses | final_response キーワード |
+|---------|------|-----------|------------------------|
+| `translator_complete_translation` | 完全な日英翻訳 | `[]` | `translation_result title_en summary_en narrative_content_en` |
+| `translator_no_content_skip` | NO_CONTENT 入力時の NO_TRANSLATION 出力 | `[]` | `NO_TRANSLATION NO_CONTENT` |
+| `translator_json_output_format` | _en フィールド付き JSON 出力構造の検証 | `[]` | `translation_result JSON title_en` |
 
 ---
 
-## Maintenance
+## メンテナンス
 
-When adding a new agent to any pipeline:
+新しいエージェントをパイプラインに追加する際:
 
-1. Add the agent definition to this catalog following the same table format
-2. Run `/gen-eval` for the new agent to generate eval tests
-3. Verify all tests pass with `pytest tests/eval/ tests/integration/ -v`
+1. 同じテーブル形式でこのカタログにエージェント定義を追加する
+2. 新しいエージェントに対して `/gen-eval` を実行し eval テストを生成する
+3. `pytest tests/eval/ tests/integration/ -v` で全テストが通ることを確認する
