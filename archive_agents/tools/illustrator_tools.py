@@ -18,7 +18,16 @@ MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 2
 
 # Fallback image path
-FALLBACK_IMAGE_PATH = Path(__file__).parent.parent / "assets" / "fallback_header.webp"
+ASSETS_DIR = Path(__file__).parent.parent / "assets"
+FALLBACK_IMAGE_PATH = ASSETS_DIR / "fallback_header.webp"
+
+# Pre-generated fallback variants (heights calculated from 2816x1536 original)
+FALLBACK_VARIANTS = [
+    {"label": "sm", "width": 640, "height": 349, "filepath": str(ASSETS_DIR / "fallback_header_sm.webp"), "filename": "fallback_header_sm.webp"},
+    {"label": "md", "width": 828, "height": 452, "filepath": str(ASSETS_DIR / "fallback_header_md.webp"), "filename": "fallback_header_md.webp"},
+    {"label": "lg", "width": 1200, "height": 655, "filepath": str(ASSETS_DIR / "fallback_header_lg.webp"), "filename": "fallback_header_lg.webp"},
+    {"label": "xl", "width": 1920, "height": 1047, "filepath": str(ASSETS_DIR / "fallback_header_xl.webp"), "filename": "fallback_header_xl.webp"},
+]
 
 # Responsive image variant configuration
 IMAGE_VARIANTS = [
@@ -302,9 +311,6 @@ def generate_image(
 
     # All retries failed - try fallback image
     if FALLBACK_IMAGE_PATH.exists():
-        # Generate responsive variants from fallback
-        variants = _get_variants(str(FALLBACK_IMAGE_PATH))
-
         return json.dumps({
             "status": "fallback",
             "filepath": str(FALLBACK_IMAGE_PATH),
@@ -313,7 +319,7 @@ def generate_image(
             "original_prompt": full_prompt,
             "last_error": last_error,
             "attempts": MAX_RETRIES,
-            "variants": variants,
+            "variants": FALLBACK_VARIANTS,
         }, ensure_ascii=False)
 
     # No fallback available

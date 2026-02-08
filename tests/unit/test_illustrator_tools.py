@@ -10,6 +10,7 @@ from archive_agents.tools.illustrator_tools import (
     IMAGE_VARIANTS,
     MAX_RETRIES,
     FALLBACK_IMAGE_PATH,
+    FALLBACK_VARIANTS,
     _sanitize_prompt,
     generate_image,
     resize_image_variants,
@@ -451,26 +452,20 @@ class TestGenerateImageWithVariants:
         assert result_data["status"] == "success"
         assert result_data["variants"] == []
 
-    @patch("archive_agents.tools.illustrator_tools.resize_image_variants")
     @patch("archive_agents.tools.illustrator_tools._get_client")
     @patch("archive_agents.tools.illustrator_tools.time.sleep")
-    def test_fallback_includes_variants(self, mock_sleep, mock_get_client, mock_resize):
-        """Should include variants in fallback response."""
+    def test_fallback_includes_pregenerated_variants(self, mock_sleep, mock_get_client):
+        """Should include pre-generated static variants in fallback response."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         mock_client.models.generate_images.return_value = MagicMock(generated_images=[])
-
-        mock_resize.return_value = json.dumps({
-            "status": "success",
-            "variants": [
-                {"label": "sm", "width": 640, "height": 360, "filepath": "/tmp/sm.webp", "filename": "sm.webp"},
-            ],
-        })
 
         with patch.object(Path, "exists", return_value=True):
             result = generate_image("A ghost ship", style="folklore")
             result_data = json.loads(result)
 
         assert result_data["status"] == "fallback"
-        assert "variants" in result_data
-        mock_resize.assert_called_once()
+        assert result_data["variants"] == FALLBACK_VARIANTS
+        assert len(result_data["variants"]) == 4
+        labels = {v["label"] for v in result_data["variants"]}
+        assert labels == {"sm", "md", "lg", "xl"}
