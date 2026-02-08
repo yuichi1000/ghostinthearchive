@@ -28,8 +28,10 @@ class TestUploadImagesContentType:
         result_data = json.loads(result)
 
         assert result_data["status"] == "success"
+        # Local file is renamed to mystery_id-based name before upload
+        renamed_path = str(tmp_path / "TEST-001_sm.webp")
         mock_blob.upload_from_filename.assert_called_once_with(
-            str(webp_file), content_type="image/webp"
+            renamed_path, content_type="image/webp"
         )
 
     @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
@@ -48,8 +50,10 @@ class TestUploadImagesContentType:
         result_data = json.loads(result)
 
         assert result_data["status"] == "success"
+        # Local file is renamed to mystery_id-based name before upload
+        renamed_path = str(tmp_path / "TEST-001.png")
         mock_blob.upload_from_filename.assert_called_once_with(
-            str(png_file), content_type="image/png"
+            renamed_path, content_type="image/png"
         )
 
 
@@ -478,3 +482,82 @@ class TestPublishMysteryFallbackImages:
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert "images" in saved_data
         assert "variants" in saved_data["images"]
+
+
+class TestLocalFileRename:
+    """Tests for local file renaming to mystery_id-based names."""
+
+    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    def test_local_file_renamed_to_mystery_id(self, mock_get_bucket, tmp_path):
+        """Should rename local original file to {mystery_id}.png after upload."""
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        png_file = tmp_path / "header_20260208_145745.png"
+        png_file.write_bytes(b"fake png data")
+
+        mystery_id = "OCC-MA-617-20260208143025"
+        upload_images(mystery_id, json.dumps([str(png_file)]))
+
+        # Original file should no longer exist
+        assert not png_file.exists()
+        # Renamed file should exist
+        renamed_file = tmp_path / f"{mystery_id}.png"
+        assert renamed_file.exists()
+
+    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    def test_local_variant_renamed_to_mystery_id(self, mock_get_bucket, tmp_path):
+        """Should rename local WebP variant to {mystery_id}_sm.webp after upload."""
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        webp_file = tmp_path / "header_20260208_145745_sm.webp"
+        webp_file.write_bytes(b"fake webp data")
+
+        mystery_id = "OCC-MA-617-20260208143025"
+        upload_images(mystery_id, json.dumps([str(webp_file)]))
+
+        # Original file should no longer exist
+        assert not webp_file.exists()
+        # Renamed file should exist
+        renamed_file = tmp_path / f"{mystery_id}_sm.webp"
+        assert renamed_file.exists()
+
+    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("archive_agents.tools.publisher_tools.get_firestore_client")
+    def test_local_files_renamed_via_publish_mystery(
+        self, mock_get_db, mock_get_bucket, tmp_path
+    ):
+        """Should rename local files when called through publish_mystery."""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        mystery_json = _make_mystery_json()
+        visual_assets_json = _make_visual_assets_json(tmp_path)
+
+        result = publish_mystery(mystery_json, visual_assets_json)
+        result_data = json.loads(result)
+        mystery_id = result_data["mystery_id"]
+
+        # Original timestamp-based files should be gone
+        assert not (tmp_path / "header_20260208_143025.png").exists()
+        assert not (tmp_path / "header_20260208_143025_sm.webp").exists()
+
+        # mystery_id-based files should exist
+        assert (tmp_path / f"{mystery_id}.png").exists()
+        assert (tmp_path / f"{mystery_id}_sm.webp").exists()
+        assert (tmp_path / f"{mystery_id}_md.webp").exists()
+        assert (tmp_path / f"{mystery_id}_lg.webp").exists()
+        assert (tmp_path / f"{mystery_id}_xl.webp").exists()
