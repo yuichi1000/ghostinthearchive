@@ -115,3 +115,107 @@ class TestUploadImagesRenaming:
         assert result_data["status"] == "success"
         expected_blob = f"images/{mystery_id}/{mystery_id}.jpg"
         mock_bucket.blob.assert_called_once_with(expected_blob)
+
+
+class TestUploadImagesLabel:
+    """Tests for upload_images label field."""
+
+    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    def test_upload_returns_label_for_original(self, mock_get_bucket, tmp_path):
+        """Should return label 'original' for the original image."""
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        png_file = tmp_path / "header_20260208.png"
+        png_file.write_bytes(b"fake png data")
+
+        result = upload_images("TEST-001", json.dumps([str(png_file)]))
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert result_data["uploaded"][0]["label"] == "original"
+
+    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    def test_upload_returns_label_for_variant(self, mock_get_bucket, tmp_path):
+        """Should return label 'sm' for a _sm variant image."""
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        webp_file = tmp_path / "header_20260208_sm.webp"
+        webp_file.write_bytes(b"fake webp data")
+
+        result = upload_images("TEST-001", json.dumps([str(webp_file)]))
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert result_data["uploaded"][0]["label"] == "sm"
+
+
+class TestUploadImagesStructured:
+    """Tests for upload_images structured images object."""
+
+    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    def test_upload_returns_structured_images(self, mock_get_bucket, tmp_path):
+        """Should return structured images object with hero and variants."""
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        # Create original + all 4 variants
+        files = [
+            tmp_path / "header.png",
+            tmp_path / "header_sm.webp",
+            tmp_path / "header_md.webp",
+            tmp_path / "header_lg.webp",
+            tmp_path / "header_xl.webp",
+        ]
+        for f in files:
+            f.write_bytes(b"fake data")
+
+        mystery_id = "OCC-MA-617-20260208143025"
+        result = upload_images(mystery_id, json.dumps([str(f) for f in files]))
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        images = result_data["images"]
+        assert "hero" in images
+        assert "variants" in images
+        assert "sm" in images["variants"]
+        assert "md" in images["variants"]
+        assert "lg" in images["variants"]
+        assert "xl" in images["variants"]
+
+    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    def test_upload_images_hero_prefers_lg(self, mock_get_bucket, tmp_path):
+        """Should use lg variant URL as hero when lg variant exists."""
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        # Create original + lg variant
+        original = tmp_path / "header.png"
+        original.write_bytes(b"fake png")
+        lg_variant = tmp_path / "header_lg.webp"
+        lg_variant.write_bytes(b"fake lg webp")
+
+        mystery_id = "OCC-MA-617-20260208143025"
+        result = upload_images(mystery_id, json.dumps([str(original), str(lg_variant)]))
+        result_data = json.loads(result)
+
+        images = result_data["images"]
+        # hero should be the lg variant URL, not the original
+        lg_url = next(
+            e["public_url"] for e in result_data["uploaded"]
+            if e["label"] == "lg"
+        )
+        assert images["hero"] == lg_url

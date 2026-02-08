@@ -11,6 +11,7 @@ from archive_agents.tools.illustrator_tools import (
     MAX_RETRIES,
     FALLBACK_IMAGE_PATH,
     FALLBACK_VARIANTS,
+    _get_variants,
     _sanitize_prompt,
     generate_image,
     resize_image_variants,
@@ -469,3 +470,24 @@ class TestGenerateImageWithVariants:
         assert len(result_data["variants"]) == 4
         labels = {v["label"] for v in result_data["variants"]}
         assert labels == {"sm", "md", "lg", "xl"}
+
+
+class TestGetVariantsLogging:
+    """Tests for _get_variants warning log on failure."""
+
+    @patch("archive_agents.tools.illustrator_tools.resize_image_variants")
+    def test_get_variants_logs_warning_on_failure(self, mock_resize, caplog):
+        """Should log a warning when variant generation fails."""
+        mock_resize.return_value = json.dumps({
+            "status": "error",
+            "error": "Pillow not installed",
+            "variants": [],
+        })
+
+        import logging
+        with caplog.at_level(logging.WARNING, logger="archive_agents.tools.illustrator_tools"):
+            result = _get_variants("/tmp/test.png")
+
+        assert result == []
+        assert "Variant generation failed" in caplog.text
+        assert "Pillow not installed" in caplog.text
