@@ -75,7 +75,7 @@ export default async function MysteryDetailPage({
     mystery.evidence_a_en || mystery.evidence_a,
     mystery.evidence_b_en || mystery.evidence_b,
     ...(mystery.additional_evidence_en || mystery.additional_evidence),
-  ].filter(ev => ev?.relevant_excerpt).slice(0, 7)
+  ].filter(ev => ev?.relevant_excerpt && ev?.source_url).slice(0, 7)
 
   const location = mystery.historical_context?.geographic_scope?.join(", ") || ""
   const timePeriod = mystery.historical_context?.time_period || ""
