@@ -150,6 +150,12 @@ export interface FirestoreMystery extends MysteryReport {
   /** 画像アセット（Cloud Storage URLs） */
   images?: {
     hero?: string;
+    variants?: {
+      sm?: string;  // 640px
+      md?: string;  // 828px
+      lg?: string;  // 1200px
+      xl?: string;  // 1920px
+    };
     thumbnail?: string;
     inserts?: string[];
   };
