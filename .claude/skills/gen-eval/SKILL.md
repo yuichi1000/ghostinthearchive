@@ -1,97 +1,103 @@
 ---
 name: gen-eval
-description: "This skill should be used when the user asks to '/gen-eval', 'generate eval tests', 'create evaluation tests for agent', 'add golden dataset', 'generate ADK eval', or needs to create ADK agent-level evaluation tests including Golden Datasets, eval content verification tests, and agent handover tests."
+description: "ADK エージェントの評価テストを生成。Golden Dataset・eval 検証テスト・handover テストを自動生成"
 argument-hint: "[agent_module_path]"
+disable-model-invocation: true
+allowed-tools: Read, Glob, Grep, Bash, Write, Edit
 ---
 
-# ADK Agent Evaluation Test Generator
+# /gen-eval — ADK エージェント評価テスト自動生成
 
-Generate ADK agent-level evaluation tests: Golden Dataset (eval_set JSON), eval content verification tests, and agent handover tests.
+対象エージェントモジュールのパスを `$ARGUMENTS` で受け取り、以下の3つを生成する:
 
-## Workflow
+1. **Golden Dataset** — `tests/eval/eval_sets/{agent}_eval.json`
+2. **Eval コンテンツ検証テスト** — `tests/eval/test_adk_eval.py` の `TestEvalSetContent` にメソッド追加
+3. **Agent Handover テスト** — `tests/integration/test_agent_handover.py` にメソッド追加
 
-Follow these 7 steps in order when `$ARGUMENTS` is provided. If `$ARGUMENTS` is empty, ask the user to specify an agent module path (e.g., `archive_agents/agents/scholar.py`).
+## ワークフロー
 
-### Step 1: Parse Agent Module
+`$ARGUMENTS` が空の場合は、エージェントモジュールパス（例: `archive_agents/agents/scholar.py`）の指定を求める。
 
-Read the agent module file at `$ARGUMENTS` and extract:
+### Step 1: エージェントモジュール解析
 
-- **name**: Agent variable name (e.g., `scholar_agent`)
-- **model**: Model string (e.g., `gemini-3-pro-preview`)
-- **output_key**: Session state output key (e.g., `mystery_report`)
-- **tools**: List of tool functions (from `tools=[]` parameter)
-- **instruction**: Full instruction string (look for `{placeholder}` patterns)
-- **failure_markers_checked**: Markers the agent checks in upstream data (e.g., `NO_DOCUMENTS_FOUND`)
-- **failure_markers_emitted**: Markers the agent emits on failure (e.g., `INSUFFICIENT_DATA`)
+`$ARGUMENTS` のファイルを読み取り、以下を抽出する:
 
-### Step 2: Determine Pipeline Context
+- **name**: エージェント変数名（例: `scholar_agent`）
+- **model**: モデル文字列（例: `gemini-3-pro-preview`）
+- **output_key**: セッション状態の出力キー（例: `mystery_report`）
+- **tools**: ツール関数のリスト（`tools=[]` パラメータから取得）
+- **instruction**: instruction 文字列全体（`{placeholder}` パターンを探す）
+- **failure_markers_checked**: 上流データでチェックする失敗マーカー（例: `NO_DOCUMENTS_FOUND`）
+- **failure_markers_emitted**: 失敗時に出力するマーカー（例: `INSUFFICIENT_DATA`）
 
-Identify the pipeline from the file path prefix:
+### Step 2: パイプラインコンテキスト決定
 
-| Path Prefix | Pipeline | Commander |
-|-------------|----------|-----------|
-| `archive_agents/` | archive (blog) | `ghost_commander` |
+ファイルパスのプレフィックスからパイプラインを特定する:
+
+| パスプレフィックス | パイプライン | コマンダー |
+|-------------------|------------|-----------|
+| `archive_agents/` | archive（ブログ） | `ghost_commander` |
 | `podcast_agents/` | podcast | `podcast_commander` |
 | `translator_agents/` | translator | `translator_commander` |
 
-Cross-reference with `agent-catalog.md` (in this skill's directory) to determine:
-- Predecessor agent and its `output_key` (the session state key this agent reads)
-- Successor agent (if any)
-- Expected eval scenarios for this agent
+このスキルのディレクトリにある `agent-catalog.md` と照合し、以下を把握する:
+- 前段エージェントとその `output_key`（このエージェントが読み取るセッション状態キー）
+- 後段エージェント（存在する場合）
+- このエージェントに期待される eval シナリオ
 
-### Step 3: Check Existing Tests
+### Step 3: 既存テスト確認
 
-Scan for existing tests to avoid duplication:
+重複を避けるため、既存テストをスキャンする:
 
-1. **Eval set JSON**: Check `tests/eval/eval_sets/{agent_name}_eval.json`
-2. **Eval content tests**: Grep `tests/eval/test_adk_eval.py` for `test_{agent_name}_eval_covers`
-3. **Handover tests**: Grep `tests/integration/test_agent_handover.py` for `test_{agent_name}_output_key`
+1. **Eval set JSON**: `tests/eval/eval_sets/{agent_name}_eval.json` の存在確認
+2. **Eval コンテンツテスト**: `tests/eval/test_adk_eval.py` 内の `test_{agent_name}_eval_covers` を検索
+3. **Handover テスト**: `tests/integration/test_agent_handover.py` 内の `test_{agent_name}_output_key` を検索
 
-Report what exists and what needs to be generated.
+何が存在し、何を生成する必要があるか報告する。
 
-### Step 4: Generate Golden Dataset
+### Step 4: Golden Dataset 生成
 
-Create or update `tests/eval/eval_sets/{agent_name}_eval.json`.
+`tests/eval/eval_sets/{agent_name}_eval.json` を作成または更新する。
 
-Consult `eval-set-format.md` (in this skill's directory) for the exact ADK eval_set JSON format specification. Consult `agent-catalog.md` for the expected eval scenarios for this agent.
+このスキルのディレクトリにある `eval-set-format.md` で ADK eval_set JSON の正確なフォーマット仕様を確認する。`agent-catalog.md` でこのエージェントに期待される eval シナリオを確認する。
 
-**Rules:**
+**ルール:**
 - `eval_set_id`: `{agent_name}_eval_v1`
 - `eval_id`: `{agent_name}_{scenario_snake_case}`
-- `user_content.parts[0].text`: Always in Japanese
-- `intermediate_data.tool_uses`: List expected tools with `"args": {}` (empty args). Set to `[]` for agents without tools or for failure scenarios
-- `final_response.parts[0].text`: Include `output_key` name + expected keywords (space-separated). For failure scenarios, include the failure marker keyword
+- `user_content.parts[0].text`: 必ず日本語で記述
+- `intermediate_data.tool_uses`: 期待されるツールを `"args": {}`（空）で列挙。ツールなしのエージェントまたは失敗シナリオでは `[]`
+- `final_response.parts[0].text`: `output_key` 名 + 期待キーワード（スペース区切り）。失敗シナリオでは失敗マーカーキーワード
 
-If the file already exists, compare existing `eval_id` values against the expected scenarios from `agent-catalog.md`. Only add missing scenarios.
+ファイルが既に存在する場合は、既存の `eval_id` を `agent-catalog.md` の期待シナリオと比較し、不足シナリオのみ追加する。
 
-### Step 5: Generate Eval Content Verification Tests
+### Step 5: Eval コンテンツ検証テスト生成
 
-Add methods to `TestEvalSetContent` class in `tests/eval/test_adk_eval.py`.
+`tests/eval/test_adk_eval.py` の `TestEvalSetContent` クラスにメソッドを追加する。
 
-**Generate these test methods** (skip if already present):
+**生成するテストメソッド**（既に存在する場合はスキップ）:
 
-1. `test_{agent_name}_eval_covers_key_scenarios` — Verify eval_set contains expected scenario eval_ids. Use `any("keyword" in eid.lower() for eid in eval_ids)` pattern matching the existing test style
-2. For agents with tools: A test verifying `intermediate_data.tool_uses` contains expected tool names (follow `test_publisher_eval_covers_tool_usage` pattern)
-3. For agents that emit failure markers: Verify a failure scenario exists in the eval_set
+1. `test_{agent_name}_eval_covers_key_scenarios` — eval_set に期待されるシナリオの eval_id が含まれることを検証。`any("keyword" in eid.lower() for eid in eval_ids)` パターンで既存テストスタイルに合わせる
+2. ツールを持つエージェントの場合: `intermediate_data.tool_uses` に期待されるツール名が含まれることを検証（`test_publisher_eval_covers_tool_usage` パターンに従う）
+3. 失敗マーカーを出力するエージェントの場合: eval_set に失敗シナリオが存在することを検証
 
-Follow the exact code style of existing methods in `TestEvalSetContent`. Import nothing extra — the class already has `json`, `Path`, `EVAL_SETS_DIR` available.
+`TestEvalSetContent` の既存メソッドのコードスタイルに厳密に従う。追加 import は不要 — クラスのスコープで `json`, `Path`, `EVAL_SETS_DIR` が利用可能。
 
-### Step 6: Generate Agent Handover Tests
+### Step 6: Agent Handover テスト生成
 
-Add methods to the appropriate class in `tests/integration/test_agent_handover.py`.
+`tests/integration/test_agent_handover.py` の適切なクラスにメソッドを追加する。
 
-**Generate these test methods** (skip if already present):
+**生成するテストメソッド**（既に存在する場合はスキップ）:
 
-1. `test_{agent_name}_output_key` — Verify `agent.output_key == "expected_key"` (add to `TestSessionStateKeys` or `TestPodcastSessionStateKeys`)
-2. `test_{agent_name}_references_{predecessor_key}` — Verify `"{predecessor_key}" in agent.instruction` (add to `TestInstructionPlaceholders` or `TestPodcastInstructionPlaceholders`)
-3. `test_{agent_name}_checks_upstream_failure` — Verify the agent's instruction contains the upstream failure marker string (add to `TestFailureMarkers` if not already covered)
-4. `test_{agent_name}_uses_correct_model` — Verify `agent.model == "gemini-3-pro-preview"` (add to `TestAgentModels`)
+1. `test_{agent_name}_output_key` — `agent.output_key == "expected_key"` を検証（`TestSessionStateKeys` または `TestPodcastSessionStateKeys` に追加）
+2. `test_{agent_name}_references_{predecessor_key}` — `"{predecessor_key}" in agent.instruction` を検証（`TestInstructionPlaceholders` または `TestPodcastInstructionPlaceholders` に追加）
+3. `test_{agent_name}_checks_upstream_failure` — エージェントの instruction に上流の失敗マーカー文字列が含まれることを検証（`TestFailureMarkers` に追加。既にカバーされている場合はスキップ）
+4. `test_{agent_name}_uses_correct_model` — `agent.model == "gemini-3-pro-preview"` を検証（`TestAgentModels` に追加）
 
-Follow the exact import and assertion patterns of existing test methods.
+既存テストメソッドの import パターンとアサーションパターンに厳密に従う。
 
-### Step 7: Verify
+### Step 7: 検証
 
-Run structural tests to confirm generated files are valid:
+生成したファイルが有効であることを構造テストで確認する:
 
 ```bash
 pytest tests/eval/test_adk_eval.py::TestADKEvaluationSetup -v
@@ -99,11 +105,11 @@ pytest tests/eval/test_adk_eval.py::TestEvalSetContent -v
 pytest tests/integration/test_agent_handover.py -v
 ```
 
-Report results. If any test fails, fix and re-run.
+結果を報告する。テストが失敗した場合は修正して再実行する。
 
-## Reference Files
+## リファレンス
 
-Consult these files in this skill's directory for detailed specifications:
+このスキルのディレクトリにある以下のファイルで詳細仕様を確認:
 
-- **`agent-catalog.md`** — Full agent definitions catalog: properties, pipeline positions, expected eval scenarios
-- **`eval-set-format.md`** — ADK eval_set JSON format specification with annotated examples
+- **`agent-catalog.md`** — 全エージェント定義カタログ: プロパティ、パイプライン上の位置、期待される eval シナリオ
+- **`eval-set-format.md`** — ADK eval_set JSON フォーマット仕様（annotated example 付き）
