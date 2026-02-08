@@ -54,7 +54,7 @@ resource "google_cloudbuild_trigger" "web_public" {
 variable "github_repo" {
   description = "GitHub repository in format 'owner/repo'"
   type        = string
-  default     = "your-username/ghostinthearchive"
+  default     = "yuichi1000/ghostinthearchive"
 }
 
 output "cloud_build_trigger_id" {
