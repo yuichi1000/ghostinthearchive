@@ -29,11 +29,72 @@ def _generate_mystery_id(classification: str, state_code: str, area_code: str) -
     return f"{classification.upper()}-{state_code.upper()}-{area_code}-{timestamp}"
 
 
-def publish_mystery(mystery_json: str) -> str:
-    """Save a mystery document to Firestore.
+def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
+    """Upload images to Cloud Storage and return structured images object.
+
+    Internal helper that uploads image files and builds a structured dict
+    with 'hero' and 'variants' URLs. Uses the same mystery_id that will be
+    used for the Firestore document, ensuring ID consistency.
+
+    Args:
+        mystery_id: The mystery ID to use as the storage prefix.
+        image_paths: List of local file paths to upload.
+
+    Returns:
+        Dict with 'hero' and 'variants' keys, or empty dict if no uploads.
+    """
+    bucket = get_storage_bucket()
+    images = {}
+    variants = {}
+
+    for local_path in image_paths:
+        p = Path(local_path)
+        if not p.is_absolute():
+            p = Path(__file__).parent.parent / p
+        if not p.exists():
+            continue
+
+        # Rename file to mystery_id-based name
+        variant_suffix = ""
+        for label in ("_sm", "_md", "_lg", "_xl"):
+            if p.stem.endswith(label):
+                variant_suffix = label
+                break
+        new_filename = f"{mystery_id}{variant_suffix}{p.suffix}"
+        blob_name = f"images/{mystery_id}/{new_filename}"
+        blob = bucket.blob(blob_name)
+        content_type_map = {".png": "image/png", ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
+        content_type = content_type_map.get(p.suffix.lower(), "image/png")
+        blob.upload_from_filename(str(p), content_type=content_type)
+
+        # Build public URL
+        storage_host = os.environ.get("STORAGE_EMULATOR_HOST", "")
+        if storage_host:
+            public_url = f"{storage_host}/v0/b/{bucket.name}/o/{blob_name.replace('/', '%2F')}?alt=media"
+        else:
+            public_url = f"https://storage.googleapis.com/{bucket.name}/{blob_name}"
+
+        lbl = variant_suffix.lstrip("_") if variant_suffix else "original"
+        if lbl == "original":
+            images["hero"] = public_url
+        else:
+            variants[lbl] = public_url
+
+    if variants:
+        if "lg" in variants:
+            images["hero"] = variants["lg"]
+        images["variants"] = variants
+
+    return images
+
+
+def publish_mystery(mystery_json: str, visual_assets_json: str = "") -> str:
+    """Save a mystery document to Firestore with integrated image upload.
 
     Writes the complete mystery data to the 'mysteries' collection in Firestore.
     Automatically generates mystery_id from classification, state_code, and area_code.
+    When visual_assets_json is provided, uploads images to Cloud Storage using the
+    generated mystery_id, ensuring ID consistency between images and Firestore.
 
     Args:
         mystery_json: JSON string containing the full mystery data.
@@ -46,6 +107,11 @@ def publish_mystery(mystery_json: str) -> str:
             discrepancy_type, evidence_a, evidence_b, hypothesis,
             alternative_hypotheses, confidence_level, historical_context,
             research_questions, story_hooks.
+
+        visual_assets_json: Optional JSON string from generate_image tool output.
+            When provided, images are uploaded to Cloud Storage and the resulting
+            URLs are set in data["images"]. Expected format:
+            {"filepath": "...", "variants": [{"filepath": "...", "label": "sm"}, ...]}
 
     Returns:
         JSON string with status and document ID.
@@ -69,6 +135,26 @@ def publish_mystery(mystery_json: str) -> str:
                 "status": "error",
                 "error": "classification, state_code, and area_code are required for mystery_id generation",
             }, ensure_ascii=False)
+
+        # Upload images if visual_assets_json is provided
+        if visual_assets_json and visual_assets_json.strip():
+            try:
+                visual_assets = json.loads(visual_assets_json, strict=False)
+                if visual_assets.get("status") in ("success", "fallback"):
+                    # Build list of all image file paths from generate_image output
+                    image_paths = []
+                    if visual_assets.get("filepath"):
+                        image_paths.append(visual_assets["filepath"])
+                    for variant in visual_assets.get("variants", []):
+                        if variant.get("filepath"):
+                            image_paths.append(variant["filepath"])
+
+                    if image_paths:
+                        images = _upload_images_internal(mystery_id, image_paths)
+                        if images:
+                            data["images"] = images
+            except (json.JSONDecodeError, KeyError):
+                pass  # Skip image upload on parse errors
 
         now = datetime.now(timezone.utc)
 
