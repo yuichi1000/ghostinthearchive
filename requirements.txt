@@ -115,7 +115,6 @@ google-cloud-audit-log==0.4.0
     # via google-cloud-logging
 google-cloud-bigquery==3.40.0
     # via
-    #   ghostinthearchive
     #   google-adk
     #   google-cloud-aiplatform
 google-cloud-bigquery-storage==2.36.0
@@ -330,6 +329,8 @@ packaging==26.0
     # via
     #   google-cloud-aiplatform
     #   google-cloud-bigquery
+pillow==12.1.0
+    # via ghostinthearchive
 proto-plus==1.27.0
     # via
     #   google-api-core
