@@ -15,6 +15,34 @@ Ghost in the Archive - 公開デジタルアーカイブから歴史的ミステ
 
 この二つを融合させた独自のナラティブを生成する。
 
+## Development Workflow
+
+### ブランチ戦略
+
+- コード修正時は必ず feature ブランチを作成してから作業する
+- `main` ブランチへの直接コミットは行わない
+- Claude Code と GitHub での並列開発に対応するため `git worktree` を使用する
+- ブランチ名は Conventional Commits 準拠のプレフィックスを使用する：
+  - `feat/` - 新機能
+  - `fix/` - バグ修正
+  - `docs/` - ドキュメント変更
+  - `refactor/` - リファクタリング
+  - `test/` - テスト追加・修正
+  - `chore/` - その他（設定変更、依存関係更新等）
+
+### git worktree 運用
+
+```bash
+# 新しい作業ブランチを worktree として追加
+git worktree add ../ghostinthearchive-<branch-name> -b <prefix>/<branch-name>
+
+# 作業完了後に worktree を削除
+git worktree remove ../ghostinthearchive-<branch-name>
+```
+
+- 各 worktree は独立したディレクトリで動作するため、複数ブランチの並列作業が可能
+- worktree のディレクトリ名は `ghostinthearchive-<branch-name>` とする
+
 ## Tech Stack
 
 - **Infrastructure:** Google Cloud (Cloud Run, Cloud Scheduler)
