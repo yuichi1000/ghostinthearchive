@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { stripSourcesSection } from "@/lib/strip-sources"
 import { notFound } from "next/navigation"
 
 // Dynamic rendering for preview (no caching)
@@ -55,7 +56,8 @@ export default async function PreviewPage({
   // For preview, prefer English if available, fallback to Japanese
   const title = mystery.title_en || mystery.title
   const summary = mystery.summary_en || mystery.summary
-  const narrativeContent = mystery.narrative_content_en || mystery.narrative_content
+  const narrativeContentRaw = mystery.narrative_content_en || mystery.narrative_content
+  const narrativeContent = narrativeContentRaw ? stripSourcesSection(narrativeContentRaw) : narrativeContentRaw
   const discrepancyDetected = mystery.discrepancy_detected_en || mystery.discrepancy_detected
   const hypothesis = mystery.hypothesis_en || mystery.hypothesis
   const alternativeHypotheses = mystery.alternative_hypotheses_en || mystery.alternative_hypotheses
@@ -210,7 +212,7 @@ export default async function PreviewPage({
               <section>
                 <div className="flex items-center gap-3 mb-6">
                   <FileText className="w-5 h-5 text-gold" />
-                  <h2 className="font-serif text-xl text-parchment">Archival Evidence</h2>
+                  <h2 className="font-serif text-xl text-parchment">Sources &amp; Evidence</h2>
                 </div>
                 <div className="space-y-8">
                   <EvidenceBlock evidence={mystery.evidence_a} label="Primary Source" />
