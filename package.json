@@ -1,0 +1,7 @@
+{
+  "name": "ghostinthearchive",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix web-admin run dev & npm --prefix web-public run dev"
+  }
+}

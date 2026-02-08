@@ -1,12 +1,17 @@
 /**
  * POST /api/podcast
  *
- * Triggers podcast generation pipeline by starting a Cloud Run Job.
+ * Triggers podcast generation pipeline.
+ * - Local: executes podcast_main.py directly
+ * - Production: starts a Cloud Run Job
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { JobsClient } from "@google-cloud/run";
+import { spawn } from "child_process";
+import fs from "fs";
+import path from "path";
 
+const isLocal = process.env.NODE_ENV === "development";
 const projectId = process.env.GOOGLE_CLOUD_PROJECT || "ghostinthearchive";
 const region = process.env.GOOGLE_CLOUD_REGION || "asia-northeast1";
 const jobName = "podcast-pipeline";
@@ -23,7 +28,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Start Cloud Run Job
+    if (isLocal) {
+      // Local: run Python pipeline in background (fire-and-forget)
+      const projectRoot = path.resolve(process.cwd(), "..");
+      const pythonPath = path.join(projectRoot, ".venv", "bin", "python");
+
+      const logFile = path.join(projectRoot, "logs", "podcast.log");
+      fs.mkdirSync(path.dirname(logFile), { recursive: true });
+      const out = fs.openSync(logFile, "a");
+
+      const child = spawn(pythonPath, ["podcast_main.py", mysteryId], {
+        cwd: projectRoot,
+        detached: true,
+        stdio: ["ignore", out, out],
+      });
+      child.unref();
+      fs.closeSync(out);
+
+      console.log(`Podcast pipeline started locally for ${mysteryId} (pid: ${child.pid})`);
+
+      return NextResponse.json({
+        status: "accepted",
+        mysteryId,
+        message: "Podcast pipeline started (local)",
+      });
+    }
+
+    // Production: start Cloud Run Job
+    const { JobsClient } = await import("@google-cloud/run");
     const client = new JobsClient();
     const name = `projects/${projectId}/locations/${region}/jobs/${jobName}`;
 
