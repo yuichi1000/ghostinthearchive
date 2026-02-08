@@ -82,6 +82,7 @@ def publish_mystery(mystery_json: str) -> str:
 
         # Ensure required list fields exist
         data.setdefault("additional_evidence", [])
+        data["additional_evidence"] = data["additional_evidence"][:5]
         data.setdefault("alternative_hypotheses", [])
         data.setdefault("research_questions", [])
         data.setdefault("story_hooks", [])
