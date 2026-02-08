@@ -97,6 +97,9 @@ async def translate_mystery(mystery_id: str) -> None:
             "alternative_hypotheses": alternative_hypotheses_str,
             "political_climate": mystery.get("political_climate", ""),
             "story_hooks": story_hooks_str,
+            "evidence_a": json.dumps(mystery.get("evidence_a", {}), ensure_ascii=False),
+            "evidence_b": json.dumps(mystery.get("evidence_b", {}), ensure_ascii=False),
+            "additional_evidence": json.dumps(mystery.get("additional_evidence", []), ensure_ascii=False),
             "pipeline_log": [],
         },
     )

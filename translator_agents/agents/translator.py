@@ -40,6 +40,9 @@ NO_TRANSLATION: ブログ原稿がないため、翻訳を中止します。
 - alternative_hypotheses: 代替仮説リスト → {alternative_hypotheses}
 - political_climate: 政治的背景 → {political_climate}
 - story_hooks: ナラティブフック（物語の切り口）→ {story_hooks}
+- evidence_a: 主要証拠A（JSON）→ {evidence_a}
+- evidence_b: 対比証拠B（JSON）→ {evidence_b}
+- additional_evidence: 追加証拠リスト（JSON）→ {additional_evidence}
 
 ## 翻訳ガイドライン
 
@@ -69,6 +72,12 @@ NO_TRANSLATION: ブログ原稿がないため、翻訳を中止します。
 - 引用符（>）を保持
 - リンク形式を保持
 
+### 証拠（Evidence）の翻訳
+- **翻訳対象フィールド**: `relevant_excerpt`, `source_title`, `location_context`
+- **そのまま保持するフィールド**: `source_type`, `source_language`, `source_date`, `source_url`
+- 各 evidence オブジェクトの構造をそのまま維持し、翻訳対象フィールドのみ英訳する
+- `relevant_excerpt` が空の場合はそのまま空文字列を返す
+
 ### 翻訳の正確性
 - 事実と出典を正確に翻訳すること
 - 日付、場所、人名のスペルを正確に
@@ -87,7 +96,18 @@ JSON形式で出力してください：
   "hypothesis_en": "...",
   "alternative_hypotheses_en": ["...", "..."],
   "political_climate_en": "...",
-  "story_hooks_en": ["...", "..."]
+  "story_hooks_en": ["...", "..."],
+  "evidence_a_en": {
+    "source_type": "...",
+    "source_language": "...",
+    "source_title": "... (翻訳)",
+    "source_date": "...",
+    "source_url": "...",
+    "relevant_excerpt": "... (翻訳)",
+    "location_context": "... (翻訳)"
+  },
+  "evidence_b_en": { "... (同上の構造)" },
+  "additional_evidence_en": [{ "... (同上の構造)" }]
 }
 ```
 
