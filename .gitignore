@@ -55,6 +55,13 @@ htmlcov/
 # ADK auto-generated
 .adk/
 
+# Node.js
+node_modules/
+
+# Next.js
+.next/
+next-env.d.ts
+
 # Firebase Emulator data
 firebase-debug.log
 firestore-debug.log
