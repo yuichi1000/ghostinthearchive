@@ -4,11 +4,14 @@ Generates images using Imagen 3 and saves them to local storage.
 """
 
 import json
+import logging
 import os
 import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from google import genai
 from google.genai import types
@@ -210,6 +213,7 @@ def _get_variants(filepath: str) -> list:
     resize_result = json.loads(resize_image_variants(filepath))
     if resize_result.get("status") == "success":
         return resize_result["variants"]
+    logger.warning("Variant generation failed for %s: %s", filepath, resize_result.get("error"))
     return []
 
 
