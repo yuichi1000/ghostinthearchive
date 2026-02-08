@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent / ".env")
 
+from google.adk.agents.run_config import RunConfig
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
@@ -35,6 +36,9 @@ from shared.pipeline_run import (
     complete_pipeline_run,
     error_pipeline_run,
 )
+
+
+PIPELINE_TIMEOUT_SECONDS = 600  # 10 minutes
 
 
 async def translate_mystery(mystery_id: str) -> None:
@@ -131,19 +135,23 @@ async def translate_mystery(mystery_id: str) -> None:
     log_index = update_agent_started(run_id, "translator", translator_log_entry)
     translate_start = datetime.now(timezone.utc)
 
+    run_config = RunConfig(max_llm_calls=20)
+
     try:
-        async for event in runner.run_async(
-            user_id=user_id,
-            session_id=session_id,
-            new_message=types.Content(
-                role="user",
-                parts=[types.Part(text=f"以下の日本語記事を英語に翻訳してください: {title}")],
-            ),
-        ):
-            if event.content and event.content.parts:
-                for part in event.content.parts:
-                    if hasattr(part, "text") and part.text:
-                        print(part.text)
+        async with asyncio.timeout(PIPELINE_TIMEOUT_SECONDS):
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=types.Content(
+                    role="user",
+                    parts=[types.Part(text=f"以下の日本語記事を英語に翻訳してください: {title}")],
+                ),
+                run_config=run_config,
+            ):
+                if event.content and event.content.parts:
+                    for part in event.content.parts:
+                        if hasattr(part, "text") and part.text:
+                            print(part.text)
 
         # Retrieve results from session state
         session = await session_service.get_session(
@@ -182,6 +190,11 @@ async def translate_mystery(mystery_id: str) -> None:
         print(f"Translation complete: {result}")
         print("=" * 70)
 
+    except TimeoutError:
+        print(f"Error: Pipeline timed out after {PIPELINE_TIMEOUT_SECONDS}s")
+        set_translation_error(mystery_id)
+        error_pipeline_run(run_id, f"Pipeline timed out after {PIPELINE_TIMEOUT_SECONDS}s")
+        raise
     except Exception as e:
         print(f"Error during translation: {e}")
         set_translation_error(mystery_id)

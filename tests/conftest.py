@@ -14,9 +14,15 @@ mock_adk.agents.LlmAgent = MagicMock
 mock_adk.agents.SequentialAgent = MagicMock
 mock_adk.tools = MagicMock()
 mock_adk.tools.FunctionTool = MagicMock
+mock_adk.tools.base_tool = MagicMock()
+mock_adk.tools.tool_context = MagicMock()
+mock_adk.agents.run_config = MagicMock()
 sys.modules["google.adk"] = mock_adk
 sys.modules["google.adk.agents"] = mock_adk.agents
+sys.modules["google.adk.agents.run_config"] = mock_adk.agents.run_config
 sys.modules["google.adk.tools"] = mock_adk.tools
+sys.modules["google.adk.tools.base_tool"] = mock_adk.tools.base_tool
+sys.modules["google.adk.tools.tool_context"] = mock_adk.tools.tool_context
 
 mock_genai = MagicMock()
 mock_genai.Client = MagicMock
