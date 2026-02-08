@@ -58,33 +58,6 @@ export default function HomePage() {
       <main className="flex-1">
         <Hero />
 
-        {/* Latest Discoveries Section */}
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4">
-            {/* Section header */}
-            <div className="flex items-center gap-4 mb-12">
-              <div className="flex items-center gap-3">
-                <FileStack className="w-5 h-5 text-gold" />
-                <h2 className="font-serif text-2xl md:text-3xl text-parchment">
-                  Latest Discoveries
-                </h2>
-              </div>
-              <div className="flex-1 h-px bg-gradient-to-r from-border to-transparent" />
-            </div>
-
-            <Suspense fallback={<MysteryListSkeleton />}>
-              <MysteryList />
-            </Suspense>
-
-            {/* View all link */}
-            <div className="mt-12 text-center">
-              <p className="text-sm text-muted-foreground font-mono">
-                <span className="redacted">████████</span> Additional cases remain classified <span className="redacted">████████</span>
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* Operational Disclosure */}
         <section className="py-16 border-t border-border/50">
           <div className="container mx-auto px-4">
@@ -132,6 +105,33 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Latest Discoveries Section */}
+        <section className="py-16 md:py-24">
+          <div className="container mx-auto px-4">
+            {/* Section header */}
+            <div className="flex items-center gap-4 mb-12">
+              <div className="flex items-center gap-3">
+                <FileStack className="w-5 h-5 text-gold" />
+                <h2 className="font-serif text-2xl md:text-3xl text-parchment">
+                  Latest Discoveries
+                </h2>
+              </div>
+              <div className="flex-1 h-px bg-gradient-to-r from-border to-transparent" />
+            </div>
+
+            <Suspense fallback={<MysteryListSkeleton />}>
+              <MysteryList />
+            </Suspense>
+
+            {/* View all link */}
+            <div className="mt-12 text-center">
+              <p className="text-sm text-muted-foreground font-mono">
+                <span className="redacted">████████</span> Additional cases remain classified <span className="redacted">████████</span>
+              </p>
             </div>
           </div>
         </section>
