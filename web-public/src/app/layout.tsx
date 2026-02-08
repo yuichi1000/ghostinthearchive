@@ -1,5 +1,6 @@
 import React from "react"
 import type { Metadata } from 'next'
+import { GoogleTagManager } from '@next/third-parties/google'
 import { Playfair_Display, Inter, Noto_Sans_JP } from 'next/font/google'
 import './globals.css'
 
@@ -44,6 +45,8 @@ export const metadata: Metadata = {
   },
 }
 
+const gtmId = process.env.NEXT_PUBLIC_GTM_ID
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -51,6 +54,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
+      {gtmId && <GoogleTagManager gtmId={gtmId} />}
       <body className={`${playfair.variable} ${inter.variable} ${notoSansJP.variable} font-sans antialiased`}>
         {children}
       </body>
