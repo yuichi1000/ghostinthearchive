@@ -44,7 +44,7 @@ output "next_steps" {
     1. Set secret values:
        See 'secret_setup_instructions' output
 
-    2. Configure GoDaddy nameservers:
+    2. Configure Spaceship nameservers:
        Update nameservers to: ${join(", ", google_dns_managed_zone.main.name_servers)}
 
     3. Build and push Docker images:
