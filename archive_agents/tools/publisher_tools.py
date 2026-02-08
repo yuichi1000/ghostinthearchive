@@ -140,7 +140,9 @@ def upload_images(mystery_id: str, image_paths: str) -> str:
 
             blob_name = f"images/{mystery_id}/{p.name}"
             blob = bucket.blob(blob_name)
-            blob.upload_from_filename(str(p), content_type="image/png")
+            content_type_map = {".png": "image/png", ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
+            content_type = content_type_map.get(p.suffix.lower(), "image/png")
+            blob.upload_from_filename(str(p), content_type=content_type)
 
             # エミュレータではmake_public()が使えないため、URLを直接構築
             storage_host = os.environ.get("STORAGE_EMULATOR_HOST", "")
