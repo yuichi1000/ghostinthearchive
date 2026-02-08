@@ -17,7 +17,7 @@ import {
 } from "lucide-react"
 import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-import { stripSourcesSection } from "@/lib/strip-sources"
+import { stripSourcesSection, extractSourcesSection } from "@/lib/strip-sources"
 
 export const revalidate = 86400
 
@@ -65,6 +65,7 @@ export default async function MysteryDetailPage({
   const summary = mystery.summary_en || mystery.summary
   const narrativeContentRaw = mystery.narrative_content_en || mystery.narrative_content
   const narrativeContent = narrativeContentRaw ? stripSourcesSection(narrativeContentRaw) : narrativeContentRaw
+  const sourcesMarkdown = narrativeContentRaw ? extractSourcesSection(narrativeContentRaw) : null
   const discrepancyDetected = mystery.discrepancy_detected_en || mystery.discrepancy_detected
   const hypothesis = mystery.hypothesis_en || mystery.hypothesis
   const alternativeHypotheses = mystery.alternative_hypotheses_en || mystery.alternative_hypotheses
@@ -196,6 +197,14 @@ export default async function MysteryDetailPage({
                     <EvidenceBlock key={i} evidence={ev} label={`Additional Evidence ${i + 1}`} />
                   ))}
                 </div>
+                {sourcesMarkdown && (
+                  <div className="mt-8 pt-6 border-t border-border">
+                    <p className="text-xs font-mono uppercase tracking-wide text-muted-foreground mb-3">Referenced Sources</p>
+                    <div className="prose prose-sm prose-invert max-w-none prose-li:text-foreground/70 prose-li:my-1">
+                      <Markdown remarkPlugins={[remarkGfm]}>{sourcesMarkdown}</Markdown>
+                    </div>
+                  </div>
+                )}
               </section>
 
               {/* Hypothesis */}

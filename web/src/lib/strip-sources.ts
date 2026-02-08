@@ -1,17 +1,30 @@
 /**
- * Remove the trailing "Sources" section from narrative_content.
+ * Extract and separate the trailing "Sources" section from narrative_content.
  *
- * Storyteller used to append a markdown section like:
+ * Storyteller appends a markdown section like:
  *   ---
- *   Sources: [list of citations]
+ *   **Sources:**
+ *   * Source A...
  *
- * This is now redundant because the same information is displayed in the
- * structured "Sources & Evidence" block. For backward compatibility with
- * existing articles we strip it at render time rather than migrating
- * Firestore documents.
+ * We split it from the narrative body so it can be rendered inside the
+ * "Sources & Evidence" section instead of at the end of the article text.
+ */
+
+const SOURCES_PATTERN = /\n---\n\s*\*{0,2}Sources:\*{0,2}([\s\S]*)$/;
+
+/**
+ * Remove the trailing Sources section from narrative_content.
  */
 export function stripSourcesSection(content: string): string {
-  // Match a trailing HR (---) followed by a line starting with "Sources:"
-  // and everything after it until end-of-string.
-  return content.replace(/\n---\n\s*Sources:[\s\S]*$/, "").trimEnd();
+  return content.replace(SOURCES_PATTERN, "").trimEnd();
+}
+
+/**
+ * Extract the Sources citation list from narrative_content.
+ * Returns the citation text (without the "Sources:" heading) or null if not found.
+ */
+export function extractSourcesSection(content: string): string | null {
+  const match = content.match(SOURCES_PATTERN);
+  if (!match) return null;
+  return match[1].trim() || null;
 }
