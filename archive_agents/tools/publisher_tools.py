@@ -62,6 +62,13 @@ def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
                 break
         new_filename = f"{mystery_id}{variant_suffix}{p.suffix}"
         blob_name = f"images/{mystery_id}/{new_filename}"
+
+        # Rename local file to mystery_id-based name
+        new_local_path = p.parent / new_filename
+        if new_local_path != p:
+            p.rename(new_local_path)
+            p = new_local_path
+
         blob = bucket.blob(blob_name)
         content_type_map = {".png": "image/png", ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
         content_type = content_type_map.get(p.suffix.lower(), "image/png")
@@ -232,6 +239,13 @@ def upload_images(mystery_id: str, image_paths: str) -> str:
                     break
             new_filename = f"{mystery_id}{variant_suffix}{p.suffix}"
             blob_name = f"images/{mystery_id}/{new_filename}"
+
+            # Rename local file to mystery_id-based name
+            new_local_path = p.parent / new_filename
+            if new_local_path != p:
+                p.rename(new_local_path)
+                p = new_local_path
+
             blob = bucket.blob(blob_name)
             content_type_map = {".png": "image/png", ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
             content_type = content_type_map.get(p.suffix.lower(), "image/png")
