@@ -18,7 +18,7 @@ from .librarian_tools import (
 )
 
 # Illustrator Agent LLM-facing tools
-from .illustrator_tools import generate_image
+from .illustrator_tools import generate_image, resize_image_variants
 
 # Scholar Agent LLM-facing tools
 from .scholar_tools import (
@@ -46,6 +46,7 @@ __all__ = [
     "get_available_keywords",
     # Illustrator LLM tools
     "generate_image",
+    "resize_image_variants",
     # Scholar LLM tools
     "load_search_results",
     "load_multiple_search_results",
