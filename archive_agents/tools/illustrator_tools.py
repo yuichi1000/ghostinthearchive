@@ -250,13 +250,21 @@ def _get_client() -> genai.Client:
     return genai.Client()
 
 
-def _get_variants(filepath: str) -> list:
-    """Generate variants and return the list, or empty list on failure."""
+def _get_variants(filepath: str) -> tuple[list, str | None]:
+    """Generate variants and return (variants, error_message).
+
+    Returns:
+        Tuple of (variants_list, error_string_or_None).
+    """
     resize_result = json.loads(resize_image_variants(filepath))
     if resize_result.get("status") == "success":
-        return resize_result["variants"]
-    logger.warning("Variant generation failed for %s: %s", filepath, resize_result.get("error"))
-    return []
+        return resize_result["variants"], None
+    error_msg = resize_result.get("error", "Unknown error")
+    logger.error(
+        "WebP variant generation FAILED for %s: %s",
+        filepath, error_msg,
+    )
+    return [], error_msg
 
 
 def generate_image(
@@ -350,7 +358,7 @@ def generate_image(
                 image.save(str(filepath))
 
                 # Generate responsive variants
-                variants = _get_variants(str(filepath))
+                variants, variant_error = _get_variants(str(filepath))
 
                 return json.dumps({
                     "status": "success",
@@ -363,6 +371,7 @@ def generate_image(
                     "attempt": attempt + 1,
                     "prompt_sanitized": prompt_sanitized,
                     "variants": variants,
+                    "variant_error": variant_error,
                 }, ensure_ascii=False)
 
             # No images generated - likely safety filter
