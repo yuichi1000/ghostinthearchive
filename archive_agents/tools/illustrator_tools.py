@@ -197,6 +197,48 @@ def _sanitize_prompt(prompt: str) -> str:
     return result
 
 
+def _build_safe_fallback_prompt(style: str) -> str:
+    """Build an ultra-safe fallback prompt with no thematic content.
+
+    Used as the last resort (attempt 2) when both the original and
+    sanitized prompts are blocked by safety filters. Returns a generic
+    atmospheric prompt based on style, with no references to people,
+    creatures, or supernatural elements.
+
+    Args:
+        style: Image style - "fact", "folklore", or "auto".
+
+    Returns:
+        A safe prompt string guaranteed to pass safety filters.
+    """
+    if style == "fact":
+        return (
+            "Black and white archival photograph style, monochrome, "
+            "high contrast, vintage silver gelatin print texture. "
+            "An old weathered leather-bound book lying open on a dark oak desk, "
+            "candlelight casting long shadows, dust motes in the air, "
+            "antique brass inkwell nearby, aged parchment pages, "
+            "dramatic chiaroscuro lighting, overhead shot at 45 degrees"
+        )
+    elif style == "folklore":
+        return (
+            "19th century woodcut engraving illustration style, "
+            "cross-hatching technique, sepia toned, aged paper texture. "
+            "A misty coastal landscape at twilight, rocky cliffs overlooking "
+            "a calm sea, a lone ancient lighthouse in the distance, "
+            "gnarled oak trees silhouetted against a cloudy sky, "
+            "dramatic linework, vintage newspaper illustration aesthetic"
+        )
+    else:
+        return (
+            "A dimly lit archival room with tall wooden shelves filled "
+            "with old leather-bound volumes, warm lamplight casting "
+            "golden pools on a worn wooden floor, dust particles "
+            "floating in shafts of light from a high window, "
+            "atmospheric and contemplative, cinematic composition"
+        )
+
+
 def _get_client() -> genai.Client:
     """Get a configured genai client."""
     if os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").upper() == "TRUE":
@@ -291,7 +333,7 @@ def generate_image(
                 aspect_ratio=aspect_ratio,
                 output_mime_type="image/png",
                 person_generation="DONT_ALLOW",
-                safety_filter_level="BLOCK_MEDIUM_AND_ABOVE",
+                safety_filter_level="BLOCK_ONLY_HIGH",
             )
             if negative_prompt:
                 config.negative_prompt = negative_prompt
@@ -325,15 +367,21 @@ def generate_image(
 
             # No images generated - likely safety filter
             last_error = "No images generated (filtered by safety checks)"
+            logger.warning(
+                "Safety filter blocked image generation (attempt %d/%d). prompt=%s",
+                attempt + 1, MAX_RETRIES, current_prompt[:100],
+            )
 
-            # On first failure, try sanitizing the prompt
-            if not prompt_sanitized:
+            # Progressive retry strategy:
+            # attempt 0 failed → sanitize prompt for attempt 1
+            # attempt 1 failed → use safe fallback prompt for attempt 2
+            if attempt == 0:
                 current_prompt = _sanitize_prompt(current_prompt)
                 prompt_sanitized = True
-                continue
-
-            # Already sanitized, wait and retry
-            time.sleep(RETRY_DELAY_SECONDS * (attempt + 1))
+            elif attempt == 1:
+                current_prompt = _build_safe_fallback_prompt(style)
+                prompt_sanitized = True
+            continue
 
         except Exception as e:
             error_str = str(e).lower()
@@ -341,27 +389,47 @@ def generate_image(
 
             # Check for rate limit errors
             if "resource exhausted" in error_str or "429" in error_str or "quota" in error_str:
-                # Rate limit - exponential backoff
+                logger.warning(
+                    "Rate limit hit (attempt %d/%d): %s",
+                    attempt + 1, MAX_RETRIES, last_error,
+                )
                 time.sleep(RETRY_DELAY_SECONDS * (attempt + 1) * 2)
                 continue
 
             # Check for timeout errors
             if "timeout" in error_str or "deadline" in error_str:
-                # Timeout - simple retry
+                logger.warning(
+                    "Timeout (attempt %d/%d): %s",
+                    attempt + 1, MAX_RETRIES, last_error,
+                )
                 time.sleep(RETRY_DELAY_SECONDS)
                 continue
 
-            # Other errors - try sanitizing prompt on first attempt
-            if not prompt_sanitized:
+            # Other errors
+            logger.error(
+                "Unexpected error (attempt %d/%d): %s",
+                attempt + 1, MAX_RETRIES, last_error,
+            )
+
+            # Progressive retry for other errors too
+            if attempt == 0:
                 current_prompt = _sanitize_prompt(current_prompt)
                 prompt_sanitized = True
                 continue
+            elif attempt == 1:
+                current_prompt = _build_safe_fallback_prompt(style)
+                prompt_sanitized = True
+                continue
 
-            # Fatal error after sanitization attempt
+            # Fatal error on last attempt
             break
 
     # All retries failed - try fallback image
     if FALLBACK_IMAGE_PATH.exists():
+        logger.error(
+            "All %d attempts failed, using fallback image. last_error=%s, original_prompt=%s",
+            MAX_RETRIES, last_error, full_prompt[:200],
+        )
         return json.dumps({
             "status": "fallback",
             "filepath": str(FALLBACK_IMAGE_PATH),
@@ -371,9 +439,18 @@ def generate_image(
             "last_error": last_error,
             "attempts": MAX_RETRIES,
             "variants": FALLBACK_VARIANTS,
+            "retry_suggestion": (
+                "Try generating with a completely different visual concept. "
+                "Focus on locations, architecture, or symbolic objects instead of the original subject. "
+                "Avoid any references to people, creatures, or supernatural elements."
+            ),
         }, ensure_ascii=False)
 
     # No fallback available
+    logger.error(
+        "All %d attempts failed, no fallback available. last_error=%s",
+        MAX_RETRIES, last_error,
+    )
     return json.dumps({
         "status": "error",
         "error": f"Image generation failed after {MAX_RETRIES} attempts: {last_error}",
