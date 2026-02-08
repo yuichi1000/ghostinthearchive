@@ -47,9 +47,15 @@ export function EvidenceBlock({ evidence, label, className }: EvidenceBlockProps
         </div>
 
         {/* Evidence text */}
-        <p className="relative text-sm text-foreground/90 leading-relaxed pl-6 font-mono whitespace-pre-wrap">
-          {evidence.relevant_excerpt}
-        </p>
+        {evidence.relevant_excerpt ? (
+          <p className="relative text-sm text-foreground/90 leading-relaxed pl-6 font-mono whitespace-pre-wrap">
+            {evidence.relevant_excerpt}
+          </p>
+        ) : (
+          <p className="relative text-sm text-foreground/50 leading-relaxed pl-6 font-mono italic">
+            [No text excerpt available — see original source]
+          </p>
+        )}
       </blockquote>
 
       {/* Source citation */}
