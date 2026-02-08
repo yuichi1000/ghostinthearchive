@@ -27,6 +27,13 @@ from podcast_agents.tools.firestore_tools import (
     save_podcast_result,
     set_podcast_status,
 )
+from shared.pipeline_run import (
+    create_pipeline_run,
+    update_agent_started,
+    update_agent_completed,
+    complete_pipeline_run,
+    error_pipeline_run,
+)
 
 
 async def generate_podcast(mystery_id: str) -> None:
@@ -61,6 +68,9 @@ async def generate_podcast(mystery_id: str) -> None:
     # Mark as generating
     set_podcast_status(mystery_id, "generating")
 
+    # Create pipeline run for progress tracking
+    run_id = create_pipeline_run("podcast", mystery_id=mystery_id)
+
     # Create runner with session pre-loaded with creative_content
     session_service = InMemorySessionService()
     runner = Runner(
@@ -85,6 +95,12 @@ async def generate_podcast(mystery_id: str) -> None:
     # Run the podcast pipeline
     podcast_script = ""
     audio_assets = ""
+    current_agent_name: str | None = None
+    current_log_index: int | None = None
+
+    from datetime import datetime, timezone
+
+    agent_start_time: datetime | None = None
 
     try:
         async for event in runner.run_async(
@@ -95,10 +111,54 @@ async def generate_podcast(mystery_id: str) -> None:
                 parts=[types.Part(text=f"以下のブログ記事からポッドキャストを作成してください: {title}")],
             ),
         ):
+            # Track agent transitions
+            author = getattr(event, "author", None)
+            if author and author != "podcast_commander" and author != current_agent_name:
+                # Complete previous agent
+                if current_agent_name and agent_start_time:
+                    end_time = datetime.now(timezone.utc)
+                    duration = (end_time - agent_start_time).total_seconds()
+                    completed_entry = {
+                        "agent_name": current_agent_name,
+                        "status": "completed",
+                        "start_time": agent_start_time.isoformat(),
+                        "end_time": end_time.isoformat(),
+                        "duration_seconds": round(duration, 2),
+                        "output_summary": f"{current_agent_name} completed",
+                    }
+                    update_agent_completed(run_id, current_log_index, completed_entry)
+
+                # Start new agent
+                current_agent_name = author
+                agent_start_time = datetime.now(timezone.utc)
+                log_entry = {
+                    "agent_name": current_agent_name,
+                    "status": "running",
+                    "start_time": agent_start_time.isoformat(),
+                    "end_time": None,
+                    "duration_seconds": None,
+                    "output_summary": None,
+                }
+                current_log_index = update_agent_started(run_id, current_agent_name, log_entry)
+
             if event.content and event.content.parts:
                 for part in event.content.parts:
                     if hasattr(part, "text") and part.text:
                         print(part.text)
+
+        # Complete final agent
+        if current_agent_name and agent_start_time:
+            end_time = datetime.now(timezone.utc)
+            duration = (end_time - agent_start_time).total_seconds()
+            completed_entry = {
+                "agent_name": current_agent_name,
+                "status": "completed",
+                "start_time": agent_start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "duration_seconds": round(duration, 2),
+                "output_summary": f"{current_agent_name} completed",
+            }
+            update_agent_completed(run_id, current_log_index, completed_entry)
 
         # Retrieve results from session state
         session = await session_service.get_session(
@@ -112,6 +172,7 @@ async def generate_podcast(mystery_id: str) -> None:
 
         # Save results to Firestore
         result = save_podcast_result(mystery_id, podcast_script, audio_assets)
+        complete_pipeline_run(run_id, mystery_id=mystery_id)
         print()
         print("=" * 70)
         print(f"Podcast generation complete: {result}")
@@ -120,6 +181,7 @@ async def generate_podcast(mystery_id: str) -> None:
     except Exception as e:
         print(f"Error during podcast generation: {e}")
         set_podcast_status(mystery_id, "error")
+        error_pipeline_run(run_id, str(e))
         raise
 
 

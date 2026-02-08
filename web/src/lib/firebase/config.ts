@@ -105,4 +105,5 @@ export function getFirebaseStorage(): FirebaseStorage {
  */
 export const COLLECTIONS = {
   MYSTERIES: "mysteries",
+  PIPELINE_RUNS: "pipeline_runs",
 } as const;

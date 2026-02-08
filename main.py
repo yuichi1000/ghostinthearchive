@@ -19,6 +19,13 @@ from google.genai import types
 
 from archive_agents.agent import ghost_commander
 from archive_agents.utils.pipeline_logger import PipelineLogger
+from shared.pipeline_run import (
+    create_pipeline_run,
+    update_agent_started,
+    update_agent_completed,
+    complete_pipeline_run,
+    error_pipeline_run,
+)
 
 
 async def investigate(query: str) -> None:
@@ -35,6 +42,9 @@ async def investigate(query: str) -> None:
     print()
     print("-" * 70)
     print()
+
+    # Create pipeline run for progress tracking
+    run_id = create_pipeline_run("blog", query=query)
 
     # Create runner with in-memory session
     session_service = InMemorySessionService()
@@ -59,48 +69,86 @@ async def investigate(query: str) -> None:
     logger = PipelineLogger()
     current_agent_name: str | None = None
     accumulated_text: list[str] = []
+    current_log_index: int | None = None
 
-    # Run the investigation
-    async for event in runner.run_async(
-        user_id=user_id,
-        session_id=session_id,
-        new_message=types.Content(
-            role="user",
-            parts=[types.Part(text=query)],
-        ),
-    ):
-        # Detect agent transitions via event.author
-        author = getattr(event, "author", None)
-        if author and author != "ghost_commander" and author != current_agent_name:
-            # Complete previous agent
-            if current_agent_name:
-                summary = " ".join(accumulated_text)[:200]
-                logger.complete_agent(summary or "(no text output)")
-                accumulated_text = []
-            # Start new agent
-            current_agent_name = author
-            logger.start_agent(current_agent_name)
+    try:
+        # Run the investigation
+        async for event in runner.run_async(
+            user_id=user_id,
+            session_id=session_id,
+            new_message=types.Content(
+                role="user",
+                parts=[types.Part(text=query)],
+            ),
+        ):
+            # Detect agent transitions via event.author
+            author = getattr(event, "author", None)
+            if author and author != "ghost_commander" and author != current_agent_name:
+                # Complete previous agent
+                if current_agent_name:
+                    summary = " ".join(accumulated_text)[:200]
+                    logger.complete_agent(summary or "(no text output)")
+                    # Update pipeline run with completed agent
+                    completed_logs = logger.get_logs()
+                    if completed_logs:
+                        update_agent_completed(
+                            run_id, current_log_index, completed_logs[-1]
+                        )
+                    accumulated_text = []
+                # Start new agent
+                current_agent_name = author
+                logger.start_agent(current_agent_name)
+                # Update pipeline run with new agent
+                current_log_index = update_agent_started(
+                    run_id, current_agent_name, logger.get_logs()[-1]
+                )
 
-        # Print text responses from agents
-        if event.content and event.content.parts:
-            for part in event.content.parts:
-                if hasattr(part, "text") and part.text:
-                    print(part.text)
-                    accumulated_text.append(part.text[:100])
+            # Print text responses from agents
+            if event.content and event.content.parts:
+                for part in event.content.parts:
+                    if hasattr(part, "text") and part.text:
+                        print(part.text)
+                        accumulated_text.append(part.text[:100])
 
-    # Complete final agent
-    if current_agent_name:
-        summary = " ".join(accumulated_text)[:200]
-        logger.complete_agent(summary or "(no text output)")
+        # Complete final agent
+        if current_agent_name:
+            summary = " ".join(accumulated_text)[:200]
+            logger.complete_agent(summary or "(no text output)")
+            completed_logs = logger.get_logs()
+            if completed_logs:
+                update_agent_completed(
+                    run_id, current_log_index, completed_logs[-1]
+                )
 
-    # Store pipeline log in session state for Publisher
-    session = await session_service.get_session(
-        app_name="ghost_in_the_archive",
-        user_id=user_id,
-        session_id=session_id,
-    )
-    if session:
-        session.state["pipeline_log"] = logger.get_logs()
+        # Store pipeline log in session state for Publisher
+        session = await session_service.get_session(
+            app_name="ghost_in_the_archive",
+            user_id=user_id,
+            session_id=session_id,
+        )
+        if session:
+            session.state["pipeline_log"] = logger.get_logs()
+
+        # Extract mystery_id from published_episode
+        mystery_id = None
+        if session:
+            published = session.state.get("published_episode", "")
+            if isinstance(published, str) and published.startswith("{"):
+                import json
+
+                try:
+                    published_data = json.loads(published)
+                    mystery_id = published_data.get("mystery_id")
+                except (json.JSONDecodeError, AttributeError):
+                    pass
+            elif isinstance(published, dict):
+                mystery_id = published.get("mystery_id")
+
+        complete_pipeline_run(run_id, mystery_id=mystery_id)
+
+    except Exception as e:
+        error_pipeline_run(run_id, str(e))
+        raise
 
     print()
     print("=" * 70)

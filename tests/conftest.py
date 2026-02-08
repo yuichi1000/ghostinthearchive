@@ -41,6 +41,10 @@ mock_storage = MagicMock()
 sys.modules["google.cloud.firestore"] = mock_firestore
 sys.modules["google.cloud.storage"] = mock_storage
 
+# Mock google.cloud.firestore_v1 (used by shared/pipeline_run.py for ArrayUnion)
+mock_firestore_v1 = MagicMock()
+sys.modules["google.cloud.firestore_v1"] = mock_firestore_v1
+
 import json
 from datetime import datetime, timezone
 from pathlib import Path
