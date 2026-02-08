@@ -44,6 +44,16 @@ git worktree remove ../ghostinthearchive-<branch-name>
 - 各 worktree は独立したディレクトリで動作するため、複数ブランチの並列作業が可能
 - worktree のディレクトリ名は `ghostinthearchive-<branch-name>` とする
 
+### Git Hooks
+
+本リポジトリは `.githooks/` ディレクトリで Git hook を管理する。初回クローン時に以下を実行：
+
+```bash
+git config core.hooksPath .githooks
+```
+
+これにより main ブランチへの直接コミットがブロックされる。
+
 ## Tech Stack
 
 - **Infrastructure:** Google Cloud (Cloud Run, Cloud Scheduler)
