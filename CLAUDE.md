@@ -131,6 +131,46 @@ pending → (Approve) → translating → (翻訳完了) → published
 | **Scriptwriter** | ポッドキャスト脚本作成 | creative_content (Firestoreから取得) | podcast_script (ポッドキャスト台本) |
 | **Producer** | 音声表現 | podcast_script | audio_assets (Chirp 3 / TTS によるバイリンガル音声ファイル) |
 
+### Podcast 配信戦略
+
+#### ホスティング: Acast
+
+- **プラットフォーム**: [Acast](https://www.acast.com/)（Starter 無料プラン）
+- **配信先**: Acast 経由で Apple Podcasts, Amazon Music 等に配信
+- **広告マネタイズ**: 月間 1,000 リスナー到達後、Acast マーケットプレイスで広告収益化（日本対応）
+
+#### 番組フォーマット
+
+- **尺**: 約 20 分/エピソード
+- **配信頻度**: 週 1 回
+- **コンテンツ**: その週に公開されたブログ記事を題材にエピソードを制作
+- **広告**: Acast の広告を挿入（preroll / midroll / postroll）
+- **AI 開示**: Acast の AI ガイドラインに従い、番組説明文とエピソード冒頭で AI 生成（Google Cloud TTS）である旨を明記
+
+#### 運用フロー（現在: 手動）
+
+```
+1. ブログ記事が公開される（週次）
+2. Podcast パイプライン実行（podcast_main.py）
+   → Scriptwriter: 週の公開記事から台本生成
+   → Producer: TTS で音声生成（MP3）
+3. 生成された MP3 をダウンロード
+4. Acast CMS に手動でアップロード・公開
+```
+
+#### 段階的自動化ロードマップ
+
+| Phase | 条件 | 運用 | コスト |
+|-------|------|------|--------|
+| 1（現在） | — | 手動アップロード | 無料（Starter） |
+| 2 | 月間 1,000 リスナー | 広告マネタイズ有効化、エピソード無制限 | 無料 |
+| 3 | 収益安定 | Acast Publishing API で自動配信 | €29.99/月（Ace） |
+
+#### 音声技術要件
+
+- **フォーマット**: MP3 / 128 kbps / 最大 150MB
+- **カバーアート**: JPG or PNG / 1400x1400 〜 3000x3000 px（1:1 正方形）
+
 ### Agent Roles（詳細）
 
 **Librarian（司書）**
