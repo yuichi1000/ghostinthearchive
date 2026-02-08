@@ -115,7 +115,8 @@ class MysteryReport(BaseModel):
     )
     additional_evidence: List[Evidence] = Field(
         default_factory=list,
-        description="Other supporting documents that relate to this mystery",
+        max_length=5,
+        description="Other supporting documents that relate to this mystery (max 5)",
     )
 
     hypothesis: str = Field(

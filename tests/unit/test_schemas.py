@@ -221,6 +221,22 @@ class TestMysteryReport:
         report = MysteryReport(**sample_mystery_report_data)
         assert report.narrative_content is None
 
+    def test_additional_evidence_within_limit(self, sample_mystery_report_data, sample_evidence_data):
+        """additional_evidence with 5 or fewer items should pass validation."""
+        sample_mystery_report_data["additional_evidence"] = [
+            {**sample_evidence_data, "source_title": f"Source {i}"} for i in range(5)
+        ]
+        report = MysteryReport(**sample_mystery_report_data)
+        assert len(report.additional_evidence) == 5
+
+    def test_additional_evidence_exceeds_limit(self, sample_mystery_report_data, sample_evidence_data):
+        """additional_evidence with more than 5 items should raise ValidationError."""
+        sample_mystery_report_data["additional_evidence"] = [
+            {**sample_evidence_data, "source_title": f"Source {i}"} for i in range(6)
+        ]
+        with pytest.raises(ValidationError):
+            MysteryReport(**sample_mystery_report_data)
+
 
 class TestAnalysisResults:
     """Tests for AnalysisResults schema."""

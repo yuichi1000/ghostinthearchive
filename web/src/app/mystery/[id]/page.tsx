@@ -196,7 +196,7 @@ export default async function MysteryDetailPage({
                 <div className="space-y-8">
                   <EvidenceBlock evidence={evidenceA} label="Primary Source" />
                   <EvidenceBlock evidence={evidenceB} label="Contrasting Source" />
-                  {additionalEvidence.map((ev, i) => (
+                  {additionalEvidence.slice(0, 5).map((ev, i) => (
                     <EvidenceBlock key={i} evidence={ev} label={`Additional Evidence ${i + 1}`} />
                   ))}
                 </div>
