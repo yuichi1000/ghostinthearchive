@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv(Path(__file__).parent / ".env")
 
+from google.adk.agents.run_config import RunConfig
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
@@ -26,6 +27,9 @@ from shared.pipeline_run import (
     complete_pipeline_run,
     error_pipeline_run,
 )
+
+
+PIPELINE_TIMEOUT_SECONDS = 1800  # 30 minutes
 
 
 async def investigate(query: str) -> None:
@@ -71,44 +75,48 @@ async def investigate(query: str) -> None:
     accumulated_text: list[str] = []
     current_log_index: int | None = None
 
-    try:
-        # Run the investigation
-        async for event in runner.run_async(
-            user_id=user_id,
-            session_id=session_id,
-            new_message=types.Content(
-                role="user",
-                parts=[types.Part(text=query)],
-            ),
-        ):
-            # Detect agent transitions via event.author
-            author = getattr(event, "author", None)
-            if author and author != "ghost_commander" and author != current_agent_name:
-                # Complete previous agent
-                if current_agent_name:
-                    summary = " ".join(accumulated_text)[:200]
-                    logger.complete_agent(summary or "(no text output)")
-                    # Update pipeline run with completed agent
-                    completed_logs = logger.get_logs()
-                    if completed_logs:
-                        update_agent_completed(
-                            run_id, current_log_index, completed_logs[-1]
-                        )
-                    accumulated_text = []
-                # Start new agent
-                current_agent_name = author
-                logger.start_agent(current_agent_name)
-                # Update pipeline run with new agent
-                current_log_index = update_agent_started(
-                    run_id, current_agent_name, logger.get_logs()[-1]
-                )
+    run_config = RunConfig(max_llm_calls=50)
 
-            # Print text responses from agents
-            if event.content and event.content.parts:
-                for part in event.content.parts:
-                    if hasattr(part, "text") and part.text:
-                        print(part.text)
-                        accumulated_text.append(part.text[:100])
+    try:
+        async with asyncio.timeout(PIPELINE_TIMEOUT_SECONDS):
+            # Run the investigation
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=types.Content(
+                    role="user",
+                    parts=[types.Part(text=query)],
+                ),
+                run_config=run_config,
+            ):
+                # Detect agent transitions via event.author
+                author = getattr(event, "author", None)
+                if author and author != "ghost_commander" and author != current_agent_name:
+                    # Complete previous agent
+                    if current_agent_name:
+                        summary = " ".join(accumulated_text)[:200]
+                        logger.complete_agent(summary or "(no text output)")
+                        # Update pipeline run with completed agent
+                        completed_logs = logger.get_logs()
+                        if completed_logs:
+                            update_agent_completed(
+                                run_id, current_log_index, completed_logs[-1]
+                            )
+                        accumulated_text = []
+                    # Start new agent
+                    current_agent_name = author
+                    logger.start_agent(current_agent_name)
+                    # Update pipeline run with new agent
+                    current_log_index = update_agent_started(
+                        run_id, current_agent_name, logger.get_logs()[-1]
+                    )
+
+                # Print text responses from agents
+                if event.content and event.content.parts:
+                    for part in event.content.parts:
+                        if hasattr(part, "text") and part.text:
+                            print(part.text)
+                            accumulated_text.append(part.text[:100])
 
         # Complete final agent
         if current_agent_name:
@@ -146,6 +154,9 @@ async def investigate(query: str) -> None:
 
         complete_pipeline_run(run_id, mystery_id=mystery_id)
 
+    except TimeoutError:
+        error_pipeline_run(run_id, f"Pipeline timed out after {PIPELINE_TIMEOUT_SECONDS}s")
+        raise
     except Exception as e:
         error_pipeline_run(run_id, str(e))
         raise

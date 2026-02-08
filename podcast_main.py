@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent / ".env")
 
+from google.adk.agents.run_config import RunConfig
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
@@ -34,6 +35,9 @@ from shared.pipeline_run import (
     complete_pipeline_run,
     error_pipeline_run,
 )
+
+
+PIPELINE_TIMEOUT_SECONDS = 1200  # 20 minutes
 
 
 async def generate_podcast(mystery_id: str) -> None:
@@ -102,49 +106,53 @@ async def generate_podcast(mystery_id: str) -> None:
 
     agent_start_time: datetime | None = None
 
+    run_config = RunConfig(max_llm_calls=30)
+
     try:
-        async for event in runner.run_async(
-            user_id=user_id,
-            session_id=session_id,
-            new_message=types.Content(
-                role="user",
-                parts=[types.Part(text=f"以下のブログ記事からポッドキャストを作成してください: {title}")],
-            ),
-        ):
-            # Track agent transitions
-            author = getattr(event, "author", None)
-            if author and author != "podcast_commander" and author != current_agent_name:
-                # Complete previous agent
-                if current_agent_name and agent_start_time:
-                    end_time = datetime.now(timezone.utc)
-                    duration = (end_time - agent_start_time).total_seconds()
-                    completed_entry = {
+        async with asyncio.timeout(PIPELINE_TIMEOUT_SECONDS):
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=types.Content(
+                    role="user",
+                    parts=[types.Part(text=f"以下のブログ記事からポッドキャストを作成してください: {title}")],
+                ),
+                run_config=run_config,
+            ):
+                # Track agent transitions
+                author = getattr(event, "author", None)
+                if author and author != "podcast_commander" and author != current_agent_name:
+                    # Complete previous agent
+                    if current_agent_name and agent_start_time:
+                        end_time = datetime.now(timezone.utc)
+                        duration = (end_time - agent_start_time).total_seconds()
+                        completed_entry = {
+                            "agent_name": current_agent_name,
+                            "status": "completed",
+                            "start_time": agent_start_time.isoformat(),
+                            "end_time": end_time.isoformat(),
+                            "duration_seconds": round(duration, 2),
+                            "output_summary": f"{current_agent_name} completed",
+                        }
+                        update_agent_completed(run_id, current_log_index, completed_entry)
+
+                    # Start new agent
+                    current_agent_name = author
+                    agent_start_time = datetime.now(timezone.utc)
+                    log_entry = {
                         "agent_name": current_agent_name,
-                        "status": "completed",
+                        "status": "running",
                         "start_time": agent_start_time.isoformat(),
-                        "end_time": end_time.isoformat(),
-                        "duration_seconds": round(duration, 2),
-                        "output_summary": f"{current_agent_name} completed",
+                        "end_time": None,
+                        "duration_seconds": None,
+                        "output_summary": None,
                     }
-                    update_agent_completed(run_id, current_log_index, completed_entry)
+                    current_log_index = update_agent_started(run_id, current_agent_name, log_entry)
 
-                # Start new agent
-                current_agent_name = author
-                agent_start_time = datetime.now(timezone.utc)
-                log_entry = {
-                    "agent_name": current_agent_name,
-                    "status": "running",
-                    "start_time": agent_start_time.isoformat(),
-                    "end_time": None,
-                    "duration_seconds": None,
-                    "output_summary": None,
-                }
-                current_log_index = update_agent_started(run_id, current_agent_name, log_entry)
-
-            if event.content and event.content.parts:
-                for part in event.content.parts:
-                    if hasattr(part, "text") and part.text:
-                        print(part.text)
+                if event.content and event.content.parts:
+                    for part in event.content.parts:
+                        if hasattr(part, "text") and part.text:
+                            print(part.text)
 
         # Complete final agent
         if current_agent_name and agent_start_time:
@@ -178,6 +186,11 @@ async def generate_podcast(mystery_id: str) -> None:
         print(f"Podcast generation complete: {result}")
         print("=" * 70)
 
+    except TimeoutError:
+        print(f"Error: Pipeline timed out after {PIPELINE_TIMEOUT_SECONDS}s")
+        set_podcast_status(mystery_id, "error")
+        error_pipeline_run(run_id, f"Pipeline timed out after {PIPELINE_TIMEOUT_SECONDS}s")
+        raise
     except Exception as e:
         print(f"Error during podcast generation: {e}")
         set_podcast_status(mystery_id, "error")
