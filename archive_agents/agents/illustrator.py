@@ -12,10 +12,38 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
+from google.adk.tools.base_tool import BaseTool
+from google.adk.tools.tool_context import ToolContext
 
 from ..tools import generate_image
 
 load_dotenv(Path(__file__).parent.parent / ".env")
+
+MAX_GENERATE_IMAGE_CALLS = 3
+_STATE_KEY = "generate_image_call_count"
+
+
+def _limit_generate_image_calls(
+    tool: BaseTool, args: dict, tool_context: ToolContext
+) -> dict | None:
+    """generate_image の呼び出し回数を制限する before_tool_callback.
+
+    セッション状態でカウントを管理し、MAX_GENERATE_IMAGE_CALLS を超えた場合は
+    エラーを返して呼び出しをブロックする。
+    """
+    if tool.name == "generate_image":
+        count = tool_context.state.get(_STATE_KEY, 0) + 1
+        tool_context.state[_STATE_KEY] = count
+        if count > MAX_GENERATE_IMAGE_CALLS:
+            return {
+                "status": "error",
+                "error": (
+                    f"generate_image の呼び出し上限 ({MAX_GENERATE_IMAGE_CALLS}回) "
+                    "に達しました。フォールバック画像を使用してください。"
+                ),
+            }
+    return None
+
 
 ILLUSTRATOR_INSTRUCTION = """
 あなたは「Ghost in the Archive」プロジェクトのイラストレーター（Illustrator Agent）です。
@@ -115,4 +143,5 @@ illustrator_agent = LlmAgent(
     instruction=ILLUSTRATOR_INSTRUCTION,
     tools=[generate_image],
     output_key="visual_assets",
+    before_tool_callback=_limit_generate_image_calls,
 )
