@@ -87,6 +87,8 @@ def search_internet_archive(
 
             identifier = item.get("identifier", "")
             url = f"https://archive.org/details/{identifier}" if identifier else ""
+            if not url:
+                continue
 
             date_str = item.get("date", "")
             if isinstance(date_str, list) and date_str:
