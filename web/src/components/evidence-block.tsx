@@ -26,14 +26,6 @@ export function EvidenceBlock({ evidence, label, className }: EvidenceBlockProps
         {/* Top edge wear effect */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-b from-parchment/10 to-transparent" />
 
-        {/* Corner fold effect */}
-        <div
-          className="absolute top-0 right-0 w-6 h-6"
-          style={{
-            background: "linear-gradient(135deg, transparent 50%, #1A1A1A 50%)",
-          }}
-        />
-
         {/* Date badge + Quote marks row */}
         <div className="flex items-start justify-between mb-1">
           <div className="text-4xl text-parchment/20 font-serif leading-none" aria-hidden="true">
@@ -47,13 +39,9 @@ export function EvidenceBlock({ evidence, label, className }: EvidenceBlockProps
         </div>
 
         {/* Evidence text */}
-        {evidence.relevant_excerpt ? (
+        {evidence.relevant_excerpt && (
           <p className="relative text-sm text-foreground/90 leading-relaxed pl-6 font-mono whitespace-pre-wrap">
             {evidence.relevant_excerpt}
-          </p>
-        ) : (
-          <p className="relative text-sm text-foreground/50 leading-relaxed pl-6 font-mono italic">
-            [No text excerpt available — see original source]
           </p>
         )}
       </blockquote>
