@@ -58,6 +58,38 @@ class TestSanitizePrompt:
         result = _sanitize_prompt("A GHOST SHIP")
         assert "ghost" not in result.lower()
 
+    def test_sanitize_vampire(self):
+        """Should replace 'vampire' with 'ancient figure'."""
+        result = _sanitize_prompt("A vampire lurking in the shadows")
+        assert "ancient figure" in result
+        assert "vampire" not in result
+
+    def test_sanitize_cannibal(self):
+        """Should replace 'cannibal' with 'forbidden practitioner'."""
+        result = _sanitize_prompt("A cannibal in the wilderness")
+        assert "forbidden practitioner" in result
+        assert "cannibal" not in result
+
+    def test_sanitize_occult_words(self):
+        """Should replace curse, witch, ritual with safe alternatives."""
+        result = _sanitize_prompt("A curse placed by a witch during a ritual")
+        assert "curse" not in result
+        assert "witch" not in result
+        assert "ritual" not in result
+        assert "legacy" in result
+        assert "wise woman" in result
+        assert "ceremony" in result
+
+    def test_sanitize_violence_words(self):
+        """Should replace murder, skull, grave with safe alternatives."""
+        result = _sanitize_prompt("A murder near the skull on the grave")
+        assert "murder" not in result
+        assert "skull" not in result
+        assert "grave" not in result
+        assert "dark incident" in result
+        assert "relic" in result
+        assert "resting place" in result
+
 
 class TestGenerateImageRetry:
     """Tests for generate_image retry mechanism."""

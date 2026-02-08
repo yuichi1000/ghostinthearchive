@@ -104,6 +104,7 @@ def resize_image_variants(source_path: str) -> str:
 
 # Prompt sanitization mapping for safety filter avoidance
 _SANITIZE_REPLACEMENTS = {
+    # Ghost / spirit
     "ghost": "ethereal figure",
     "ghostly": "mysterious",
     "ghosts": "ethereal figures",
@@ -121,6 +122,52 @@ _SANITIZE_REPLACEMENTS = {
     "dead body": "motionless figure",
     "blood": "dark stain",
     "bloody": "dark",
+    # Vampire
+    "vampire": "ancient figure",
+    "vampires": "ancient figures",
+    "undead": "restless figure",
+    "fangs": "sharp features",
+    # Cannibal
+    "cannibalism": "forbidden practice",
+    "cannibals": "forbidden practitioners",
+    "cannibal": "forbidden practitioner",
+    "devour": "consume",
+    "flesh": "remains",
+    # Violence / death
+    "murder": "dark incident",
+    "kill": "end",
+    "death": "passing",
+    "sacrifice": "offering",
+    "slaughter": "dark event",
+    "torture": "ordeal",
+    "mutilation": "desecration",
+    "execution": "judgment",
+    # Occult
+    "witchcraft": "folk practice",
+    "curse": "legacy",
+    "witch": "wise woman",
+    "occult": "esoteric",
+    "ritual": "ceremony",
+    "hex": "enchantment",
+    "voodoo": "folk tradition",
+    "sorcery": "folk art",
+    # Body / medical
+    "skeleton": "ancient remains",
+    "skull": "relic",
+    "bones": "relics",
+    "grave": "resting place",
+    "exhume": "uncover",
+    "autopsy": "examination",
+    "dissection": "study",
+    "burial": "interment",
+    # Other
+    "plague": "epidemic",
+    "disease": "affliction",
+    "monster": "creature",
+    "beast": "creature",
+    "terror": "dread",
+    "scream": "cry",
+    "darkness": "shadow",
 }
 
 
