@@ -462,12 +462,13 @@ class TestGenerateImageWithVariants:
         assert result_data["status"] == "success"
         assert "variants" in result_data
         assert len(result_data["variants"]) == 1
+        assert result_data["variant_error"] is None
         mock_resize.assert_called_once()
 
     @patch("archive_agents.tools.illustrator_tools.resize_image_variants")
     @patch("archive_agents.tools.illustrator_tools._get_client")
     def test_resize_failure_returns_empty_variants(self, mock_get_client, mock_resize):
-        """Should return empty variants when resize fails (graceful degradation)."""
+        """Should return empty variants with variant_error when resize fails."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
 
@@ -487,6 +488,7 @@ class TestGenerateImageWithVariants:
 
         assert result_data["status"] == "success"
         assert result_data["variants"] == []
+        assert result_data["variant_error"] == "Pillow not installed"
 
     @patch("archive_agents.tools.illustrator_tools._get_client")
     @patch("archive_agents.tools.illustrator_tools.time.sleep")
@@ -508,11 +510,11 @@ class TestGenerateImageWithVariants:
 
 
 class TestGetVariantsLogging:
-    """Tests for _get_variants warning log on failure."""
+    """Tests for _get_variants error log on failure."""
 
     @patch("archive_agents.tools.illustrator_tools.resize_image_variants")
-    def test_get_variants_logs_warning_on_failure(self, mock_resize, caplog):
-        """Should log a warning when variant generation fails."""
+    def test_get_variants_logs_error_on_failure(self, mock_resize, caplog):
+        """Should log an ERROR when variant generation fails."""
         mock_resize.return_value = json.dumps({
             "status": "error",
             "error": "Pillow not installed",
@@ -520,12 +522,28 @@ class TestGetVariantsLogging:
         })
 
         import logging
-        with caplog.at_level(logging.WARNING, logger="archive_agents.tools.illustrator_tools"):
-            result = _get_variants("/tmp/test.png")
+        with caplog.at_level(logging.ERROR, logger="archive_agents.tools.illustrator_tools"):
+            variants, error_msg = _get_variants("/tmp/test.png")
 
-        assert result == []
-        assert "Variant generation failed" in caplog.text
+        assert variants == []
+        assert error_msg == "Pillow not installed"
+        assert "WebP variant generation FAILED" in caplog.text
         assert "Pillow not installed" in caplog.text
+
+    @patch("archive_agents.tools.illustrator_tools.resize_image_variants")
+    def test_get_variants_returns_none_error_on_success(self, mock_resize):
+        """Should return None as error_msg on success."""
+        mock_resize.return_value = json.dumps({
+            "status": "success",
+            "variants": [
+                {"label": "sm", "width": 640, "height": 360, "filepath": "/tmp/sm.webp", "filename": "sm.webp"},
+            ],
+        })
+
+        variants, error_msg = _get_variants("/tmp/test.png")
+
+        assert len(variants) == 1
+        assert error_msg is None
 
 
 class TestBuildSafeFallbackPrompt:
