@@ -9,6 +9,8 @@ import { getAllMysteries, approveMystery, archiveMystery, requestPodcast } from 
 import type { FirestoreMystery, MysteryStatus } from "@/types/mystery"
 import { PipelineSummary } from "@/components/pipeline-summary"
 import { PipelineTimeline } from "@/components/pipeline-timeline"
+import { RunningPipelines } from "@/components/running-pipelines"
+import { usePipelinePolling } from "@/hooks/use-pipeline-polling"
 import {
   Shield,
   FileText,
@@ -52,6 +54,11 @@ export default function AdminPage() {
     }
   }, [])
 
+  // Pipeline progress polling
+  const { runs: pipelineRuns, startPolling } = usePipelinePolling({
+    onPipelineCompleted: fetchMysteries,
+  })
+
   useEffect(() => {
     fetchMysteries()
   }, [fetchMysteries])
@@ -81,6 +88,7 @@ export default function AdminPage() {
       if (!res.ok) throw new Error("Translation API request failed")
       setActionFeedback(`Case ${id} approved - translation started`)
       fetchMysteries()
+      startPolling()
       setTimeout(() => setActionFeedback(null), 3000)
     } catch (error) {
       console.error("Failed to approve:", error)
@@ -111,6 +119,7 @@ export default function AdminPage() {
       if (!res.ok) throw new Error("API request failed")
       setActionFeedback(`Podcast generation started for Case ${id}`)
       fetchMysteries()
+      startPolling()
       setTimeout(() => setActionFeedback(null), 3000)
     } catch (error) {
       console.error("Failed to start podcast:", error)
@@ -132,6 +141,7 @@ export default function AdminPage() {
       setActionFeedback("調査パイプラインを開始しました")
       setThemeInput("")
       setSuggestions([])
+      startPolling()
       setTimeout(() => setActionFeedback(null), 3000)
     } catch (error) {
       console.error("Failed to start pipeline:", error)
@@ -248,6 +258,9 @@ export default function AdminPage() {
             </p>
           </div>
         )}
+
+        {/* Running pipelines */}
+        <RunningPipelines runs={pipelineRuns} />
 
         {/* TODO: 記事一覧 UI 改善（段階的対応）
          * 記事数が増えた場合の対応計画:
