@@ -28,6 +28,13 @@ from translator_agents.tools.firestore_tools import (
     save_translation_result,
     set_translation_error,
 )
+from shared.pipeline_run import (
+    create_pipeline_run,
+    update_agent_started,
+    update_agent_completed,
+    complete_pipeline_run,
+    error_pipeline_run,
+)
 
 
 async def translate_mystery(mystery_id: str) -> None:
@@ -59,6 +66,9 @@ async def translate_mystery(mystery_id: str) -> None:
     print(f"Article: {title}")
     print("-" * 70)
     print()
+
+    # Create pipeline run for progress tracking
+    run_id = create_pipeline_run("translate", mystery_id=mystery_id)
 
     # Create runner with session pre-loaded with Japanese content
     session_service = InMemorySessionService()
@@ -107,6 +117,20 @@ async def translate_mystery(mystery_id: str) -> None:
     # Run the translation pipeline
     translation_result = ""
 
+    # Track translator agent start
+    from datetime import datetime, timezone
+
+    translator_log_entry = {
+        "agent_name": "translator",
+        "status": "running",
+        "start_time": datetime.now(timezone.utc).isoformat(),
+        "end_time": None,
+        "duration_seconds": None,
+        "output_summary": None,
+    }
+    log_index = update_agent_started(run_id, "translator", translator_log_entry)
+    translate_start = datetime.now(timezone.utc)
+
     try:
         async for event in runner.run_async(
             user_id=user_id,
@@ -135,10 +159,24 @@ async def translate_mystery(mystery_id: str) -> None:
             print()
             print("Translation skipped: No content to translate.")
             set_translation_error(mystery_id)
+            error_pipeline_run(run_id, "No content to translate")
             sys.exit(1)
 
         # Save results to Firestore
         result = save_translation_result(mystery_id, translation_result)
+
+        # Mark translator agent completed
+        end_time = datetime.now(timezone.utc)
+        duration = (end_time - translate_start).total_seconds()
+        translator_log_entry.update({
+            "status": "completed",
+            "end_time": end_time.isoformat(),
+            "duration_seconds": round(duration, 2),
+            "output_summary": f"Translation complete: {result}"[:200],
+        })
+        update_agent_completed(run_id, log_index, translator_log_entry)
+        complete_pipeline_run(run_id, mystery_id=mystery_id)
+
         print()
         print("=" * 70)
         print(f"Translation complete: {result}")
@@ -147,6 +185,7 @@ async def translate_mystery(mystery_id: str) -> None:
     except Exception as e:
         print(f"Error during translation: {e}")
         set_translation_error(mystery_id)
+        error_pipeline_run(run_id, str(e))
         raise
 
 

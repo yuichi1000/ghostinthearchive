@@ -238,4 +238,40 @@ export const AGENT_NAME_LABELS: Record<string, string> = {
   illustrator: "画像生成",
   producer: "音声生成",
   publisher: "公開処理",
+  translator: "翻訳",
 };
+
+/** パイプライン実行の種別 */
+export type PipelineRunType = "blog" | "translate" | "podcast";
+
+/** パイプライン実行ステータス */
+export type PipelineRunStatus = "running" | "completed" | "error";
+
+/**
+ * パイプライン実行ドキュメント
+ * pipeline_runs コレクションのドキュメント構造
+ */
+export interface PipelineRun {
+  /** Firestore ドキュメント ID */
+  id: string;
+  /** パイプライン種別 */
+  type: PipelineRunType;
+  /** 実行状態 */
+  status: PipelineRunStatus;
+  /** 調査テーマ（blog のみ） */
+  query?: string | null;
+  /** 記事ID（translate/podcast、blog は完了時にセット） */
+  mystery_id?: string | null;
+  /** 現在実行中のエージェント名 */
+  current_agent?: string | null;
+  /** パイプライン実行ログ */
+  pipeline_log: AgentLogEntry[];
+  /** 開始時刻 */
+  started_at: Date;
+  /** 最終更新時刻 */
+  updated_at: Date;
+  /** 完了時刻 */
+  completed_at?: Date | null;
+  /** エラー時のメッセージ */
+  error_message?: string | null;
+}
