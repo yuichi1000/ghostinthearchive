@@ -138,7 +138,14 @@ def upload_images(mystery_id: str, image_paths: str) -> str:
                 })
                 continue
 
-            blob_name = f"images/{mystery_id}/{p.name}"
+            # Rename file to mystery_id-based name
+            variant_suffix = ""
+            for label in ("_sm", "_md", "_lg", "_xl"):
+                if p.stem.endswith(label):
+                    variant_suffix = label
+                    break
+            new_filename = f"{mystery_id}{variant_suffix}{p.suffix}"
+            blob_name = f"images/{mystery_id}/{new_filename}"
             blob = bucket.blob(blob_name)
             content_type_map = {".png": "image/png", ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
             content_type = content_type_map.get(p.suffix.lower(), "image/png")
