@@ -92,6 +92,8 @@ def search_nypl(
 
             uuid = item.get("uuid", "")
             url = f"https://digitalcollections.nypl.org/items/{uuid}" if uuid else ""
+            if not url:
+                continue
 
             date_str = item.get("dateDigitized", "")
 

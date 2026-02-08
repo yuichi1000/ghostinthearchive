@@ -166,6 +166,8 @@ def search_chronicling_america(
             url = item.get("url", item.get("id", ""))
             if url and not url.startswith("http"):
                 url = f"https://www.loc.gov{url}"
+            if not url:
+                continue
 
             doc = ArchiveDocument(
                 title=str(item.get("title", "Unknown Title"))[:500],

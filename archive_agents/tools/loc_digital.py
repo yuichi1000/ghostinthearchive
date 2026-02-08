@@ -85,6 +85,8 @@ def search_loc_digital(
             url = item.get("url", item.get("id", ""))
             if url and not url.startswith("http"):
                 url = f"https://www.loc.gov{url}"
+            if not url:
+                continue
 
             location = _extract_location(item)
             date_str = item.get("date", "")
