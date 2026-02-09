@@ -1,6 +1,7 @@
 """Unit tests for Publisher tools."""
 
 import json
+import logging
 from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
@@ -561,3 +562,177 @@ class TestLocalFileRename:
         assert (tmp_path / f"{mystery_id}_md.webp").exists()
         assert (tmp_path / f"{mystery_id}_lg.webp").exists()
         assert (tmp_path / f"{mystery_id}_xl.webp").exists()
+
+
+class TestUploadErrorHandling:
+    """Tests for _upload_images_internal error handling and logging."""
+
+    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("archive_agents.tools.publisher_tools.get_firestore_client")
+    def test_publish_mystery_saves_to_firestore_when_image_upload_fails(
+        self, mock_get_db, mock_get_bucket, tmp_path
+    ):
+        """Should save to Firestore even when image upload fails completely."""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_blob.upload_from_filename.side_effect = Exception("Storage unavailable")
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        mystery_json = _make_mystery_json()
+        visual_assets_json = _make_visual_assets_json(tmp_path)
+
+        result = publish_mystery(mystery_json, visual_assets_json)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        # Firestore set() should still have been called
+        mock_db.collection.return_value.document.return_value.set.assert_called_once()
+        # images should not be in saved data since all uploads failed
+        saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "images" not in saved_data
+
+    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    def test_upload_images_internal_logs_on_failure(self, mock_get_bucket, tmp_path, caplog):
+        """Should log an error when upload_from_filename fails."""
+        from archive_agents.tools.publisher_tools import _upload_images_internal
+
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_blob.upload_from_filename.side_effect = Exception("Network error")
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        png_file = tmp_path / "header.png"
+        png_file.write_bytes(b"fake png data")
+
+        with caplog.at_level(logging.ERROR, logger="archive_agents.tools.publisher_tools"):
+            _upload_images_internal("TEST-001", [str(png_file)])
+
+        assert any("Network error" in record.message for record in caplog.records)
+
+    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    def test_upload_images_internal_logs_success(self, mock_get_bucket, tmp_path, caplog):
+        """Should log INFO on successful upload."""
+        from archive_agents.tools.publisher_tools import _upload_images_internal
+
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_blob.exists.return_value = True
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        png_file = tmp_path / "header.png"
+        png_file.write_bytes(b"fake png data")
+
+        with caplog.at_level(logging.INFO, logger="archive_agents.tools.publisher_tools"):
+            _upload_images_internal("TEST-001", [str(png_file)])
+
+        assert any("uploaded successfully" in record.message.lower() for record in caplog.records)
+
+    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    def test_upload_verifies_blob_exists(self, mock_get_bucket, tmp_path):
+        """Should call blob.exists() after upload to verify."""
+        from archive_agents.tools.publisher_tools import _upload_images_internal
+
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_blob.exists.return_value = True
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        png_file = tmp_path / "header.png"
+        png_file.write_bytes(b"fake png data")
+
+        _upload_images_internal("TEST-001", [str(png_file)])
+
+        mock_blob.exists.assert_called_once()
+
+    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    def test_upload_logs_warning_when_blob_not_found_after_upload(
+        self, mock_get_bucket, tmp_path, caplog
+    ):
+        """Should log a warning when blob.exists() returns False after upload."""
+        from archive_agents.tools.publisher_tools import _upload_images_internal
+
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_blob.exists.return_value = False
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        png_file = tmp_path / "header.png"
+        png_file.write_bytes(b"fake png data")
+
+        with caplog.at_level(logging.WARNING, logger="archive_agents.tools.publisher_tools"):
+            result = _upload_images_internal("TEST-001", [str(png_file)])
+
+        assert any("verification failed" in record.message.lower() for record in caplog.records)
+        # Should not include the file in results since verification failed
+        assert result == {}
+
+    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    def test_partial_upload_failure_does_not_block_others(self, mock_get_bucket, tmp_path):
+        """When one file fails to upload, other files should still succeed."""
+        from archive_agents.tools.publisher_tools import _upload_images_internal
+
+        mock_bucket = MagicMock()
+
+        call_count = 0
+
+        def upload_side_effect(path, content_type=None):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise Exception("First file fails")
+
+        mock_blob_fail = MagicMock()
+        mock_blob_fail.upload_from_filename.side_effect = upload_side_effect
+        mock_blob_success = MagicMock()
+        mock_blob_success.exists.return_value = True
+
+        # First call returns failing blob, second returns successful
+        mock_bucket.blob.side_effect = [mock_blob_fail, mock_blob_success]
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        file1 = tmp_path / "header.png"
+        file1.write_bytes(b"fake png data")
+        file2 = tmp_path / "header_sm.webp"
+        file2.write_bytes(b"fake webp data")
+
+        result = _upload_images_internal("TEST-001", [str(file1), str(file2)])
+
+        # Second file should have been uploaded successfully
+        assert result != {}
+
+    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    def test_upload_summary_log(self, mock_get_bucket, tmp_path, caplog):
+        """Should log a summary with count of successful uploads."""
+        from archive_agents.tools.publisher_tools import _upload_images_internal
+
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_blob.exists.return_value = True
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        files = []
+        for name in ("header.png", "header_sm.webp", "header_md.webp"):
+            f = tmp_path / name
+            f.write_bytes(b"fake data")
+            files.append(str(f))
+
+        with caplog.at_level(logging.INFO, logger="archive_agents.tools.publisher_tools"):
+            _upload_images_internal("TEST-001", files)
+
+        assert any("3/3" in record.message for record in caplog.records)
