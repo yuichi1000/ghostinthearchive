@@ -1,0 +1,16 @@
+.git
+.github
+.githooks
+.pytest_cache
+.venv
+__pycache__
+node_modules
+*.pyc
+.env
+.env.local
+.firebase
+terraform/.terraform
+web-admin/
+web-public/
+tests/
+*.md
