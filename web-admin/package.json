@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@google-cloud/run": "^1.5.0",
     "google-auth-library": "^9.15.1",
     "@radix-ui/react-slot": "^1.1.1",
     "@tailwindcss/typography": "^0.5.19",
