@@ -8,7 +8,6 @@ Endpoints:
     GET  /health         - Health check
 """
 
-import asyncio
 import json
 import os
 

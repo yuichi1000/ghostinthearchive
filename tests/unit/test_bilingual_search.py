@@ -1,6 +1,5 @@
 """Unit tests for bilingual keyword expansion logic."""
 
-import pytest
 
 from archive_agents.tools.bilingual_search import (
     KEYWORD_PAIRS,

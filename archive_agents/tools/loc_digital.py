@@ -119,7 +119,7 @@ def _extract_location(item: Dict) -> str:
     if "location" in item:
         loc = item["location"]
         if isinstance(loc, list):
-            return ", ".join(str(l) for l in loc[:2])
+            return ", ".join(str(el) for el in loc[:2])
         if isinstance(loc, str):
             return loc
     title = item.get("title", "")
