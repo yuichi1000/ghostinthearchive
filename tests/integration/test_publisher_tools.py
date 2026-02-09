@@ -219,3 +219,58 @@ class TestPublisherToolsWithEmulator:
         assert doc.exists
         data = doc.to_dict()
         assert data["title"] == sample_mystery_report_data["title"]
+
+
+@pytest.mark.integration
+class TestStorageEmulatorUpload:
+    """Integration tests for Cloud Storage upload via Firebase Storage Emulator.
+
+    Run these with:
+        FIRESTORE_EMULATOR_HOST=localhost:8080 \
+        STORAGE_EMULATOR_HOST=http://localhost:9199 \
+        pytest tests/integration/test_publisher_tools.py::TestStorageEmulatorUpload -v -m integration
+    """
+
+    @pytest.fixture(autouse=True)
+    def check_storage_emulator(self):
+        """Skip if Storage Emulator is not running."""
+        if not os.environ.get("STORAGE_EMULATOR_HOST"):
+            pytest.skip("Storage Emulator not running (STORAGE_EMULATOR_HOST not set)")
+
+    def test_upload_single_image_to_emulator(self, tmp_path):
+        """Should upload a single image to Storage Emulator successfully."""
+        from archive_agents.tools.publisher_tools import _upload_images_internal
+
+        png_file = tmp_path / "header.png"
+        png_file.write_bytes(b"fake png data for emulator test")
+
+        mystery_id = "TEST-EMU-001"
+        result = _upload_images_internal(mystery_id, [str(png_file)])
+
+        assert "hero" in result
+        assert mystery_id in result["hero"]
+
+    def test_upload_with_variants_to_emulator(self, tmp_path):
+        """Should upload original + 4 variants to Storage Emulator."""
+        from archive_agents.tools.publisher_tools import _upload_images_internal
+
+        # Create original + all 4 variants
+        original = tmp_path / "header.png"
+        original.write_bytes(b"fake original png")
+
+        variant_files = []
+        for label in ("sm", "md", "lg", "xl"):
+            vpath = tmp_path / f"header_{label}.webp"
+            vpath.write_bytes(f"fake {label} webp".encode())
+            variant_files.append(str(vpath))
+
+        all_paths = [str(original)] + variant_files
+        mystery_id = "TEST-EMU-002"
+        result = _upload_images_internal(mystery_id, all_paths)
+
+        assert "hero" in result
+        assert "variants" in result
+        assert "sm" in result["variants"]
+        assert "md" in result["variants"]
+        assert "lg" in result["variants"]
+        assert "xl" in result["variants"]
