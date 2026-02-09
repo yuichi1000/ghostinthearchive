@@ -66,6 +66,11 @@ resource "google_cloud_run_v2_service" "web_admin" {
         }
       }
 
+      env {
+        name  = "CURATOR_SERVICE_URL"
+        value = google_cloud_run_v2_service.curator.uri
+      }
+
       resources {
         limits = {
           cpu    = "1"
@@ -78,6 +83,71 @@ resource "google_cloud_run_v2_service" "web_admin" {
       min_instance_count = 0
       max_instance_count = 10
     }
+  }
+
+  traffic {
+    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
+    percent = 100
+  }
+
+  depends_on = [
+    google_project_service.apis,
+    google_artifact_registry_repository.main,
+  ]
+}
+
+
+# Cloud Run service for Curator (theme suggestion API)
+resource "google_cloud_run_v2_service" "curator" {
+  name     = "curator"
+  location = var.region
+  ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+
+  template {
+    service_account = google_service_account.pipelines.email
+
+    containers {
+      image   = "${var.region}-docker.pkg.dev/${var.project_id}/ghostinthearchive/pipelines:latest"
+      command = ["python"]
+      args    = ["curator_server.py"]
+
+      ports {
+        container_port = 8080
+      }
+
+      env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = var.project_id
+      }
+
+      env {
+        name  = "GOOGLE_GENAI_USE_VERTEXAI"
+        value = "TRUE"
+      }
+
+      resources {
+        limits = {
+          cpu    = "1"
+          memory = "1Gi"
+        }
+      }
+
+      startup_probe {
+        http_get {
+          path = "/health"
+        }
+        initial_delay_seconds = 5
+        period_seconds        = 10
+        failure_threshold     = 3
+      }
+    }
+
+    scaling {
+      min_instance_count = 0
+      max_instance_count = 2
+    }
+
+    timeout = "300s"
   }
 
   traffic {

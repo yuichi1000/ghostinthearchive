@@ -24,6 +24,11 @@ output "cloud_build_push_trigger_id" {
   value       = google_cloudbuild_trigger.web_public_on_push.trigger_id
 }
 
+output "curator_service_url" {
+  description = "URL of the Curator Cloud Run service"
+  value       = google_cloud_run_v2_service.curator.uri
+}
+
 output "cloud_run_jobs" {
   description = "Cloud Run Jobs names"
   value = {
