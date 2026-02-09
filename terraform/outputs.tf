@@ -62,11 +62,13 @@ output "next_steps" {
     5. Deploy web-public:
        gcloud builds triggers run web-public-deploy
 
-    6. Verify DNS propagation:
-       dig +short ${var.admin_subdomain}.${var.domain}
+    6. Grant Cloud Run invoker access (Google Cloud Console):
+       Cloud Run > web-admin > Security > Add Principal
+       Grant role: Cloud Run Invoker (roles/run.invoker)
 
-    7. Check SSL certificate:
-       gcloud compute ssl-certificates list
+    7. Access web-admin via authenticated proxy:
+       gcloud run services proxy web-admin --region ${var.region}
+       # Then open http://localhost:8080 in your browser
 
   EOT
 }
