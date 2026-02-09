@@ -19,9 +19,7 @@ Terraform apply 前に、Cloud Run で使用する Docker イメージを Artifa
 # プロジェクトルートから実行
 
 # pipelines イメージ（blog-pipeline / translate-pipeline / podcast-pipeline 共通）
-gcloud builds submit \
-  --tag asia-northeast1-docker.pkg.dev/ghostinthearchive/ghostinthearchive/pipelines:latest \
-  -f Dockerfile.jobs .
+gcloud builds submit --config cloudbuild-pipelines.yaml .
 
 # web-admin イメージ
 gcloud builds submit \
