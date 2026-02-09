@@ -33,7 +33,7 @@ resource "google_cloudbuild_trigger" "web_public" {
     }
 
     step {
-      name = "gcr.io/${var.project_id}/firebase"
+      name = "us-docker.pkg.dev/firebase-cli/us/firebase"
       args = ["deploy", "--only", "hosting", "--project", var.project_id]
       dir  = "web-public"
     }
