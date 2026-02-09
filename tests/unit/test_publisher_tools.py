@@ -7,7 +7,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from archive_agents.tools.publisher_tools import publish_mystery, upload_images
+from archive_agents.tools.publisher_tools import (
+    _cleanup_temp_images,
+    _upload_images_internal,
+    publish_mystery,
+    upload_images,
+)
 
 
 class TestUploadImagesContentType:
@@ -408,12 +413,12 @@ class TestPublishMysteryImageUpload:
             assert blob_name.startswith(f"images/{mystery_id}/")
 
 
-class TestLocalFileRename:
-    """Tests for local file renaming to mystery_id-based names."""
+class TestLocalFileCleanup:
+    """Tests for local file cleanup after upload."""
 
     @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
-    def test_local_file_renamed_to_mystery_id(self, mock_get_bucket, tmp_path):
-        """Should rename local original file to {mystery_id}.png after upload."""
+    def test_local_file_deleted_after_upload(self, mock_get_bucket, tmp_path):
+        """Should delete local file after successful upload."""
         mock_bucket = MagicMock()
         mock_blob = MagicMock()
         mock_bucket.blob.return_value = mock_blob
@@ -426,15 +431,14 @@ class TestLocalFileRename:
         mystery_id = "OCC-MA-617-20260208143025"
         upload_images(mystery_id, json.dumps([str(png_file)]))
 
-        # Original file should no longer exist
+        # Both original and renamed file should no longer exist
         assert not png_file.exists()
-        # Renamed file should exist
         renamed_file = tmp_path / f"{mystery_id}.png"
-        assert renamed_file.exists()
+        assert not renamed_file.exists()
 
     @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
-    def test_local_variant_renamed_to_mystery_id(self, mock_get_bucket, tmp_path):
-        """Should rename local WebP variant to {mystery_id}_sm.webp after upload."""
+    def test_local_variant_deleted_after_upload(self, mock_get_bucket, tmp_path):
+        """Should delete local variant file after successful upload."""
         mock_bucket = MagicMock()
         mock_blob = MagicMock()
         mock_bucket.blob.return_value = mock_blob
@@ -447,18 +451,17 @@ class TestLocalFileRename:
         mystery_id = "OCC-MA-617-20260208143025"
         upload_images(mystery_id, json.dumps([str(webp_file)]))
 
-        # Original file should no longer exist
+        # Both original and renamed file should no longer exist
         assert not webp_file.exists()
-        # Renamed file should exist
         renamed_file = tmp_path / f"{mystery_id}_sm.webp"
-        assert renamed_file.exists()
+        assert not renamed_file.exists()
 
     @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
     @patch("archive_agents.tools.publisher_tools.get_firestore_client")
-    def test_local_files_renamed_via_publish_mystery(
+    def test_local_files_cleaned_up_via_publish_mystery(
         self, mock_get_db, mock_get_bucket, tmp_path
     ):
-        """Should rename local files when called through publish_mystery."""
+        """Should clean up all local files after upload through publish_mystery."""
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
 
@@ -479,12 +482,12 @@ class TestLocalFileRename:
         assert not (tmp_path / "header_20260208_143025.png").exists()
         assert not (tmp_path / "header_20260208_143025_sm.webp").exists()
 
-        # mystery_id-based files should exist
-        assert (tmp_path / f"{mystery_id}.png").exists()
-        assert (tmp_path / f"{mystery_id}_sm.webp").exists()
-        assert (tmp_path / f"{mystery_id}_md.webp").exists()
-        assert (tmp_path / f"{mystery_id}_lg.webp").exists()
-        assert (tmp_path / f"{mystery_id}_xl.webp").exists()
+        # Renamed files should also be cleaned up
+        assert not (tmp_path / f"{mystery_id}.png").exists()
+        assert not (tmp_path / f"{mystery_id}_sm.webp").exists()
+        assert not (tmp_path / f"{mystery_id}_md.webp").exists()
+        assert not (tmp_path / f"{mystery_id}_lg.webp").exists()
+        assert not (tmp_path / f"{mystery_id}_xl.webp").exists()
 
 
 class TestUploadErrorHandling:
@@ -522,7 +525,6 @@ class TestUploadErrorHandling:
     @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
     def test_upload_images_internal_logs_on_failure(self, mock_get_bucket, tmp_path, caplog):
         """Should log an error when upload_from_filename fails."""
-        from archive_agents.tools.publisher_tools import _upload_images_internal
 
         mock_bucket = MagicMock()
         mock_blob = MagicMock()
@@ -542,7 +544,6 @@ class TestUploadErrorHandling:
     @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
     def test_partial_upload_failure_does_not_block_others(self, mock_get_bucket, tmp_path):
         """When one file fails to upload, other files should still succeed."""
-        from archive_agents.tools.publisher_tools import _upload_images_internal
 
         mock_bucket = MagicMock()
 
@@ -573,4 +574,65 @@ class TestUploadErrorHandling:
 
         # Second file should have been uploaded successfully
         assert result != {}
+
+
+class TestCleanupTempImages:
+    """Tests for _cleanup_temp_images helper."""
+
+    def test_deletes_files(self, tmp_path):
+        """Should delete all specified files."""
+        f1 = tmp_path / "a.png"
+        f2 = tmp_path / "b.webp"
+        f1.write_bytes(b"data")
+        f2.write_bytes(b"data")
+
+        _cleanup_temp_images([f1, f2])
+
+        assert not f1.exists()
+        assert not f2.exists()
+
+    def test_removes_empty_parent_directory(self, tmp_path):
+        """Should remove parent directory when empty after file deletion."""
+        subdir = tmp_path / "ghost_images_abc123"
+        subdir.mkdir()
+        f = subdir / "image.png"
+        f.write_bytes(b"data")
+
+        _cleanup_temp_images([f])
+
+        assert not f.exists()
+        assert not subdir.exists()
+
+    def test_keeps_non_empty_parent_directory(self, tmp_path):
+        """Should keep parent directory if other files remain."""
+        subdir = tmp_path / "ghost_images_abc123"
+        subdir.mkdir()
+        f1 = subdir / "image.png"
+        f2 = subdir / "other.txt"
+        f1.write_bytes(b"data")
+        f2.write_bytes(b"data")
+
+        _cleanup_temp_images([f1])
+
+        assert not f1.exists()
+        assert subdir.exists()
+        assert f2.exists()
+
+    def test_ignores_missing_files(self, tmp_path):
+        """Should not raise when files don't exist."""
+        missing = tmp_path / "nonexistent.png"
+
+        # Should not raise
+        _cleanup_temp_images([missing])
+
+    def test_logs_warning_on_delete_failure(self, tmp_path, caplog):
+        """Should log warning when file deletion fails."""
+        f = tmp_path / "image.png"
+        f.write_bytes(b"data")
+
+        with patch.object(Path, "unlink", side_effect=PermissionError("denied")):
+            with caplog.at_level(logging.WARNING, logger="archive_agents.tools.publisher_tools"):
+                _cleanup_temp_images([f])
+
+        assert "Failed to delete temp image" in caplog.text
 

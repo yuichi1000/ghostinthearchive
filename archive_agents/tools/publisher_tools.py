@@ -32,6 +32,32 @@ def _generate_mystery_id(classification: str, state_code: str, area_code: str) -
     return f"{classification.upper()}-{state_code.upper()}-{area_code}-{timestamp}"
 
 
+def _cleanup_temp_images(file_paths: list[Path]) -> None:
+    """Remove uploaded image files and their parent temp directory.
+
+    Deletes each file in *file_paths*, then attempts to remove the
+    common parent directory if it lives under the system temp dir and
+    is now empty. Failures are logged as warnings but never raised.
+    """
+    temp_dirs: set[Path] = set()
+
+    for p in file_paths:
+        try:
+            if p.exists():
+                temp_dirs.add(p.parent)
+                p.unlink()
+        except Exception as e:
+            logger.warning("Failed to delete temp image %s: %s", p, e)
+
+    for d in temp_dirs:
+        try:
+            if d.exists() and not any(d.iterdir()):
+                d.rmdir()
+                logger.info("Removed empty temp directory: %s", d)
+        except Exception as e:
+            logger.warning("Failed to remove temp directory %s: %s", d, e)
+
+
 def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
     """Upload images to Cloud Storage and return structured images object.
 
@@ -51,6 +77,7 @@ def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
     variants = {}
     total_files = 0
     successful_uploads = 0
+    uploaded_files: list[Path] = []
 
     for local_path in image_paths:
         p = Path(local_path)
@@ -92,6 +119,7 @@ def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
 
             logger.info("Uploaded successfully: %s", blob_name)
             successful_uploads += 1
+            uploaded_files.append(p)
         except Exception as e:
             logger.error("Failed to upload %s: %s", blob_name, e)
             continue
@@ -115,6 +143,11 @@ def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
         images["variants"] = variants
 
     logger.info("Image upload complete: %d/%d files uploaded successfully", successful_uploads, total_files)
+
+    # Clean up uploaded temp files
+    if uploaded_files:
+        _cleanup_temp_images(uploaded_files)
+
     return images
 
 
@@ -243,6 +276,7 @@ def upload_images(mystery_id: str, image_paths: str) -> str:
 
         bucket = get_storage_bucket()
         uploaded = []
+        uploaded_files: list[Path] = []
 
         for local_path in paths:
             p = Path(local_path)
@@ -275,6 +309,7 @@ def upload_images(mystery_id: str, image_paths: str) -> str:
             content_type_map = {".png": "image/png", ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
             content_type = content_type_map.get(p.suffix.lower(), "image/png")
             blob.upload_from_filename(str(p), content_type=content_type)
+            uploaded_files.append(p)
 
             # エミュレータではmake_public()が使えないため、URLを直接構築
             storage_host = os.environ.get("STORAGE_EMULATOR_HOST", "")
@@ -307,6 +342,10 @@ def upload_images(mystery_id: str, image_paths: str) -> str:
             if "lg" in variants:
                 images["hero"] = variants["lg"]
             images["variants"] = variants
+
+        # Clean up uploaded temp files
+        if uploaded_files:
+            _cleanup_temp_images(uploaded_files)
 
         return json.dumps({
             "status": "success",
