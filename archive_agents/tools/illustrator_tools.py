@@ -6,6 +6,7 @@ Generates images using Imagen 3 and saves them to local storage.
 import json
 import logging
 import os
+import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
@@ -276,8 +277,9 @@ def generate_image(
 ) -> str:
     """Generate an image using Imagen 3 and save it locally.
 
-    Generates a single image based on the prompt and saves it to the
-    data/images/ directory.
+    Generates a single image based on the prompt and saves it to a
+    temporary directory. The Publisher agent will clean up the files
+    after uploading to Cloud Storage.
 
     The style parameter controls the visual approach:
     - "fact": Monochrome archival photograph style (for Fact-based articles)
@@ -317,9 +319,8 @@ def generate_image(
     full_prompt = f"{style_prefix}{prompt}"
     current_prompt = full_prompt
 
-    # Prepare output directory
-    images_dir = Path(__file__).parent.parent / "data" / "images"
-    images_dir.mkdir(parents=True, exist_ok=True)
+    # Prepare output directory (temporary; cleaned up by Publisher after upload)
+    images_dir = Path(tempfile.mkdtemp(prefix="ghost_images_"))
 
     # Generate filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
