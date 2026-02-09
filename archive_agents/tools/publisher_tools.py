@@ -5,11 +5,14 @@ Supports both Firebase emulator (local dev) and production environments.
 """
 
 import json
+import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
 
 from shared.firestore import get_firestore_client, get_storage_bucket
+
+logger = logging.getLogger(__name__)
 
 
 def _generate_mystery_id(classification: str, state_code: str, area_code: str) -> str:
@@ -46,13 +49,18 @@ def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
     bucket = get_storage_bucket()
     images = {}
     variants = {}
+    total_files = 0
+    successful_uploads = 0
 
     for local_path in image_paths:
         p = Path(local_path)
         if not p.is_absolute():
             p = Path(__file__).parent.parent / p
         if not p.exists():
+            logger.warning("File not found, skipping: %s", p)
             continue
+
+        total_files += 1
 
         # Rename file to mystery_id-based name
         variant_suffix = ""
@@ -69,10 +77,22 @@ def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
             p.rename(new_local_path)
             p = new_local_path
 
-        blob = bucket.blob(blob_name)
-        content_type_map = {".png": "image/png", ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
-        content_type = content_type_map.get(p.suffix.lower(), "image/png")
-        blob.upload_from_filename(str(p), content_type=content_type)
+        try:
+            blob = bucket.blob(blob_name)
+            content_type_map = {".png": "image/png", ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
+            content_type = content_type_map.get(p.suffix.lower(), "image/png")
+            blob.upload_from_filename(str(p), content_type=content_type)
+
+            # Verify upload succeeded
+            if not blob.exists():
+                logger.warning("Upload verification failed for %s", blob_name)
+                continue
+
+            logger.info("Uploaded successfully: %s", blob_name)
+            successful_uploads += 1
+        except Exception as e:
+            logger.error("Failed to upload %s: %s", blob_name, e)
+            continue
 
         # Build public URL
         storage_host = os.environ.get("STORAGE_EMULATOR_HOST", "")
@@ -92,6 +112,7 @@ def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
             images["hero"] = variants["lg"]
         images["variants"] = variants
 
+    logger.info("Image upload complete: %d/%d files uploaded successfully", successful_uploads, total_files)
     return images
 
 
@@ -161,7 +182,9 @@ def publish_mystery(mystery_json: str, visual_assets_json: str = "") -> str:
                         if images:
                             data["images"] = images
             except (json.JSONDecodeError, KeyError):
-                pass  # Skip image upload on parse errors
+                logger.warning("Failed to parse visual_assets_json, skipping image upload")
+            except Exception as e:
+                logger.error("Image upload failed, continuing without images: %s", e)
 
         now = datetime.now(timezone.utc)
 
