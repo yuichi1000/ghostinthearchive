@@ -3,6 +3,7 @@
 resource "google_cloud_run_v2_service" "web_admin" {
   name     = "web-admin"
   location = var.region
+  ingress  = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 
   template {
     service_account = google_service_account.web_admin.email
