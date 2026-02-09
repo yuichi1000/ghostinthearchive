@@ -1,15 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useSession, signOut } from "next-auth/react"
-import { Archive, Search, Menu, LogOut } from "lucide-react"
+import { Archive, Search, Menu } from "lucide-react"
 
 export function Header() {
-  const pathname = usePathname()
-  const isAdmin = pathname?.startsWith("/admin")
-  const { data: session } = useSession()
-
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
       <div className="container mx-auto px-4">
@@ -33,26 +27,9 @@ export function Header() {
             >
               Discoveries
             </Link>
-            {session && (
-              <Link
-                href="/admin"
-                className="text-sm text-muted-foreground hover:text-parchment transition-colors font-mono uppercase tracking-wide"
-              >
-                Admin
-              </Link>
-            )}
             <button className="p-2 text-muted-foreground hover:text-parchment transition-colors" aria-label="Search archives">
               <Search className="w-4 h-4" />
             </button>
-            {isAdmin && session && (
-              <button
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-[#ff6b6b] transition-colors font-mono uppercase tracking-wide"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </button>
-            )}
           </nav>
 
           {/* Mobile menu button */}

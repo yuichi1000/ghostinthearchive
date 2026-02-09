@@ -119,6 +119,9 @@ export default function AdminPage() {
     }
   }
 
+  // TODO: 調査パイプラインの進捗表示が現在機能していない。
+  // 以前は実行中の進捗がUIに表示されていたが、API のローカル/本番分岐修正時に失われた。
+  // 後日、パイプライン実行中のリアルタイム進捗表示を復旧すること（技術的負債）。
   const handleStartPipeline = async () => {
     if (!themeInput.trim()) return
     setPipelineLoading(true)

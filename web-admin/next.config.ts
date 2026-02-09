@@ -1,6 +1,11 @@
+import path from "path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Turbopack のルートディレクトリを明示（親ディレクトリの lockfile 誤検知を防止）
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
   // 画像最適化
   images: {
     remotePatterns: [
