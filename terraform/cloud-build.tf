@@ -33,7 +33,7 @@ resource "google_cloudbuild_trigger" "web_public" {
     }
 
     step {
-      name = "gcr.io/google.com/cloudsdktool/cloud-sdk"
+      name       = "gcr.io/google.com/cloudsdktool/cloud-sdk"
       entrypoint = "bash"
       args = [
         "-c",
