@@ -54,7 +54,7 @@ output "next_steps" {
 
        # pipelines
        cd ..
-       gcloud builds submit --tag ${var.region}-docker.pkg.dev/${var.project_id}/ghostinthearchive/pipelines -f Dockerfile.jobs
+       gcloud builds submit --config cloudbuild-pipelines.yaml .
 
     4. Deploy web-admin:
        gcloud run services update web-admin --region ${var.region}
