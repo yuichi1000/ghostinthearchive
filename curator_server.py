@@ -30,7 +30,7 @@ def get_existing_titles() -> list[str]:
     """Fetch titles of all existing mysteries from Firestore."""
     try:
         db = get_firestore_client()
-        docs = db.collection("mysteries").select(["title"]).stream()
+        docs = db.collection("mysteries").select(["title"]).stream(timeout=10)
         return [
             doc.to_dict().get("title", "")
             for doc in docs
