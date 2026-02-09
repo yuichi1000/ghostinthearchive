@@ -41,6 +41,8 @@ resource "google_project_service" "apis" {
     "artifactregistry.googleapis.com",
     "firestore.googleapis.com",
     "aiplatform.googleapis.com",
+    "compute.googleapis.com",
+    "iap.googleapis.com",
   ])
 
   service            = each.value

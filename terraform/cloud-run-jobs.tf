@@ -52,7 +52,7 @@ resource "google_cloud_run_v2_job" "blog_pipeline" {
         }
       }
 
-      timeout = "1800s" # 30 minutes
+      timeout     = "1800s" # 30 minutes
       max_retries = 1
     }
   }
@@ -101,7 +101,7 @@ resource "google_cloud_run_v2_job" "translate_pipeline" {
         }
       }
 
-      timeout = "600s" # 10 minutes
+      timeout     = "600s" # 10 minutes
       max_retries = 1
     }
   }
@@ -144,7 +144,7 @@ resource "google_cloud_run_v2_job" "podcast_pipeline" {
         }
       }
 
-      timeout = "1800s" # 30 minutes
+      timeout     = "1800s" # 30 minutes
       max_retries = 1
     }
   }

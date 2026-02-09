@@ -62,13 +62,18 @@ output "next_steps" {
     5. Deploy web-public:
        gcloud builds triggers run web-public-deploy
 
-    6. Grant Cloud Run invoker access (Google Cloud Console):
-       Cloud Run > web-admin > Security > Add Principal
-       Grant role: Cloud Run Invoker (roles/run.invoker)
+    6. Create IAP service agent (if not exists):
+       gcloud beta services identity create --service=iap.googleapis.com --project=${var.project_id}
 
-    7. Access web-admin via authenticated proxy:
-       gcloud run services proxy web-admin --region ${var.region}
-       # Then open http://localhost:8080 in your browser
+    7. Grant IAP access (Google Cloud Console):
+       Security > Identity-Aware Proxy > web-admin-backend
+       Add principal with role: IAP-secured Web App User
+
+    8. Access web-admin:
+       https://${var.admin_subdomain}.${var.domain}
+       (Google login required via IAP)
+
+    NOTE: SSL certificate provisioning may take up to 30 minutes.
 
   EOT
 }
