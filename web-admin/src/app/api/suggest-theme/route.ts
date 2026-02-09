@@ -1,32 +1,53 @@
 /**
  * POST /api/suggest-theme
  *
- * Runs the Curator agent and returns theme suggestions.
- * Synchronous call - waits for the agent to complete and returns JSON.
+ * Calls the Curator Cloud Run Service to generate theme suggestions.
+ * - Production: IAM-authenticated HTTP call to Cloud Run Service
+ * - Local: Direct HTTP call to localhost (docker compose)
  */
 
 import { NextResponse } from "next/server";
-import { execSync } from "child_process";
-import path from "path";
+
+const curatorServiceUrl = process.env.CURATOR_SERVICE_URL || "http://localhost:8001";
+const isProduction = process.env.NODE_ENV === "production";
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  if (!isProduction) {
+    return {};
+  }
+
+  // Production: get ID token for Cloud Run service-to-service auth
+  const { GoogleAuth } = await import("google-auth-library");
+  const auth = new GoogleAuth();
+  const client = await auth.getIdTokenClient(curatorServiceUrl);
+  const headers = await client.getRequestHeaders();
+  return headers;
+}
 
 export async function POST() {
   try {
-    const projectRoot = path.resolve(process.cwd(), "..");
-    const pythonPath = path.join(projectRoot, ".venv", "bin", "python");
-    const command = `cd ${JSON.stringify(projectRoot)} && ${JSON.stringify(pythonPath)} curator_main.py`;
+    const authHeaders = await getAuthHeaders();
 
-    const stdout = execSync(command, {
-      timeout: 120000,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
+    const response = await fetch(`${curatorServiceUrl}/suggest-theme`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders,
+      },
+      signal: AbortSignal.timeout(120000),
     });
 
-    // Parse the last line as JSON (agent outputs JSON on the last line)
-    const lines = stdout.trim().split("\n");
-    const lastLine = lines[lines.length - 1];
-    const suggestions = JSON.parse(lastLine);
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error(`Curator service error (${response.status}):`, errorBody);
+      return NextResponse.json(
+        { error: "Failed to generate theme suggestions" },
+        { status: 500 }
+      );
+    }
 
-    return NextResponse.json({ suggestions });
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("Failed to generate theme suggestions:", error);
     return NextResponse.json(
