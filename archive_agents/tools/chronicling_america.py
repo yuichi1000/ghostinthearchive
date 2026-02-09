@@ -142,7 +142,7 @@ def search_chronicling_america(
             if "location" in item:
                 loc = item["location"]
                 if isinstance(loc, list):
-                    location_parts.extend(str(l) for l in loc[:2])
+                    location_parts.extend(str(el) for el in loc[:2])
                 elif isinstance(loc, str):
                     location_parts.append(loc)
 

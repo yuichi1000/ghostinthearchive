@@ -107,8 +107,8 @@ def search_dpla(
             language = sr.get("language", [])
             lang = SourceLanguage.EN
             if language:
-                l = language[0] if isinstance(language, list) else language
-                lang_name = l.get("name", "") if isinstance(l, dict) else str(l)
+                lang_val = language[0] if isinstance(language, list) else language
+                lang_name = lang_val.get("name", "") if isinstance(lang_val, dict) else str(lang_val)
                 if "spanish" in lang_name.lower() or "español" in lang_name.lower():
                     lang = SourceLanguage.ES
 

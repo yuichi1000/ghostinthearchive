@@ -10,7 +10,6 @@ Run with:
 import json
 import os
 import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -150,7 +149,6 @@ class TestUploadImages:
 
             with patch("archive_agents.tools.publisher_tools.get_storage_bucket", return_value=mock_storage_bucket):
                 with patch.dict(os.environ, {"STORAGE_EMULATOR_HOST": "http://localhost:9199"}):
-                    from archive_agents.tools.publisher_tools import upload_images
 
                     # Need to reimport to pick up the patched environment
                     import importlib
