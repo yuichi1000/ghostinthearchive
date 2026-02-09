@@ -14,3 +14,22 @@ services:
       - FIRESTORE_EMULATOR_HOST=
     volumes:
       - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/keys/adc.json:ro
+
+  # NOTE: Pipeline runs on port 8002 (Curator on 8001) because they are
+  # separate services with different resource/timeout requirements.
+  # See pipeline_server.py docstring for details.
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile.jobs
+    command: ["pipeline_server.py"]
+    ports:
+      - "8002:8080"
+    environment:
+      - PORT=8080
+      - GOOGLE_CLOUD_PROJECT=ghostinthearchive
+      - GOOGLE_GENAI_USE_VERTEXAI=TRUE
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/adc.json
+      - FIRESTORE_EMULATOR_HOST=
+    volumes:
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/keys/adc.json:ro
