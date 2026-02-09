@@ -23,6 +23,8 @@ COPY podcast_agents/ ./podcast_agents/
 COPY main.py ./
 COPY translate_main.py ./
 COPY podcast_main.py ./
+COPY curator_main.py ./
+COPY curator_server.py ./
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
