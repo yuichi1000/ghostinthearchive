@@ -6,7 +6,6 @@ Tests for evidence extraction, loading, and saving in the translation pipeline.
 import json
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from translator_agents.tools.firestore_tools import (
     _extract_translatable_evidence,

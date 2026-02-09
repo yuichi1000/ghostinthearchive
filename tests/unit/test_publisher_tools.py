@@ -5,7 +5,6 @@ import logging
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from archive_agents.tools.publisher_tools import (
     _cleanup_temp_images,

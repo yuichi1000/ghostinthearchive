@@ -5,12 +5,10 @@ import logging
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from archive_agents.tools.illustrator_tools import (
     IMAGE_VARIANTS,
     MAX_RETRIES,
-    FALLBACK_IMAGE_PATH,
     FALLBACK_VARIANTS,
     _build_safe_fallback_prompt,
     _get_variants,
@@ -600,7 +598,7 @@ class TestGenerateImageProgressiveRetry:
         mock_client.models.generate_images.side_effect = capture_prompt
 
         with patch.object(Path, "exists", return_value=True):
-            result = generate_image("A ghost ship in haunted waters", style="folklore")
+            generate_image("A ghost ship in haunted waters", style="folklore")
 
         assert len(prompts_used) == 3
         # Attempt 0: original prompt (with style prefix)
