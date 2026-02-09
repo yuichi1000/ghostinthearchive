@@ -29,6 +29,9 @@ dev = [
     "httpx>=0.27.0",
 ]
 
+[tool.setuptools.packages.find]
+include = ["archive_agents*", "podcast_agents*", "translator_agents*", "shared*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
