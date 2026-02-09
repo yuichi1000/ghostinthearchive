@@ -1,6 +1,6 @@
 """Unit tests for pipeline_server.py (FastAPI HTTP wrapper for pipelines)."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
