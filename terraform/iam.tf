@@ -80,3 +80,9 @@ resource "google_project_iam_member" "cloud_build_firestore" {
   role    = "roles/datastore.viewer"
   member  = "serviceAccount:${google_service_account.cloud_build.email}"
 }
+
+resource "google_project_iam_member" "cloud_build_log_writer" {
+  project = var.project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.cloud_build.email}"
+}
