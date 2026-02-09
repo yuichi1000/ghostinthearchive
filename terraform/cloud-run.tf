@@ -29,6 +29,11 @@ resource "google_cloud_run_v2_service" "web_admin" {
         value = "https://${var.domain}"
       }
 
+      env {
+        name  = "NEXTAUTH_URL"
+        value = "https://${var.admin_subdomain}.${var.domain}"
+      }
+
       # Secrets
       env {
         name = "NEXTAUTH_SECRET"
