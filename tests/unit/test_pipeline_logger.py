@@ -1,9 +1,6 @@
 """Unit tests for PipelineLogger utility."""
 
-from datetime import datetime, timezone
-from unittest.mock import patch
 
-import pytest
 from freezegun import freeze_time
 
 from archive_agents.utils.pipeline_logger import PipelineLogger

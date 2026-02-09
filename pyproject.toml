@@ -17,7 +17,7 @@ dependencies = [
     "Pillow>=10.0.0",
 ]
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
@@ -28,6 +28,9 @@ dev = [
     "ruff>=0.5.0",
     "httpx>=0.27.0",
 ]
+
+[tool.setuptools.packages.find]
+include = ["archive_agents*", "podcast_agents*", "translator_agents*", "shared*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -41,6 +44,22 @@ markers = [
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"main.py" = ["E402"]
+"curator_main.py" = ["E402"]
+"translate_main.py" = ["E402"]
+"podcast_main.py" = ["E402"]
+"shared/firestore.py" = ["E402"]
+"archive_agents/tools/illustrator_tools.py" = ["E402"]
+"tests/**" = ["E402"]
 
 [tool.coverage.run]
 source = ["archive_agents", "podcast_agents", "shared"]
