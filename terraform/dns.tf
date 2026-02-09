@@ -9,14 +9,8 @@ resource "google_dns_managed_zone" "main" {
   depends_on = [google_project_service.apis]
 }
 
-# A record for admin subdomain -> Cloud Run
-resource "google_dns_record_set" "admin" {
-  name         = "${var.admin_subdomain}.${var.domain}."
-  type         = "CNAME"
-  ttl          = 300
-  managed_zone = google_dns_managed_zone.main.name
-  rrdatas      = ["ghs.googlehosted.com."]
-}
+# admin subdomain DNS record removed — web-admin is accessed via
+# gcloud run services proxy (Cloud Run IAM authentication)
 
 # Output nameservers for Spaceship configuration
 output "nameservers" {

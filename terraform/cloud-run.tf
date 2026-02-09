@@ -90,30 +90,6 @@ resource "google_cloud_run_v2_service" "web_admin" {
   ]
 }
 
-# Allow unauthenticated access (authentication handled by NextAuth)
-resource "google_cloud_run_v2_service_iam_member" "web_admin_public" {
-  project  = var.project_id
-  location = var.region
-  name     = google_cloud_run_v2_service.web_admin.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
-
-# Domain mapping for admin subdomain
-resource "google_cloud_run_domain_mapping" "admin" {
-  location = var.region
-  name     = "${var.admin_subdomain}.${var.domain}"
-
-  metadata {
-    namespace = var.project_id
-  }
-
-  spec {
-    route_name = google_cloud_run_v2_service.web_admin.name
-  }
-
-  depends_on = [google_cloud_run_v2_service.web_admin]
-}
 
 output "web_admin_url" {
   description = "URL of the web-admin Cloud Run service"
