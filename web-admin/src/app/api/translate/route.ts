@@ -1,22 +1,31 @@
 /**
  * POST /api/translate
  *
- * Triggers translation pipeline.
- * - Local: executes translate_main.py directly
- * - Production: starts a Cloud Run Job
+ * Triggers translation pipeline via HTTP POST to Pipeline Cloud Run Service.
+ * - Production: IAM-authenticated HTTP call to Cloud Run Service
+ * - Local: Direct HTTP call to localhost (docker compose)
  *
  * Status should already be set to "translating" by approveMystery().
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { spawn } from "child_process";
-import fs from "fs";
-import path from "path";
 
-const isLocal = process.env.NODE_ENV === "development";
-const projectId = process.env.GOOGLE_CLOUD_PROJECT || "ghostinthearchive";
-const region = process.env.GOOGLE_CLOUD_REGION || "asia-northeast1";
-const jobName = "translate-pipeline";
+const pipelineServiceUrl =
+  process.env.PIPELINE_SERVICE_URL || "http://localhost:8002";
+const isProduction = process.env.NODE_ENV === "production";
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  if (!isProduction) {
+    return {};
+  }
+
+  // Production: get ID token for Cloud Run service-to-service auth
+  const { GoogleAuth } = await import("google-auth-library");
+  const auth = new GoogleAuth();
+  const client = await auth.getIdTokenClient(pipelineServiceUrl);
+  const headers = await client.getRequestHeaders();
+  return headers;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,55 +39,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (isLocal) {
-      // Local: run Python pipeline in background (fire-and-forget)
-      const projectRoot = path.resolve(process.cwd(), "..");
-      const pythonPath = path.join(projectRoot, ".venv", "bin", "python");
+    const authHeaders = await getAuthHeaders();
 
-      const logFile = path.join(projectRoot, "logs", "translate.log");
-      fs.mkdirSync(path.dirname(logFile), { recursive: true });
-      const out = fs.openSync(logFile, "a");
-
-      const child = spawn(pythonPath, ["translate_main.py", mysteryId], {
-        cwd: projectRoot,
-        detached: true,
-        stdio: ["ignore", out, out],
-      });
-      child.unref();
-      fs.closeSync(out);
-
-      console.log(`Translation started locally for ${mysteryId} (pid: ${child.pid})`);
-
-      return NextResponse.json({
-        status: "accepted",
-        mysteryId,
-        message: "Translation started (local)",
-      });
-    }
-
-    // Production: start Cloud Run Job
-    const { JobsClient } = await import("@google-cloud/run");
-    const client = new JobsClient();
-    const name = `projects/${projectId}/locations/${region}/jobs/${jobName}`;
-
-    const [execution] = await client.runJob({
-      name,
-      overrides: {
-        containerOverrides: [
-          {
-            args: [mysteryId],
-          },
-        ],
+    const response = await fetch(`${pipelineServiceUrl}/translate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders,
       },
+      body: JSON.stringify({ mystery_id: mysteryId }),
+      signal: AbortSignal.timeout(30000),
     });
 
-    console.log(`Translation job started for ${mysteryId}:`, execution.name);
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error(`Pipeline service error (${response.status}):`, errorBody);
+      return NextResponse.json(
+        { error: "Failed to start translation" },
+        { status: 500 }
+      );
+    }
 
+    const data = await response.json();
     return NextResponse.json({
       status: "accepted",
       mysteryId,
-      message: "Translation job started",
-      executionName: execution.name,
+      message: "Translation started",
+      run_id: data.run_id,
     });
   } catch (error) {
     console.error("Failed to run translation:", error);

@@ -32,11 +32,15 @@ from shared.pipeline_run import (
 PIPELINE_TIMEOUT_SECONDS = 1800  # 30 minutes
 
 
-async def investigate(query: str) -> None:
+async def investigate(query: str, *, run_id: str | None = None) -> str | None:
     """Run the Ghost Commander with a given investigation query.
 
     Args:
         query: The investigation query to process
+        run_id: Optional pre-created pipeline run ID. If None, creates a new one.
+
+    Returns:
+        The pipeline run ID.
     """
     print("=" * 70)
     print("Ghost in the Archive - Historical Mystery Investigation System")
@@ -47,8 +51,9 @@ async def investigate(query: str) -> None:
     print("-" * 70)
     print()
 
-    # Create pipeline run for progress tracking
-    run_id = create_pipeline_run("blog", query=query)
+    # Create pipeline run for progress tracking (if not provided)
+    if run_id is None:
+        run_id = create_pipeline_run("blog", query=query)
 
     # Create runner with in-memory session
     session_service = InMemorySessionService()
@@ -172,6 +177,8 @@ async def investigate(query: str) -> None:
         icon = "✓" if log["status"] == "completed" else "✗" if log["status"] == "error" else "⋯"
         dur = f'{log["duration_seconds"]}s' if log["duration_seconds"] else "running"
         print(f"  {icon} {log['agent_name']:12s} {dur:>8s}")
+
+    return run_id
 
 
 def main():

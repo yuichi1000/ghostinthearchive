@@ -41,11 +41,15 @@ from shared.pipeline_run import (
 PIPELINE_TIMEOUT_SECONDS = 600  # 10 minutes
 
 
-async def translate_mystery(mystery_id: str) -> None:
+async def translate_mystery(mystery_id: str, *, run_id: str | None = None) -> str | None:
     """Translate a mystery article from Japanese to English.
 
     Args:
         mystery_id: The Firestore document ID of the mystery.
+        run_id: Optional pre-created pipeline run ID. If None, creates a new one.
+
+    Returns:
+        The pipeline run ID.
     """
     print("=" * 70)
     print("Ghost in the Archive - Translation Pipeline")
@@ -57,22 +61,21 @@ async def translate_mystery(mystery_id: str) -> None:
     # Load mystery from Firestore
     mystery = load_mystery_for_translation(mystery_id)
     if not mystery:
-        print(f"Error: Mystery '{mystery_id}' not found in Firestore.")
-        sys.exit(1)
+        raise ValueError(f"Mystery '{mystery_id}' not found in Firestore.")
 
     narrative_content = mystery.get("narrative_content", "")
     if not narrative_content:
-        print(f"Error: Mystery '{mystery_id}' has no narrative_content.")
         set_translation_error(mystery_id)
-        sys.exit(1)
+        raise ValueError(f"Mystery '{mystery_id}' has no narrative_content.")
 
     title = mystery.get("title", mystery_id)
     print(f"Article: {title}")
     print("-" * 70)
     print()
 
-    # Create pipeline run for progress tracking
-    run_id = create_pipeline_run("translate", mystery_id=mystery_id)
+    # Create pipeline run for progress tracking (if not provided)
+    if run_id is None:
+        run_id = create_pipeline_run("translate", mystery_id=mystery_id)
 
     # Create runner with session pre-loaded with Japanese content
     session_service = InMemorySessionService()
@@ -168,7 +171,7 @@ async def translate_mystery(mystery_id: str) -> None:
             print("Translation skipped: No content to translate.")
             set_translation_error(mystery_id)
             error_pipeline_run(run_id, "No content to translate")
-            sys.exit(1)
+            raise ValueError("No content to translate")
 
         # Save results to Firestore
         result = save_translation_result(mystery_id, translation_result)
@@ -189,6 +192,8 @@ async def translate_mystery(mystery_id: str) -> None:
         print("=" * 70)
         print(f"Translation complete: {result}")
         print("=" * 70)
+
+        return run_id
 
     except TimeoutError:
         print(f"Error: Pipeline timed out after {PIPELINE_TIMEOUT_SECONDS}s")
