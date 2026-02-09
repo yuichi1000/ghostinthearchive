@@ -33,13 +33,9 @@ resource "google_cloudbuild_trigger" "web_public" {
     }
 
     step {
-      name       = "gcr.io/google.com/cloudsdktool/cloud-sdk"
-      entrypoint = "bash"
-      args = [
-        "-c",
-        "npm install -g firebase-tools && firebase deploy --only hosting --project ${var.project_id}"
-      ]
-      dir = "web-public"
+      name = "gcr.io/${var.project_id}/firebase"
+      args = ["deploy", "--only", "hosting", "--project", var.project_id]
+      dir  = "web-public"
     }
 
     options {
