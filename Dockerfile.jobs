@@ -25,6 +25,7 @@ COPY translate_main.py ./
 COPY podcast_main.py ./
 COPY curator_main.py ./
 COPY curator_server.py ./
+COPY pipeline_server.py ./
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1

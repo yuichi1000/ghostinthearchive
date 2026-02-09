@@ -29,13 +29,9 @@ output "curator_service_url" {
   value       = google_cloud_run_v2_service.curator.uri
 }
 
-output "cloud_run_jobs" {
-  description = "Cloud Run Jobs names"
-  value = {
-    blog      = google_cloud_run_v2_job.blog_pipeline.name
-    translate = google_cloud_run_v2_job.translate_pipeline.name
-    podcast   = google_cloud_run_v2_job.podcast_pipeline.name
-  }
+output "pipeline_service_url" {
+  description = "URL of the Pipeline Cloud Run service"
+  value       = google_cloud_run_v2_service.pipeline.uri
 }
 
 output "next_steps" {
