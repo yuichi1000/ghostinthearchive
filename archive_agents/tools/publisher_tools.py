@@ -2,6 +2,9 @@
 
 Writes mystery data to Firestore and uploads images to Cloud Storage.
 Supports both Firebase emulator (local dev) and production environments.
+
+When tool_context is available, reads structured data from session state
+to reduce dependency on LLM text interpretation for critical fields.
 """
 
 import json
@@ -9,6 +12,9 @@ import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
+
+from google.adk.tools.tool_context import ToolContext
 
 from shared.firestore import get_firestore_client, get_storage_bucket
 
@@ -151,13 +157,22 @@ def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
     return images
 
 
-def publish_mystery(mystery_json: str, visual_assets_json: str = "") -> str:
+def publish_mystery(
+    mystery_json: str,
+    visual_assets_json: str = "",
+    tool_context: Optional[ToolContext] = None,
+) -> str:
     """Save a mystery document to Firestore with integrated image upload.
 
     Writes the complete mystery data to the 'mysteries' collection in Firestore.
     Automatically generates mystery_id from classification, state_code, and area_code.
     When visual_assets_json is provided, uploads images to Cloud Storage using the
     generated mystery_id, ensuring ID consistency between images and Firestore.
+
+    When tool_context is available, reads structured data from session state:
+    - structured_report: Accurate evidence, hypothesis, classification data from Scholar
+    - image_metadata: Accurate file paths and variant info from Illustrator
+    - translation_ja: Japanese translation fields from Translator
 
     Args:
         mystery_json: JSON string containing the full mystery data.
@@ -176,6 +191,8 @@ def publish_mystery(mystery_json: str, visual_assets_json: str = "") -> str:
             URLs are set in data["images"]. Expected format:
             {"filepath": "...", "variants": [{"filepath": "...", "label": "sm"}, ...]}
 
+        tool_context: ADK tool context for session state access.
+
     Returns:
         JSON string with status and document ID.
     """
@@ -183,6 +200,29 @@ def publish_mystery(mystery_json: str, visual_assets_json: str = "") -> str:
         data = json.loads(mystery_json, strict=False)
 
         db = get_firestore_client()
+
+        # Overlay structured report from session state (more accurate than LLM text)
+        if tool_context is not None:
+            structured_report = tool_context.state.get("structured_report")
+            if structured_report and isinstance(structured_report, dict):
+                # Use structured data for critical fields, preferring state over LLM text
+                for key in (
+                    "classification", "state_code", "area_code",
+                    "evidence_a", "evidence_b", "additional_evidence",
+                    "hypothesis", "alternative_hypotheses",
+                    "confidence_level", "discrepancy_detected", "discrepancy_type",
+                    "historical_context", "research_questions", "story_hooks",
+                    "title", "summary",
+                ):
+                    if key in structured_report:
+                        data[key] = structured_report[key]
+
+            # Overlay Japanese translation from session state
+            translation_ja = tool_context.state.get("translation_ja")
+            if translation_ja and isinstance(translation_ja, dict):
+                for key, value in translation_ja.items():
+                    if key.endswith("_ja"):
+                        data[key] = value
 
         # Auto-generate mystery_id from classification, state_code, and area_code
         classification = data.get("classification")
@@ -199,12 +239,29 @@ def publish_mystery(mystery_json: str, visual_assets_json: str = "") -> str:
                 "error": "classification, state_code, and area_code are required for mystery_id generation",
             }, ensure_ascii=False)
 
-        # Upload images if visual_assets_json is provided
-        if visual_assets_json and visual_assets_json.strip():
+        # Upload images: prefer image_metadata from session state, fall back to LLM text
+        image_source = None
+        if tool_context is not None:
+            image_source = tool_context.state.get("image_metadata")
+
+        if image_source and isinstance(image_source, dict):
+            # Use accurate image metadata from session state
+            if image_source.get("status") in ("success", "fallback"):
+                image_paths = []
+                if image_source.get("filepath"):
+                    image_paths.append(image_source["filepath"])
+                for variant in image_source.get("variants", []):
+                    if variant.get("filepath"):
+                        image_paths.append(variant["filepath"])
+                if image_paths:
+                    images = _upload_images_internal(mystery_id, image_paths)
+                    if images:
+                        data["images"] = images
+        elif visual_assets_json and visual_assets_json.strip():
+            # Fallback: parse LLM-provided visual_assets_json
             try:
                 visual_assets = json.loads(visual_assets_json, strict=False)
                 if visual_assets.get("status") in ("success", "fallback"):
-                    # Build list of all image file paths from generate_image output
                     image_paths = []
                     if visual_assets.get("filepath"):
                         image_paths.append(visual_assets["filepath"])

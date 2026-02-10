@@ -9,9 +9,9 @@ interface MysteryCardProps {
 }
 
 export function MysteryCard({ mystery, className }: MysteryCardProps) {
-  // Prefer English fields for public display
-  const title = mystery.title_en || mystery.title
-  const summary = mystery.summary_en || mystery.summary
+  // Base fields are in English (English-first content generation)
+  const title = mystery.title
+  const summary = mystery.summary
 
   const location = mystery.historical_context?.geographic_scope?.[0] || ""
   const timePeriod = mystery.historical_context?.time_period || ""

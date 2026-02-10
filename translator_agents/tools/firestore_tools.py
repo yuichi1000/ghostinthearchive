@@ -1,6 +1,9 @@
 """Firestore tools for the Translator pipeline.
 
-Reads mystery data from Firestore and writes translation results back.
+Reads mystery data from Firestore and writes Japanese translation results back.
+Used for standalone translation of already-published mysteries (legacy flow).
+In the new English-first flow, translation happens within the blog pipeline
+before publishing, so these tools are mainly for the standalone translate_main.py.
 """
 
 import json
@@ -36,26 +39,6 @@ def _extract_json_from_markdown(text: str) -> str:
     return text.strip()
 
 
-def _extract_translatable_evidence(evidence: dict) -> dict:
-    """Extract translatable fields from an Evidence object.
-
-    Args:
-        evidence: Evidence dictionary from Firestore.
-
-    Returns:
-        Dictionary with evidence fields for translation.
-    """
-    return {
-        "source_type": evidence.get("source_type", ""),
-        "source_language": evidence.get("source_language", ""),
-        "source_title": evidence.get("source_title", ""),
-        "source_date": evidence.get("source_date"),
-        "source_url": evidence.get("source_url", ""),
-        "relevant_excerpt": evidence.get("relevant_excerpt", ""),
-        "location_context": evidence.get("location_context"),
-    }
-
-
 def load_mystery_for_translation(mystery_id: str) -> dict | None:
     """Load a mystery document from Firestore for translation.
 
@@ -72,7 +55,7 @@ def load_mystery_for_translation(mystery_id: str) -> dict | None:
 
     data = doc.to_dict()
 
-    # Extract translatable fields
+    # Extract translatable fields (English base fields)
     historical_context = data.get("historical_context", {})
 
     return {
@@ -85,24 +68,19 @@ def load_mystery_for_translation(mystery_id: str) -> dict | None:
         "alternative_hypotheses": data.get("alternative_hypotheses", []),
         "political_climate": historical_context.get("political_climate", ""),
         "story_hooks": data.get("story_hooks", []),
-        "evidence_a": _extract_translatable_evidence(data.get("evidence_a", {})),
-        "evidence_b": _extract_translatable_evidence(data.get("evidence_b", {})),
-        "additional_evidence": [
-            _extract_translatable_evidence(ev)
-            for ev in data.get("additional_evidence", [])
-        ],
     }
 
 
 def save_translation_result(mystery_id: str, translation_json: str) -> str:
-    """Save translation results to Firestore and publish the mystery.
+    """Save Japanese translation results to Firestore.
 
-    Updates the mystery document with English translations,
-    sets status to "published", and triggers ISR revalidation.
+    Updates the mystery document with Japanese translations (*_ja fields).
+    Does NOT change the status — in the new flow, articles are published
+    with both EN and JA content from the start.
 
     Args:
         mystery_id: The mystery document ID.
-        translation_json: JSON string with translation results.
+        translation_json: JSON string with translation results (*_ja fields).
 
     Returns:
         JSON string with status.
@@ -119,22 +97,20 @@ def save_translation_result(mystery_id: str, translation_json: str) -> str:
             raise ValueError(f"Invalid translation JSON: {e}")
 
         update_data = {
-            "title_en": translation.get("title_en", ""),
-            "summary_en": translation.get("summary_en", ""),
-            "narrative_content_en": translation.get("narrative_content_en", ""),
-            "discrepancy_detected_en": translation.get("discrepancy_detected_en", ""),
-            "hypothesis_en": translation.get("hypothesis_en", ""),
-            "alternative_hypotheses_en": translation.get("alternative_hypotheses_en", []),
-            "historical_context_en": {
-                "political_climate": translation.get("political_climate_en", ""),
+            "title_ja": translation.get("title_ja", ""),
+            "summary_ja": translation.get("summary_ja", ""),
+            "narrative_content_ja": translation.get("narrative_content_ja", ""),
+            "discrepancy_detected_ja": translation.get("discrepancy_detected_ja", ""),
+            "hypothesis_ja": translation.get("hypothesis_ja", ""),
+            "alternative_hypotheses_ja": translation.get("alternative_hypotheses_ja", []),
+            "historical_context_ja": {
+                "political_climate": translation.get("historical_context_ja", {}).get(
+                    "political_climate",
+                    translation.get("political_climate_ja", ""),
+                ),
             },
-            "story_hooks_en": translation.get("story_hooks_en", []),
-            "evidence_a_en": translation.get("evidence_a_en", {}),
-            "evidence_b_en": translation.get("evidence_b_en", {}),
-            "additional_evidence_en": translation.get("additional_evidence_en", []),
-            "status": "published",
+            "story_hooks_ja": translation.get("story_hooks_ja", []),
             "translatedAt": now,
-            "publishedAt": now,
             "updatedAt": now,
         }
 
@@ -146,7 +122,7 @@ def save_translation_result(mystery_id: str, translation_json: str) -> str:
         return json.dumps({
             "status": "success",
             "mystery_id": mystery_id,
-            "message": "Translation saved and mystery published",
+            "message": "Japanese translation saved",
         }, ensure_ascii=False)
 
     except Exception as e:
@@ -177,7 +153,7 @@ def set_translation_error(mystery_id: str) -> None:
 
 
 def _trigger_revalidation(mystery_id: str) -> None:
-    """Trigger ISR revalidation for the published mystery.
+    """Trigger ISR revalidation for the mystery.
 
     Args:
         mystery_id: The mystery document ID.

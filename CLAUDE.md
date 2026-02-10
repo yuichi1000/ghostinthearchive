@@ -95,32 +95,41 @@ git config core.hooksPath .githooks
 | エージェント | 役割 | 入力 | 出力 |
 |------------|------|------|------|
 | **Librarian** | 資料調査・収集（デジタルアーカイブ＋民俗資料） | 調査クエリ | collected_documents |
-| **Scholar** | 歴史学×民俗学×文化人類学の学際分析 | collected_documents | mystery_report |
-| **Storyteller** | 歴史的厳密さと怪異的情緒の融合（ブログ記事） | mystery_report | creative_content (ブログ原稿) |
+| **Scholar** | 歴史学×民俗学×文化人類学の学際分析（英語出力） | collected_documents | mystery_report |
+| **Storyteller** | 歴史的厳密さと怪異的情緒の融合（英語ブログ記事） | mystery_report | creative_content (英語ブログ原稿) |
 | **Illustrator** | トップ画像生成 | creative_content | visual_assets (Imagen 3 によるトップ画像1枚) |
-| **Publisher** | 納品・公開 | 全アセット | published_episode (Firestore 保存、管理画面反映) |
+| **Translator** | 英語→日本語翻訳（管理画面用） | creative_content + structured_report | translation_ja (日本語翻訳) |
+| **Publisher** | 納品・公開（EN+JA両方保存） | 全アセット | published_episode (Firestore 保存、管理画面反映) |
 
-### 翻訳パイプライン（`translator_agents/`）
+### 翻訳エージェント（`translator_agents/`）
 
-管理画面で Approve ボタン押下時に自動実行。翻訳完了後に公開される。
+ブログパイプライン内で Illustrator → **Translator** → Publisher の順で実行される。
+また、Curator のテーマ提案翻訳にも使用される汎用翻訳エージェント。
 
 | エージェント | 役割 | 入力 | 出力 |
 |------------|------|------|------|
-| **Translator** | 日本語→英語翻訳 | narrative_content, title, summary 等 | 英語翻訳フィールド（*_en） |
+| **Translator** | 英語→日本語翻訳 | 英語フィールド（JSON） | 日本語翻訳フィールド（`*_ja`） |
 
 **状態遷移:**
 ```
-pending → (Approve) → translating → (翻訳完了) → published
+pending (EN原文 + JA翻訳 両方あり) → (Approve) → published
 ```
+- `translating` ステータスは新規記事では不要（後方互換のため型定義には残す）
+
+**Firestore フィールド命名規則:**
+- ベースフィールド (`title`, `summary`, `narrative_content` 等) → **英語**（原文）
+- `*_ja` サフィックス (`title_ja`, `summary_ja` 等) → **日本語**（翻訳）
+- `*_en` フィールド → 非推奨（レガシー、後方互換用）
 
 **翻訳対象フィールド:**
-- `title` → `title_en`
-- `summary` → `summary_en`
-- `narrative_content` → `narrative_content_en`
-- `discrepancy_detected` → `discrepancy_detected_en`
-- `hypothesis` → `hypothesis_en`
-- `alternative_hypotheses` → `alternative_hypotheses_en`
-- `historical_context.political_climate` → `historical_context_en.political_climate`
+- `title` → `title_ja`
+- `summary` → `summary_ja`
+- `narrative_content` → `narrative_content_ja`
+- `discrepancy_detected` → `discrepancy_detected_ja`
+- `hypothesis` → `hypothesis_ja`
+- `alternative_hypotheses` → `alternative_hypotheses_ja`
+- `historical_context.political_climate` → `historical_context_ja.political_climate`
+- `story_hooks` → `story_hooks_ja`
 
 ### Podcast 作成パイプライン（`podcast_agents/`）
 
@@ -188,10 +197,10 @@ pending → (Approve) → translating → (翻訳完了) → published
 - センセーショナリズムに走らず、学術的誠実さを保ちながらも、読者の好奇心を刺激する構成
 
 **Translator（翻訳家）**
-- 日本語記事を英語圏読者向けに翻訳
+- 英語記事を日本語に翻訳（管理画面での内容確認用）
 - 歴史用語・民俗学用語の正確な翻訳
 - Fact × Folklore のニュアンス維持
-- Atlas Obscura, Smithsonian Magazine のような読みやすさ
+- ブログパイプライン内（Illustrator → Translator → Publisher）と Curator テーマ提案の両方で使用
 
 **Scriptwriter（脚本家）**
 - Storyteller のブログ記事をベースにポッドキャスト用の脚本を作成
@@ -202,16 +211,10 @@ pending → (Approve) → translating → (翻訳完了) → published
 #### ブログ作成パイプライン（`archive_agents/`）
 
 ```
-Librarian → Scholar → Storyteller → Illustrator → Publisher → Firestore
+Librarian → Scholar(EN) → Storyteller(EN) → Illustrator → Translator(EN→JA) → Publisher(EN+JA保存) → Firestore
 ```
 
-#### 翻訳パイプライン（`translator_agents/`）
-
-```
-Firestore (日本語記事) → Translator → Firestore (英語翻訳 + status=published)
-```
-
-管理画面の「Approve」ボタン押下時に自動起動。翻訳完了後に公開される。
+Translator はブログパイプライン内で実行される。Approve 時は翻訳不要（ステータス変更のみ）。
 
 #### Podcast 作成パイプライン（`podcast_agents/`）
 
@@ -226,13 +229,22 @@ Firestore (narrative_content) → Scriptwriter → Producer → Firestore (podca
 各エージェントは `output_key` を使用してセッション状態にデータを保存：
 
 **ブログパイプライン（`archive_agents`）:**
+
+output_key ベース:
 - `collected_documents` - Librarian が収集した資料（デジタルアーカイブ＋Folklore両方を含む）
 - `mystery_report` - Scholar の分析レポート（Folkloric Context + Anthropological Context を含む）
-- `creative_content` - Storyteller のブログ原稿
+- `creative_content` - Storyteller の英語ブログ原稿
 - `visual_assets` - Illustrator のトップ画像アセット
+- `translation_result` - Translator の翻訳結果（JSON形式）
 - `published_episode` - Publisher の公開結果
 
-**翻訳パイプライン（`translator_agents`）:**
+tool_context.state ベース（構造化データ、LLM を経由しない正確なデータ）:
+- `raw_search_results` - Librarian ツールが直接書き込む検索結果リスト（URL, 日付, タイトル等）
+- `structured_report` - Scholar の `save_structured_report` ツールが書き込む構造化分析JSON
+- `image_metadata` - Illustrator の `generate_image` ツールが書き込む画像メタデータ
+- `translation_ja` - Translator の翻訳結果（`*_ja` フィールド）
+
+**翻訳パイプライン（スタンドアロン実行時 `translator_agents`）:**
 - `title`, `summary`, `narrative_content` 等 - Firestore から事前セット
 - `translation_result` - Translator の翻訳結果（JSON形式）
 
@@ -246,7 +258,7 @@ Firestore (narrative_content) → Scriptwriter → Producer → Firestore (podca
 - **Librarian:** gemini-3-pro-preview (資料検索)
 - **Scholar:** gemini-3-pro-preview (学際的分析)
 - **Storyteller:** gemini-3-pro-preview (ブログ記事生成)
-- **Translator:** gemini-3-pro-preview (日英翻訳)
+- **Translator:** gemini-3-pro-preview (英日翻訳)
 - **Scriptwriter:** gemini-3-pro-preview (ポッドキャスト脚本)
 - **Illustrator:** gemini-3-pro-preview + Imagen 3 (トップ画像生成)
 - **Producer:** gemini-3-pro-preview + Chirp 3 / TTS (音声生成)
@@ -308,6 +320,21 @@ Firestore (narrative_content) → Scriptwriter → Producer → Firestore (podca
 - 各エージェントは前段の失敗マーカー（`NO_DOCUMENTS_FOUND`, `NO_CONTENT` 等）をチェックし、適切に中断する
 - Firebase Admin SDK はシングルトン（`firebase_admin._apps`）で管理されるため、初期化は `shared/firestore.py` に集約する
 
+## Prompt Language Policy
+
+- すべてのエージェントプロンプト（instruction文字列）は英語で記述する
+- 各プロンプトの直上に、プロンプト全文を日本語に翻訳したコメントブロックを必ず添える
+- 英語プロンプトを修正した場合は、対応する日本語コメントも必ず同時に更新する
+- 英語と日本語は意味的に等価であること
+
+フォーマット:
+```python
+# === 日本語訳 ===
+# （英語プロンプトの日本語翻訳）
+# === End 日本語訳 ===
+AGENT_INSTRUCTION = """English prompt here..."""
+```
+
 ## Project Structure
 
 ```
@@ -330,7 +357,8 @@ translator_agents/            # 翻訳パイプライン
 ├── agents/                   # Translator
 └── tools/                    # 翻訳用 Firestore ツール
 
-web/                          # Next.js 管理画面・公開サイト
+web-admin/                    # Next.js 管理画面（日本語表示優先）
+web-public/                   # Next.js 公開サイト（英語表示）
 main.py                       # ブログパイプライン CLI
 podcast_main.py               # Podcast パイプライン CLI
 translate_main.py             # 翻訳パイプライン CLI
