@@ -1,7 +1,7 @@
 """Ghost in the Archive - CLI Entry Point
 
 This module provides the CLI entry point for running the Ghost Commander pipeline.
-The agent definition lives in archive_agents/agent.py (ADK convention).
+The agent definition lives in mystery_agents/agent.py (ADK convention).
 """
 
 import asyncio
@@ -10,16 +10,16 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv(Path(__file__).parent / ".env")
+# .env はプロジェクトルートに配置
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 from google.adk.agents.run_config import RunConfig
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from archive_agents.agent import ghost_commander
-from archive_agents.utils.pipeline_logger import PipelineLogger
+from .agent import ghost_commander
+from .utils.pipeline_logger import PipelineLogger
 from shared.pipeline_run import (
     create_pipeline_run,
     update_agent_started,
@@ -184,8 +184,8 @@ async def investigate(query: str, *, run_id: str | None = None) -> str | None:
 def main():
     """Main entry point."""
     if len(sys.argv) < 2:
-        print("Usage: python main.py <investigation query>")
-        print('Example: python main.py "Investigate historical discrepancies related to Spain in 1840s Boston"')
+        print("Usage: python -m mystery_agents <investigation query>")
+        print('Example: python -m mystery_agents "Investigate historical discrepancies related to Spain in 1840s Boston"')
         sys.exit(1)
 
     query = " ".join(sys.argv[1:])

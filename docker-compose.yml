@@ -2,8 +2,8 @@ services:
   curator:
     build:
       context: .
-      dockerfile: Dockerfile.jobs
-    command: ["curator_server.py"]
+      dockerfile: Dockerfile
+    command: ["services/curator.py"]
     ports:
       - "8001:8080"
     environment:
@@ -17,12 +17,12 @@ services:
 
   # NOTE: Pipeline runs on port 8002 (Curator on 8001) because they are
   # separate services with different resource/timeout requirements.
-  # See pipeline_server.py docstring for details.
+  # See services/mystery_pipeline.py docstring for details.
   pipeline:
     build:
       context: .
-      dockerfile: Dockerfile.jobs
-    command: ["pipeline_server.py"]
+      dockerfile: Dockerfile
+    command: ["services/mystery_pipeline.py"]
     ports:
       - "8002:8080"
     environment:

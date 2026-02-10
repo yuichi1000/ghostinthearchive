@@ -20,7 +20,7 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from archive_agents.agents.curator import curator_agent
+from curator_agents.agents.curator import curator_agent
 from translator_agents.agents.translator import translator_agent
 from shared.firestore import get_firestore_client
 

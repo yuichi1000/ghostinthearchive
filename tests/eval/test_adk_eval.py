@@ -7,7 +7,7 @@ Run with:
     pytest tests/eval/test_adk_eval.py -v -m adk_eval
 
 Or use ADK CLI directly:
-    adk eval archive_agents tests/eval/eval_sets/
+    adk eval mystery_agents tests/eval/eval_sets/
 """
 
 import json
@@ -152,7 +152,7 @@ class TestADKEvaluationExecution:
         config = load_eval_config()
 
         results = await AgentEvaluator.evaluate(
-            agent_module="archive_agents",
+            agent_module="mystery_agents",
             eval_dataset_file_path_or_dir=str(EVAL_SETS_DIR / "librarian_eval.json"),
             num_runs=config.get("num_samples", 1),
         )
@@ -181,7 +181,7 @@ class TestADKEvaluationExecution:
             pytest.skip("full_pipeline_eval.json not yet created")
 
         results = await AgentEvaluator.evaluate(
-            agent_module="archive_agents",
+            agent_module="mystery_agents",
             eval_dataset_file_path_or_dir=str(full_pipeline_eval),
             num_runs=1,
         )

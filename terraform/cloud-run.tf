@@ -114,7 +114,7 @@ resource "google_cloud_run_v2_service" "curator" {
     containers {
       image   = "${var.region}-docker.pkg.dev/${var.project_id}/ghostinthearchive/pipelines:latest"
       command = ["python"]
-      args    = ["curator_server.py"]
+      args    = ["services/curator.py"]
 
       ports {
         container_port = 8080
@@ -167,7 +167,7 @@ resource "google_cloud_run_v2_service" "curator" {
 }
 
 
-# Cloud Run service for Pipeline (Blog/Translate/Podcast)
+# Cloud Run service for Pipeline (Blog/Podcast)
 # NOTE: Separate from Curator because these pipelines run for 10-30 minutes,
 # requiring different resource limits (2 CPU, 2Gi), longer timeouts (1800s),
 # and always-on CPU allocation (cpu_idle=false). Curator only needs seconds
@@ -183,7 +183,7 @@ resource "google_cloud_run_v2_service" "pipeline" {
     containers {
       image   = "${var.region}-docker.pkg.dev/${var.project_id}/ghostinthearchive/pipelines:latest"
       command = ["python"]
-      args    = ["pipeline_server.py"]
+      args    = ["services/mystery_pipeline.py"]
 
       ports {
         container_port = 8080

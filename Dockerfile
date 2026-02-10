@@ -1,5 +1,5 @@
-# Cloud Run Jobs Dockerfile for Python pipelines
-# Supports: blog-pipeline, translate-pipeline, podcast-pipeline
+# Cloud Run Dockerfile for Python pipelines and services
+# Supports: mystery pipeline, podcast pipeline, curator service
 
 FROM python:3.12-slim
 
@@ -17,23 +17,20 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
 COPY shared/ ./shared/
-COPY archive_agents/ ./archive_agents/
-COPY translator_agents/ ./translator_agents/
+COPY mystery_agents/ ./mystery_agents/
+COPY curator_agents/ ./curator_agents/
 COPY podcast_agents/ ./podcast_agents/
-COPY main.py ./
-COPY translate_main.py ./
-COPY podcast_main.py ./
-COPY curator_main.py ./
-COPY curator_server.py ./
-COPY pipeline_server.py ./
+COPY translator_agents/ ./translator_agents/
+COPY services/ ./services/
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
 ENV GOOGLE_CLOUD_PROJECT=ghostinthearchive
 ENV GOOGLE_GENAI_USE_VERTEXAI=TRUE
 
-# Default entrypoint (overridden by Cloud Run Jobs configuration)
-# blog-pipeline: python main.py "<query>"
-# translate-pipeline: python translate_main.py "<mystery_id>"
-# podcast-pipeline: python podcast_main.py "<mystery_id>"
+# Default entrypoint (overridden by Cloud Run configuration)
+# mystery pipeline: python -m mystery_agents "<query>"
+# podcast pipeline: python -m podcast_agents "<mystery_id>"
+# curator service:  python services/curator.py
+# pipeline service: python services/mystery_pipeline.py
 ENTRYPOINT ["python"]
