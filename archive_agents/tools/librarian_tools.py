@@ -9,6 +9,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from google.adk.tools.tool_context import ToolContext
+
 from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
 from .dpla import search_dpla
@@ -24,6 +26,7 @@ def search_newspapers(
     states: Optional[str] = None,
     max_results: int = 20,
     min_results: int = 3,
+    tool_context: Optional[ToolContext] = None,
 ) -> str:
     """Search historical newspapers in Chronicling America with automatic fallback.
 
@@ -124,19 +127,23 @@ def search_newspapers(
 
     docs = [doc.model_dump() for doc in all_docs]
 
-    return json.dumps(
-        {
-            "source": "chronicling_america",
-            "keywords_used": all_keywords_used,
-            "total_hits": total_hits,
-            "documents_returned": len(docs),
-            "documents": docs,
-            "error": error,
-            "search_levels_used": levels_used,
-        },
-        ensure_ascii=False,
-        indent=2,
-    )
+    result = {
+        "source": "chronicling_america",
+        "keywords_used": all_keywords_used,
+        "total_hits": total_hits,
+        "documents_returned": len(docs),
+        "documents": docs,
+        "error": error,
+        "search_levels_used": levels_used,
+    }
+
+    # Save raw search results to session state for downstream agents
+    if tool_context is not None:
+        existing = tool_context.state.get("raw_search_results", [])
+        existing.append(result)
+        tool_context.state["raw_search_results"] = existing
+
+    return json.dumps(result, ensure_ascii=False, indent=2)
 
 
 def save_search_results(
@@ -210,6 +217,7 @@ def search_archives(
     date_end: str = "1899",
     sources: Optional[str] = None,
     max_results: int = 10,
+    tool_context: Optional[ToolContext] = None,
 ) -> str:
     """Search multiple public archive APIs simultaneously.
 
@@ -326,19 +334,23 @@ def search_archives(
             f"These sources were skipped. Set the required environment variables to enable them."
         )
 
-    return json.dumps(
-        {
-            "warnings": warnings if warnings else None,
-            "keywords_used": all_keywords_used,
-            "sources_searched": source_results,
-            "total_documents": len(all_docs),
-            "documents": all_docs,
-            "errors": errors if errors else None,
-            "fallback_used": fallback_used,
-        },
-        ensure_ascii=False,
-        indent=2,
-    )
+    result = {
+        "warnings": warnings if warnings else None,
+        "keywords_used": all_keywords_used,
+        "sources_searched": source_results,
+        "total_documents": len(all_docs),
+        "documents": all_docs,
+        "errors": errors if errors else None,
+        "fallback_used": fallback_used,
+    }
+
+    # Save raw search results to session state for downstream agents
+    if tool_context is not None:
+        existing = tool_context.state.get("raw_search_results", [])
+        existing.append(result)
+        tool_context.state["raw_search_results"] = existing
+
+    return json.dumps(result, ensure_ascii=False, indent=2)
 
 
 def get_available_keywords() -> str:

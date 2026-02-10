@@ -165,24 +165,44 @@ export interface FirestoreMystery extends MysteryReport {
   /** ポッドキャスト生成ステータス */
   podcast_status?: PodcastStatus;
 
-  // === 英語翻訳フィールド ===
-  /** タイトル（英語） */
+  // === 日本語翻訳フィールド ===
+  /** タイトル（日本語） */
+  title_ja?: string;
+  /** サマリー（日本語） */
+  summary_ja?: string;
+  /** 物語的ブログ原稿（日本語、マークダウン形式） */
+  narrative_content_ja?: string;
+  /** 発見された矛盾の説明（日本語） */
+  discrepancy_detected_ja?: string;
+  /** 主要仮説（日本語） */
+  hypothesis_ja?: string;
+  /** 代替仮説リスト（日本語） */
+  alternative_hypotheses_ja?: string[];
+  /** 歴史的コンテキスト（日本語） */
+  historical_context_ja?: {
+    political_climate?: string;
+  };
+  /** ナラティブフック（日本語） */
+  story_hooks_ja?: string[];
+
+  // === 英語翻訳フィールド（レガシー、後方互換用） ===
+  /** @deprecated Use base fields (title, summary, etc.) which are now in English */
   title_en?: string;
-  /** サマリー（英語） */
+  /** @deprecated */
   summary_en?: string;
-  /** 物語的ブログ原稿（英語、マークダウン形式） */
+  /** @deprecated */
   narrative_content_en?: string;
-  /** 発見された矛盾の説明（英語） */
+  /** @deprecated */
   discrepancy_detected_en?: string;
-  /** 主要仮説（英語） */
+  /** @deprecated */
   hypothesis_en?: string;
-  /** 代替仮説リスト（英語） */
+  /** @deprecated */
   alternative_hypotheses_en?: string[];
-  /** 歴史的コンテキスト（英語） */
+  /** @deprecated */
   historical_context_en?: {
     political_climate?: string;
   };
-  /** ナラティブフック（英語） */
+  /** @deprecated */
   story_hooks_en?: string[];
 }
 

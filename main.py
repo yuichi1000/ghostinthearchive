@@ -46,7 +46,7 @@ async def investigate(query: str, *, run_id: str | None = None) -> str | None:
     print("Ghost in the Archive - Historical Mystery Investigation System")
     print("=" * 70)
     print()
-    print(f"調査依頼: {query}")
+    print(f"Investigation Query: {query}")
     print()
     print("-" * 70)
     print()
@@ -168,11 +168,11 @@ async def investigate(query: str, *, run_id: str | None = None) -> str | None:
 
     print()
     print("=" * 70)
-    print("調査完了")
+    print("Investigation Complete")
     print("=" * 70)
 
     # Print execution summary
-    print("\n実行ログ:")
+    print("\nExecution Log:")
     for log in logger.get_logs():
         icon = "✓" if log["status"] == "completed" else "✗" if log["status"] == "error" else "⋯"
         dur = f'{log["duration_seconds"]}s' if log["duration_seconds"] else "running"
@@ -184,8 +184,8 @@ async def investigate(query: str, *, run_id: str | None = None) -> str | None:
 def main():
     """Main entry point."""
     if len(sys.argv) < 2:
-        print("Usage: python main.py <調査クエリ>")
-        print('Example: python main.py "1840年代のボストンにおけるスペイン関連の歴史的矛盾を調査せよ"')
+        print("Usage: python main.py <investigation query>")
+        print('Example: python main.py "Investigate historical discrepancies related to Spain in 1840s Boston"')
         sys.exit(1)
 
     query = " ".join(sys.argv[1:])

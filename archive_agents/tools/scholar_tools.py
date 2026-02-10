@@ -1,7 +1,8 @@
 """LLM-facing tool functions for the Scholar Agent.
 
 These functions provide file I/O operations for loading Librarian search
-results and saving Mystery Reports.
+results and saving Mystery Reports, plus structured report storage
+via session state for downstream agents.
 """
 
 import json
@@ -10,6 +11,8 @@ import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
+
+from google.adk.tools.tool_context import ToolContext
 
 
 def load_search_results(filepath: str) -> str:
@@ -458,3 +461,57 @@ def build_analysis_context(filepaths: list[str] | None = None) -> str:
     }
 
     return json.dumps(analysis_context, ensure_ascii=False, indent=2)
+
+
+def save_structured_report(
+    report_json: str,
+    tool_context: ToolContext,
+) -> str:
+    """Save a structured analysis report to session state.
+
+    Called by the Scholar Agent after completing analysis to store
+    structured data (evidence, hypothesis, etc.) directly in session
+    state, bypassing LLM text interpretation for downstream agents.
+
+    Args:
+        report_json: JSON string containing the structured report with fields:
+            - evidence_a: Primary evidence object (source_url, source_date, etc.)
+            - evidence_b: Contrasting evidence object
+            - additional_evidence: List of additional evidence objects
+            - hypothesis: Primary hypothesis string
+            - alternative_hypotheses: List of alternative hypothesis strings
+            - classification: 3-letter classification code
+            - state_code: 2-letter US state code
+            - area_code: 3-digit area code
+            - title: Mystery title
+            - summary: Brief summary
+            - discrepancy_detected: Description of the discrepancy
+            - discrepancy_type: Type of discrepancy
+            - confidence_level: high/medium/low
+            - historical_context: Historical context object
+            - research_questions: List of research questions
+            - story_hooks: List of story hooks
+        tool_context: ADK tool context for session state access.
+
+    Returns:
+        JSON string with save status.
+    """
+    try:
+        report_data = json.loads(report_json)
+    except json.JSONDecodeError as e:
+        return json.dumps(
+            {"status": "error", "error": f"Invalid JSON: {e}"},
+            ensure_ascii=False,
+        )
+
+    # Store structured report in session state
+    tool_context.state["structured_report"] = report_data
+
+    return json.dumps(
+        {
+            "status": "success",
+            "message": "Structured report saved to session state",
+            "fields_saved": list(report_data.keys()),
+        },
+        ensure_ascii=False,
+    )
