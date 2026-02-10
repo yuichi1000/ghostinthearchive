@@ -15,6 +15,7 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 from google import genai
+from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 
 # Retry configuration
@@ -274,6 +275,7 @@ def generate_image(
     aspect_ratio: str = "16:9",
     negative_prompt: Optional[str] = None,
     filename_hint: Optional[str] = None,
+    tool_context: Optional[ToolContext] = None,
 ) -> str:
     """Generate an image using Imagen 3 and save it locally.
 
@@ -361,7 +363,7 @@ def generate_image(
                 # Generate responsive variants
                 variants, variant_error = _get_variants(str(filepath))
 
-                return json.dumps({
+                result = {
                     "status": "success",
                     "filepath": str(filepath),
                     "filename": filename,
@@ -373,7 +375,13 @@ def generate_image(
                     "prompt_sanitized": prompt_sanitized,
                     "variants": variants,
                     "variant_error": variant_error,
-                }, ensure_ascii=False)
+                }
+
+                # Save image metadata to session state for Publisher
+                if tool_context is not None:
+                    tool_context.state["image_metadata"] = result
+
+                return json.dumps(result, ensure_ascii=False)
 
             # No images generated - likely safety filter
             last_error = "No images generated (filtered by safety checks)"
@@ -440,7 +448,7 @@ def generate_image(
             "All %d attempts failed, using fallback image. last_error=%s, original_prompt=%s",
             MAX_RETRIES, last_error, full_prompt[:200],
         )
-        return json.dumps({
+        fallback_result = {
             "status": "fallback",
             "filepath": str(FALLBACK_IMAGE_PATH),
             "filename": FALLBACK_IMAGE_PATH.name,
@@ -454,7 +462,13 @@ def generate_image(
                 "Focus on locations, architecture, or symbolic objects instead of the original subject. "
                 "Avoid any references to people, creatures, or supernatural elements."
             ),
-        }, ensure_ascii=False)
+        }
+
+        # Save fallback image metadata to session state for Publisher
+        if tool_context is not None:
+            tool_context.state["image_metadata"] = fallback_result
+
+        return json.dumps(fallback_result, ensure_ascii=False)
 
     # No fallback available
     logger.error(

@@ -10,4 +10,4 @@ class TestStorytellerInstruction:
 
     def test_explicit_no_sources_directive(self):
         """Storyteller should have an explicit directive to not include Sources."""
-        assert "Sources（引用元リスト）は出力に含めないでください" in STORYTELLER_INSTRUCTION
+        assert "Do NOT include a Sources (citation list) in the output" in STORYTELLER_INSTRUCTION

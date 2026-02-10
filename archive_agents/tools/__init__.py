@@ -27,6 +27,7 @@ from .scholar_tools import (
     load_multiple_search_results,
     load_search_results,
     save_mystery_report,
+    save_structured_report,
 )
 
 __all__ = [
@@ -53,4 +54,5 @@ __all__ = [
     "build_analysis_context",
     "list_available_results",
     "save_mystery_report",
+    "save_structured_report",
 ]
