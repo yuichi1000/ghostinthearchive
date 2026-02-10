@@ -3,10 +3,10 @@
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import { StatusBadge } from "@/components/status-badge"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "@ghost/shared/src/lib/utils"
+import { Button } from "@ghost/shared/src/components/ui/button"
 import { getAllMysteries, approveMystery, archiveMystery, requestPodcast } from "@/lib/firestore/mysteries"
-import type { FirestoreMystery, MysteryStatus } from "@/types/mystery"
+import type { FirestoreMystery, MysteryStatus } from "@ghost/shared/src/types/mystery"
 import { PipelineSummary } from "@/components/pipeline-summary"
 import { PipelineTimeline } from "@/components/pipeline-timeline"
 import {

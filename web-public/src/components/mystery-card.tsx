@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { FileText, MapPin, Calendar } from "lucide-react"
-import type { FirestoreMystery } from "@/types/mystery"
-import { cn } from "@/lib/utils"
+import type { FirestoreMystery } from "@ghost/shared/src/types/mystery"
+import { cn } from "@ghost/shared/src/lib/utils"
 import { localizeMystery } from "@/lib/localize"
 
 interface MysteryCardProps {
