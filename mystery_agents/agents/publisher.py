@@ -16,7 +16,7 @@ from google.adk.agents import LlmAgent
 
 from ..tools.publisher_tools import publish_mystery
 
-load_dotenv(Path(__file__).parent.parent / ".env")  # archive_agents/.env
+load_dotenv(Path(__file__).parent.parent / ".env")  # mystery_agents/.env
 
 # === 日本語訳 ===
 # あなたは「Ghost in the Archive」プロジェクトのパブリッシャー（Publisher Agent）です。

@@ -1,6 +1,6 @@
 """Unit tests for Storyteller agent instruction."""
 
-from archive_agents.agents.storyteller import STORYTELLER_INSTRUCTION
+from mystery_agents.agents.storyteller import STORYTELLER_INSTRUCTION
 
 
 class TestStorytellerInstruction:

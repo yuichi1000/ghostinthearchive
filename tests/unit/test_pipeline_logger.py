@@ -3,7 +3,7 @@
 
 from freezegun import freeze_time
 
-from archive_agents.utils.pipeline_logger import PipelineLogger
+from mystery_agents.utils.pipeline_logger import PipelineLogger
 
 
 class TestPipelineLoggerInit:

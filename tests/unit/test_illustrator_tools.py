@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 
-from archive_agents.tools.illustrator_tools import (
+from mystery_agents.tools.illustrator_tools import (
     IMAGE_VARIANTS,
     MAX_RETRIES,
     FALLBACK_VARIANTS,
@@ -95,7 +95,7 @@ class TestSanitizePrompt:
 class TestGenerateImageRetry:
     """Tests for generate_image retry mechanism."""
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
     def test_success_on_first_attempt(self, mock_get_client):
         """Should succeed on first attempt if API returns image."""
         mock_client = MagicMock()
@@ -114,7 +114,7 @@ class TestGenerateImageRetry:
         assert result_data["prompt_sanitized"] is False
         assert mock_client.models.generate_images.call_count == 1
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
     def test_retry_on_safety_filter(self, mock_get_client):
         """Should retry with sanitized prompt when safety filter blocks."""
         mock_client = MagicMock()
@@ -134,8 +134,8 @@ class TestGenerateImageRetry:
         assert result_data["prompt_sanitized"] is True
         assert mock_client.models.generate_images.call_count == 2
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
     def test_retry_on_rate_limit(self, mock_sleep, mock_get_client):
         """Should retry with backoff on rate limit errors."""
         mock_client = MagicMock()
@@ -155,8 +155,8 @@ class TestGenerateImageRetry:
         assert mock_sleep.called
         assert mock_client.models.generate_images.call_count == 2
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
     def test_retry_on_timeout(self, mock_sleep, mock_get_client):
         """Should retry on timeout errors."""
         mock_client = MagicMock()
@@ -174,8 +174,8 @@ class TestGenerateImageRetry:
         assert result_data["status"] == "success"
         assert mock_sleep.called
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
     def test_max_retries_exceeded(self, mock_sleep, mock_get_client):
         """Should fail after MAX_RETRIES attempts."""
         mock_client = MagicMock()
@@ -197,8 +197,8 @@ class TestGenerateImageRetry:
 class TestGenerateImageFallback:
     """Tests for fallback image functionality."""
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
     def test_fallback_when_generation_fails(self, mock_sleep, mock_get_client):
         """Should return fallback image when all attempts fail."""
         mock_client = MagicMock()
@@ -215,8 +215,8 @@ class TestGenerateImageFallback:
         assert result_data["note"] == "Using fallback image due to generation failure"
         assert "retry_suggestion" in result_data
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
     def test_error_when_no_fallback(self, mock_sleep, mock_get_client):
         """Should return error when fallback doesn't exist."""
         mock_client = MagicMock()
@@ -233,7 +233,7 @@ class TestGenerateImageFallback:
 class TestGenerateImageStyles:
     """Tests for style-specific prompt modifications."""
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
     def test_fact_style_prefix(self, mock_get_client):
         """Should add monochrome prefix for fact style."""
         mock_client = MagicMock()
@@ -250,7 +250,7 @@ class TestGenerateImageStyles:
         assert "Black and white" in result_data["prompt_used"]
         assert result_data["style"] == "fact"
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
     def test_folklore_style_prefix(self, mock_get_client):
         """Should add woodcut prefix for folklore style."""
         mock_client = MagicMock()
@@ -267,7 +267,7 @@ class TestGenerateImageStyles:
         assert "woodcut" in result_data["prompt_used"]
         assert result_data["style"] == "folklore"
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
     def test_auto_style_no_prefix(self, mock_get_client):
         """Should not add prefix for auto style."""
         mock_client = MagicMock()
@@ -288,7 +288,7 @@ class TestGenerateImageStyles:
 class TestGenerateImageOutput:
     """Tests for generate_image output format."""
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
     def test_success_response_format(self, mock_get_client):
         """Should return correctly formatted JSON on success."""
         mock_client = MagicMock()
@@ -315,7 +315,7 @@ class TestGenerateImageOutput:
         assert result_data["aspect_ratio"] == "16:9"
         assert result_data["attempt"] == 1
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
     def test_filename_hint_sanitization(self, mock_get_client):
         """Should sanitize filename hint."""
         mock_client = MagicMock()
@@ -435,8 +435,8 @@ class TestResizeImageVariants:
 class TestGenerateImageWithVariants:
     """Tests for generate_image including variants."""
 
-    @patch("archive_agents.tools.illustrator_tools.resize_image_variants")
-    @patch("archive_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.resize_image_variants")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
     def test_success_includes_variants(self, mock_get_client, mock_resize):
         """Should include variants in success response."""
         mock_client = MagicMock()
@@ -463,8 +463,8 @@ class TestGenerateImageWithVariants:
         assert result_data["variant_error"] is None
         mock_resize.assert_called_once()
 
-    @patch("archive_agents.tools.illustrator_tools.resize_image_variants")
-    @patch("archive_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.resize_image_variants")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
     def test_resize_failure_returns_empty_variants(self, mock_get_client, mock_resize):
         """Should return empty variants with variant_error when resize fails."""
         mock_client = MagicMock()
@@ -488,8 +488,8 @@ class TestGenerateImageWithVariants:
         assert result_data["variants"] == []
         assert result_data["variant_error"] == "Pillow not installed"
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
     def test_fallback_includes_pregenerated_variants(self, mock_sleep, mock_get_client):
         """Should include pre-generated static variants in fallback response."""
         mock_client = MagicMock()
@@ -510,7 +510,7 @@ class TestGenerateImageWithVariants:
 class TestGetVariantsLogging:
     """Tests for _get_variants error log on failure."""
 
-    @patch("archive_agents.tools.illustrator_tools.resize_image_variants")
+    @patch("mystery_agents.tools.illustrator_tools.resize_image_variants")
     def test_get_variants_logs_error_on_failure(self, mock_resize, caplog):
         """Should log an ERROR when variant generation fails."""
         mock_resize.return_value = json.dumps({
@@ -520,7 +520,7 @@ class TestGetVariantsLogging:
         })
 
         import logging
-        with caplog.at_level(logging.ERROR, logger="archive_agents.tools.illustrator_tools"):
+        with caplog.at_level(logging.ERROR, logger="mystery_agents.tools.illustrator_tools"):
             variants, error_msg = _get_variants("/tmp/test.png")
 
         assert variants == []
@@ -528,7 +528,7 @@ class TestGetVariantsLogging:
         assert "WebP variant generation FAILED" in caplog.text
         assert "Pillow not installed" in caplog.text
 
-    @patch("archive_agents.tools.illustrator_tools.resize_image_variants")
+    @patch("mystery_agents.tools.illustrator_tools.resize_image_variants")
     def test_get_variants_returns_none_error_on_success(self, mock_resize):
         """Should return None as error_msg on success."""
         mock_resize.return_value = json.dumps({
@@ -564,7 +564,7 @@ class TestBuildSafeFallbackPrompt:
 
     def test_no_forbidden_words(self):
         """Should not contain any words from the sanitization dictionary."""
-        from archive_agents.tools.illustrator_tools import _SANITIZE_REPLACEMENTS
+        from mystery_agents.tools.illustrator_tools import _SANITIZE_REPLACEMENTS
 
         for style in ("fact", "folklore", "auto"):
             result = _build_safe_fallback_prompt(style).lower()
@@ -582,8 +582,8 @@ class TestBuildSafeFallbackPrompt:
 class TestGenerateImageProgressiveRetry:
     """Tests for progressive retry strategy (3 stages)."""
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
     def test_third_attempt_uses_safe_fallback_prompt(self, mock_sleep, mock_get_client):
         """Should use _build_safe_fallback_prompt on the third attempt."""
         mock_client = MagicMock()
@@ -608,8 +608,8 @@ class TestGenerateImageProgressiveRetry:
         # Attempt 2: safe fallback prompt (completely different)
         assert prompts_used[2] != prompts_used[1]
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
     def test_success_on_third_attempt_with_safe_prompt(self, mock_sleep, mock_get_client):
         """Should succeed on third attempt using safe fallback prompt."""
         mock_client = MagicMock()
@@ -633,8 +633,8 @@ class TestGenerateImageProgressiveRetry:
 class TestGenerateImageSafetyConfig:
     """Tests for safety_filter_level configuration."""
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.types.GenerateImagesConfig")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.types.GenerateImagesConfig")
     def test_uses_block_only_high(self, mock_config_cls, mock_get_client):
         """Should use BLOCK_ONLY_HIGH safety filter level."""
         mock_client = MagicMock()
@@ -655,64 +655,64 @@ class TestGenerateImageSafetyConfig:
 class TestGenerateImageLogging:
     """Tests for error logging in generate_image."""
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
     def test_logs_safety_filter_warning(self, mock_sleep, mock_get_client, caplog):
         """Should log warning when safety filter blocks generation."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         mock_client.models.generate_images.return_value = MagicMock(generated_images=[])
 
-        with caplog.at_level(logging.WARNING, logger="archive_agents.tools.illustrator_tools"):
+        with caplog.at_level(logging.WARNING, logger="mystery_agents.tools.illustrator_tools"):
             with patch.object(Path, "exists", return_value=True):
                 generate_image("A ghost ship", style="folklore")
 
         assert "Safety filter" in caplog.text
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
     def test_logs_rate_limit_warning(self, mock_sleep, mock_get_client, caplog):
         """Should log warning on rate limit errors."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         mock_client.models.generate_images.side_effect = Exception("Resource exhausted: quota exceeded")
 
-        with caplog.at_level(logging.WARNING, logger="archive_agents.tools.illustrator_tools"):
+        with caplog.at_level(logging.WARNING, logger="mystery_agents.tools.illustrator_tools"):
             with patch.object(Path, "exists", return_value=True):
                 generate_image("A test image", style="auto")
 
         assert "Rate limit" in caplog.text
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
     def test_logs_fallback_error(self, mock_sleep, mock_get_client, caplog):
         """Should log error when falling back to default image."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         mock_client.models.generate_images.return_value = MagicMock(generated_images=[])
 
-        with caplog.at_level(logging.ERROR, logger="archive_agents.tools.illustrator_tools"):
+        with caplog.at_level(logging.ERROR, logger="mystery_agents.tools.illustrator_tools"):
             with patch.object(Path, "exists", return_value=True):
                 generate_image("A ghost ship", style="folklore")
 
         assert "All" in caplog.text and "attempts failed" in caplog.text
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
     def test_logs_no_fallback_error(self, mock_sleep, mock_get_client, caplog):
         """Should log error when no fallback image is available."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         mock_client.models.generate_images.return_value = MagicMock(generated_images=[])
 
-        with caplog.at_level(logging.ERROR, logger="archive_agents.tools.illustrator_tools"):
+        with caplog.at_level(logging.ERROR, logger="mystery_agents.tools.illustrator_tools"):
             with patch.object(Path, "exists", return_value=False):
                 generate_image("A ghost ship", style="folklore")
 
         assert "no fallback" in caplog.text.lower()
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
     def test_logs_timeout_warning(self, mock_sleep, mock_get_client, caplog):
         """Should log warning on timeout errors."""
         mock_client = MagicMock()
@@ -724,7 +724,7 @@ class TestGenerateImageLogging:
             MagicMock(generated_images=[MagicMock(image=mock_image)]),
         ]
 
-        with caplog.at_level(logging.WARNING, logger="archive_agents.tools.illustrator_tools"):
+        with caplog.at_level(logging.WARNING, logger="mystery_agents.tools.illustrator_tools"):
             generate_image("A test image", style="auto")
 
         assert "Timeout" in caplog.text
@@ -733,8 +733,8 @@ class TestGenerateImageLogging:
 class TestGenerateImageRetrySuggestion:
     """Tests for retry_suggestion field in fallback response."""
 
-    @patch("archive_agents.tools.illustrator_tools._get_client")
-    @patch("archive_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
     def test_fallback_includes_retry_suggestion(self, mock_sleep, mock_get_client):
         """Should include retry_suggestion field in fallback response."""
         mock_client = MagicMock()

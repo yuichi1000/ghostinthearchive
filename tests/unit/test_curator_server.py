@@ -1,4 +1,4 @@
-"""Unit tests for curator_server.py (FastAPI HTTP wrapper).
+"""Unit tests for services/curator.py (FastAPI HTTP wrapper).
 
 Updated for English-first: Curator returns English suggestions,
 then Translator adds Japanese translations.
@@ -23,7 +23,7 @@ def mock_run_curator():
             "description": "Exploring the connection between the legend of Marie Laveau and actual epidemic records.",
         },
     ]
-    with patch("curator_server.run_curator", new_callable=AsyncMock, return_value=sample_suggestions) as mock:
+    with patch("services.curator.run_curator", new_callable=AsyncMock, return_value=sample_suggestions) as mock:
         yield mock
 
 
@@ -41,7 +41,7 @@ def mock_translate_suggestions():
             })
         return bilingual
 
-    with patch("curator_server.translate_suggestions", new_callable=AsyncMock, side_effect=_translate) as mock:
+    with patch("services.curator.translate_suggestions", new_callable=AsyncMock, side_effect=_translate) as mock:
         yield mock
 
 
@@ -50,7 +50,7 @@ def client(mock_run_curator, mock_translate_suggestions):
     """Create FastAPI test client with mocked dependencies."""
     from fastapi.testclient import TestClient
 
-    from curator_server import app
+    from services.curator import app
 
     return TestClient(app)
 
@@ -86,10 +86,10 @@ class TestSuggestThemeEndpoint:
 
     def test_suggest_theme_falls_back_to_english_when_translation_fails(self, mock_run_curator):
         """Should return English-only suggestions when translation fails."""
-        with patch("curator_server.translate_suggestions", new_callable=AsyncMock,
+        with patch("services.curator.translate_suggestions", new_callable=AsyncMock,
                     side_effect=Exception("Translation error")):
             from fastapi.testclient import TestClient
-            from curator_server import app
+            from services.curator import app
             client = TestClient(app)
 
             response = client.post("/suggest-theme")
@@ -101,7 +101,7 @@ class TestSuggestThemeEndpoint:
 
     def test_suggest_theme_handles_json_parse_error(self, client):
         with patch(
-            "curator_server.run_curator",
+            "services.curator.run_curator",
             new_callable=AsyncMock,
             side_effect=json.JSONDecodeError("Expecting value", "", 0),
         ):
@@ -113,7 +113,7 @@ class TestSuggestThemeEndpoint:
 
     def test_suggest_theme_handles_unexpected_error(self, client):
         with patch(
-            "curator_server.run_curator",
+            "services.curator.run_curator",
             new_callable=AsyncMock,
             side_effect=RuntimeError("Agent failed"),
         ):
@@ -138,18 +138,18 @@ class TestGetExistingTitles:
             mock_doc2,
         ]
 
-        with patch("curator_server.get_firestore_client", return_value=mock_db):
-            from curator_server import get_existing_titles
+        with patch("services.curator.get_firestore_client", return_value=mock_db):
+            from services.curator import get_existing_titles
 
             titles = get_existing_titles()
             assert titles == ["Mystery A", "Mystery B"]
 
     def test_returns_empty_list_on_error(self):
         with patch(
-            "curator_server.get_firestore_client",
+            "services.curator.get_firestore_client",
             side_effect=Exception("Connection failed"),
         ):
-            from curator_server import get_existing_titles
+            from services.curator import get_existing_titles
 
             titles = get_existing_titles()
             assert titles == []
@@ -166,8 +166,8 @@ class TestGetExistingTitles:
             mock_doc2,
         ]
 
-        with patch("curator_server.get_firestore_client", return_value=mock_db):
-            from curator_server import get_existing_titles
+        with patch("services.curator.get_firestore_client", return_value=mock_db):
+            from services.curator import get_existing_titles
 
             titles = get_existing_titles()
             assert titles == ["Mystery A"]

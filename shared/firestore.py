@@ -1,7 +1,7 @@
 """Shared Firebase infrastructure.
 
 Provides singleton Firestore client and Cloud Storage bucket
-used by both archive_agents and podcast_agents.
+used by both mystery_agents and podcast_agents.
 """
 
 import os

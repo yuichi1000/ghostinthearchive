@@ -3,13 +3,13 @@
 import pytest
 from pydantic import ValidationError
 
-from archive_agents.schemas.document import (
+from mystery_agents.schemas.document import (
     ArchiveDocument,
     SearchResults,
     SourceLanguage,
     SourceType,
 )
-from archive_agents.schemas.mystery_report import (
+from mystery_agents.schemas.mystery_report import (
     AnalysisResults,
     ConfidenceLevel,
     DiscrepancyType,

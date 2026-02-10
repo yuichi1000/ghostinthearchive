@@ -12,31 +12,31 @@ class TestSessionStateKeys:
 
     def test_librarian_output_key(self):
         """Librarian agent should use 'collected_documents' output key."""
-        from archive_agents.agents.librarian import librarian_agent
+        from mystery_agents.agents.librarian import librarian_agent
 
         assert librarian_agent.output_key == "collected_documents"
 
     def test_scholar_output_key(self):
         """Scholar agent should use 'mystery_report' output key."""
-        from archive_agents.agents.scholar import scholar_agent
+        from mystery_agents.agents.scholar import scholar_agent
 
         assert scholar_agent.output_key == "mystery_report"
 
     def test_storyteller_output_key(self):
         """Storyteller agent should use 'creative_content' output key."""
-        from archive_agents.agents.storyteller import storyteller_agent
+        from mystery_agents.agents.storyteller import storyteller_agent
 
         assert storyteller_agent.output_key == "creative_content"
 
     def test_illustrator_output_key(self):
         """Illustrator agent should use 'visual_assets' output key."""
-        from archive_agents.agents.illustrator import illustrator_agent
+        from mystery_agents.agents.illustrator import illustrator_agent
 
         assert illustrator_agent.output_key == "visual_assets"
 
     def test_publisher_output_key(self):
         """Publisher agent should use 'published_episode' output key."""
-        from archive_agents.agents.publisher import publisher_agent
+        from mystery_agents.agents.publisher import publisher_agent
 
         assert publisher_agent.output_key == "published_episode"
 
@@ -84,25 +84,25 @@ class TestInstructionPlaceholders:
 
     def test_scholar_references_collected_documents(self):
         """Scholar instruction should reference {collected_documents}."""
-        from archive_agents.agents.scholar import scholar_agent
+        from mystery_agents.agents.scholar import scholar_agent
 
         assert "{collected_documents}" in scholar_agent.instruction
 
     def test_storyteller_references_mystery_report(self):
         """Storyteller instruction should reference {mystery_report}."""
-        from archive_agents.agents.storyteller import storyteller_agent
+        from mystery_agents.agents.storyteller import storyteller_agent
 
         assert "{mystery_report}" in storyteller_agent.instruction
 
     def test_illustrator_references_creative_content(self):
         """Illustrator instruction should reference {creative_content}."""
-        from archive_agents.agents.illustrator import illustrator_agent
+        from mystery_agents.agents.illustrator import illustrator_agent
 
         assert "{creative_content}" in illustrator_agent.instruction
 
     def test_publisher_references_required_keys(self):
         """Publisher instruction should reference all required session state keys."""
-        from archive_agents.agents.publisher import publisher_agent
+        from mystery_agents.agents.publisher import publisher_agent
 
         # Publisher needs access to multiple session state keys
         instruction = publisher_agent.instruction
@@ -132,11 +132,11 @@ class TestAgentModels:
 
     def test_all_agents_use_gemini_3_pro(self):
         """All agents should use gemini-3-pro-preview model."""
-        from archive_agents.agents.librarian import librarian_agent
-        from archive_agents.agents.scholar import scholar_agent
-        from archive_agents.agents.storyteller import storyteller_agent
-        from archive_agents.agents.illustrator import illustrator_agent
-        from archive_agents.agents.publisher import publisher_agent
+        from mystery_agents.agents.librarian import librarian_agent
+        from mystery_agents.agents.scholar import scholar_agent
+        from mystery_agents.agents.storyteller import storyteller_agent
+        from mystery_agents.agents.illustrator import illustrator_agent
+        from mystery_agents.agents.publisher import publisher_agent
 
         expected_model = "gemini-3-pro-preview"
 
@@ -167,14 +167,14 @@ class TestRootAgentConfiguration:
 
     def test_ghost_commander_is_sequential(self):
         """ghost_commander should be a SequentialAgent."""
-        from archive_agents.agent import root_agent
+        from mystery_agents.agent import root_agent
         from google.adk.agents import SequentialAgent
 
         assert isinstance(root_agent, SequentialAgent)
 
     def test_ghost_commander_agent_order(self):
         """ghost_commander should have agents in correct order."""
-        from archive_agents.agent import root_agent
+        from mystery_agents.agent import root_agent
 
         agent_names = [agent.name for agent in root_agent.sub_agents]
         expected_order = ["librarian", "scholar", "storyteller", "illustrator", "publisher"]

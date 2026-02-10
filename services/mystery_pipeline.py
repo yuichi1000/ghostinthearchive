@@ -1,11 +1,11 @@
-"""Pipeline Server - FastAPI HTTP wrapper for Blog/Translate/Podcast pipelines.
+"""Pipeline Server - FastAPI HTTP wrapper for Blog/Podcast pipelines.
 
-Exposes the three long-running pipelines as HTTP endpoints using a
+Exposes the long-running pipelines as HTTP endpoints using a
 fire-and-forget pattern: each request creates a pipeline_run document,
 spawns the pipeline as a background asyncio task, and immediately returns
 the run_id to the caller.
 
-NOTE: This is a separate Cloud Run Service from Curator (curator_server.py).
+NOTE: This is a separate Cloud Run Service from Curator (services/curator.py).
 Curator returns synchronous responses in seconds, while these pipelines run
 for 10-30 minutes. The different execution profiles require different
 resource limits, timeouts, and CPU allocation strategies:
@@ -15,7 +15,6 @@ Combining them would force the expensive Pipeline config onto Curator.
 
 Endpoints:
     POST /investigate  - Start blog creation pipeline
-    POST /translate    - Start translation pipeline
     POST /podcast      - Start podcast generation pipeline
     GET  /health       - Health check
 """
@@ -47,7 +46,7 @@ class MysteryIdRequest(BaseModel):
 async def _run_investigate(query: str, run_id: str) -> None:
     """Background task wrapper for the blog pipeline."""
     try:
-        from main import investigate
+        from mystery_agents.cli import investigate
 
         await investigate(query, run_id=run_id)
     except Exception as e:
@@ -55,21 +54,10 @@ async def _run_investigate(query: str, run_id: str) -> None:
         error_pipeline_run(run_id, str(e))
 
 
-async def _run_translate(mystery_id: str, run_id: str) -> None:
-    """Background task wrapper for the translation pipeline."""
-    try:
-        from translate_main import translate_mystery
-
-        await translate_mystery(mystery_id, run_id=run_id)
-    except Exception as e:
-        logger.exception("Translation pipeline failed: %s", e)
-        error_pipeline_run(run_id, str(e))
-
-
 async def _run_podcast(mystery_id: str, run_id: str) -> None:
     """Background task wrapper for the podcast pipeline."""
     try:
-        from podcast_main import generate_podcast
+        from podcast_agents.cli import generate_podcast
 
         await generate_podcast(mystery_id, run_id=run_id)
     except Exception as e:
@@ -93,20 +81,6 @@ async def investigate_endpoint(body: InvestigateRequest):
         return JSONResponse(
             status_code=500,
             content={"error": "Failed to start blog pipeline", "detail": str(e)},
-        )
-
-
-@app.post("/translate")
-async def translate_endpoint(body: MysteryIdRequest):
-    try:
-        run_id = create_pipeline_run("translate", mystery_id=body.mystery_id)
-        asyncio.create_task(_run_translate(body.mystery_id, run_id))
-        return JSONResponse(content={"status": "accepted", "run_id": run_id})
-    except Exception as e:
-        logger.exception("Failed to start translation pipeline: %s", e)
-        return JSONResponse(
-            status_code=500,
-            content={"error": "Failed to start translation pipeline", "detail": str(e)},
         )
 
 

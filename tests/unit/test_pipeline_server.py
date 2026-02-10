@@ -1,4 +1,4 @@
-"""Unit tests for pipeline_server.py (FastAPI HTTP wrapper for pipelines)."""
+"""Unit tests for services/mystery_pipeline.py (FastAPI HTTP wrapper for pipelines)."""
 
 from unittest.mock import AsyncMock, patch
 
@@ -9,7 +9,7 @@ import pytest
 def mock_create_pipeline_run():
     """Mock create_pipeline_run to return a fake run_id."""
     with patch(
-        "pipeline_server.create_pipeline_run",
+        "services.mystery_pipeline.create_pipeline_run",
         return_value="test-run-id-123",
     ) as mock:
         yield mock
@@ -19,7 +19,7 @@ def mock_create_pipeline_run():
 def mock_create_pipeline_run_failure():
     """Mock create_pipeline_run that raises an exception."""
     with patch(
-        "pipeline_server.create_pipeline_run",
+        "services.mystery_pipeline.create_pipeline_run",
         side_effect=Exception("Firestore unavailable"),
     ) as mock:
         yield mock
@@ -29,17 +29,7 @@ def mock_create_pipeline_run_failure():
 def mock_investigate():
     """Mock the investigate function."""
     with patch(
-        "pipeline_server._run_investigate",
-        new_callable=AsyncMock,
-    ) as mock:
-        yield mock
-
-
-@pytest.fixture
-def mock_translate():
-    """Mock the translate function."""
-    with patch(
-        "pipeline_server._run_translate",
+        "services.mystery_pipeline._run_investigate",
         new_callable=AsyncMock,
     ) as mock:
         yield mock
@@ -49,18 +39,18 @@ def mock_translate():
 def mock_podcast():
     """Mock the podcast function."""
     with patch(
-        "pipeline_server._run_podcast",
+        "services.mystery_pipeline._run_podcast",
         new_callable=AsyncMock,
     ) as mock:
         yield mock
 
 
 @pytest.fixture
-def client(mock_create_pipeline_run, mock_investigate, mock_translate, mock_podcast):
+def client(mock_create_pipeline_run, mock_investigate, mock_podcast):
     """Create FastAPI test client with mocked dependencies."""
     from fastapi.testclient import TestClient
 
-    from pipeline_server import app
+    from services.mystery_pipeline import app
 
     return TestClient(app)
 
@@ -104,58 +94,12 @@ class TestInvestigateEndpoint:
     ):
         from fastapi.testclient import TestClient
 
-        from pipeline_server import app
+        from services.mystery_pipeline import app
 
         client = TestClient(app)
         response = client.post(
             "/investigate",
             json={"query": "test"},
-        )
-        assert response.status_code == 500
-        assert "error" in response.json()
-
-
-class TestTranslateEndpoint:
-    """Tests for POST /translate."""
-
-    def test_returns_accepted_with_run_id(self, client, mock_create_pipeline_run):
-        response = client.post(
-            "/translate",
-            json={"mystery_id": "OCC-MA-617-20260207143025"},
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "accepted"
-        assert data["run_id"] == "test-run-id-123"
-
-    def test_calls_create_pipeline_run(self, client, mock_create_pipeline_run):
-        client.post(
-            "/translate",
-            json={"mystery_id": "OCC-MA-617-20260207143025"},
-        )
-        mock_create_pipeline_run.assert_called_once_with(
-            "translate", mystery_id="OCC-MA-617-20260207143025"
-        )
-
-    def test_missing_mystery_id_returns_422(self, client):
-        response = client.post("/translate", json={})
-        assert response.status_code == 422
-
-    def test_invalid_mystery_id_type_returns_422(self, client):
-        response = client.post("/translate", json={"mystery_id": 123})
-        assert response.status_code == 422
-
-    def test_create_pipeline_run_failure_returns_500(
-        self, mock_create_pipeline_run_failure, mock_translate
-    ):
-        from fastapi.testclient import TestClient
-
-        from pipeline_server import app
-
-        client = TestClient(app)
-        response = client.post(
-            "/translate",
-            json={"mystery_id": "TEST-ID"},
         )
         assert response.status_code == 500
         assert "error" in response.json()
@@ -196,7 +140,7 @@ class TestPodcastEndpoint:
     ):
         from fastapi.testclient import TestClient
 
-        from pipeline_server import app
+        from services.mystery_pipeline import app
 
         client = TestClient(app)
         response = client.post(

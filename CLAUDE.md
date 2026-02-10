@@ -112,9 +112,9 @@ web-admin と web-public で共通するコードは `packages/shared/`（`@ghos
 
 ## Multi-Agent System
 
-2つの独立した ADK パイプラインで構成：
+複数の独立した ADK パイプラインで構成：
 
-### ブログ作成パイプライン（`archive_agents/`）
+### ブログ作成パイプライン（`mystery_agents/`）
 
 | エージェント | 役割 | 入力 | 出力 |
 |------------|------|------|------|
@@ -184,7 +184,7 @@ pending (EN原文 + JA翻訳 両方あり) → (Approve) → published
 
 ```
 1. ブログ記事が公開される（週次）
-2. Podcast パイプライン実行（podcast_main.py）
+2. Podcast パイプライン実行（python -m podcast_agents）
    → Scriptwriter: 週の公開記事から台本生成
    → Producer: TTS で音声生成（MP3）
 3. 生成された MP3 をダウンロード
@@ -232,7 +232,7 @@ pending (EN原文 + JA翻訳 両方あり) → (Approve) → published
 
 ### Agent Workflow
 
-#### ブログ作成パイプライン（`archive_agents/`）
+#### ブログ作成パイプライン（`mystery_agents/`）
 
 ```
 Librarian → Scholar(EN) → Storyteller(EN) → Illustrator → Translator(EN→JA) → Publisher(EN+JA保存) → Firestore
@@ -252,7 +252,7 @@ Firestore (narrative_content) → Scriptwriter → Producer → Firestore (podca
 
 各エージェントは `output_key` を使用してセッション状態にデータを保存：
 
-**ブログパイプライン（`archive_agents`）:**
+**ブログパイプライン（`mystery_agents`）:**
 
 output_key ベース:
 - `collected_documents` - Librarian が収集した資料（デジタルアーカイブ＋Folklore両方を含む）
@@ -323,16 +323,17 @@ tool_context.state ベース（構造化データ、LLM を経由しない正確
 - PHILADELPHIA: PA-215, CHICAGO: IL-312
 - NEW_ORLEANS: LA-504, SAN_FRANCISCO: CA-415
 
-詳細定義: `archive_agents/schemas/mystery_id.py`
+詳細定義: `mystery_agents/schemas/mystery_id.py`
 
 ## ADK 規約・ベストプラクティス
 
 本プロジェクトでは ADK（Agent Development Kit）の規約とベストプラクティスに必ず従うこと。
 
 ### エージェントパッケージ構成
-- 各パイプラインは独立したパッケージ（`archive_agents/`, `podcast_agents/`, `translator_agents/`）として構成する
+- 各パイプラインは独立したパッケージ（`mystery_agents/`, `curator_agents/`, `podcast_agents/`, `translator_agents/`）として構成する
 - パッケージ直下の `agent.py` に `root_agent` 変数を定義する（ADK ローダーの発見規約）
 - `__init__.py` で `from . import agent` をエクスポートする
+- `curator_agents` は `agent.py` / `root_agent` を持たない（単一エージェント定義のみ、`services/curator.py` から直接使用される）
 
 ### レイヤー分離
 - **エージェント定義**（instruction, model, output_key）は各パッケージの `agents/` に配置
@@ -365,21 +366,30 @@ AGENT_INSTRUCTION = """English prompt here..."""
 shared/                       # インフラ共有層
 ├── firestore.py              # Firebase Admin 初期化, Firestore/Storage クライアント
 
-archive_agents/               # ブログ作成パイプライン
+mystery_agents/               # ブログ作成パイプライン（旧 archive_agents）
+├── __main__.py               # python -m mystery_agents エントリポイント
 ├── agent.py                  # root_agent = ghost_commander
 ├── agents/                   # 各エージェント定義
 ├── tools/                    # Publisher 用 Firestore/Storage ツール
 └── utils/                    # PipelineLogger 等
 
+curator_agents/               # テーマ提案エージェント
+├── agents/                   # Curator エージェント定義
+└── tools/                    # Curator 用ツール
+                              # ※ agent.py / root_agent なし（services/curator.py から直接使用）
+
 podcast_agents/               # Podcast 作成パイプライン
+├── __main__.py               # python -m podcast_agents エントリポイント
 ├── agent.py                  # root_agent = podcast_commander
 ├── agents/                   # Scriptwriter, Producer
 └── tools/                    # Podcast 用 Firestore ツール
 
-translator_agents/            # 翻訳パイプライン
-├── agent.py                  # root_agent = translator_commander
-├── agents/                   # Translator
-└── tools/                    # 翻訳用 Firestore ツール
+translator_agents/            # 翻訳エージェント定義
+└── agents/                   # Translator エージェント定義
+
+services/                     # Cloud Run サービスエントリポイント
+├── mystery_pipeline.py       # ブログパイプライン Cloud Run サービス
+└── curator.py                # Curator Cloud Run サービス
 
 packages/shared/              # web-admin / web-public 共有コード (@ghost/shared)
 ├── src/types/                # 型定義（mystery.ts）
@@ -390,9 +400,7 @@ packages/shared/              # web-admin / web-public 共有コード (@ghost/s
 
 web-admin/                    # Next.js 管理画面（日本語表示優先）
 web-public/                   # Next.js 公開サイト（英語表示）
-main.py                       # ブログパイプライン CLI
-podcast_main.py               # Podcast パイプライン CLI
-translate_main.py             # 翻訳パイプライン CLI
+docs/                         # ドキュメント（手順.md 等）
 
 tests/                        # テストスイート
 ├── conftest.py               # pytest fixtures
@@ -434,10 +442,10 @@ pytest tests/integration/ -m integration -v
 pytest tests/eval/ -m adk_eval
 
 # カバレッジ付き
-pytest tests/unit/ --cov=archive_agents --cov=podcast_agents --cov-report=html
+pytest tests/unit/ --cov=mystery_agents --cov=podcast_agents --cov-report=html
 
 # ADK CLI での評価
-adk eval archive_agents tests/eval/eval_sets/
+adk eval mystery_agents tests/eval/eval_sets/
 ```
 
 ### Firebase Emulator Setup
@@ -550,9 +558,9 @@ pytest tests/unit/ -v --tb=short
 
 | 対象コード | テストファイル |
 |-----------|---------------|
-| `archive_agents/schemas/*.py` | `tests/unit/test_schemas.py` |
-| `archive_agents/tools/*.py` | `tests/unit/test_*.py` or `tests/integration/test_*.py` |
-| `archive_agents/utils/*.py` | `tests/unit/test_*.py` |
+| `mystery_agents/schemas/*.py` | `tests/unit/test_schemas.py` |
+| `mystery_agents/tools/*.py` | `tests/unit/test_*.py` or `tests/integration/test_*.py` |
+| `mystery_agents/utils/*.py` | `tests/unit/test_*.py` |
 | `podcast_agents/**/*.py` | `tests/unit/test_*.py` or `tests/integration/test_*.py` |
 | エージェント間連携 | `tests/integration/test_agent_handover.py` |
 | エージェント品質 | `tests/eval/eval_sets/*.json` |
