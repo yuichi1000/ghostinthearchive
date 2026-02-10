@@ -12,8 +12,8 @@ async function MysteryList() {
   let mysteries: Awaited<ReturnType<typeof getPublishedMysteries>> = []
   try {
     mysteries = await getPublishedMysteries(HOMEPAGE_MYSTERY_LIMIT)
-  } catch {
-    // Firestore 接続エラー時は空リストで表示
+  } catch (error) {
+    console.error("[MysteryList] Failed to fetch mysteries:", error)
   }
 
   if (mysteries.length === 0) {
