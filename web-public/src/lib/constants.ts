@@ -1,0 +1,1 @@
+export const HOMEPAGE_MYSTERY_LIMIT = 20
