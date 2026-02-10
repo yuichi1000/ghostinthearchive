@@ -1,5 +1,5 @@
 import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
+import { Footer } from "@ghost/shared/src/components/footer"
 
 export default function AdminLayout({
   children,

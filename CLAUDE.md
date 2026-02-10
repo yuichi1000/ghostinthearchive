@@ -61,6 +61,23 @@ git config core.hooksPath .githooks
 - **ソースコードのコメント**: 日本語で記述する
 - **エージェントプロンプト（instruction）**: 英語で記述する（Prompt Language Policy 参照）
 
+### 共有コード管理（DRY 原則）
+
+web-admin と web-public で共通するコードは `packages/shared/`（`@ghost/shared`）で一元管理する。
+同じコードを2箇所にコピーしない。
+
+**`@ghost/shared` に入れるもの:**
+- 型定義（`types/mystery.ts` 等）
+- Firebase クライアント設定（`lib/firebase/config.ts`）
+- Firestore 読み取りクエリ（`lib/firestore/queries.ts`）
+- ユーティリティ関数（`lib/utils.ts`）
+- 共通 UI コンポーネント（`evidence-block.tsx`, `footer.tsx`, `button.tsx`）
+
+**各アプリに残すもの（アプリ固有）:**
+- web-admin: 書き込み操作（approve, archive 等）、認証（NextAuth）、管理画面コンポーネント
+- web-public: ローカライズ（`localize.ts`）、公開サイト固有コンポーネント
+- ページコンポーネント（`app/` 配下）は常にアプリ固有
+
 ## Tech Stack
 
 - **Infrastructure:** Google Cloud (Cloud Run, Cloud Scheduler)
@@ -363,6 +380,13 @@ translator_agents/            # 翻訳パイプライン
 ├── agent.py                  # root_agent = translator_commander
 ├── agents/                   # Translator
 └── tools/                    # 翻訳用 Firestore ツール
+
+packages/shared/              # web-admin / web-public 共有コード (@ghost/shared)
+├── src/types/                # 型定義（mystery.ts）
+├── src/lib/firebase/         # Firebase クライアント設定
+├── src/lib/firestore/        # Firestore 読み取りクエリ
+├── src/lib/utils.ts          # ユーティリティ（cn 等）
+└── src/components/           # 共通 UI コンポーネント
 
 web-admin/                    # Next.js 管理画面（日本語表示優先）
 web-public/                   # Next.js 公開サイト（英語表示）

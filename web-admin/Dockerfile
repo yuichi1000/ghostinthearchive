@@ -1,14 +1,23 @@
 # Build stage
+# ビルドコンテキスト: monorepo ルート（docker build -f web-admin/Dockerfile .）
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies
-COPY package*.json ./
+# ワークスペースの package.json をコピー（依存解決用）
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json ./packages/shared/
+COPY web-admin/package.json ./web-admin/
+COPY web-public/package.json ./web-public/
+
+# 依存インストール（workspaces で @ghost/shared をローカル解決）
 RUN npm ci
 
-# Copy source and build
-COPY . .
+# ソースコードをコピーしてビルド
+COPY packages/shared/ ./packages/shared/
+COPY web-admin/ ./web-admin/
+
+WORKDIR /app/web-admin
 RUN mkdir -p public
 RUN npm run build
 
@@ -24,13 +33,13 @@ ENV PORT=8080
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy built application
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# standalone 出力をコピー（monorepo 構造が再現される）
+COPY --from=builder /app/web-admin/public ./web-admin/public
+COPY --from=builder --chown=nextjs:nodejs /app/web-admin/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/web-admin/.next/static ./web-admin/.next/static
 
 USER nextjs
 
 EXPOSE 8080
 
-CMD ["node", "server.js"]
+CMD ["node", "web-admin/server.js"]

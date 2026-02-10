@@ -1,44 +1,22 @@
 /**
- * Mysteries Firestore 操作
- * ミステリーデータのCRUD操作を提供
+ * Mysteries Firestore 操作（管理者用）
+ * 書き込み操作と管理者固有の読み取りクエリのみ
+ * 共通の読み取りクエリは @ghost/shared から import
  */
 
 import type {
   FirestoreMystery,
   MysteryStatus,
-  MysteryCardData,
   PodcastStatus,
-} from "@/types/mystery";
+} from "@ghost/shared/src/types/mystery";
+import { docToMystery } from "@ghost/shared/src/lib/firestore/queries";
 
-// Firestore から直接読み取り（エミュレータまたは本番）
+// 共通の読み取りクエリを re-export
+export { getPublishedMysteries, getMysteryById, getPublishedMysteryIds, toCardData } from "@ghost/shared/src/lib/firestore/queries";
 
 // ============================================
-// Firestore関数（モック対応版）
+// 管理者固有のクエリ
 // ============================================
-
-/**
- * 公開済みミステリー一覧を取得
- * 公開サイトのトップページ用
- */
-export async function getPublishedMysteries(
-  maxCount: number = 50
-): Promise<FirestoreMystery[]> {
-  const { collection, getDocs, query, where, orderBy, limit } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("@/lib/firebase/config");
-
-  const db = getFirestoreDb();
-  const mysteriesRef = collection(db, COLLECTIONS.MYSTERIES);
-
-  const q = query(
-    mysteriesRef,
-    where("status", "==", "published" as MysteryStatus),
-    orderBy("publishedAt", "desc"),
-    limit(maxCount)
-  );
-
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => docToMystery(doc.data()));
-}
 
 /**
  * 承認待ちミステリー一覧を取得
@@ -48,7 +26,7 @@ export async function getPendingMysteries(
   maxCount: number = 50
 ): Promise<FirestoreMystery[]> {
   const { collection, getDocs, query, where, orderBy, limit } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("@/lib/firebase/config");
+  const { getFirestoreDb, COLLECTIONS } = await import("@ghost/shared/src/lib/firebase/config");
 
   const db = getFirestoreDb();
   const mysteriesRef = collection(db, COLLECTIONS.MYSTERIES);
@@ -71,7 +49,7 @@ export async function getAllMysteries(
   maxCount: number = 100
 ): Promise<FirestoreMystery[]> {
   const { collection, getDocs, query, orderBy, limit } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("@/lib/firebase/config");
+  const { getFirestoreDb, COLLECTIONS } = await import("@ghost/shared/src/lib/firebase/config");
 
   const db = getFirestoreDb();
   const mysteriesRef = collection(db, COLLECTIONS.MYSTERIES);
@@ -82,25 +60,9 @@ export async function getAllMysteries(
   return snapshot.docs.map((doc) => docToMystery(doc.data()));
 }
 
-/**
- * 単一ミステリーをIDで取得
- */
-export async function getMysteryById(
-  mysteryId: string
-): Promise<FirestoreMystery | null> {
-  const { doc, getDoc } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("@/lib/firebase/config");
-
-  const db = getFirestoreDb();
-  const docRef = doc(db, COLLECTIONS.MYSTERIES, mysteryId);
-  const docSnap = await getDoc(docRef);
-
-  if (!docSnap.exists()) {
-    return null;
-  }
-
-  return docToMystery(docSnap.data());
-}
+// ============================================
+// 書き込み操作
+// ============================================
 
 /**
  * ミステリーを承認（直接公開）
@@ -110,7 +72,7 @@ export async function getMysteryById(
  */
 export async function approveMystery(mysteryId: string): Promise<void> {
   const { doc, updateDoc, Timestamp } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("@/lib/firebase/config");
+  const { getFirestoreDb, COLLECTIONS } = await import("@ghost/shared/src/lib/firebase/config");
 
   const db = getFirestoreDb();
   const docRef = doc(db, COLLECTIONS.MYSTERIES, mysteryId);
@@ -127,7 +89,7 @@ export async function approveMystery(mysteryId: string): Promise<void> {
  */
 export async function archiveMystery(mysteryId: string): Promise<void> {
   const { doc, updateDoc, Timestamp } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("@/lib/firebase/config");
+  const { getFirestoreDb, COLLECTIONS } = await import("@ghost/shared/src/lib/firebase/config");
 
   const db = getFirestoreDb();
   const docRef = doc(db, COLLECTIONS.MYSTERIES, mysteryId);
@@ -139,48 +101,12 @@ export async function archiveMystery(mysteryId: string): Promise<void> {
 }
 
 /**
- * 公開済みミステリーのIDリストを取得
- * generateStaticParams用
- */
-export async function getPublishedMysteryIds(): Promise<string[]> {
-  const { collection, getDocs, query, where } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("@/lib/firebase/config");
-
-  const db = getFirestoreDb();
-  const mysteriesRef = collection(db, COLLECTIONS.MYSTERIES);
-
-  const q = query(
-    mysteriesRef,
-    where("status", "==", "published" as MysteryStatus)
-  );
-
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => doc.id);
-}
-
-/**
- * FirestoreMysteryをMysteryCardDataに変換
- * 一覧表示用の軽量オブジェクト
- */
-export function toCardData(mystery: FirestoreMystery): MysteryCardData {
-  return {
-    mystery_id: mystery.mystery_id,
-    title: mystery.title,
-    summary: mystery.summary,
-    discrepancy_type: mystery.discrepancy_type,
-    confidence_level: mystery.confidence_level,
-    status: mystery.status,
-    createdAt: mystery.createdAt,
-  };
-}
-
-/**
  * Podcast 生成をリクエスト
  * podcast_status を "generating" に更新
  */
 export async function requestPodcast(mysteryId: string): Promise<void> {
   const { doc, updateDoc, Timestamp } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("@/lib/firebase/config");
+  const { getFirestoreDb, COLLECTIONS } = await import("@ghost/shared/src/lib/firebase/config");
 
   const db = getFirestoreDb();
   const docRef = doc(db, COLLECTIONS.MYSTERIES, mysteryId);
@@ -189,35 +115,4 @@ export async function requestPodcast(mysteryId: string): Promise<void> {
     podcast_status: "generating" as PodcastStatus,
     updatedAt: Timestamp.now(),
   });
-}
-
-// ============================================
-// ヘルパー関数
-// ============================================
-
-import { Timestamp, DocumentData } from "firebase/firestore";
-
-/**
- * FirestoreのタイムスタンプをDateに変換
- */
-function convertTimestamp(timestamp: Timestamp | Date | undefined): Date {
-  if (!timestamp) return new Date();
-  if (timestamp instanceof Timestamp) {
-    return timestamp.toDate();
-  }
-  return timestamp;
-}
-
-/**
- * FirestoreドキュメントをFirestoreMysteryに変換
- */
-function docToMystery(docData: DocumentData): FirestoreMystery {
-  return {
-    ...docData,
-    createdAt: convertTimestamp(docData.createdAt),
-    updatedAt: convertTimestamp(docData.updatedAt),
-    publishedAt: docData.publishedAt
-      ? convertTimestamp(docData.publishedAt)
-      : undefined,
-  } as FirestoreMystery;
 }

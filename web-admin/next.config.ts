@@ -2,9 +2,12 @@ import path from "path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Turbopack のルートディレクトリを明示（親ディレクトリの lockfile 誤検知を防止）
+  // @ghost/shared パッケージをトランスパイル
+  transpilePackages: ["@ghost/shared"],
+
+  // Turbopack のルートディレクトリを monorepo ルートに設定（共有パッケージの解決に必要）
   turbopack: {
-    root: path.resolve(__dirname),
+    root: path.resolve(__dirname, ".."),
   },
   // 画像最適化
   images: {
