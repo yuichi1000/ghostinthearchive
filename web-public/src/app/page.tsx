@@ -3,15 +3,17 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Hero } from "@/components/hero"
 import { MysteryCard } from "@/components/mystery-card"
+import { MysteryCardSkeleton } from "@/components/mystery-card-skeleton"
 import { getPublishedMysteries } from "@/lib/firestore/mysteries"
+import { HOMEPAGE_MYSTERY_LIMIT } from "@/lib/constants"
 import { FileStack, Search } from "lucide-react"
 
 async function MysteryList() {
   let mysteries: Awaited<ReturnType<typeof getPublishedMysteries>> = []
   try {
-    mysteries = await getPublishedMysteries(20)
-  } catch {
-    // Firestore 接続エラー時は空リストで表示
+    mysteries = await getPublishedMysteries(HOMEPAGE_MYSTERY_LIMIT)
+  } catch (error) {
+    console.error("[MysteryList] Failed to fetch mysteries:", error)
   }
 
   if (mysteries.length === 0) {
@@ -41,13 +43,7 @@ function MysteryListSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="aged-card letterpress-border rounded-sm p-5 h-64 animate-pulse">
-          <div className="h-4 bg-muted rounded w-1/3 mb-4" />
-          <div className="h-6 bg-muted rounded w-2/3 mb-2" />
-          <div className="h-4 bg-muted rounded w-full mb-2" />
-          <div className="h-4 bg-muted rounded w-4/5 mb-4" />
-          <div className="h-6 bg-muted rounded w-1/4" />
-        </div>
+        <MysteryCardSkeleton key={i} />
       ))}
     </div>
   )
