@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
+import { ResponsiveHeroImage } from "@/components/responsive-hero-image"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { EvidenceBlock } from "@/components/evidence-block"
@@ -96,12 +96,10 @@ export default async function MysteryDetailPage({
           {/* Hero image */}
           {mystery.images?.hero && (
             <div className="mb-12 rounded-sm overflow-hidden border border-border">
-              <Image
-                src={mystery.images.hero}
+              <ResponsiveHeroImage
+                hero={mystery.images.hero}
+                variants={mystery.images.variants}
                 alt={title}
-                width={1200}
-                height={675}
-                className="w-full h-auto"
                 priority
               />
             </div>
