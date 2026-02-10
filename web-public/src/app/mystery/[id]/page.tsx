@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { localizeMystery } from "@/lib/localize"
 
 // SSG: ビルド時に生成されたページ以外は 404
 export const dynamicParams = false
@@ -46,9 +47,7 @@ export async function generateMetadata({
     return { title: "Mystery Not Found | Ghost in the Archive" }
   }
 
-  // Prefer English fields for public display
-  const title = mystery.title_en || mystery.title
-  const summary = mystery.summary_en || mystery.summary
+  const { title, summary } = localizeMystery(mystery)
 
   return {
     title: `${title} | Ghost in the Archive`,
@@ -68,18 +67,13 @@ export default async function MysteryDetailPage({
     notFound()
   }
 
-  // Prefer English fields for public display
-  const title = mystery.title_en || mystery.title
-  const summary = mystery.summary_en || mystery.summary
-  const narrativeContent = mystery.narrative_content_en || mystery.narrative_content
-  const discrepancyDetected = mystery.discrepancy_detected_en || mystery.discrepancy_detected
-  const hypothesis = mystery.hypothesis_en || mystery.hypothesis
-  const alternativeHypotheses = mystery.alternative_hypotheses_en || mystery.alternative_hypotheses
-  const politicalClimate = mystery.historical_context_en?.political_climate || mystery.historical_context?.political_climate
+  const {
+    title, summary, narrativeContent, discrepancyDetected,
+    hypothesis, alternativeHypotheses, politicalClimate, storyHooks,
+  } = localizeMystery(mystery)
 
   const location = mystery.historical_context?.geographic_scope?.join(", ") || ""
   const timePeriod = mystery.historical_context?.time_period || ""
-  const allEvidence = [mystery.evidence_a, mystery.evidence_b, ...mystery.additional_evidence]
 
   return (
     <div className="min-h-screen flex flex-col film-grain">
@@ -271,13 +265,13 @@ export default async function MysteryDetailPage({
             <aside className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
                 {/* Story hooks */}
-                {(mystery.story_hooks_en?.length ?? mystery.story_hooks.length) > 0 && (
+                {storyHooks.length > 0 && (
                   <div className="aged-card letterpress-border rounded-sm p-5">
                     <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-4">
                       Story Angles
                     </h3>
                     <ul className="space-y-2">
-                      {(mystery.story_hooks_en ?? mystery.story_hooks).map((hook, i) => (
+                      {storyHooks.map((hook, i) => (
                         <li key={i} className="text-sm text-gold font-mono">
                           • {hook}
                         </li>
