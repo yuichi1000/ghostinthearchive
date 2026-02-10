@@ -1,6 +1,6 @@
 """Translation Pipeline - CLI Entry Point
 
-Translates a pending mystery article from Japanese to English.
+Translates a mystery article from English to Japanese.
 Reads the article from Firestore, runs Translator, and saves results back.
 
 Usage:
@@ -42,7 +42,7 @@ PIPELINE_TIMEOUT_SECONDS = 600  # 10 minutes
 
 
 async def translate_mystery(mystery_id: str, *, run_id: str | None = None) -> str | None:
-    """Translate a mystery article from Japanese to English.
+    """Translate a mystery article from English to Japanese.
 
     Args:
         mystery_id: The Firestore document ID of the mystery.
@@ -52,7 +52,7 @@ async def translate_mystery(mystery_id: str, *, run_id: str | None = None) -> st
         The pipeline run ID.
     """
     print("=" * 70)
-    print("Ghost in the Archive - Translation Pipeline")
+    print("Ghost in the Archive - Translation Pipeline (EN → JA)")
     print("=" * 70)
     print()
     print(f"Mystery ID: {mystery_id}")
@@ -77,7 +77,19 @@ async def translate_mystery(mystery_id: str, *, run_id: str | None = None) -> st
     if run_id is None:
         run_id = create_pipeline_run("translate", mystery_id=mystery_id)
 
-    # Create runner with session pre-loaded with Japanese content
+    # Build translation input JSON (English fields to translate)
+    translation_input = {
+        "title": mystery.get("title", ""),
+        "summary": mystery.get("summary", ""),
+        "narrative_content": narrative_content,
+        "discrepancy_detected": mystery.get("discrepancy_detected", ""),
+        "hypothesis": mystery.get("hypothesis", ""),
+        "alternative_hypotheses": mystery.get("alternative_hypotheses", []),
+        "political_climate": mystery.get("political_climate", ""),
+        "story_hooks": mystery.get("story_hooks", []),
+    }
+
+    # Create runner
     session_service = InMemorySessionService()
     runner = Runner(
         agent=translator_commander,
@@ -88,37 +100,11 @@ async def translate_mystery(mystery_id: str, *, run_id: str | None = None) -> st
     user_id = "translator"
     session_id = f"translate_{mystery_id}"
 
-    # Set Japanese fields in session state
-    alternative_hypotheses = mystery.get("alternative_hypotheses", [])
-    if isinstance(alternative_hypotheses, list):
-        alternative_hypotheses_str = json.dumps(alternative_hypotheses, ensure_ascii=False)
-    else:
-        alternative_hypotheses_str = str(alternative_hypotheses)
-
-    story_hooks = mystery.get("story_hooks", [])
-    if isinstance(story_hooks, list):
-        story_hooks_str = json.dumps(story_hooks, ensure_ascii=False)
-    else:
-        story_hooks_str = str(story_hooks)
-
     await session_service.create_session(
         app_name="ghost_in_the_archive_translator",
         user_id=user_id,
         session_id=session_id,
-        state={
-            "title": mystery.get("title", ""),
-            "summary": mystery.get("summary", ""),
-            "narrative_content": narrative_content,
-            "discrepancy_detected": mystery.get("discrepancy_detected", ""),
-            "hypothesis": mystery.get("hypothesis", ""),
-            "alternative_hypotheses": alternative_hypotheses_str,
-            "political_climate": mystery.get("political_climate", ""),
-            "story_hooks": story_hooks_str,
-            "evidence_a": json.dumps(mystery.get("evidence_a", {}), ensure_ascii=False),
-            "evidence_b": json.dumps(mystery.get("evidence_b", {}), ensure_ascii=False),
-            "additional_evidence": json.dumps(mystery.get("additional_evidence", []), ensure_ascii=False),
-            "pipeline_log": [],
-        },
+        state={"pipeline_log": []},
     )
 
     # Run the translation pipeline
@@ -147,7 +133,10 @@ async def translate_mystery(mystery_id: str, *, run_id: str | None = None) -> st
                 session_id=session_id,
                 new_message=types.Content(
                     role="user",
-                    parts=[types.Part(text=f"以下の日本語記事を英語に翻訳してください: {title}")],
+                    parts=[types.Part(text=(
+                        f"Translate the following English article fields to Japanese:\n\n"
+                        f"{json.dumps(translation_input, ensure_ascii=False, indent=2)}"
+                    ))],
                 ),
                 run_config=run_config,
             ):
@@ -211,7 +200,7 @@ def main():
     """Main entry point."""
     if len(sys.argv) < 2:
         print("Usage: python translate_main.py <mystery_id>")
-        print('Example: python translate_main.py "MYSTERY-1820-BOSTON-001"')
+        print('Example: python translate_main.py "OCC-MA-617-20260207143025"')
         sys.exit(1)
 
     mystery_id = sys.argv[1]

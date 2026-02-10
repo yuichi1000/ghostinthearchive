@@ -1,5 +1,14 @@
 import type { FirestoreMystery } from "@/types/mystery"
 
+/**
+ * Extracts English display fields from a mystery document.
+ *
+ * English-first convention:
+ * - New documents: base fields (title, summary, etc.) are already in English
+ * - Legacy documents: English content is in *_en fields
+ *
+ * The *_en || base fallback handles both cases correctly.
+ */
 export function localizeMystery(mystery: FirestoreMystery) {
   return {
     title: mystery.title_en || mystery.title,

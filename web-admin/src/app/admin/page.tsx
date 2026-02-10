@@ -37,7 +37,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [actionFeedback, setActionFeedback] = useState<string | null>(null)
   const [themeInput, setThemeInput] = useState("")
-  const [suggestions, setSuggestions] = useState<{ theme: string; description: string }[]>([])
+  const [suggestions, setSuggestions] = useState<{ theme: string; description: string; theme_ja?: string; description_ja?: string }[]>([])
   const [suggestLoading, setSuggestLoading] = useState(false)
   const [pipelineLoading, setPipelineLoading] = useState(false)
 
@@ -72,19 +72,12 @@ export default function AdminPage() {
   const handleApprove = async (id: string) => {
     try {
       await approveMystery(id)
-      // Trigger translation pipeline
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mysteryId: id }),
-      })
-      if (!res.ok) throw new Error("Translation API request failed")
-      setActionFeedback(`Case ${id} approved - translation started`)
+      setActionFeedback(`Case ${id} approved and published`)
       fetchMysteries()
       setTimeout(() => setActionFeedback(null), 3000)
     } catch (error) {
       console.error("Failed to approve:", error)
-      setActionFeedback(`Failed to start translation`)
+      setActionFeedback(`Failed to approve case`)
       setTimeout(() => setActionFeedback(null), 3000)
     }
   }
@@ -236,7 +229,10 @@ export default function AdminPage() {
                   className="text-left p-3 border border-border/50 rounded-sm hover:border-gold/30 hover:bg-gold/5 transition-colors"
                 >
                   <p className="text-sm font-medium text-parchment mb-1">{s.theme}</p>
-                  <p className="text-xs text-muted-foreground">{s.description}</p>
+                  {s.theme_ja && (
+                    <p className="text-xs text-muted-foreground mb-1">{s.theme_ja}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">{s.description_ja || s.description}</p>
                 </button>
               ))}
             </div>
@@ -375,14 +371,14 @@ function AdminMysteryCard({ mystery, onApprove, onArchive, onPodcast }: AdminMys
         <StatusBadge status={mystery.status} />
       </div>
 
-      {/* Title */}
+      {/* Title (Japanese preferred for admin) */}
       <h3 className="font-serif text-lg text-parchment mb-1 leading-tight">
-        {mystery.title}
+        {mystery.title_ja || mystery.title}
       </h3>
 
-      {/* Summary */}
+      {/* Summary (Japanese preferred for admin) */}
       <p className="text-sm text-foreground/80 leading-relaxed mb-4 line-clamp-2">
-        {mystery.summary}
+        {mystery.summary_ja || mystery.summary}
       </p>
 
       {/* Metadata */}
