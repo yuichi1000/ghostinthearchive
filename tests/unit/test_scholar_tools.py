@@ -6,7 +6,7 @@ Tests for saving structured analysis reports to session state via tool_context.
 import json
 from unittest.mock import MagicMock
 
-from archive_agents.tools.scholar_tools import save_structured_report
+from mystery_agents.tools.scholar_tools import save_structured_report
 
 
 class TestSaveStructuredReport:

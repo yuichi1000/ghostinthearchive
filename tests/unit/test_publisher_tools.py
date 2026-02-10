@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 
-from archive_agents.tools.publisher_tools import (
+from mystery_agents.tools.publisher_tools import (
     _cleanup_temp_images,
     _upload_images_internal,
     publish_mystery,
@@ -17,7 +17,7 @@ from archive_agents.tools.publisher_tools import (
 class TestUploadImagesContentType:
     """Tests for upload_images content_type detection."""
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     def test_webp_content_type(self, mock_get_bucket, tmp_path):
         """Should set content_type to image/webp for .webp files."""
         mock_bucket = MagicMock()
@@ -39,7 +39,7 @@ class TestUploadImagesContentType:
             renamed_path, content_type="image/webp"
         )
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     def test_png_content_type(self, mock_get_bucket, tmp_path):
         """Should set content_type to image/png for .png files."""
         mock_bucket = MagicMock()
@@ -65,7 +65,7 @@ class TestUploadImagesContentType:
 class TestUploadImagesRenaming:
     """Tests for upload_images mystery_id-based renaming."""
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     def test_upload_renames_to_mystery_id(self, mock_get_bucket, tmp_path):
         """Should rename original image to {mystery_id}.png on upload."""
         mock_bucket = MagicMock()
@@ -85,7 +85,7 @@ class TestUploadImagesRenaming:
         expected_blob = f"images/{mystery_id}/{mystery_id}.png"
         mock_bucket.blob.assert_called_once_with(expected_blob)
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     def test_upload_renames_variant_to_mystery_id(self, mock_get_bucket, tmp_path):
         """Should rename variant image to {mystery_id}_sm.webp on upload."""
         mock_bucket = MagicMock()
@@ -105,7 +105,7 @@ class TestUploadImagesRenaming:
         expected_blob = f"images/{mystery_id}/{mystery_id}_sm.webp"
         mock_bucket.blob.assert_called_once_with(expected_blob)
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     def test_upload_preserves_extension(self, mock_get_bucket, tmp_path):
         """Should preserve original file extension when renaming."""
         mock_bucket = MagicMock()
@@ -129,7 +129,7 @@ class TestUploadImagesRenaming:
 class TestUploadImagesLabel:
     """Tests for upload_images label field."""
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     def test_upload_returns_label_for_original(self, mock_get_bucket, tmp_path):
         """Should return label 'original' for the original image."""
         mock_bucket = MagicMock()
@@ -147,7 +147,7 @@ class TestUploadImagesLabel:
         assert result_data["status"] == "success"
         assert result_data["uploaded"][0]["label"] == "original"
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     def test_upload_returns_label_for_variant(self, mock_get_bucket, tmp_path):
         """Should return label 'sm' for a _sm variant image."""
         mock_bucket = MagicMock()
@@ -169,7 +169,7 @@ class TestUploadImagesLabel:
 class TestUploadImagesStructured:
     """Tests for upload_images structured images object."""
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     def test_upload_returns_structured_images(self, mock_get_bucket, tmp_path):
         """Should return structured images object with hero and variants."""
         mock_bucket = MagicMock()
@@ -202,7 +202,7 @@ class TestUploadImagesStructured:
         assert "lg" in images["variants"]
         assert "xl" in images["variants"]
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     def test_upload_images_hero_prefers_lg(self, mock_get_bucket, tmp_path):
         """Should use lg variant URL as hero when lg variant exists."""
         mock_bucket = MagicMock()
@@ -294,8 +294,8 @@ def _make_visual_assets_json(tmp_path):
 class TestPublishMysteryImageUpload:
     """Tests for publish_mystery with visual_assets_json integration."""
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
-    @patch("archive_agents.tools.publisher_tools.get_firestore_client")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_images_hero_set_to_lg_variant(
         self, mock_get_db, mock_get_bucket, tmp_path
     ):
@@ -324,8 +324,8 @@ class TestPublishMysteryImageUpload:
         # hero should contain the mystery_id and _lg.webp
         assert "_lg.webp" in saved_data["images"]["hero"]
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
-    @patch("archive_agents.tools.publisher_tools.get_firestore_client")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_images_variants_contain_all_sizes(
         self, mock_get_db, mock_get_bucket, tmp_path
     ):
@@ -354,8 +354,8 @@ class TestPublishMysteryImageUpload:
         assert "lg" in variants
         assert "xl" in variants
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
-    @patch("archive_agents.tools.publisher_tools.get_firestore_client")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_skip_image_processing_when_empty(
         self, mock_get_db, mock_get_bucket
     ):
@@ -379,8 +379,8 @@ class TestPublishMysteryImageUpload:
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert "images" not in saved_data
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
-    @patch("archive_agents.tools.publisher_tools.get_firestore_client")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_mystery_id_matches_between_images_and_firestore(
         self, mock_get_db, mock_get_bucket, tmp_path
     ):
@@ -415,7 +415,7 @@ class TestPublishMysteryImageUpload:
 class TestLocalFileCleanup:
     """Tests for local file cleanup after upload."""
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     def test_local_file_deleted_after_upload(self, mock_get_bucket, tmp_path):
         """Should delete local file after successful upload."""
         mock_bucket = MagicMock()
@@ -435,7 +435,7 @@ class TestLocalFileCleanup:
         renamed_file = tmp_path / f"{mystery_id}.png"
         assert not renamed_file.exists()
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     def test_local_variant_deleted_after_upload(self, mock_get_bucket, tmp_path):
         """Should delete local variant file after successful upload."""
         mock_bucket = MagicMock()
@@ -455,8 +455,8 @@ class TestLocalFileCleanup:
         renamed_file = tmp_path / f"{mystery_id}_sm.webp"
         assert not renamed_file.exists()
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
-    @patch("archive_agents.tools.publisher_tools.get_firestore_client")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_local_files_cleaned_up_via_publish_mystery(
         self, mock_get_db, mock_get_bucket, tmp_path
     ):
@@ -492,8 +492,8 @@ class TestLocalFileCleanup:
 class TestUploadErrorHandling:
     """Tests for _upload_images_internal error handling and logging."""
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
-    @patch("archive_agents.tools.publisher_tools.get_firestore_client")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_publish_mystery_saves_to_firestore_when_image_upload_fails(
         self, mock_get_db, mock_get_bucket, tmp_path
     ):
@@ -521,7 +521,7 @@ class TestUploadErrorHandling:
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert "images" not in saved_data
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     def test_upload_images_internal_logs_on_failure(self, mock_get_bucket, tmp_path, caplog):
         """Should log an error when upload_from_filename fails."""
 
@@ -535,12 +535,12 @@ class TestUploadErrorHandling:
         png_file = tmp_path / "header.png"
         png_file.write_bytes(b"fake png data")
 
-        with caplog.at_level(logging.ERROR, logger="archive_agents.tools.publisher_tools"):
+        with caplog.at_level(logging.ERROR, logger="mystery_agents.tools.publisher_tools"):
             _upload_images_internal("TEST-001", [str(png_file)])
 
         assert any("Network error" in record.message for record in caplog.records)
 
-    @patch("archive_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     def test_partial_upload_failure_does_not_block_others(self, mock_get_bucket, tmp_path):
         """When one file fails to upload, other files should still succeed."""
 
@@ -630,7 +630,7 @@ class TestCleanupTempImages:
         f.write_bytes(b"data")
 
         with patch.object(Path, "unlink", side_effect=PermissionError("denied")):
-            with caplog.at_level(logging.WARNING, logger="archive_agents.tools.publisher_tools"):
+            with caplog.at_level(logging.WARNING, logger="mystery_agents.tools.publisher_tools"):
                 _cleanup_temp_images([f])
 
         assert "Failed to delete temp image" in caplog.text

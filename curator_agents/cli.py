@@ -7,7 +7,7 @@ then runs the Curator agent to generate new theme ideas.
 Outputs JSON to stdout (last line) for consumption by the web API.
 
 Usage:
-    python curator_main.py
+    python -m curator_agents
 """
 
 import asyncio
@@ -17,13 +17,13 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent / ".env")
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from archive_agents.agents.curator import curator_agent
+from .agents.curator import curator_agent
 from shared.firestore import get_firestore_client
 
 
