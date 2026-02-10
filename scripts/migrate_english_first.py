@@ -22,8 +22,6 @@ Usage:
 """
 
 import argparse
-import json
-import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,10 +30,10 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-# Add project root to path
+# プロジェクトルートをパスに追加（shared パッケージの import に必要）
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from shared.firestore import get_firestore_client
+from shared.firestore import get_firestore_client  # noqa: E402
 
 
 # Fields to migrate: (base_field, en_suffix_field, ja_suffix_field)
