@@ -1,9 +1,6 @@
-"""Translator Pipeline Package.
+"""Translator Package.
 
-Provides the translator_commander agent for translating mystery articles
-from Japanese to English.
+Provides the translator_agent LlmAgent for translating mystery content
+from English to Japanese. Used by the blog pipeline (mystery_agents)
+and the curator service.
 """
-
-from . import agent
-
-__all__ = ["agent"]

@@ -111,9 +111,9 @@ case "$MODE" in
         log_info "Pythonエージェントを起動します..."
         # uvがインストールされているか確認
         if command -v uv &> /dev/null; then
-            uv run python main.py "${@:2}"
+            uv run python -m mystery_agents "${@:2}"
         else
-            python main.py "${@:2}"
+            python -m mystery_agents "${@:2}"
         fi
         ;;
 

@@ -20,8 +20,8 @@ class TestPublishMystery:
 
     def test_publish_mystery_success(self, mock_firestore_client, sample_mystery_report_data):
         """publish_mystery should successfully save to Firestore."""
-        with patch("archive_agents.tools.publisher_tools.get_firestore_client", return_value=mock_firestore_client):
-            from archive_agents.tools.publisher_tools import publish_mystery
+        with patch("mystery_agents.tools.publisher_tools.get_firestore_client", return_value=mock_firestore_client):
+            from mystery_agents.tools.publisher_tools import publish_mystery
 
             mystery_json = json.dumps(sample_mystery_report_data)
             result = json.loads(publish_mystery(mystery_json))
@@ -35,8 +35,8 @@ class TestPublishMystery:
 
     def test_publish_mystery_missing_era_city(self, mock_firestore_client):
         """publish_mystery should return error if era/city is missing."""
-        with patch("archive_agents.tools.publisher_tools.get_firestore_client", return_value=mock_firestore_client):
-            from archive_agents.tools.publisher_tools import publish_mystery
+        with patch("mystery_agents.tools.publisher_tools.get_firestore_client", return_value=mock_firestore_client):
+            from mystery_agents.tools.publisher_tools import publish_mystery
 
             mystery_json = json.dumps({"title": "Test", "summary": "Test"})
             result = json.loads(publish_mystery(mystery_json))
@@ -55,8 +55,8 @@ class TestPublishMystery:
         mock_doc.set.side_effect = capture_set
         mock_firestore_client.collection.return_value.document.return_value = mock_doc
 
-        with patch("archive_agents.tools.publisher_tools.get_firestore_client", return_value=mock_firestore_client):
-            from archive_agents.tools.publisher_tools import publish_mystery
+        with patch("mystery_agents.tools.publisher_tools.get_firestore_client", return_value=mock_firestore_client):
+            from mystery_agents.tools.publisher_tools import publish_mystery
 
             mystery_json = json.dumps(sample_mystery_report_data)
             publish_mystery(mystery_json)
@@ -76,8 +76,8 @@ class TestPublishMystery:
         mock_doc.set.side_effect = capture_set
         mock_firestore_client.collection.return_value.document.return_value = mock_doc
 
-        with patch("archive_agents.tools.publisher_tools.get_firestore_client", return_value=mock_firestore_client):
-            from archive_agents.tools.publisher_tools import publish_mystery
+        with patch("mystery_agents.tools.publisher_tools.get_firestore_client", return_value=mock_firestore_client):
+            from mystery_agents.tools.publisher_tools import publish_mystery
 
             sample_mystery_report_data["status"] = "published"
             mystery_json = json.dumps(sample_mystery_report_data)
@@ -87,8 +87,8 @@ class TestPublishMystery:
 
     def test_publish_mystery_invalid_json(self, mock_firestore_client):
         """publish_mystery should handle invalid JSON gracefully."""
-        with patch("archive_agents.tools.publisher_tools.get_firestore_client", return_value=mock_firestore_client):
-            from archive_agents.tools.publisher_tools import publish_mystery
+        with patch("mystery_agents.tools.publisher_tools.get_firestore_client", return_value=mock_firestore_client):
+            from mystery_agents.tools.publisher_tools import publish_mystery
 
             result = json.loads(publish_mystery("invalid json {"))
 
@@ -107,8 +107,8 @@ class TestUploadImages:
             temp_path = f.name
 
         try:
-            with patch("archive_agents.tools.publisher_tools.get_storage_bucket", return_value=mock_storage_bucket):
-                from archive_agents.tools.publisher_tools import upload_images
+            with patch("mystery_agents.tools.publisher_tools.get_storage_bucket", return_value=mock_storage_bucket):
+                from mystery_agents.tools.publisher_tools import upload_images
 
                 result = json.loads(upload_images(
                     "MYSTERY-1842-BOSTON-001",
@@ -125,8 +125,8 @@ class TestUploadImages:
 
     def test_upload_images_file_not_found(self, mock_storage_bucket):
         """upload_images should handle missing files gracefully."""
-        with patch("archive_agents.tools.publisher_tools.get_storage_bucket", return_value=mock_storage_bucket):
-            from archive_agents.tools.publisher_tools import upload_images
+        with patch("mystery_agents.tools.publisher_tools.get_storage_bucket", return_value=mock_storage_bucket):
+            from mystery_agents.tools.publisher_tools import upload_images
 
             result = json.loads(upload_images(
                 "MYSTERY-TEST",
@@ -147,12 +147,12 @@ class TestUploadImages:
         try:
             mock_storage_bucket.name = "test-bucket"
 
-            with patch("archive_agents.tools.publisher_tools.get_storage_bucket", return_value=mock_storage_bucket):
+            with patch("mystery_agents.tools.publisher_tools.get_storage_bucket", return_value=mock_storage_bucket):
                 with patch.dict(os.environ, {"STORAGE_EMULATOR_HOST": "http://localhost:9199"}):
 
                     # Need to reimport to pick up the patched environment
                     import importlib
-                    import archive_agents.tools.publisher_tools as pt
+                    import mystery_agents.tools.publisher_tools as pt
                     importlib.reload(pt)
 
                     result = json.loads(pt.upload_images(
@@ -173,8 +173,8 @@ class TestUploadImages:
             temp_path = f.name
 
         try:
-            with patch("archive_agents.tools.publisher_tools.get_storage_bucket", return_value=mock_storage_bucket):
-                from archive_agents.tools.publisher_tools import upload_images
+            with patch("mystery_agents.tools.publisher_tools.get_storage_bucket", return_value=mock_storage_bucket):
+                from mystery_agents.tools.publisher_tools import upload_images
 
                 # Pass string instead of array
                 result = json.loads(upload_images(
@@ -203,7 +203,7 @@ class TestPublisherToolsWithEmulator:
 
     def test_publish_and_retrieve(self, sample_mystery_report_data):
         """Test full publish cycle with emulator."""
-        from archive_agents.tools.publisher_tools import publish_mystery
+        from mystery_agents.tools.publisher_tools import publish_mystery
         from shared.firestore import get_firestore_client
 
         # Publish
@@ -237,7 +237,7 @@ class TestStorageEmulatorUpload:
 
     def test_upload_single_image_to_emulator(self, tmp_path):
         """Should upload a single image to Storage Emulator successfully."""
-        from archive_agents.tools.publisher_tools import _upload_images_internal
+        from mystery_agents.tools.publisher_tools import _upload_images_internal
 
         png_file = tmp_path / "header.png"
         png_file.write_bytes(b"fake png data for emulator test")
@@ -250,7 +250,7 @@ class TestStorageEmulatorUpload:
 
     def test_upload_with_variants_to_emulator(self, tmp_path):
         """Should upload original + 4 variants to Storage Emulator."""
-        from archive_agents.tools.publisher_tools import _upload_images_internal
+        from mystery_agents.tools.publisher_tools import _upload_images_internal
 
         # Create original + all 4 variants
         original = tmp_path / "header.png"

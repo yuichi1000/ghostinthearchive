@@ -1,7 +1,7 @@
 """Unit tests for bilingual keyword expansion logic."""
 
 
-from archive_agents.tools.bilingual_search import (
+from mystery_agents.tools.bilingual_search import (
     KEYWORD_PAIRS,
     expand_keywords_bilingual,
     get_all_keywords,

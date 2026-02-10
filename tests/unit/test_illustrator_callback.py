@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from archive_agents.agents.illustrator import (
+from mystery_agents.agents.illustrator import (
     MAX_GENERATE_IMAGE_CALLS,
     _STATE_KEY,
     _limit_generate_image_calls,

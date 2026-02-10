@@ -4,7 +4,7 @@ Generates a podcast (script + audio) for a published mystery article.
 Reads the article from Firestore, runs Scriptwriter → Producer, and saves results back.
 
 Usage:
-    python podcast_main.py <mystery_id>
+    python -m podcast_agents <mystery_id>
 
 Also serves as the entry point for Cloud Run Jobs.
 """
@@ -15,15 +15,15 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent / ".env")
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 from google.adk.agents.run_config import RunConfig
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from podcast_agents.agent import podcast_commander
-from podcast_agents.tools.firestore_tools import (
+from .agent import podcast_commander
+from .tools.firestore_tools import (
     load_mystery,
     save_podcast_result,
     set_podcast_status,
@@ -206,8 +206,8 @@ async def generate_podcast(mystery_id: str, *, run_id: str | None = None) -> str
 def main():
     """Main entry point."""
     if len(sys.argv) < 2:
-        print("Usage: python podcast_main.py <mystery_id>")
-        print('Example: python podcast_main.py "MYSTERY-1820-BOSTON-001"')
+        print("Usage: python -m podcast_agents <mystery_id>")
+        print('Example: python -m podcast_agents "MYSTERY-1820-BOSTON-001"')
         sys.exit(1)
 
     mystery_id = sys.argv[1]
