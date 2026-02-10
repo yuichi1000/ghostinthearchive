@@ -152,6 +152,13 @@ export interface FirestoreMystery extends MysteryReport {
     hero?: string;
     thumbnail?: string;
     inserts?: string[];
+    /** レスポンシブ画像バリアント（WebP） */
+    variants?: {
+      sm?: string;
+      md?: string;
+      lg?: string;
+      xl?: string;
+    };
   };
   /** パイプライン実行ログ */
   pipeline_log?: AgentLogEntry[];
