@@ -54,6 +54,13 @@ git config core.hooksPath .githooks
 
 これにより main ブランチへの直接コミットがブロックされる。
 
+### 日本語使用ルール
+
+- **コミットメッセージ**: 日本語で記述する
+- **プルリクエスト**: タイトル・説明文は日本語で記述する
+- **ソースコードのコメント**: 日本語で記述する
+- **エージェントプロンプト（instruction）**: 英語で記述する（Prompt Language Policy 参照）
+
 ## Tech Stack
 
 - **Infrastructure:** Google Cloud (Cloud Run, Cloud Scheduler)
