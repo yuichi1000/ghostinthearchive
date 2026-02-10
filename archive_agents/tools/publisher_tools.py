@@ -124,10 +124,10 @@ def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
             logger.error("Failed to upload %s: %s", blob_name, e)
             continue
 
-        # Build public URL
-        storage_host = os.environ.get("STORAGE_EMULATOR_HOST", "")
-        if storage_host:
-            public_url = f"{storage_host}/v0/b/{bucket.name}/o/{blob_name.replace('/', '%2F')}?alt=media"
+        # Build public URL (use STORAGE_EMULATOR_PUBLIC_HOST for browser-accessible URL)
+        storage_public_host = os.environ.get("STORAGE_EMULATOR_PUBLIC_HOST", "") or os.environ.get("STORAGE_EMULATOR_HOST", "")
+        if storage_public_host:
+            public_url = f"{storage_public_host}/v0/b/{bucket.name}/o/{blob_name.replace('/', '%2F')}?alt=media"
         else:
             public_url = f"https://storage.googleapis.com/{bucket.name}/{blob_name}"
 
@@ -312,9 +312,10 @@ def upload_images(mystery_id: str, image_paths: str) -> str:
             uploaded_files.append(p)
 
             # エミュレータではmake_public()が使えないため、URLを直接構築
-            storage_host = os.environ.get("STORAGE_EMULATOR_HOST", "")
-            if storage_host:
-                public_url = f"{storage_host}/v0/b/{bucket.name}/o/{blob_name.replace('/', '%2F')}?alt=media"
+            # STORAGE_EMULATOR_PUBLIC_HOST: ブラウザからアクセス可能なURL用ホスト
+            storage_public_host = os.environ.get("STORAGE_EMULATOR_PUBLIC_HOST", "") or os.environ.get("STORAGE_EMULATOR_HOST", "")
+            if storage_public_host:
+                public_url = f"{storage_public_host}/v0/b/{bucket.name}/o/{blob_name.replace('/', '%2F')}?alt=media"
             else:
                 public_url = f"https://storage.googleapis.com/{bucket.name}/{blob_name}"
 

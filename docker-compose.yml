@@ -30,6 +30,8 @@ services:
       - GOOGLE_CLOUD_PROJECT=ghostinthearchive
       - GOOGLE_GENAI_USE_VERTEXAI=TRUE
       - GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/adc.json
-      - FIRESTORE_EMULATOR_HOST=
+      - FIRESTORE_EMULATOR_HOST=host.docker.internal:8080
+      - STORAGE_EMULATOR_HOST=http://host.docker.internal:9199
+      - STORAGE_EMULATOR_PUBLIC_HOST=http://localhost:9199
     volumes:
       - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/keys/adc.json:ro
