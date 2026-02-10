@@ -2,6 +2,7 @@ import Link from "next/link"
 import { FileText, MapPin, Calendar } from "lucide-react"
 import type { FirestoreMystery } from "@/types/mystery"
 import { cn } from "@/lib/utils"
+import { localizeMystery } from "@/lib/localize"
 
 interface MysteryCardProps {
   mystery: FirestoreMystery
@@ -9,9 +10,7 @@ interface MysteryCardProps {
 }
 
 export function MysteryCard({ mystery, className }: MysteryCardProps) {
-  // Prefer English fields for public display
-  const title = mystery.title_en || mystery.title
-  const summary = mystery.summary_en || mystery.summary
+  const { title, summary } = localizeMystery(mystery)
 
   const location = mystery.historical_context?.geographic_scope?.[0] || ""
   const timePeriod = mystery.historical_context?.time_period || ""
