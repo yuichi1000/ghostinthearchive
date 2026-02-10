@@ -85,9 +85,26 @@ case "$MODE" in
         ;;
 
     "web")
-        log_info "Next.js開発サーバーを起動します..."
-        cd web
-        npm run dev
+        log_info "web-public + web-admin 開発サーバーを起動します..."
+
+        # web-public (port 3000)
+        (cd web-public && npm run dev) &
+        PUBLIC_PID=$!
+
+        # web-admin (port 3001)
+        (cd web-admin && npm run dev -- -p 3001) &
+        ADMIN_PID=$!
+
+        sleep 3
+        log_success "開発サーバーが起動しました"
+        echo ""
+        echo "  - Public:  http://localhost:3000"
+        echo "  - Admin:   http://localhost:3001/admin"
+        echo ""
+        echo "終了するには Ctrl+C を押してください"
+        echo ""
+
+        wait $PUBLIC_PID
         ;;
 
     "agent")
@@ -101,15 +118,20 @@ case "$MODE" in
         ;;
 
     "all")
-        log_info "Firebase エミュレータ + Next.js を同時起動します..."
+        log_info "Firebase エミュレータ + web-public + web-admin を同時起動します..."
 
         # Firebase エミュレータをバックグラウンドで起動
         start_emulator
 
-        # Next.js開発サーバーをバックグラウンドで起動
-        log_info "Next.js開発サーバーを起動中..."
-        (cd web && npm run dev) &
-        NEXTJS_PID=$!
+        # web-public (port 3000)
+        log_info "web-public 開発サーバーを起動中..."
+        (cd web-public && npm run dev) &
+        PUBLIC_PID=$!
+
+        # web-admin (port 3001)
+        log_info "web-admin 開発サーバーを起動中..."
+        (cd web-admin && npm run dev -- -p 3001) &
+        ADMIN_PID=$!
 
         # 起動を待つ
         sleep 3
@@ -117,8 +139,10 @@ case "$MODE" in
         log_success "開発環境が起動しました"
         echo ""
         echo "  - Emulator UI: http://localhost:4000"
-        echo "  - Next.js:     http://localhost:3000"
-        echo "  - Admin:       http://localhost:3000/admin"
+        echo "  - Firestore:   localhost:8080"
+        echo "  - Storage:     localhost:9199"
+        echo "  - Public:      http://localhost:3000"
+        echo "  - Admin:       http://localhost:3001/admin"
         echo ""
         echo "パイプラインを実行するには別ターミナルで:"
         echo "  ./scripts/dev.sh agent \"調査クエリ\""
@@ -127,16 +151,16 @@ case "$MODE" in
         echo ""
 
         # プロセスを監視
-        wait $NEXTJS_PID
+        wait $PUBLIC_PID
         ;;
 
     "help"|"-h"|"--help")
         echo "Usage: $0 [mode] [args...]"
         echo ""
         echo "Modes:"
-        echo "  all      - Firebase エミュレータ + Next.js を同時起動（デフォルト）"
+        echo "  all      - Firebase エミュレータ + web-public + web-admin を同時起動（デフォルト）"
         echo "  emulator - Firebase エミュレータのみ起動"
-        echo "  web      - Next.js開発サーバーのみ起動"
+        echo "  web      - web-public + web-admin 開発サーバーを起動"
         echo "  agent    - Pythonエージェントを実行（引数でクエリ指定可）"
         echo "  help     - このヘルプを表示"
         echo ""
