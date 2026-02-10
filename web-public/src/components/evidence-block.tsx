@@ -18,21 +18,13 @@ export function EvidenceBlock({ evidence, label, className }: EvidenceBlockProps
       )}
 
       <blockquote
-        className="relative bg-paper p-5 border border-border rounded-sm transform rotate-[-0.3deg] hover:rotate-0 transition-transform duration-300 shadow-lg"
-        style={{
-          background: "linear-gradient(135deg, #2A2520 0%, #3D3830 50%, #2A2520 100%)",
-        }}
+        className="relative bg-gradient-to-br from-paper via-paper-light to-paper p-5 border border-border rounded-sm transform rotate-[-0.3deg] hover:rotate-0 transition-transform duration-300 shadow-lg"
       >
         {/* Top edge wear effect */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-b from-parchment/10 to-transparent" />
 
         {/* Corner fold effect */}
-        <div
-          className="absolute top-0 right-0 w-6 h-6"
-          style={{
-            background: "linear-gradient(135deg, transparent 50%, #1A1A1A 50%)",
-          }}
-        />
+        <div className="absolute top-0 right-0 w-6 h-6 corner-fold" />
 
         {/* Date badge + Quote marks row */}
         <div className="flex items-start justify-between mb-1">
