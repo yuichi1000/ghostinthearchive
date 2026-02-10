@@ -1,10 +1,10 @@
 import { Suspense } from "react"
 import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
+import { Footer } from "@ghost/shared/src/components/footer"
 import { Hero } from "@/components/hero"
 import { MysteryCard } from "@/components/mystery-card"
 import { MysteryCardSkeleton } from "@/components/mystery-card-skeleton"
-import { getPublishedMysteries } from "@/lib/firestore/mysteries"
+import { getPublishedMysteries } from "@ghost/shared/src/lib/firestore/queries"
 import { HOMEPAGE_MYSTERY_LIMIT } from "@/lib/constants"
 import { FileStack, Search, ShieldAlert } from "lucide-react"
 

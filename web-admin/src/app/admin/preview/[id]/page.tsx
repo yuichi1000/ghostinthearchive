@@ -1,8 +1,8 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
-import { EvidenceBlock } from "@/components/evidence-block"
+import { Footer } from "@ghost/shared/src/components/footer"
+import { EvidenceBlock } from "@ghost/shared/src/components/evidence-block"
 import { getMysteryById } from "@/lib/firestore/mysteries"
 import {
   ArrowLeft,

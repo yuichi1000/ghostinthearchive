@@ -1,7 +1,7 @@
 "use client"
 
-import { cn } from "@/lib/utils"
-import type { AgentLogEntry } from "@/types/mystery"
+import { cn } from "@ghost/shared/src/lib/utils"
+import type { AgentLogEntry } from "@ghost/shared/src/types/mystery"
 import { CheckCircle, XCircle, Loader2 } from "lucide-react"
 
 interface PipelineSummaryProps {

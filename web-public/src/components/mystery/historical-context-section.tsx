@@ -1,5 +1,5 @@
 import { BookOpen } from "lucide-react"
-import type { HistoricalContext } from "@/types/mystery"
+import type { HistoricalContext } from "@ghost/shared/src/types/mystery"
 
 interface HistoricalContextSectionProps {
   historicalContext: HistoricalContext
