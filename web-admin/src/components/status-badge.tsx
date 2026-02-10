@@ -1,7 +1,7 @@
 import React from "react"
-import { cn } from "@/lib/utils"
-import type { DiscrepancyType, ConfidenceLevel, MysteryStatus } from "@/types/mystery"
-import { DISCREPANCY_TYPE_LABELS } from "@/types/mystery"
+import { cn } from "@ghost/shared/src/lib/utils"
+import type { DiscrepancyType, ConfidenceLevel, MysteryStatus } from "@ghost/shared/src/types/mystery"
+import { DISCREPANCY_TYPE_LABELS } from "@ghost/shared/src/types/mystery"
 import { Clock, Ghost, FileQuestion, AlertTriangle, MapPin, User, CheckCircle, XCircle, Clock3, Languages } from "lucide-react"
 
 // Discrepancy type badge

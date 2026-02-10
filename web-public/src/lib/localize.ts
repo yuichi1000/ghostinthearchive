@@ -1,4 +1,4 @@
-import type { FirestoreMystery } from "@/types/mystery"
+import type { FirestoreMystery } from "@ghost/shared/src/types/mystery"
 
 /**
  * Extracts English display fields from a mystery document.

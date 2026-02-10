@@ -1,0 +1,38 @@
+# web-admin Docker ビルド用（ビルドコンテキスト: monorepo ルート）
+.git
+.github
+.githooks
+.pytest_cache
+.venv
+__pycache__
+node_modules
+*.pyc
+.env
+.env.local
+.firebase
+
+# Python パイプライン（不要）
+archive_agents/
+podcast_agents/
+translator_agents/
+shared/
+tests/
+*.py
+
+# Terraform（不要）
+terraform/
+
+# web-public ソース（package.json のみ必要）
+web-public/src/
+web-public/.next/
+web-public/out/
+web-public/public/
+web-public/next.config.ts
+web-public/tsconfig.json
+web-public/postcss.config.mjs
+web-public/components.json
+web-public/cloudbuild.yaml
+
+# web-admin ビルド成果物
+web-admin/.next/
+web-admin/node_modules/
