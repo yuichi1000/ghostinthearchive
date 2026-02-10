@@ -21,6 +21,13 @@ const nextConfig: NextConfig = {
         port: "9199",
         pathname: "/v0/b/**",
       },
+      // 開発環境: Docker コンテナ経由の Storage エミュレータ URL
+      {
+        protocol: "http",
+        hostname: "host.docker.internal",
+        port: "9199",
+        pathname: "/v0/b/**",
+      },
     ],
     minimumCacheTTL: 86400, // 24時間（ISRと整合）
     formats: ["image/avif", "image/webp"],
