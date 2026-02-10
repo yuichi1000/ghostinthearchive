@@ -3,12 +3,12 @@
  * 開発用のダミーミステリーデータをFirestoreに登録
  *
  * 使用方法:
- *   cd web && npx tsx ../scripts/seed-firestore.ts
+ *   cd web-admin && npx tsx ../scripts/seed-firestore.ts
  */
 
 import { initializeApp, cert, getApps } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
-import type { FirestoreMystery } from "../web/src/types/mystery";
+import type { FirestoreMystery } from "../web-admin/src/types/mystery";
 
 // Firebase Admin SDK初期化
 if (getApps().length === 0) {
