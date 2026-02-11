@@ -16,10 +16,11 @@ export type DiscrepancyType =
 export type ConfidenceLevel = "high" | "medium" | "low";
 
 /** ソースタイプ */
-export type SourceType = "newspaper";
+export type SourceType = "newspaper" | "loc_digital" | "dpla" | "nypl"
+  | "pares" | "internet_archive" | "ddb";
 
 /** ソース言語 */
-export type SourceLanguage = "en" | "es";
+export type SourceLanguage = "en" | "es" | "de" | "fr" | "nl" | "pt";
 
 /** ミステリーのステータス */
 export type MysteryStatus = "pending" | "translating" | "published" | "archived" | "error";
@@ -160,6 +161,10 @@ export interface FirestoreMystery extends MysteryReport {
       xl?: string;
     };
   };
+  /** 多言語 Scholar 分析結果 (言語コード → 分析テキスト) */
+  multilingual_analysis?: Record<string, string>;
+  /** 分析に使用された言語コードのリスト */
+  languages_analyzed?: string[];
   /** パイプライン実行ログ */
   pipeline_log?: AgentLogEntry[];
   /** ポッドキャスト脚本 */
@@ -252,8 +257,10 @@ export const CONFIDENCE_LEVEL_LABELS: Record<ConfidenceLevel, string> = {
  * エージェント名の日本語ラベルマッピング
  */
 export const AGENT_NAME_LABELS: Record<string, string> = {
+  theme_analyzer: "テーマ分析",
   librarian: "資料収集",
   scholar: "学際分析",
+  cross_reference_scholar: "統合分析",
   storyteller: "物語生成",
   scriptwriter: "脚本作成",
   illustrator: "画像生成",

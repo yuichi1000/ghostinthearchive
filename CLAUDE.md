@@ -115,6 +115,8 @@ web-admin と web-public で共通するコードは `packages/shared/`（`@ghos
   - Phase 1（30件〜）: 検索バー + 人気タグ表示
   - Phase 2（50件〜）: Era/地域ファセットフィルタ
   - Phase 3（100件〜）: ページネーション
+- [ ] Europeana API キー取得後の再統合（europeana.py 復元 + 疎通テスト）
+- [ ] Gallica SRU API 統合（gallica.py 新規作成）
 
 ## Multi-Agent System
 
