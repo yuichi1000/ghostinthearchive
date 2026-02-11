@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(node_modules/**)",
+      "Read(.venv/**)",
+      "Read(terraform/.terraform/**)",
+      "Read(web-public/out/**)",
+      "Read(web-public/.firebase/**)",
+      "Read(web-admin/.next/**)",
+      "Read(web-public/.next/**)",
+      "Read(__pycache__/**)",
+      "Read(.pytest_cache/**)",
+      "Read(.ruff_cache/**)",
+      "Read(ghostinthearchive.egg-info/**)",
+      "Read(.DS_Store)",
+      "Read(*.tsbuildinfo)"
+    ],
+    "ask": [
+      "Read(logs/**)",
+      "Read(.adk/**)",
+      "Read(uv.lock)",
+      "Read(package-lock.json)"
+    ]
+  }
+}
