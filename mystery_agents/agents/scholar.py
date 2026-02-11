@@ -55,8 +55,9 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 #
 # ## 構造化レポートの保存（必須）
 # 分析完了後、`save_structured_report` ツールを必ず呼び出す。
-# classification, state_code, area_code, title, summary, evidence_a/b,
+# classification, state_code, area_code, title, summary, evidence_a/b, additional_evidence,
 # hypothesis, alternative_hypotheses 等の構造化JSONを渡す。
+# additional_evidence の各アイテムは evidence_a/b と同じ構造（source_url を含む）で記述する。
 # これにより下流エージェント（Translator, Publisher）が正確な構造化データを受け取れる。
 #
 # （以下、英語プロンプトの日本語訳は英語版と等価）
@@ -238,7 +239,17 @@ accurate structured data without relying on text parsing.
     "location_context": "Location"
   },
   "evidence_b": { "..." },
-  "additional_evidence": [],
+  "additional_evidence": [
+    {
+      "source_type": "newspaper",
+      "source_language": "en",
+      "source_title": "Source name",
+      "source_date": "YYYY-MM-DD",
+      "source_url": "URL",
+      "relevant_excerpt": "Excerpt",
+      "location_context": "Location"
+    }
+  ],
   "hypothesis": "Primary hypothesis in English",
   "alternative_hypotheses": ["Alt 1", "Alt 2"],
   "confidence_level": "high|medium|low",
