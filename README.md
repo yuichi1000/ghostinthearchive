@@ -58,14 +58,14 @@ Firestore (narrative_content) → Scriptwriter → Producer → Firestore
 - **AI/ML:** Vertex AI (Gemini Pro, Imagen 3, Chirp 3, Text-to-Speech)
 - **Agent Framework:** Agent Development Kit (ADK)
 - **Data:** Cloud Storage, Firestore
-- **Web:** Next.js (ISR: `revalidate = 86400`)
+- **Web:** Next.js
 
 ### Web Architecture
 
-- 公開ページは ISR（Incremental Static Regeneration）でキャッシュ（24時間）
-- 24時間以内のアクセスは Firestore にアクセスせずキャッシュを返す
-- 記事公開・承認時は `/api/revalidate` で即座にキャッシュ破棄
-- 管理画面はクライアントサイドレンダリング
+- **web-public**: SSG（Static Site Generation）で動作（`output: "export"`）
+  - ビルド時に全ページを静的 HTML として生成
+  - 記事更新時は Cloud Build で再ビルド・再デプロイ
+- **web-admin**: クライアントサイドレンダリング（毎回 Firestore アクセス）
 
 ## 5. プロジェクト構成 (Project Structure)
 
