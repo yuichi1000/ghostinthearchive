@@ -61,6 +61,11 @@ git config core.hooksPath .githooks
 - **ソースコードのコメント**: 日本語で記述する
 - **エージェントプロンプト（instruction）**: 英語で記述する（Prompt Language Policy 参照）
 
+### Claude Code ファイル除外設定
+
+- Claude Code が読み取る必要のないファイル・フォルダは `.claude/settings.json` の `permissions.deny` で管理する
+- 新たにビルド出力、キャッシュ、大容量の生成物などが追加された場合は `.claude/settings.json` の deny ルールも合わせて更新する
+
 ### 共有コード管理（DRY 原則）
 
 web-admin と web-public で共通するコードは `packages/shared/`（`@ghost/shared`）で一元管理する。
