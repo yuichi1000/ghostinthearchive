@@ -127,7 +127,8 @@ web-admin と web-public で共通するコードは `packages/shared/`（`@ghos
 | エージェント | 役割 | 入力 | 出力 |
 |------------|------|------|------|
 | **Librarian** | 資料調査・収集（デジタルアーカイブ＋民俗資料） | 調査クエリ | collected_documents |
-| **Scholar** | 歴史学×民俗学×文化人類学の学際分析（英語出力） | collected_documents | mystery_report |
+| **Scholar** | 歴史学×民俗学×文化人類学の学際分析＋討論（英語出力） | collected_documents | scholar_analysis（分析モード）/ debate_whiteboard への追記（討論モード） |
+| **Armchair Polymath** | 言語横断統合分析（書斎の安楽椅子学者） | scholar_analysis + debate_whiteboard | mystery_report |
 | **Storyteller** | 歴史的厳密さと怪異的情緒の融合（英語ブログ記事） | mystery_report | creative_content (英語ブログ原稿) |
 | **Illustrator** | トップ画像生成 | creative_content | visual_assets (Imagen 3 によるトップ画像1枚) |
 | **Translator** | 英語→日本語翻訳（管理画面用） | creative_content + structured_report | translation_ja (日本語翻訳) |
@@ -218,11 +219,18 @@ pending (EN原文 + JA翻訳 両方あり) → (Approve) → published
 - 検索対象: デジタルアーカイブ（LOC, DPLA, NYPL, Internet Archive）＋ **Folklore, Legends, Myths, Local Beliefs**
 - 歴史的記録と民俗資料の両方を収集し、Fact と Folklore の素材を揃える
 
-**Scholar（学者）**
+**Scholar（学者）** — 分析モード + 討論モード
+- **分析モード**: 各言語の一次資料を分析し、矛盾・アノマリーを特定（output_key: `scholar_analysis_{lang}`）
+- **討論モード**: LoopAgent 内で他言語の分析を読み、反論・補強・統合提案をホワイトボードに記録（`append_to_whiteboard` ツール使用）
 - 矛盾検出: 日付の不一致、人物の消失、記録の欠落など
 - **民俗学的アノマリーの特定**: 説明のつかない現象、地元の禁忌、繰り返される怪異パターン
 - **事実と伝説の相関分析**: 実際の事件がどのように伝説化したか、逆に伝説の背後にある史実は何か
 - **文化人類学的分析**: 儀礼・社会構造・権力関係・物質文化・口承伝統・異文化接触の視点
+
+**Armchair Polymath（安楽椅子の博学者）**
+- CrossReferenceScholar の後継。書斎から他者の研究成果を俯瞰し、辛辣かつ学術的権威をもって統合分析を行う
+- 全言語の Scholar 分析結果（`scholar_analysis_*`）と討論ホワイトボード（`debate_whiteboard`）を読み、言語横断の矛盾・相関を特定
+- `save_structured_report` を必ず呼び出し、`mystery_report` を出力（下流互換維持）
 
 **Storyteller（語り部）**
 - **歴史的厳密さ**と**怪異的情緒**を両立させたブログ記事の作成
@@ -243,10 +251,15 @@ pending (EN原文 + JA翻訳 両方あり) → (Approve) → published
 #### ブログ作成パイプライン（`mystery_agents/`）
 
 ```
-Librarian → Scholar(EN) → Storyteller(EN) → Illustrator → Translator(EN→JA) → Publisher(EN+JA保存) → Firestore
+ThemeAnalyzer → ParallelLibrarians → ParallelScholars(分析)
+  → DebateLoop(LoopAgent, max_iterations=2) → ArmchairPolymath
+  → Storyteller(EN) → Illustrator → Translator(EN→JA) → Publisher(EN+JA保存) → Firestore
 ```
 
-Translator はブログパイプライン内で実行される。Approve 時は翻訳不要（ステータス変更のみ）。
+- DebateLoop は有意な分析が2言語以上ある場合のみ実行される
+- Scholar は分析モードと討論モードの2つを持つ（単一ファクトリ関数 `create_scholar(lang, mode)`）
+- 討論モードの Scholar は `append_to_whiteboard` ツールで共有ホワイトボードに発言を記録
+- Translator はブログパイプライン内で実行される。Approve 時は翻訳不要（ステータス変更のみ）
 
 #### Podcast 作成パイプライン（`podcast_agents/`）
 
@@ -263,8 +276,9 @@ Firestore (narrative_content) → Scriptwriter → Producer → Firestore (podca
 **ブログパイプライン（`mystery_agents`）:**
 
 output_key ベース:
-- `collected_documents` - Librarian が収集した資料（デジタルアーカイブ＋Folklore両方を含む）
-- `mystery_report` - Scholar の分析レポート（Folkloric Context + Anthropological Context を含む）
+- `collected_documents_{lang}` - Librarian が収集した資料（デジタルアーカイブ＋Folklore両方を含む）
+- `scholar_analysis_{lang}` - Scholar（分析モード）の分析レポート
+- `mystery_report` - Armchair Polymath の統合分析レポート（下流互換維持）
 - `creative_content` - Storyteller の英語ブログ原稿
 - `visual_assets` - Illustrator のトップ画像アセット
 - `translation_result` - Translator の翻訳結果（JSON形式）
@@ -272,7 +286,8 @@ output_key ベース:
 
 tool_context.state ベース（構造化データ、LLM を経由しない正確なデータ）:
 - `raw_search_results` - Librarian ツールが直接書き込む検索結果リスト（URL, 日付, タイトル等）
-- `structured_report` - Scholar の `save_structured_report` ツールが書き込む構造化分析JSON
+- `debate_whiteboard` - Scholar（討論モード）が `append_to_whiteboard` で累積書き込みする討論記録（`""` で初期化）
+- `structured_report` - Armchair Polymath の `save_structured_report` ツールが書き込む構造化分析JSON
 - `image_metadata` - Illustrator の `generate_image` ツールが書き込む画像メタデータ
 - `translation_ja` - Translator の翻訳結果（`*_ja` フィールド）
 
@@ -288,7 +303,8 @@ tool_context.state ベース（構造化データ、LLM を経由しない正確
 ### Models
 
 - **Librarian:** gemini-3-pro-preview (資料検索)
-- **Scholar:** gemini-3-pro-preview (学際的分析)
+- **Scholar:** gemini-3-pro-preview (学際的分析 + 討論)
+- **Armchair Polymath:** gemini-3-pro-preview (言語横断統合分析)
 - **Storyteller:** gemini-3-pro-preview (ブログ記事生成)
 - **Translator:** gemini-3-pro-preview (英日翻訳)
 - **Scriptwriter:** gemini-3-pro-preview (ポッドキャスト脚本)
