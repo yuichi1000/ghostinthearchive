@@ -60,6 +60,18 @@ def save_language_selection(
 
     tool_context.state["selected_languages"] = valid
 
+    # 未選択言語のセッション変数にデフォルト値を設定
+    # Debater の instruction が全言語の {scholar_analysis_*} を参照するため、
+    # 未設定だと ADK の template 展開で KeyError になる
+    unselected = ALLOWED_LANGUAGES - set(valid)
+    for lang in unselected:
+        tool_context.state[f"collected_documents_{lang}"] = (
+            f"Not available: {lang} was not selected for this investigation."
+        )
+        tool_context.state[f"scholar_analysis_{lang}"] = (
+            f"Not available: {lang} was not selected for this investigation."
+        )
+
     return json.dumps(
         {
             "status": "success",
