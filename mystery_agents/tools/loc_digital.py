@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
+from .search_utils import build_search_query
 
 BASE_URL = "https://www.loc.gov/search/"
 MIN_REQUEST_DELAY = 3.0
@@ -43,7 +44,7 @@ def search_loc_digital(
     Returns:
         Dict with documents, total_hits, error keys.
     """
-    search_text = " OR ".join(kw for kw in keywords if kw.strip())
+    search_text = build_search_query(keywords)
     if not search_text:
         return {"documents": [], "total_hits": 0, "error": "No keywords provided"}
 

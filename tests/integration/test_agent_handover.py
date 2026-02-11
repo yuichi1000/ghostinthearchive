@@ -390,3 +390,46 @@ class TestDebateLoopConfiguration:
         from mystery_agents.agent import debate_loop
 
         assert len(debate_loop.sub_agents) == 6
+
+
+class TestPipelineGateCallbacks:
+    """Tests for pipeline gate callbacks on block agents."""
+
+    def test_scholar_block_has_gate(self):
+        """scholar_block should have a before_agent_callback."""
+        from mystery_agents.agent import scholar_block
+
+        assert scholar_block.before_agent_callback is not None
+        assert callable(scholar_block.before_agent_callback)
+
+    def test_polymath_block_has_gate(self):
+        """polymath_block should have a before_agent_callback."""
+        from mystery_agents.agent import polymath_block
+
+        assert polymath_block.before_agent_callback is not None
+        assert callable(polymath_block.before_agent_callback)
+
+    def test_storyteller_block_has_gate(self):
+        """storyteller_block should have a before_agent_callback."""
+        from mystery_agents.agent import storyteller_block
+
+        assert storyteller_block.before_agent_callback is not None
+        assert callable(storyteller_block.before_agent_callback)
+
+    def test_post_story_block_has_gate(self):
+        """post_story_block should have a before_agent_callback."""
+        from mystery_agents.agent import post_story_block
+
+        assert post_story_block.before_agent_callback is not None
+        assert callable(post_story_block.before_agent_callback)
+
+    def test_ghost_commander_contains_gate_blocks(self):
+        """ghost_commander should contain the gated block agents."""
+        from mystery_agents.agent import ghost_commander
+
+        sub_agent_names = [repr(a) for a in ghost_commander.sub_agents]
+        sub_agents_str = " ".join(sub_agent_names)
+        assert "scholar_block" in sub_agents_str
+        assert "polymath_block" in sub_agents_str
+        assert "storyteller_block" in sub_agents_str
+        assert "post_story_block" in sub_agents_str

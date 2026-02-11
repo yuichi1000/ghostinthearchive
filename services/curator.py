@@ -23,6 +23,7 @@ from google.genai import types
 from curator_agents.agents.curator import curator_agent
 from translator_agents.agents.translator import translator_agent
 from shared.firestore import get_firestore_client
+from shared.pipeline_failure import get_recent_failures
 
 app = FastAPI()
 
@@ -51,6 +52,15 @@ async def run_curator() -> dict:
         else "(None - no themes have been investigated yet)"
     )
 
+    # 最近失敗したテーマを取得し、Curator に渡す
+    recent_failures = get_recent_failures(limit=20)
+    failed_themes = list({f["theme"] for f in recent_failures if f.get("theme")})
+    failed_themes_text = (
+        "\n".join(f"- {t}" for t in failed_themes)
+        if failed_themes
+        else "(None)"
+    )
+
     session_service = InMemorySessionService()
     runner = Runner(
         agent=curator_agent,
@@ -65,7 +75,10 @@ async def run_curator() -> dict:
         app_name="ghost_in_the_archive_curator",
         user_id=user_id,
         session_id=session_id,
-        state={"existing_titles": titles_text},
+        state={
+            "existing_titles": titles_text,
+            "failed_themes": failed_themes_text,
+        },
     )
 
     result_text = ""
