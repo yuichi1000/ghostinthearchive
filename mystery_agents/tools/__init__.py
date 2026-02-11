@@ -9,6 +9,8 @@ from .dpla import search_dpla
 from .internet_archive import search_internet_archive
 from .loc_digital import search_loc_digital
 from .nypl_digital import search_nypl
+from .ddb import search_ddb
+
 # Librarian Agent LLM-facing tools
 from .librarian_tools import (
     get_available_keywords,
@@ -30,6 +32,9 @@ from .scholar_tools import (
     save_structured_report,
 )
 
+# ThemeAnalyzer Agent LLM-facing tools
+from .theme_analyzer_tools import save_language_selection
+
 __all__ = [
     # Low-level
     "KEYWORD_PAIRS",
@@ -40,6 +45,7 @@ __all__ = [
     "search_dpla",
     "search_nypl",
     "search_internet_archive",
+    "search_ddb",
     # Librarian LLM tools
     "search_newspapers",
     "search_archives",
@@ -55,4 +61,6 @@ __all__ = [
     "list_available_results",
     "save_mystery_report",
     "save_structured_report",
+    # ThemeAnalyzer LLM tools
+    "save_language_selection",
 ]

@@ -80,7 +80,9 @@ async def investigate(query: str, *, run_id: str | None = None) -> str | None:
     accumulated_text: list[str] = []
     current_log_index: int | None = None
 
-    run_config = RunConfig(max_llm_calls=50)
+    # 多言語パイプライン: 3言語 × (Librarian ~5回 + Scholar ~3回)
+    # + ThemeAnalyzer 1回 + CrossRef 3回 + 既存4エージェント ≈ 70、余裕を持って 120
+    run_config = RunConfig(max_llm_calls=120)
 
     try:
         async with asyncio.timeout(PIPELINE_TIMEOUT_SECONDS):
@@ -96,7 +98,14 @@ async def investigate(query: str, *, run_id: str | None = None) -> str | None:
             ):
                 # Detect agent transitions via event.author
                 author = getattr(event, "author", None)
-                if author and author != "ghost_commander" and author != current_agent_name:
+                # オーケストレーター/パラレルエージェントはログ対象外
+                _SKIP_AUTHORS = {
+                    "ghost_commander",
+                    "parallel_librarians",
+                    "parallel_scholars",
+                    "parallel_debaters",
+                }
+                if author and author not in _SKIP_AUTHORS and author != current_agent_name:
                     # Complete previous agent
                     if current_agent_name:
                         summary = " ".join(accumulated_text)[:200]
@@ -176,7 +185,7 @@ async def investigate(query: str, *, run_id: str | None = None) -> str | None:
     for log in logger.get_logs():
         icon = "✓" if log["status"] == "completed" else "✗" if log["status"] == "error" else "⋯"
         dur = f'{log["duration_seconds"]}s' if log["duration_seconds"] else "running"
-        print(f"  {icon} {log['agent_name']:12s} {dur:>8s}")
+        print(f"  {icon} {log['agent_name']:28s} {dur:>8s}")
 
     return run_id
 

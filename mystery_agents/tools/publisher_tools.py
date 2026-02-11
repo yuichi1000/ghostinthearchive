@@ -217,6 +217,16 @@ def publish_mystery(
                     if key in structured_report:
                         data[key] = structured_report[key]
 
+            # 各言語の Scholar 分析を multilingual_analysis として保存
+            multilingual = {}
+            for lang in ["en", "de", "es", "fr", "nl", "pt"]:
+                analysis = tool_context.state.get(f"scholar_analysis_{lang}")
+                if analysis and "INSUFFICIENT_DATA" not in str(analysis):
+                    multilingual[lang] = str(analysis)
+            if multilingual:
+                data["multilingual_analysis"] = multilingual
+                data["languages_analyzed"] = list(multilingual.keys())
+
             # Overlay Japanese translation from session state
             translation_ja = tool_context.state.get("translation_ja")
             if translation_ja and isinstance(translation_ja, dict):

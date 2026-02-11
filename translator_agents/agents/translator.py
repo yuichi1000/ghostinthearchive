@@ -158,7 +158,7 @@ Output ONLY the JSON. Do NOT include any other text, explanations, or commentary
 
 translator_agent = LlmAgent(
     name="translator",
-    model="gemini-3-pro-preview",
+    model="gemini-2.5-flash",
     description=(
         "Translates English mystery articles and theme suggestions into Japanese. "
         "Maintains historical terminology accuracy and Fact × Folklore nuance."

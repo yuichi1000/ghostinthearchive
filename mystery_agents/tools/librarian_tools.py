@@ -13,6 +13,7 @@ from google.adk.tools.tool_context import ToolContext
 
 from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
+from .ddb import search_ddb
 from .dpla import search_dpla
 from .internet_archive import search_internet_archive
 from .loc_digital import search_loc_digital
@@ -203,11 +204,15 @@ def save_search_results(
     )
 
 
+# 言語フィルタをサポートするソース
+_LANGUAGE_FILTER_SOURCES = {"dpla", "internet_archive"}
+
 _ARCHIVE_SOURCES = {
     "loc": ("LOC Digital Collections", search_loc_digital),
     "dpla": ("DPLA", search_dpla),
     "nypl": ("NYPL Digital Collections", search_nypl),
     "internet_archive": ("Internet Archive", search_internet_archive),
+    "ddb": ("Deutsche Digitale Bibliothek", search_ddb),
 }
 
 
@@ -217,38 +222,48 @@ def search_archives(
     date_end: str = "1899",
     sources: Optional[str] = None,
     max_results: int = 10,
+    language: Optional[str] = None,
     tool_context: Optional[ToolContext] = None,
 ) -> str:
     """Search multiple public archive APIs simultaneously.
 
-    Searches across LOC Digital Collections, DPLA, NYPL, and Internet Archive.
+    Searches across LOC Digital Collections, DPLA, NYPL, Internet Archive,
+    and Deutsche Digitale Bibliothek.
     Results are merged and returned as a unified JSON response.
 
-    Automatically expands keywords to include both English and Spanish variants,
-    searching each language separately and merging results.
+    When no language filter is specified, automatically expands keywords to
+    include both English and Spanish variants. When a language is specified,
+    keywords are passed as-is and the language filter is applied to APIs that
+    support it.
 
     Args:
-        keywords: Comma-separated search keywords (automatically expanded to bilingual)
+        keywords: Comma-separated search keywords
         date_start: Start year (default: 1800)
         date_end: End year (default: 1899)
-        sources: Comma-separated source names to search (default: all).
-                 Options: loc, dpla, nypl, internet_archive
+        sources: Comma-separated source names to search (default: all US sources).
+                 Options: loc, dpla, nypl, internet_archive, ddb
         max_results: Max results per source (default: 10)
+        language: Optional ISO 639-1 language code (en, de, fr, es, nl, pt).
+                  When specified, applies language filter to supported APIs
+                  and skips bilingual expansion.
 
     Returns:
         JSON string with merged results from all sources.
     """
     keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
-    # Expand keywords to bilingual (English + Spanish)
-    expanded = expand_keywords_bilingual(keyword_list)
-    en_keywords = expanded["en"]
-    es_keywords = expanded["es"]
+    # 言語指定がある場合はバイリンガル展開をスキップ
+    if language:
+        keyword_groups = [keyword_list]
+    else:
+        expanded = expand_keywords_bilingual(keyword_list)
+        keyword_groups = [expanded["en"], expanded["es"]]
 
     if sources:
         source_keys = [s.strip().lower() for s in sources.split(",") if s.strip()]
     else:
-        source_keys = list(_ARCHIVE_SOURCES.keys())
+        # デフォルトは既存の US ソースのみ（後方互換性維持）
+        source_keys = ["loc", "dpla", "nypl", "internet_archive"]
 
     all_docs = []
     source_results = {}
@@ -256,7 +271,7 @@ def search_archives(
     seen_urls = set()
     fallback_used = False
 
-    def _search_source(search_fn, kw_list):
+    def _search_source(search_fn, kw_list, source_key):
         """Search a single source with given keywords, collecting results."""
         docs = []
         hits = 0
@@ -264,12 +279,16 @@ def search_archives(
         if not kw_list:
             return docs, hits, err
         try:
-            result = search_fn(
-                keywords=kw_list,
-                date_start=date_start,
-                date_end=date_end,
-                max_results=max_results,
-            )
+            kwargs = {
+                "keywords": kw_list,
+                "date_start": date_start,
+                "date_end": date_end,
+                "max_results": max_results,
+            }
+            # 言語フィルタをサポートする API にのみ language を渡す
+            if language and source_key in _LANGUAGE_FILTER_SOURCES:
+                kwargs["language"] = language
+            result = search_fn(**kwargs)
             hits = result.get("total_hits", 0)
             err = result.get("error")
             for doc in result.get("documents", []):
@@ -291,29 +310,25 @@ def search_archives(
         source_hits = 0
         source_docs = []
 
-        # Search English and Spanish separately, then merge
-        for kw_list in [en_keywords, es_keywords]:
-            docs, hits, err = _search_source(search_fn, kw_list)
+        # 各キーワードグループで検索してマージ
+        for kw_list in keyword_groups:
+            docs, hits, err = _search_source(search_fn, kw_list, key)
             source_docs.extend(docs)
             source_hits += hits
             if err:
                 errors[key] = err
 
-        # Fallback: if no results and multiple keywords, try each individually
-        if not source_docs and len(en_keywords) > 1:
+        # フォールバック: 結果なし & 複数キーワードの場合、個別に検索
+        first_group = keyword_groups[0] if keyword_groups else []
+        if not source_docs and len(first_group) > 1:
             fallback_used = True
-            for kw in en_keywords:
-                docs, hits, err = _search_source(search_fn, [kw])
-                source_docs.extend(docs)
-                source_hits += hits
-                if err:
-                    errors[key] = err
-            for kw in es_keywords:
-                docs, hits, err = _search_source(search_fn, [kw])
-                source_docs.extend(docs)
-                source_hits += hits
-                if err:
-                    errors[key] = err
+            for kw_group in keyword_groups:
+                for kw in kw_group:
+                    docs, hits, err = _search_source(search_fn, [kw], key)
+                    source_docs.extend(docs)
+                    source_hits += hits
+                    if err:
+                        errors[key] = err
 
         all_docs.extend(source_docs)
         source_results[key] = {
@@ -322,7 +337,9 @@ def search_archives(
             "documents_returned": len(source_docs),
         }
 
-    all_keywords_used = en_keywords + es_keywords
+    all_keywords_used = []
+    for kw_group in keyword_groups:
+        all_keywords_used.extend(kw_group)
 
     # Build warnings for missing API keys
     warnings = []
@@ -346,9 +363,11 @@ def search_archives(
 
     # Save raw search results to session state for downstream agents
     if tool_context is not None:
-        existing = tool_context.state.get("raw_search_results", [])
+        # 言語指定がある場合は言語別キーに保存
+        state_key = f"raw_search_results_{language}" if language else "raw_search_results"
+        existing = tool_context.state.get(state_key, [])
         existing.append(result)
-        tool_context.state["raw_search_results"] = existing
+        tool_context.state[state_key] = existing
 
     return json.dumps(result, ensure_ascii=False, indent=2)
 
