@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
+from .search_utils import build_search_query
 
 BASE_URL = "https://api.repo.nypl.org/api/v2/items/search"
 MIN_REQUEST_DELAY = 1.0
@@ -48,7 +49,7 @@ def search_nypl(
     if not api_token:
         return {"documents": [], "total_hits": 0, "error": "NYPL_API_TOKEN not set"}
 
-    search_text = " OR ".join(kw for kw in keywords if kw.strip())
+    search_text = build_search_query(keywords)
     if not search_text:
         return {"documents": [], "total_hits": 0, "error": "No keywords provided"}
 

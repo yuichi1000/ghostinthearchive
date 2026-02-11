@@ -319,6 +319,7 @@ def search_archives(
                 errors[key] = err
 
         # フォールバック: 結果なし & 複数キーワードの場合、個別に検索
+        # 結果が見つかり次第、早期終了する
         first_group = keyword_groups[0] if keyword_groups else []
         if not source_docs and len(first_group) > 1:
             fallback_used = True
@@ -329,6 +330,10 @@ def search_archives(
                     source_hits += hits
                     if err:
                         errors[key] = err
+                    if source_docs:
+                        break
+                if source_docs:
+                    break
 
         all_docs.extend(source_docs)
         source_results[key] = {

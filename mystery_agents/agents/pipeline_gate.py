@@ -1,0 +1,140 @@
+"""パイプラインゲートコールバック。
+
+前段エージェントの出力を確認し、有意なデータがない場合に
+後続エージェントをスキップして無駄なトークン消費を防ぐ。
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING, Optional
+
+from google.genai import types
+
+if TYPE_CHECKING:
+    from google.adk.agents.callback_context import CallbackContext
+
+logger = logging.getLogger(__name__)
+
+# 失敗マーカー
+_FAILURE_MARKERS = frozenset({
+    "NO_DOCUMENTS_FOUND",
+    "INSUFFICIENT_DATA",
+    "NO_CONTENT",
+    "Not available",
+})
+
+
+def _is_meaningful(value: str) -> bool:
+    """セッション状態の値が有意なデータを含むか判定する。"""
+    if not value:
+        return False
+    text = str(value)
+    return not any(marker in text for marker in _FAILURE_MARKERS)
+
+
+def _log_and_record_failure(callback_context: CallbackContext, stage: str, message: str) -> None:
+    """パイプライン失敗をログに記録し、Firestore にも書き込む。"""
+    logger.warning("Pipeline gate [%s]: %s", stage, message)
+    try:
+        from shared.pipeline_failure import log_pipeline_failure
+
+        theme = callback_context.state.get("investigation_query", "unknown")
+        run_id = callback_context.state.get("pipeline_run_id")
+        log_pipeline_failure(
+            theme=str(theme),
+            stage=stage,
+            reason=message,
+            run_id=str(run_id) if run_id else None,
+        )
+    except Exception:
+        # Firestore 書き込み失敗はパイプラインをブロックしない
+        logger.debug("Failed to log pipeline failure to Firestore", exc_info=True)
+
+
+def make_scholar_gate():
+    """全 Librarian が失敗した場合に ParallelScholars をスキップ。"""
+
+    def gate(callback_context: CallbackContext) -> Optional[types.Content]:
+        selected = callback_context.state.get("selected_languages", ["en"])
+        if not isinstance(selected, list):
+            selected = ["en"]
+
+        for lang in selected:
+            docs = callback_context.state.get(f"collected_documents_{lang}", "")
+            if _is_meaningful(docs):
+                return None  # 有意なデータあり → 実行
+
+        message = (
+            "INSUFFICIENT_DATA: All Librarians returned no documents. "
+            "Pipeline terminated to conserve resources."
+        )
+        _log_and_record_failure(callback_context, "librarian", message)
+        return types.Content(
+            parts=[types.Part(text=message)],
+            role="model",
+        )
+
+    return gate
+
+
+def make_polymath_gate():
+    """全 Scholar が失敗した場合に ArmchairPolymath をスキップ。"""
+
+    def gate(callback_context: CallbackContext) -> Optional[types.Content]:
+        selected = callback_context.state.get("selected_languages", ["en"])
+        if not isinstance(selected, list):
+            selected = ["en"]
+
+        for lang in selected:
+            analysis = callback_context.state.get(f"scholar_analysis_{lang}", "")
+            if _is_meaningful(analysis):
+                return None
+
+        message = (
+            "INSUFFICIENT_DATA: No meaningful Scholar analyses available. "
+            "Pipeline terminated."
+        )
+        _log_and_record_failure(callback_context, "scholar", message)
+        return types.Content(
+            parts=[types.Part(text=message)],
+            role="model",
+        )
+
+    return gate
+
+
+def make_storyteller_gate():
+    """mystery_report が空なら Storyteller をスキップ。"""
+
+    def gate(callback_context: CallbackContext) -> Optional[types.Content]:
+        report = callback_context.state.get("mystery_report", "")
+        if _is_meaningful(report):
+            return None
+
+        message = "NO_CONTENT: No mystery report available. Pipeline terminated."
+        _log_and_record_failure(callback_context, "polymath", message)
+        return types.Content(
+            parts=[types.Part(text=message)],
+            role="model",
+        )
+
+    return gate
+
+
+def make_post_story_gate():
+    """creative_content が空なら Illustrator/Translator/Publisher をスキップ。"""
+
+    def gate(callback_context: CallbackContext) -> Optional[types.Content]:
+        content = callback_context.state.get("creative_content", "")
+        if _is_meaningful(content):
+            return None
+
+        message = "NO_CONTENT: No story content available. Skipped."
+        _log_and_record_failure(callback_context, "storyteller", message)
+        return types.Content(
+            parts=[types.Part(text=message)],
+            role="model",
+        )
+
+    return gate
