@@ -99,6 +99,35 @@ class TestSaveLanguageSelection:
         assert "fr" in selected
 
 
+    def test_unselected_languages_get_default_state(self):
+        """未選択言語の collected_documents_* と scholar_analysis_* にデフォルト値が設定される。"""
+        ctx = self._make_tool_context()
+        save_language_selection('["en", "es"]', ctx)
+
+        # 選択された言語にはデフォルト値が設定されない
+        assert "collected_documents_en" not in ctx.state
+        assert "collected_documents_es" not in ctx.state
+        assert "scholar_analysis_en" not in ctx.state
+        assert "scholar_analysis_es" not in ctx.state
+
+        # 未選択言語にはデフォルト値が設定される
+        for lang in ("de", "fr", "nl", "pt"):
+            assert f"collected_documents_{lang}" in ctx.state
+            assert f"scholar_analysis_{lang}" in ctx.state
+            assert "Not available" in ctx.state[f"collected_documents_{lang}"]
+            assert "Not available" in ctx.state[f"scholar_analysis_{lang}"]
+
+    def test_all_languages_selected_no_defaults(self):
+        """全言語選択時（MAX_LANGUAGES制限後）、制限外のみデフォルト値が設定される。"""
+        ctx = self._make_tool_context()
+        save_language_selection('["en", "de", "es", "fr", "nl", "pt"]', ctx)
+
+        selected = ctx.state["selected_languages"]
+        unselected = ALLOWED_LANGUAGES - set(selected)
+        for lang in unselected:
+            assert f"scholar_analysis_{lang}" in ctx.state
+
+
 class TestAllowedLanguages:
     """Tests for language configuration constants."""
 
