@@ -12,6 +12,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
+
+from shared.model_config import create_pro_model
 from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.tool_context import ToolContext
 
@@ -166,7 +168,7 @@ Do NOT include any text other than the JSON (no explanations, comments, etc.).
 
 illustrator_agent = LlmAgent(
     name="illustrator",
-    model="gemini-3-pro-preview",
+    model=create_pro_model(),
     description=(
         "Reads the Storyteller's blog article and generates a single hero image using Imagen 3. "
         "Uses black & white photograph style for Fact-based articles and "

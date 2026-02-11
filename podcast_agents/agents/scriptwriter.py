@@ -12,6 +12,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
+from shared.model_config import create_pro_model
+
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 # === 日本語訳 ===
@@ -168,7 +170,7 @@ Host: [Closing - end with the mystery still unresolved]
 
 scriptwriter_agent = LlmAgent(
     name="scriptwriter",
-    model="gemini-3-pro-preview",
+    model=create_pro_model(),
     description=(
         "Scriptwriter agent that creates podcast scripts based on the Storyteller's blog articles. "
         "Generates scripts optimized for audio content delivery."

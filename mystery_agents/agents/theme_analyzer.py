@@ -2,9 +2,12 @@
 
 調査テーマを分析し、どの言語圏の一次資料を調査すべきかを判定する。
 軽量な分類タスクのため gemini-2.5-flash を使用。
+モデル設定は shared/model_config.py で一元管理（429 リトライ付き）。
 """
 
 from google.adk.agents import LlmAgent
+
+from shared.model_config import create_flash_model
 
 from ..tools.theme_analyzer_tools import save_language_selection
 
@@ -83,7 +86,7 @@ If the theme has no clear non-English cultural indicators, select **["en", "es"]
 
 theme_analyzer_agent = LlmAgent(
     name="theme_analyzer",
-    model="gemini-2.5-flash",
+    model=create_flash_model(),
     description=(
         "Analyzes investigation themes to determine which language/cultural spheres "
         "are relevant for multilingual archive research. Selects target languages "

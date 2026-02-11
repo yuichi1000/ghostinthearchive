@@ -302,15 +302,19 @@ tool_context.state ベース（構造化データ、LLM を経由しない正確
 
 ### Models
 
-- **Librarian:** gemini-3-pro-preview (資料検索)
+全モデルは `shared/model_config.py` 経由で `HttpRetryOptions`（指数バックオフ + ジッター）付きで構成される。
+ADK はデフォルトでリトライしないため、明示的な設定が必須。
+
+- **ThemeAnalyzer:** gemini-2.5-flash (テーマ分析・言語選択)
+- **Librarian:** gemini-2.5-flash (資料検索)
 - **Scholar:** gemini-3-pro-preview (学際的分析 + 討論)
 - **Armchair Polymath:** gemini-3-pro-preview (言語横断統合分析)
 - **Storyteller:** gemini-3-pro-preview (ブログ記事生成)
-- **Translator:** gemini-3-pro-preview (英日翻訳)
+- **Translator:** gemini-2.5-flash (英日翻訳)
 - **Scriptwriter:** gemini-3-pro-preview (ポッドキャスト脚本)
 - **Illustrator:** gemini-3-pro-preview + Imagen 3 (トップ画像生成)
 - **Producer:** gemini-3-pro-preview + Chirp 3 / TTS (音声生成)
-- **Publisher:** gemini-3-pro-preview (データ整理・公開)
+- **Publisher:** gemini-2.5-flash (データ整理・公開)
 
 ## Mystery ID 命名規則
 
@@ -389,6 +393,7 @@ AGENT_INSTRUCTION = """English prompt here..."""
 ```
 shared/                       # インフラ共有層
 ├── firestore.py              # Firebase Admin 初期化, Firestore/Storage クライアント
+├── model_config.py           # LLM モデル設定（リトライ付き Gemini ファクトリ）
 
 mystery_agents/               # ブログ作成パイプライン（旧 archive_agents）
 ├── __main__.py               # python -m mystery_agents エントリポイント

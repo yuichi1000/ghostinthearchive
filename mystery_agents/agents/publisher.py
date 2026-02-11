@@ -14,6 +14,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
+from shared.model_config import create_flash_model
+
 from ..tools.publisher_tools import publish_mystery
 
 load_dotenv(Path(__file__).parent.parent / ".env")  # mystery_agents/.env
@@ -180,7 +182,7 @@ This is the raw search metadata collected by the English Librarian. Save it as-i
 
 publisher_agent = LlmAgent(
     name="publisher",
-    model="gemini-2.5-flash",
+    model=create_flash_model(),
     description=(
         "Content manager agent that receives all assets and saves them to Firestore. "
         "Saves both English (base fields) and Japanese (*_ja fields) content."
