@@ -27,7 +27,6 @@ class SourceType(str, Enum):
     NYPL = "nypl"
     PARES = "pares"
     INTERNET_ARCHIVE = "internet_archive"
-    EUROPEANA = "europeana"
     DDB = "ddb"
 
 

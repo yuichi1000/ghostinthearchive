@@ -35,7 +35,7 @@ class TestSourceEnums:
         """SourceType enum should have all archive source types."""
         expected_types = [
             "newspaper", "loc_digital", "dpla", "nypl", "pares",
-            "internet_archive", "europeana", "ddb",
+            "internet_archive", "ddb",
         ]
         actual_types = [st.value for st in SourceType]
         assert set(expected_types) == set(actual_types)
