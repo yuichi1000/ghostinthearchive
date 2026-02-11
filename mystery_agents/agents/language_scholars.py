@@ -12,6 +12,8 @@ mode="analysis" で分析モード、mode="debate" で討論モードのエー�
 
 from google.adk.agents import LlmAgent
 
+from shared.model_config import create_pro_model
+
 from ..tools.debate_tools import append_to_whiteboard
 from .language_gate import make_debate_gate, make_language_gate
 
@@ -285,7 +287,7 @@ def create_scholar(lang_code: str, mode: str = "analysis") -> LlmAgent:
         instruction = _BASE_SCHOLAR_INSTRUCTION.format(**config)
         return LlmAgent(
             name=f"scholar_{lang_code}",
-            model="gemini-3-pro-preview",
+            model=create_pro_model(),
             description=(
                 f"Analyzes materials from the {config['language_name']} cultural perspective. "
                 f"Identifies discrepancies, folkloric anomalies, and anthropological insights "
@@ -303,7 +305,7 @@ def create_scholar(lang_code: str, mode: str = "analysis") -> LlmAgent:
         )
         return LlmAgent(
             name=f"scholar_{lang_code}_debate",
-            model="gemini-3-pro-preview",
+            model=create_pro_model(),
             description=(
                 f"Debates from the {config['language_name']} cultural perspective. "
                 f"Challenges, corroborates, and synthesizes findings from other Scholars "

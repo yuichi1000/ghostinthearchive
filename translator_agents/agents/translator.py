@@ -16,6 +16,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
+from shared.model_config import create_flash_model
+
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 # === 日本語訳 ===
@@ -158,7 +160,7 @@ Output ONLY the JSON. Do NOT include any other text, explanations, or commentary
 
 translator_agent = LlmAgent(
     name="translator",
-    model="gemini-2.5-flash",
+    model=create_flash_model(),
     description=(
         "Translates English mystery articles and theme suggestions into Japanese. "
         "Maintains historical terminology accuracy and Fact × Folklore nuance."

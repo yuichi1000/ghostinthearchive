@@ -14,6 +14,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
+from shared.model_config import create_pro_model
+
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 # === 日本語訳 ===
@@ -228,7 +230,7 @@ Channels: Stereo
 
 producer_agent = LlmAgent(
     name="producer",
-    model="gemini-3-pro-preview",
+    model=create_pro_model(),
     description=(
         "Audio producer agent that receives podcast scripts and generates "
         "bilingual (Japanese/English) audio files using Chirp 3 / TTS."

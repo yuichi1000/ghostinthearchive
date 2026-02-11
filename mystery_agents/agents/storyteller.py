@@ -16,6 +16,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
+from shared.model_config import create_pro_model
+
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 # === 日本語訳 ===
@@ -156,7 +158,7 @@ Output the narrative text in Markdown format.
 
 storyteller_agent = LlmAgent(
     name="storyteller",
-    model="gemini-3-pro-preview",
+    model=create_pro_model(),
     description=(
         "Creative agent that weaves narratives fusing historical rigor with eerie atmosphere. "
         "Receives the Mystery Report (including Folkloric Context) and generates "
