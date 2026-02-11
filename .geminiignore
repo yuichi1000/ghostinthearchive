@@ -1,82 +1,10 @@
 # ===================================
 # .geminiignore
-# Gemini CLI がスキャン対象から除外するファイル・ディレクトリ
-# .gitignore をベースに、git 管理外のビルド成果物・キャッシュを追加
+# Gemini CLI 固有の除外・許可設定
+# ※ .gitignore は自動的に尊重されるため重複記載しない
 # ===================================
 
-# ----- .gitignore と同一 -----
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Virtual environment
-.venv/
-venv/
-env/
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-/lib/
-/lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Data directory
-data/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Logs
-*.log
-
-# ADK auto-generated
-.adk/
-
-# Node.js
-node_modules/
-
-# Next.js
-.next/
-next-env.d.ts
-
-# Firebase Emulator data
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
-storage-debug.log
-
-# ----- Gemini CLI 固有の除外対象 -----
+# ----- Gemini CLI 固有の除外対象（.gitignore に含まれないもの） -----
 
 # Terraform プロバイダキャッシュ
 terraform/.terraform/
@@ -92,3 +20,11 @@ web-public/out/
 
 # Claude Code 設定
 .claude/
+
+# ----- .gitignore の除外をオーバーライド（Gemini に参照を許可） -----
+
+# ログファイル（デバッグ時に有用）
+!*.log
+
+# ADK 成果物（エージェント状態の確認に有用）
+!.adk/
