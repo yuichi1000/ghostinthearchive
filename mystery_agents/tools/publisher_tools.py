@@ -291,6 +291,11 @@ def publish_mystery(
         # Ensure required list fields exist
         data.setdefault("additional_evidence", [])
         data["additional_evidence"] = data["additional_evidence"][:5]
+
+        # additional_evidence の source_url 欠落チェック
+        for i, ev in enumerate(data.get("additional_evidence", [])):
+            if not ev.get("source_url"):
+                logger.warning("additional_evidence[%d] missing source_url, title=%s", i, ev.get("source_title", "unknown"))
         data.setdefault("alternative_hypotheses", [])
         data.setdefault("research_questions", [])
         data.setdefault("story_hooks", [])
