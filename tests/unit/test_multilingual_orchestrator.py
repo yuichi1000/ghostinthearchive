@@ -5,9 +5,7 @@ ADK の BaseAgent/ParallelAgent はモックして、ロジック部分のみ検
 """
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from mystery_agents.agents.multilingual_orchestrator import MultilingualOrchestrator
 
@@ -20,7 +18,7 @@ def _make_mock_agent(name: str):
     async def mock_run_async(ctx):
         # 空のイベントストリーム
         return
-        yield  # noqa: unreachable — AsyncGenerator として認識させる
+        yield  # noqa: F841 — AsyncGenerator として認識させる
 
     agent.run_async = mock_run_async
     return agent

@@ -53,9 +53,6 @@ def search_ddb(
     if not search_text:
         return {"documents": [], "total_hits": 0, "error": "No keywords provided"}
 
-    start_year = date_start[:4] if len(date_start) >= 4 else date_start
-    end_year = date_end[:4] if len(date_end) >= 4 else date_end
-
     # DDB は Lucene クエリ構文をサポート
     # 日付フィルタは temporal.begin_time / temporal.end_time ファセットで絞り込み
     query = f"({search_text})"

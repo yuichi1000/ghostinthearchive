@@ -4,7 +4,6 @@
 """
 
 import json
-from typing import Optional
 
 from google.adk.tools.tool_context import ToolContext
 
