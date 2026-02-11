@@ -2,8 +2,8 @@
 
 Tests verify that session state is correctly passed between agents
 in the multilingual pipeline:
-  ThemeAnalyzer → ParallelLibrarians → ParallelScholars → ParallelDebaters
-    → CrossReferenceScholar → Storyteller → Illustrator → Translator → Publisher
+  ThemeAnalyzer → ParallelLibrarians → ParallelScholars → DebateLoop
+    → ArmchairPolymath → Storyteller → Illustrator → Translator → Publisher
 """
 
 
@@ -25,22 +25,6 @@ class TestSessionStateKeys:
         scholars = create_all_scholars()
         for lang, agent in scholars.items():
             assert agent.output_key == f"scholar_analysis_{lang}"
-
-    def test_debater_output_keys(self):
-        """Language-specific Debater agents should use 'scholar_debate_{lang}' output keys."""
-        from mystery_agents.agents.language_scholars import create_all_debaters
-
-        debaters = create_all_debaters()
-        for lang, agent in debaters.items():
-            assert agent.output_key == f"scholar_debate_{lang}"
-
-    def test_cross_reference_scholar_output_key(self):
-        """CrossReferenceScholar should use 'mystery_report' output key."""
-        from mystery_agents.agents.cross_reference_scholar import (
-            cross_reference_scholar_agent,
-        )
-
-        assert cross_reference_scholar_agent.output_key == "mystery_report"
 
     def test_storyteller_output_key(self):
         """Storyteller agent should use 'creative_content' output key."""
@@ -108,26 +92,20 @@ class TestInstructionPlaceholders:
         scholar_en = create_scholar("en")
         assert "{collected_documents_en}" in scholar_en.instruction
 
-    def test_cross_reference_references_analyses(self):
-        """CrossReferenceScholar should reference all scholar_analysis keys."""
-        from mystery_agents.agents.cross_reference_scholar import (
-            cross_reference_scholar_agent,
-        )
+    def test_armchair_polymath_references_analyses(self):
+        """ArmchairPolymath should reference all scholar_analysis keys."""
+        from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
 
-        instruction = cross_reference_scholar_agent.instruction
+        instruction = armchair_polymath_agent.instruction
         assert "{scholar_analysis_en}" in instruction
         assert "{scholar_analysis_de}" in instruction
         assert "{scholar_analysis_es}" in instruction
 
-    def test_cross_reference_references_debates(self):
-        """CrossReferenceScholar should reference debate result keys."""
-        from mystery_agents.agents.cross_reference_scholar import (
-            cross_reference_scholar_agent,
-        )
+    def test_armchair_polymath_references_whiteboard(self):
+        """ArmchairPolymath should reference {debate_whiteboard}."""
+        from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
 
-        instruction = cross_reference_scholar_agent.instruction
-        assert "{scholar_debate_en}" in instruction
-        assert "{scholar_debate_de}" in instruction
+        assert "{debate_whiteboard}" in armchair_polymath_agent.instruction
 
     def test_storyteller_references_mystery_report(self):
         """Storyteller instruction should reference {mystery_report}."""
@@ -190,27 +168,25 @@ class TestAgentModels:
                 f"scholar_{lang} should use gemini-3-pro-preview"
             )
 
-    def test_debaters_use_gemini_3_pro(self):
-        """Debaters should use gemini-3-pro-preview model."""
-        from mystery_agents.agents.language_scholars import create_all_debaters
+    def test_debate_scholars_use_gemini_3_pro(self):
+        """Scholar debate mode agents should use gemini-3-pro-preview model."""
+        from mystery_agents.agents.language_scholars import create_all_scholars
 
-        debaters = create_all_debaters()
-        for lang, agent in debaters.items():
+        debate_scholars = create_all_scholars(mode="debate")
+        for lang, agent in debate_scholars.items():
             assert agent.model == "gemini-3-pro-preview", (
-                f"debater_{lang} should use gemini-3-pro-preview"
+                f"scholar_{lang}_debate should use gemini-3-pro-preview"
             )
 
     def test_core_agents_use_expected_models(self):
         """Core pipeline agents should use expected models."""
-        from mystery_agents.agents.cross_reference_scholar import (
-            cross_reference_scholar_agent,
-        )
+        from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
         from mystery_agents.agents.illustrator import illustrator_agent
         from mystery_agents.agents.publisher import publisher_agent
         from mystery_agents.agents.storyteller import storyteller_agent
 
         # LLM 重視のエージェントは Pro、軽量処理は Flash
-        assert cross_reference_scholar_agent.model == "gemini-3-pro-preview"
+        assert armchair_polymath_agent.model == "gemini-3-pro-preview"
         assert storyteller_agent.model == "gemini-3-pro-preview"
         assert illustrator_agent.model == "gemini-3-pro-preview"
         assert publisher_agent.model == "gemini-2.5-flash"
@@ -281,12 +257,136 @@ class TestLanguageGateCallbacks:
                 f"scholar_{lang} should have before_agent_callback"
             )
 
-    def test_debaters_have_gate_callback(self):
-        """All debaters should have a before_agent_callback."""
-        from mystery_agents.agents.language_scholars import create_all_debaters
+    def test_debate_scholars_have_gate_callback(self):
+        """All debate-mode scholars should have a before_agent_callback."""
+        from mystery_agents.agents.language_scholars import create_all_scholars
 
-        debaters = create_all_debaters()
-        for lang, agent in debaters.items():
+        debate_scholars = create_all_scholars(mode="debate")
+        for lang, agent in debate_scholars.items():
             assert agent.before_agent_callback is not None, (
-                f"debater_{lang} should have before_agent_callback"
+                f"scholar_{lang}_debate should have before_agent_callback"
             )
+
+
+class TestScholarDebateMode:
+    """Tests for Scholar agents in debate mode."""
+
+    def test_debate_scholar_has_no_explicit_output_key(self):
+        """討論モードの Scholar は output_key を明示的に設定しない。"""
+        from mystery_agents.agents.language_scholars import create_all_scholars
+
+        debate_scholars = create_all_scholars(mode="debate")
+        for lang, agent in debate_scholars.items():
+            # MagicMock の場合、output_key を明示設定していないので文字列にはならない
+            assert not isinstance(agent.output_key, str), (
+                f"scholar_{lang}_debate should not have a string output_key"
+            )
+
+    def test_debate_scholar_has_whiteboard_tool(self):
+        """討論モードの Scholar は append_to_whiteboard ツールを持つ。"""
+        from mystery_agents.agents.language_scholars import create_all_scholars
+        from mystery_agents.tools.debate_tools import append_to_whiteboard
+
+        debate_scholars = create_all_scholars(mode="debate")
+        for lang, agent in debate_scholars.items():
+            assert append_to_whiteboard in agent.tools, (
+                f"scholar_{lang}_debate should have append_to_whiteboard tool"
+            )
+
+    def test_debate_scholar_references_whiteboard(self):
+        """討論モードの Scholar の instruction が {debate_whiteboard} を参照する。"""
+        from mystery_agents.agents.language_scholars import create_all_scholars
+
+        debate_scholars = create_all_scholars(mode="debate")
+        for lang, agent in debate_scholars.items():
+            assert "{debate_whiteboard}" in agent.instruction, (
+                f"scholar_{lang}_debate should reference {{debate_whiteboard}}"
+            )
+
+    def test_debate_scholar_name_format(self):
+        """討論モードの Scholar のエージェント名が scholar_{lang}_debate 形式。"""
+        from mystery_agents.agents.language_scholars import create_all_scholars
+
+        debate_scholars = create_all_scholars(mode="debate")
+        for lang, agent in debate_scholars.items():
+            # MagicMock は name を内部名として使うため、_mock_name で検証
+            assert f"scholar_{lang}_debate" in repr(agent), (
+                f"Expected scholar_{lang}_debate in repr, got {repr(agent)}"
+            )
+
+    def test_debate_scholar_shares_cultural_perspective(self):
+        """討論モードの Scholar が SCHOLAR_CONFIGS の文化的視点を共有する。"""
+        from mystery_agents.agents.language_scholars import SCHOLAR_CONFIGS, create_scholar
+
+        for lang, config in SCHOLAR_CONFIGS.items():
+            debate_agent = create_scholar(lang, mode="debate")
+            # 文化的視点のキーワードが instruction に含まれることを確認
+            assert config["language_name"] in debate_agent.instruction
+
+
+class TestArmchairPolymath:
+    """Tests for the Armchair Polymath agent."""
+
+    def test_output_key(self):
+        """ArmchairPolymath should use 'mystery_report' output key."""
+        from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
+
+        assert armchair_polymath_agent.output_key == "mystery_report"
+
+    def test_references_whiteboard(self):
+        """ArmchairPolymath should reference {debate_whiteboard} in instruction."""
+        from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
+
+        assert "{debate_whiteboard}" in armchair_polymath_agent.instruction
+
+    def test_has_save_structured_report_tool(self):
+        """ArmchairPolymath should have save_structured_report tool."""
+        from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
+        from mystery_agents.tools.scholar_tools import save_structured_report
+
+        assert save_structured_report in armchair_polymath_agent.tools
+
+    def test_model(self):
+        """ArmchairPolymath should use gemini-3-pro-preview model."""
+        from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
+
+        assert armchair_polymath_agent.model == "gemini-3-pro-preview"
+
+    def test_name(self):
+        """ArmchairPolymath should be named 'armchair_polymath'."""
+        from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
+
+        # MagicMock は name を内部名として使うため、repr で検証
+        assert "armchair_polymath" in repr(armchair_polymath_agent)
+
+
+class TestDebateLoopConfiguration:
+    """Tests for the debate loop LoopAgent configuration."""
+
+    def test_debate_loop_is_created_via_loop_agent(self):
+        """debate_loop should be created via LoopAgent constructor."""
+        from mystery_agents.agent import debate_loop
+
+        # MagicMock 環境では LoopAgent(...) の戻り値は MagicMock インスタンス
+        # debate_loop が存在し、名前に debate_loop が含まれることを確認
+        assert "debate_loop" in repr(debate_loop)
+
+    def test_debate_loop_max_iterations(self):
+        """debate_loop should have max_iterations=2."""
+        from mystery_agents.agent import debate_loop
+
+        assert debate_loop.max_iterations == 2
+
+    def test_debate_loop_has_gate_callback(self):
+        """debate_loop should have a before_agent_callback."""
+        from mystery_agents.agent import debate_loop
+
+        # before_agent_callback が設定されていること（callable であること）
+        assert debate_loop.before_agent_callback is not None
+        assert callable(debate_loop.before_agent_callback)
+
+    def test_debate_loop_sub_agents_count(self):
+        """debate_loop should have 6 sub_agents (one per language)."""
+        from mystery_agents.agent import debate_loop
+
+        assert len(debate_loop.sub_agents) == 6

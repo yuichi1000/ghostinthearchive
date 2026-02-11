@@ -99,6 +99,21 @@ class TestSaveLanguageSelection:
         assert "fr" in selected
 
 
+    def test_debate_whiteboard_initialized(self):
+        """debate_whiteboard が空文字列で初期化される。"""
+        ctx = self._make_tool_context()
+        save_language_selection('["en", "de"]', ctx)
+
+        assert ctx.state["debate_whiteboard"] == ""
+
+    def test_debate_whiteboard_initialized_on_fallback(self):
+        """フォールバック時にも debate_whiteboard が初期化されない（フォールバックは早期リターン）。"""
+        ctx = self._make_tool_context()
+        save_language_selection("not valid json", ctx)
+
+        # フォールバック時は debate_whiteboard は設定されない（早期リターン）
+        assert "debate_whiteboard" not in ctx.state
+
     def test_unselected_languages_get_default_state(self):
         """未選択言語の collected_documents_* と scholar_analysis_* にデフォルト値が設定される。"""
         ctx = self._make_tool_context()
