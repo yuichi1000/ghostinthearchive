@@ -64,7 +64,8 @@ git config core.hooksPath .githooks
 ### Claude Code ファイル除外設定
 
 - Claude Code が読み取る必要のないファイル・フォルダは `.claude/settings.json` の `permissions.deny` で管理する
-- 新たにビルド出力、キャッシュ、大容量の生成物などが追加された場合は `.claude/settings.json` の deny ルールも合わせて更新する
+- デバッグ時に必要になりうるファイル（`logs/`、`.adk/`、ロックファイル等）は `permissions.ask` に設定し、読み取り時に確認プロンプトを表示する
+- 新たにビルド出力、キャッシュ、大容量の生成物などが追加された場合は `.claude/settings.json` の deny/ask ルールも合わせて更新する
 
 ### 共有コード管理（DRY 原則）
 
