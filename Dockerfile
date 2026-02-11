@@ -25,6 +25,7 @@ COPY services/ ./services/
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
 ENV GOOGLE_CLOUD_PROJECT=ghostinthearchive
 ENV GOOGLE_GENAI_USE_VERTEXAI=TRUE
 
