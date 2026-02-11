@@ -1,7 +1,6 @@
 import React from "react"
 import type { Metadata } from 'next'
 import { Playfair_Display, Inter, Noto_Sans_JP } from 'next/font/google'
-import { SessionProvider } from "@/components/providers/SessionProvider"
 import './globals.css'
 
 const playfair = Playfair_Display({
@@ -36,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${playfair.variable} ${inter.variable} ${notoSansJP.variable} font-sans antialiased`}>
-        <SessionProvider>{children}</SessionProvider>
+        {children}
       </body>
     </html>
   )
