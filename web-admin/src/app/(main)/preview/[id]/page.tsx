@@ -1,7 +1,5 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Header } from "@/components/header"
-import { Footer } from "@ghost/shared/src/components/footer"
 import { EvidenceBlock } from "@ghost/shared/src/components/evidence-block"
 import { getMysteryById } from "@/lib/firestore/mysteries"
 import {
@@ -74,34 +72,32 @@ export default async function PreviewPage({
   }
 
   return (
-    <div className="min-h-screen flex flex-col film-grain">
+    <>
       {/* Preview Banner */}
-      <div className="bg-amber-500/90 text-black py-2 px-4 text-center sticky top-0 z-50">
+      <div className="bg-amber-500/90 text-black py-2 px-4 text-center sticky top-16 z-40">
         <div className="container mx-auto flex items-center justify-center gap-4">
           <Eye className="w-4 h-4" />
           <span className="font-mono text-sm">
             PREVIEW MODE - Status: <span className="font-bold uppercase">{mystery.status}</span>
           </span>
           <Link
-            href="/admin"
+            href="/"
             className="ml-4 px-3 py-1 bg-black/20 hover:bg-black/30 rounded text-sm no-underline transition-colors"
           >
-            Back to Admin
+            Back to Dashboard
           </Link>
         </div>
       </div>
 
-      <Header />
-
-      <main className="flex-1 py-8 md:py-12">
+      <div className="py-8 md:py-12">
         <div className="container mx-auto px-4">
           {/* Back link */}
           <Link
-            href="/admin"
+            href="/"
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-parchment transition-colors mb-8 no-underline"
           >
             <ArrowLeft className="w-4 h-4" />
-            Return to Admin
+            Return to Dashboard
           </Link>
 
           {/* Case file header */}
@@ -322,9 +318,7 @@ export default async function PreviewPage({
             </aside>
           </div>
         </div>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </>
   )
 }
