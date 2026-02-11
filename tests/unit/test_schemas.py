@@ -23,13 +23,20 @@ class TestSourceEnums:
     """Tests for source-related enums."""
 
     def test_source_language_values(self):
-        """SourceLanguage enum should have en and es values."""
+        """SourceLanguage enum should have all supported language values."""
         assert SourceLanguage.EN.value == "en"
         assert SourceLanguage.ES.value == "es"
+        assert SourceLanguage.DE.value == "de"
+        assert SourceLanguage.FR.value == "fr"
+        assert SourceLanguage.NL.value == "nl"
+        assert SourceLanguage.PT.value == "pt"
 
     def test_source_type_values(self):
         """SourceType enum should have all archive source types."""
-        expected_types = ["newspaper", "loc_digital", "dpla", "nypl", "pares", "internet_archive"]
+        expected_types = [
+            "newspaper", "loc_digital", "dpla", "nypl", "pares",
+            "internet_archive", "europeana", "ddb",
+        ]
         actual_types = [st.value for st in SourceType]
         assert set(expected_types) == set(actual_types)
 

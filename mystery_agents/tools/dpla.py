@@ -27,11 +27,23 @@ def _rate_limit() -> None:
     _last_request_time = time.time()
 
 
+# DPLA sourceResource.language.name で使われる言語名マッピング
+_DPLA_LANG_NAMES = {
+    "en": ["English"],
+    "es": ["Spanish", "Español"],
+    "de": ["German", "Deutsch"],
+    "fr": ["French", "Français"],
+    "nl": ["Dutch", "Nederlands"],
+    "pt": ["Portuguese", "Português"],
+}
+
+
 def search_dpla(
     keywords: List[str],
     date_start: str = "1800",
     date_end: str = "1899",
     max_results: int = 20,
+    language: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Search DPLA for historical documents.
 
@@ -40,6 +52,7 @@ def search_dpla(
         date_start: Start year
         date_end: End year
         max_results: Maximum results to return
+        language: Optional ISO 639-1 language code to filter by sourceResource.language.name
 
     Returns:
         Dict with documents, total_hits, error keys.
@@ -62,6 +75,10 @@ def search_dpla(
         "sourceResource.date.after": start_year,
         "sourceResource.date.before": end_year,
     }
+
+    # 言語フィルタ: sourceResource.language.name で絞り込み
+    if language and language in _DPLA_LANG_NAMES:
+        params["sourceResource.language.name"] = _DPLA_LANG_NAMES[language][0]
 
     _rate_limit()
 
@@ -104,13 +121,12 @@ def search_dpla(
                 elif isinstance(s, str):
                     location = s
 
-            language = sr.get("language", [])
+            lang_field = sr.get("language", [])
             lang = SourceLanguage.EN
-            if language:
-                lang_val = language[0] if isinstance(language, list) else language
+            if lang_field:
+                lang_val = lang_field[0] if isinstance(lang_field, list) else lang_field
                 lang_name = lang_val.get("name", "") if isinstance(lang_val, dict) else str(lang_val)
-                if "spanish" in lang_name.lower() or "español" in lang_name.lower():
-                    lang = SourceLanguage.ES
+                lang = _detect_dpla_language(lang_name)
 
             url = item.get("isShownAt", item.get("@id", ""))
             if not url:
@@ -134,6 +150,19 @@ def search_dpla(
 
     except (requests.RequestException, json.JSONDecodeError) as e:
         return {"documents": [], "total_hits": 0, "error": f"DPLA API error: {e}"}
+
+
+def _detect_dpla_language(lang_name: str) -> SourceLanguage:
+    """DPLA の言語名から SourceLanguage を判定する。"""
+    lower = lang_name.lower()
+    for lang_code, names in _DPLA_LANG_NAMES.items():
+        for name in names:
+            if name.lower() in lower:
+                try:
+                    return SourceLanguage(lang_code)
+                except ValueError:
+                    break
+    return SourceLanguage.EN
 
 
 def _parse_year(date_str: str) -> Optional[str]:

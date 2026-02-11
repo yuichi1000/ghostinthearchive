@@ -1,0 +1,71 @@
+"""ThemeAnalyzer 用ツール。
+
+テーマ分析結果（関連言語リスト）をセッション状態に保存する。
+"""
+
+import json
+from typing import Optional
+
+from google.adk.tools.tool_context import ToolContext
+
+# 許可される言語コード
+ALLOWED_LANGUAGES = {"en", "de", "es", "fr", "nl", "pt"}
+# 同時に選択できる最大言語数（コスト・時間制御）
+MAX_LANGUAGES = 4
+
+
+def save_language_selection(
+    languages_json: str,
+    tool_context: ToolContext,
+) -> str:
+    """Save the selected languages for multilingual investigation to session state.
+
+    The ThemeAnalyzer calls this tool to store which languages are relevant
+    for the current investigation theme. Downstream agents (Librarians, Scholars)
+    will be dynamically selected based on this list.
+
+    Args:
+        languages_json: JSON array of ISO 639-1 language codes.
+            Example: '["en", "de", "nl"]'
+        tool_context: ADK tool context for session state access.
+
+    Returns:
+        JSON string with save status and validated language list.
+    """
+    try:
+        languages = json.loads(languages_json)
+    except json.JSONDecodeError as e:
+        # パースエラー時は英語のみにフォールバック
+        tool_context.state["selected_languages"] = ["en"]
+        return json.dumps(
+            {
+                "status": "fallback",
+                "error": f"Invalid JSON: {e}",
+                "selected": ["en"],
+            },
+            ensure_ascii=False,
+        )
+
+    if not isinstance(languages, list):
+        languages = ["en"]
+
+    # バリデーション: 許可リスト以外を除外
+    valid = [lang for lang in languages if isinstance(lang, str) and lang in ALLOWED_LANGUAGES]
+
+    # 英語は必ず含める（フォールバック保証）
+    if "en" not in valid:
+        valid.insert(0, "en")
+
+    # 上限制限
+    valid = valid[:MAX_LANGUAGES]
+
+    tool_context.state["selected_languages"] = valid
+
+    return json.dumps(
+        {
+            "status": "success",
+            "selected": valid,
+            "total_languages": len(valid),
+        },
+        ensure_ascii=False,
+    )
