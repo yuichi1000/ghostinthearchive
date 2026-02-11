@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
+from .search_utils import build_search_query
 
 BASE_URL = "https://api.deutsche-digitale-bibliothek.de/search"
 ITEM_URL = "https://www.deutsche-digitale-bibliothek.de/item"
@@ -49,7 +50,7 @@ def search_ddb(
     if not api_key:
         return {"documents": [], "total_hits": 0, "error": "DDB_API_KEY not set"}
 
-    search_text = " OR ".join(kw for kw in keywords if kw.strip())
+    search_text = build_search_query(keywords)
     if not search_text:
         return {"documents": [], "total_hits": 0, "error": "No keywords provided"}
 

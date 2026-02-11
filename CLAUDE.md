@@ -250,15 +250,28 @@ pending (EN原文 + JA翻訳 両方あり) → (Approve) → published
 #### ブログ作成パイプライン（`mystery_agents/`）
 
 ```
-ThemeAnalyzer → ParallelLibrarians → ParallelScholars(分析)
-  → DebateLoop(LoopAgent, max_iterations=2) → ArmchairPolymath
-  → Storyteller(EN) → Illustrator → Translator(EN→JA) → Publisher(EN+JA保存) → Firestore
+ThemeAnalyzer → ParallelLibrarians → [ScholarGate] → ParallelScholars(分析)
+  → DebateLoop(LoopAgent, max_iterations=2) → [PolymathGate] → ArmchairPolymath
+  → [StorytellerGate] → Storyteller(EN) → [PostStoryGate] → Illustrator → Translator(EN→JA) → Publisher(EN+JA保存) → Firestore
 ```
 
 - DebateLoop は有意な分析が2言語以上ある場合のみ実行される
 - Scholar は分析モードと討論モードの2つを持つ（単一ファクトリ関数 `create_scholar(lang, mode)`）
 - 討論モードの Scholar は `append_to_whiteboard` ツールで共有ホワイトボードに発言を記録
 - Translator はブログパイプライン内で実行される。Approve 時は翻訳不要（ステータス変更のみ）
+
+**パイプラインゲート（カスケード障害対策）:**
+
+| ゲート | チェック対象 | スキップ条件 |
+|-------|------------|------------|
+| ScholarGate | `collected_documents_{lang}` | 全 Librarian が NO_DOCUMENTS_FOUND |
+| PolymathGate | `scholar_analysis_{lang}` | 全 Scholar が INSUFFICIENT_DATA |
+| StorytellerGate | `mystery_report` | mystery_report が空または失敗マーカー |
+| PostStoryGate | `creative_content` | creative_content が空または NO_CONTENT |
+
+- 各ゲートは `before_agent_callback` で実装（`mystery_agents/agents/pipeline_gate.py`）
+- ゲート発動時は `shared/pipeline_failure.py` で Firestore の `pipeline_failures` コレクションに記録
+- Curator がテーマ提案時に `pipeline_failures` を参照し、類似テーマの再提案を回避する
 
 #### Podcast 作成パイプライン（`podcast_agents/`）
 
@@ -393,6 +406,7 @@ AGENT_INSTRUCTION = """English prompt here..."""
 shared/                       # インフラ共有層
 ├── firestore.py              # Firebase Admin 初期化, Firestore/Storage クライアント
 ├── model_config.py           # LLM モデル設定（リトライ付き Gemini ファクトリ）
+├── pipeline_failure.py       # パイプライン失敗ログ（Firestore 記録 + Curator 連携）
 
 mystery_agents/               # ブログ作成パイプライン（旧 archive_agents）
 ├── __main__.py               # python -m mystery_agents エントリポイント

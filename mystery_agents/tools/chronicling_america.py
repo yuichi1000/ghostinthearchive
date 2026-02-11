@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
+from .search_utils import build_search_query
 
 # East Coast states for filtering (lowercase for API)
 EAST_COAST_STATES = [
@@ -79,7 +80,7 @@ def search_chronicling_america(
     rows = min(rows, 50)
 
     # Build search query - join keywords with OR for broader results
-    search_text = " OR ".join(kw for kw in keywords if kw.strip())
+    search_text = build_search_query(keywords)
 
     if not search_text:
         return {

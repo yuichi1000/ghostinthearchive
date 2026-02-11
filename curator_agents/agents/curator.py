@@ -28,6 +28,11 @@ from shared.model_config import create_pro_model
 # 以下のテーマは既に調査済みです。これらと重複しないテーマを提案してください：
 # {existing_titles}
 #
+# ## 最近失敗したテーマ（回避）
+# 以下のテーマはパイプラインで失敗しました（資料が見つからない等）。
+# これらと類似するテーマは提案しないでください：
+# {failed_themes}
+#
 # ## 出力形式
 # 以下の JSON 配列を出力してください。JSON 以外のテキストは出力しないでください。
 #
@@ -61,6 +66,11 @@ The themes you suggest should also be Fact × Folklore hybrids.
 ## Existing Mysteries (Avoid Duplicates)
 The following themes have already been investigated. Suggest themes that do not overlap with these:
 {existing_titles}
+
+## Recently Failed Themes (Avoid)
+The following themes failed in the pipeline (e.g., no source materials found in digital archives).
+Do NOT suggest themes similar to these:
+{failed_themes}
 
 ## Output Format
 Output the following JSON array. Do NOT output any text other than the JSON.

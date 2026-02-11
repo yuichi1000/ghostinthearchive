@@ -3,11 +3,12 @@
 Defines root_agent (ghost_commander) as a SequentialAgent that orchestrates
 the multilingual investigation pipeline:
 
-  ThemeAnalyzer → ParallelLibrarians → ParallelScholars → DebateLoop
-    → ArmchairPolymath → Storyteller → Illustrator → Translator → Publisher
+  ThemeAnalyzer → ParallelLibrarians → ScholarBlock → DebateLoop
+    → PolymathBlock → StorytellerBlock → PostStoryBlock
 
 各言語エージェントは before_agent_callback で selected_languages をチェックし、
 未選択の言語はスキップされる。DebateLoop は有意な分析が2言語以上の場合のみ実行される。
+パイプラインゲートにより、前段が失敗した場合は後続をスキップしてトークン消費を抑制する。
 """
 
 from google.adk.agents import LoopAgent, ParallelAgent, SequentialAgent
@@ -17,6 +18,12 @@ from .agents.illustrator import illustrator_agent
 from .agents.language_gate import make_debate_loop_gate
 from .agents.language_librarians import create_all_librarians
 from .agents.language_scholars import create_all_scholars
+from .agents.pipeline_gate import (
+    make_polymath_gate,
+    make_post_story_gate,
+    make_scholar_gate,
+    make_storyteller_gate,
+)
 from .agents.publisher import publisher_agent
 from .agents.storyteller import storyteller_agent
 from .agents.theme_analyzer import theme_analyzer_agent
@@ -36,15 +43,49 @@ debate_loop = LoopAgent(
     before_agent_callback=make_debate_loop_gate(),
 )
 
+# Scholar ブロック（全 Librarian 失敗時にスキップ）
+scholar_block = SequentialAgent(
+    name="scholar_block",
+    sub_agents=[
+        ParallelAgent(
+            name="parallel_scholars",
+            sub_agents=list(all_scholars.values()),
+        ),
+    ],
+    before_agent_callback=make_scholar_gate(),
+)
+
+# ArmchairPolymath ブロック（全 Scholar 失敗時にスキップ）
+polymath_block = SequentialAgent(
+    name="polymath_block",
+    sub_agents=[armchair_polymath_agent],
+    before_agent_callback=make_polymath_gate(),
+)
+
+# Storyteller ブロック（mystery_report 空ならスキップ）
+storyteller_block = SequentialAgent(
+    name="storyteller_block",
+    sub_agents=[storyteller_agent],
+    before_agent_callback=make_storyteller_gate(),
+)
+
+# Illustrator + Translator + Publisher ブロック（creative_content 空ならスキップ）
+post_story_block = SequentialAgent(
+    name="post_story_block",
+    sub_agents=[illustrator_agent, translator_agent, publisher_agent],
+    before_agent_callback=make_post_story_gate(),
+)
+
 # メインパイプライン
 ghost_commander = SequentialAgent(
     name="ghost_commander",
     description=(
         "Ghost in the Archive multilingual blog creation pipeline. "
-        "Executes ThemeAnalyzer → ParallelLibrarians → ParallelScholars → DebateLoop "
-        "→ ArmchairPolymath → Storyteller → Illustrator → Translator → Publisher "
+        "Executes ThemeAnalyzer → ParallelLibrarians → ScholarBlock → DebateLoop "
+        "→ PolymathBlock → StorytellerBlock → PostStoryBlock "
         "to research, analyze, debate, create content, generate images, translate to Japanese, "
-        "and publish historical mysteries and folkloric anomalies."
+        "and publish historical mysteries and folkloric anomalies. "
+        "Pipeline gates skip downstream agents when upstream stages fail."
     ),
     sub_agents=[
         theme_analyzer_agent,
@@ -52,16 +93,11 @@ ghost_commander = SequentialAgent(
             name="parallel_librarians",
             sub_agents=list(all_librarians.values()),
         ),
-        ParallelAgent(
-            name="parallel_scholars",
-            sub_agents=list(all_scholars.values()),
-        ),
+        scholar_block,
         debate_loop,
-        armchair_polymath_agent,
-        storyteller_agent,
-        illustrator_agent,
-        translator_agent,
-        publisher_agent,
+        polymath_block,
+        storyteller_block,
+        post_story_block,
     ],
 )
 

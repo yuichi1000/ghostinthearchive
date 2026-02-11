@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
+from .search_utils import build_search_query
 
 BASE_URL = "https://api.dp.la/v2/items"
 MIN_REQUEST_DELAY = 1.0
@@ -61,7 +62,7 @@ def search_dpla(
     if not api_key:
         return {"documents": [], "total_hits": 0, "error": "DPLA_API_KEY not set"}
 
-    search_text = " OR ".join(kw for kw in keywords if kw.strip())
+    search_text = build_search_query(keywords)
     if not search_text:
         return {"documents": [], "total_hits": 0, "error": "No keywords provided"}
 

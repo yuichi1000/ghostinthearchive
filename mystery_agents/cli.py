@@ -71,7 +71,11 @@ async def investigate(query: str, *, run_id: str | None = None) -> str | None:
         app_name="ghost_in_the_archive",
         user_id=user_id,
         session_id=session_id,
-        state={"pipeline_log": []},
+        state={
+            "pipeline_log": [],
+            "investigation_query": query,
+            "pipeline_run_id": run_id,
+        },
     )
 
     # Pipeline logger
@@ -104,6 +108,10 @@ async def investigate(query: str, *, run_id: str | None = None) -> str | None:
                     "parallel_librarians",
                     "parallel_scholars",
                     "parallel_debaters",
+                    "scholar_block",
+                    "polymath_block",
+                    "storyteller_block",
+                    "post_story_block",
                 }
                 if author and author not in _SKIP_AUTHORS and author != current_agent_name:
                     # Complete previous agent
