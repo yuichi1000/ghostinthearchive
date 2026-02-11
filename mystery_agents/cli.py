@@ -101,9 +101,9 @@ async def investigate(query: str, *, run_id: str | None = None) -> str | None:
                 # オーケストレーター/パラレルエージェントはログ対象外
                 _SKIP_AUTHORS = {
                     "ghost_commander",
-                    "multilingual_orchestrator",
                     "parallel_librarians",
                     "parallel_scholars",
+                    "parallel_debaters",
                 }
                 if author and author not in _SKIP_AUTHORS and author != current_agent_name:
                     # Complete previous agent

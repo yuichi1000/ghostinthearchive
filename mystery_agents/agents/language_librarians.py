@@ -9,6 +9,7 @@ collected_documents_{lang} に結果を保存する。
 
 from google.adk.agents import LlmAgent
 
+from .language_gate import make_language_gate
 from ..tools.librarian_tools import (
     get_available_keywords,
     search_archives,
@@ -98,11 +99,10 @@ LANGUAGE_CONFIGS = {
             "Focus on German-language sources relevant to American history:\n"
             "- German immigrant communities (Pennsylvania Dutch, Texas Germans)\n"
             "- Deutsche Digitale Bibliothek (DDB) for German institutional records\n"
-            "- Europeana for pan-European German-language materials\n"
             "- Internet Archive for digitized German-language books and periodicals\n"
             "- Protestant church records, immigration documents, German-language American newspapers"
         ),
-        "sources_hint": "ddb, europeana, internet_archive",
+        "sources_hint": "ddb, internet_archive",
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
         "tools": "archives_only",  # search_archives のみ
     },
@@ -112,12 +112,11 @@ LANGUAGE_CONFIGS = {
         "cultural_context": (
             "Focus on Spanish-language sources relevant to American history:\n"
             "- Spanish colonial administration records (Florida, Louisiana, California, Southwest)\n"
-            "- Europeana for Spanish-language European materials\n"
             "- Internet Archive for digitized Spanish-language materials\n"
             "- DPLA for Spanish-language materials in US collections\n"
             "- Colonial correspondence, mission records, trade documents"
         ),
-        "sources_hint": "dpla, europeana, internet_archive",
+        "sources_hint": "dpla, internet_archive",
         "newspaper_instruction": "Do NOT call search_newspapers (the EN Librarian already handles bilingual newspaper search).",
         "tools": "archives_only",
     },
@@ -128,11 +127,10 @@ LANGUAGE_CONFIGS = {
             "Focus on French-language sources relevant to American history:\n"
             "- French colonial records (Louisiana, Quebec, Nouvelle-France)\n"
             "- Acadian/Cajun history and culture\n"
-            "- Europeana for French institutional records\n"
             "- Internet Archive for digitized French-language materials\n"
             "- Huguenot immigration, fur trade, French-Indian alliances"
         ),
-        "sources_hint": "europeana, internet_archive",
+        "sources_hint": "internet_archive",
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
         "tools": "archives_only",
     },
@@ -142,11 +140,10 @@ LANGUAGE_CONFIGS = {
         "cultural_context": (
             "Focus on Dutch-language sources relevant to American history:\n"
             "- Dutch colonial records (New Amsterdam/New York, Dutch West India Company)\n"
-            "- Europeana for Dutch institutional records\n"
             "- Internet Archive for digitized Dutch-language materials\n"
             "- VOC/WIC trade records, colonial administration, patroon system"
         ),
-        "sources_hint": "europeana, internet_archive",
+        "sources_hint": "internet_archive",
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
         "tools": "archives_only",
     },
@@ -156,11 +153,10 @@ LANGUAGE_CONFIGS = {
         "cultural_context": (
             "Focus on Portuguese-language sources relevant to American/Atlantic history:\n"
             "- Atlantic trade networks, Brazil-Africa-Americas triangle\n"
-            "- Europeana for Portuguese institutional records\n"
             "- Internet Archive for digitized Portuguese-language materials\n"
             "- Maritime exploration, slave trade documentation, colonial correspondence"
         ),
-        "sources_hint": "europeana, internet_archive",
+        "sources_hint": "internet_archive",
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
         "tools": "archives_only",
     },
@@ -188,6 +184,7 @@ def create_librarian(lang_code: str) -> LlmAgent:
         instruction=instruction,
         tools=tools,
         output_key=f"collected_documents_{lang_code}",
+        before_agent_callback=make_language_gate(lang_code),
     )
 
 

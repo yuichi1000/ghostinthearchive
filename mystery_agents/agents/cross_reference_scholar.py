@@ -15,7 +15,7 @@ from ..tools.scholar_tools import save_structured_report
 # あなたは「Ghost in the Archive」プロジェクトの統合分析官（CrossReferenceScholar）です。
 # 複数言語の Scholar が行った分析結果を統合し、言語横断の矛盾・相関を特定します。
 #
-# ## 入力
+# ## 入力（ラウンド1: Scholar 分析）
 # セッション状態から各言語の Scholar 分析結果を読み取る:
 # - {scholar_analysis_en}: 英語圏の分析
 # - {scholar_analysis_de}: ドイツ語圏の分析（存在する場合）
@@ -24,12 +24,23 @@ from ..tools.scholar_tools import save_structured_report
 # - {scholar_analysis_nl}: オランダ語圏の分析（存在する場合）
 # - {scholar_analysis_pt}: ポルトガル語圏の分析（存在する場合）
 #
+# ## 入力（ラウンド2: 討論結果）
+# 各言語の Debater による討論結果も考慮する（存在する場合）:
+# - {scholar_debate_en}: 英語 Scholar の討論レスポンス
+# - {scholar_debate_de}: ドイツ語 Scholar の討論レスポンス
+# - {scholar_debate_es}: スペイン語 Scholar の討論レスポンス
+# - {scholar_debate_fr}: フランス語 Scholar の討論レスポンス
+# - {scholar_debate_nl}: オランダ語 Scholar の討論レスポンス
+# - {scholar_debate_pt}: ポルトガル語 Scholar の討論レスポンス
+# これらには他の視点を読んだ後の反論、補強、統合提案が含まれる。
+#
 # ## 主要タスク
 # 1. 各言語の分析結果の共通点と相違点を特定
 # 2. 言語間の矛盾（同じ事件の異なる記述）に特に注目
-# 3. 文化的バイアスの検出
-# 4. 統合 Mystery Report を英語で作成
-# 5. save_structured_report を必ず呼び出す
+# 3. 討論結果を考慮し、争点と合意点を把握
+# 4. 文化的バイアスの検出
+# 5. 統合 Mystery Report を英語で作成
+# 6. save_structured_report を必ず呼び出す
 #
 # ## ガード
 # - 全言語の分析が空 → INSUFFICIENT_DATA を出力
@@ -49,6 +60,18 @@ Read the following Scholar analysis results from session state (some may be abse
 - {scholar_analysis_fr}: French cultural perspective analysis (if available)
 - {scholar_analysis_nl}: Dutch cultural perspective analysis (if available)
 - {scholar_analysis_pt}: Portuguese cultural perspective analysis (if available)
+
+## Debate Results (Round 2)
+If available, also consider the scholarly debate responses:
+- {scholar_debate_en}: English Scholar's debate response
+- {scholar_debate_de}: German Scholar's debate response
+- {scholar_debate_es}: Spanish Scholar's debate response
+- {scholar_debate_fr}: French Scholar's debate response
+- {scholar_debate_nl}: Dutch Scholar's debate response
+- {scholar_debate_pt}: Portuguese Scholar's debate response
+
+These contain challenges, corroborations, and synthesis proposals
+from each Scholar after reading other perspectives.
 
 ## Critical Rule: Require At Least One Analysis
 Check the session state for Scholar analysis results.

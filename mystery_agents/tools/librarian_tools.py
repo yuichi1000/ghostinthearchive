@@ -15,7 +15,6 @@ from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
 from .ddb import search_ddb
 from .dpla import search_dpla
-from .europeana import search_europeana
 from .internet_archive import search_internet_archive
 from .loc_digital import search_loc_digital
 from .nypl_digital import search_nypl
@@ -206,14 +205,13 @@ def save_search_results(
 
 
 # 言語フィルタをサポートするソース
-_LANGUAGE_FILTER_SOURCES = {"dpla", "internet_archive", "europeana"}
+_LANGUAGE_FILTER_SOURCES = {"dpla", "internet_archive"}
 
 _ARCHIVE_SOURCES = {
     "loc": ("LOC Digital Collections", search_loc_digital),
     "dpla": ("DPLA", search_dpla),
     "nypl": ("NYPL Digital Collections", search_nypl),
     "internet_archive": ("Internet Archive", search_internet_archive),
-    "europeana": ("Europeana", search_europeana),
     "ddb": ("Deutsche Digitale Bibliothek", search_ddb),
 }
 
@@ -230,7 +228,7 @@ def search_archives(
     """Search multiple public archive APIs simultaneously.
 
     Searches across LOC Digital Collections, DPLA, NYPL, Internet Archive,
-    Europeana, and Deutsche Digitale Bibliothek.
+    and Deutsche Digitale Bibliothek.
     Results are merged and returned as a unified JSON response.
 
     When no language filter is specified, automatically expands keywords to
@@ -243,7 +241,7 @@ def search_archives(
         date_start: Start year (default: 1800)
         date_end: End year (default: 1899)
         sources: Comma-separated source names to search (default: all US sources).
-                 Options: loc, dpla, nypl, internet_archive, europeana, ddb
+                 Options: loc, dpla, nypl, internet_archive, ddb
         max_results: Max results per source (default: 10)
         language: Optional ISO 639-1 language code (en, de, fr, es, nl, pt).
                   When specified, applies language filter to supported APIs
