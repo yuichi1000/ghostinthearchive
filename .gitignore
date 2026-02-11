@@ -46,6 +46,7 @@ Thumbs.db
 
 # Testing
 .pytest_cache/
+.mypy_cache/
 .coverage
 htmlcov/
 
@@ -61,9 +62,17 @@ node_modules/
 # Next.js
 .next/
 next-env.d.ts
+out/
+*.tsbuildinfo
 
 # Firebase Emulator data
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
 storage-debug.log
+
+# Terraform
+.terraform/
+
+# Firebase cache
+.firebase/
