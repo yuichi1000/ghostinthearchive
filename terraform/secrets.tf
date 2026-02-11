@@ -55,17 +55,6 @@ resource "google_secret_manager_secret" "nypl_api_token" {
   depends_on = [google_project_service.apis]
 }
 
-# ISR revalidation secret
-resource "google_secret_manager_secret" "revalidate_secret" {
-  secret_id = "revalidate-secret"
-
-  replication {
-    auto {}
-  }
-
-  depends_on = [google_project_service.apis]
-}
-
 # Output instructions for setting secret values
 output "secret_setup_instructions" {
   description = "Instructions for setting up secrets"
@@ -77,6 +66,5 @@ output "secret_setup_instructions" {
     echo -n "YOUR_VALUE" | gcloud secrets versions add google-oauth-client-secret --data-file=-
     echo -n "YOUR_VALUE" | gcloud secrets versions add dpla-api-key --data-file=-
     echo -n "YOUR_VALUE" | gcloud secrets versions add nypl-api-token --data-file=-
-    echo -n "YOUR_VALUE" | gcloud secrets versions add revalidate-secret --data-file=-
   EOT
 }
