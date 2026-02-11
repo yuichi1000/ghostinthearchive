@@ -5,7 +5,6 @@
 """
 
 from mystery_agents.agents.pipeline_gate import (
-    _FAILURE_MARKERS,
     _is_meaningful,
     make_polymath_gate,
     make_post_story_gate,
