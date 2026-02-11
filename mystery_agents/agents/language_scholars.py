@@ -2,17 +2,21 @@
 
 各言語圏の視点で資料を分析する Scholar エージェントを生成する。
 各 Scholar は自言語の資料 + 英語資料の両方を参照可能。
-分析結果は英語で出力（CrossReferenceScholar が統合するため）。
+分析結果は英語で出力（Armchair Polymath が統合するため）。
 
-注意: save_structured_report は呼び出さない（CrossReferenceScholar が統合後に呼び出す）。
+mode="analysis" で分析モード、mode="debate" で討論モードのエージェントを生成する。
+同じ SCHOLAR_CONFIGS を共有し、文化的視点は統一される。
+
+注意: save_structured_report は呼び出さない（Armchair Polymath が統合後に呼び出す）。
 """
 
 from google.adk.agents import LlmAgent
 
+from ..tools.debate_tools import append_to_whiteboard
 from .language_gate import make_debate_gate, make_language_gate
 
 # === 日本語訳 ===
-# 言語別 Scholar の共通指示テンプレート:
+# 言語別 Scholar の共通指示テンプレート（分析モード）:
 # あなたは {language_name} 圏の視点を持つ学者エージェントです。
 # {language_name} の一次資料を中心に分析し、歴史的矛盾や民俗学的アノマリーを特定します。
 #
@@ -24,7 +28,7 @@ from .language_gate import make_debate_gate, make_language_gate
 # {cultural_perspective}
 #
 # ## 重要
-# - save_structured_report は呼び出さないこと（CrossReferenceScholar が統合後に呼ぶ）
+# - save_structured_report は呼び出さないこと（Armchair Polymath が統合後に呼ぶ）
 # - 分析結果は英語で出力すること
 # - 資料がない場合は INSUFFICIENT_DATA を出力して中断
 # === End 日本語訳 ===
@@ -92,10 +96,99 @@ Structure your analysis as a focused report:
 - [What is missing from {language_name} records]
 
 ## Important
-- Output your analysis in **English** (for integration by the CrossReferenceScholar)
-- Do NOT call save_structured_report (the CrossReferenceScholar will do this after integration)
+- Output your analysis in **English** (for integration by the Armchair Polymath)
+- Do NOT call save_structured_report (the Armchair Polymath will do this after integration)
 - Cite specific sources with titles, dates, and URLs when available
 - Distinguish clearly between facts, inferences, and speculation
+"""
+
+# === 日本語訳 ===
+# 言語別 Scholar の共通指示テンプレート（討論モード）:
+# あなたは {language_name} 圏の視点を持つ学者エージェントです（討論モード）。
+# 他言語の Scholar の分析結果とこれまでの討論記録を読み、
+# あなたの文化的視点から反論、補強、または新たな視点を提供します。
+#
+# ## 入力
+# - {{scholar_analysis_en}}: 英語圏の分析
+# - {{scholar_analysis_de}}: ドイツ語圏の分析（存在する場合）
+# - {{scholar_analysis_es}}: スペイン語圏の分析（存在する場合）
+# - {{scholar_analysis_fr}}: フランス語圏の分析（存在する場合）
+# - {{scholar_analysis_nl}}: オランダ語圏の分析（存在する場合）
+# - {{scholar_analysis_pt}}: ポルトガル語圏の分析（存在する場合）
+# - {{debate_whiteboard}}: これまでの討論記録
+#
+# ## 討論の目的
+# 1. 他の Scholar の分析に対する反論点を提示する
+# 2. 自文化の視点から見落とされている証拠を指摘する
+# 3. 他言語の分析と自分の分析の共通点・相違点を明確にする
+# 4. 統合分析に向けた提案を行う
+#
+# ## 重要
+# - 必ず append_to_whiteboard ツールを呼んで討論内容をホワイトボードに記録すること
+# - 討論結果は英語で出力すること
+# - 建設的な批判を心がけること
+# - 新たな証拠やソースがあれば引用すること
+# === End 日本語訳 ===
+
+_BASE_SCHOLAR_DEBATE_INSTRUCTION = """
+You are a Scholar Agent representing the {language_name} cultural perspective
+for the "Ghost in the Archive" project, now in DEBATE MODE. Your role is to critically
+examine analyses from other language-specific Scholars and provide challenges,
+corroborations, and synthesis proposals from your cultural standpoint.
+
+## Your Cultural Perspective
+{cultural_perspective}
+
+## Input: Scholar Analyses
+Read all available Scholar analysis results from session state:
+- {{scholar_analysis_en}}: English cultural perspective analysis
+- {{scholar_analysis_de}}: German cultural perspective analysis (if available)
+- {{scholar_analysis_es}}: Spanish cultural perspective analysis (if available)
+- {{scholar_analysis_fr}}: French cultural perspective analysis (if available)
+- {{scholar_analysis_nl}}: Dutch cultural perspective analysis (if available)
+- {{scholar_analysis_pt}}: Portuguese cultural perspective analysis (if available)
+
+Focus especially on analyses from perspectives OTHER than {language_name}.
+
+## Input: Previous Debate Record
+- {{debate_whiteboard}}: Record of previous debate contributions
+
+Read what other Scholars have already argued. Build on, challenge, or refine
+their points rather than repeating what has been said.
+
+## Your Task: Scholarly Debate
+
+### 1. Challenge Other Perspectives
+- Identify claims in other Scholars' analyses that {language_name} sources contradict
+- Point out cultural biases or blind spots in other analyses
+- Question assumptions based on your knowledge of {language_name} historiography
+
+### 2. Corroborate Findings
+- Confirm findings from other Scholars that align with {language_name} sources
+- Provide additional {language_name}-language evidence for shared conclusions
+- Note when multiple cultural perspectives converge on the same conclusion
+
+### 3. Identify Blind Spots
+- What have other Scholars missed that {language_name} sources reveal?
+- What cultural context is needed to properly interpret the evidence?
+- What translation or terminology issues might cause misunderstanding?
+
+### 4. Synthesis Proposals
+- Suggest how the different cultural perspectives can be integrated
+- Propose which narrative best explains the cross-language evidence
+- Recommend areas where further investigation is needed
+
+## MANDATORY: Record Your Contribution
+After formulating your debate response, you MUST call `append_to_whiteboard` with:
+- speaker: "{language_name}"
+- round_number: the current round (check the whiteboard to determine which round this is)
+- contribution: your full debate response
+
+## Important
+- Output in **English**
+- Be constructive — challenge ideas, not scholars
+- Cite specific sources when available
+- Keep your response focused and concise
 """
 
 SCHOLAR_CONFIGS = {
@@ -179,145 +272,55 @@ SCHOLAR_CONFIGS = {
 }
 
 
-def create_scholar(lang_code: str) -> LlmAgent:
-    """指定された言語の Scholar エージェントを生成する。"""
+def create_scholar(lang_code: str, mode: str = "analysis") -> LlmAgent:
+    """指定された言語の Scholar エージェントを生成する。
+
+    Args:
+        lang_code: 言語コード（en, de, es, fr, nl, pt）
+        mode: "analysis"（分析モード）または "debate"（討論モード）
+    """
     config = SCHOLAR_CONFIGS[lang_code]
 
-    instruction = _BASE_SCHOLAR_INSTRUCTION.format(**config)
-
-    return LlmAgent(
-        name=f"scholar_{lang_code}",
-        model="gemini-3-pro-preview",
-        description=(
-            f"Analyzes materials from the {config['language_name']} cultural perspective. "
-            f"Identifies discrepancies, folkloric anomalies, and anthropological insights "
-            f"in {config['language_name']}-language sources."
-        ),
-        instruction=instruction,
-        tools=[],  # save_structured_report は呼び出さない
-        output_key=f"scholar_analysis_{lang_code}",
-        before_agent_callback=make_language_gate(lang_code),
-    )
-
-
-def create_all_scholars() -> dict[str, LlmAgent]:
-    """全言語の Scholar エージェントを生成して辞書で返す。"""
-    return {lang: create_scholar(lang) for lang in SCHOLAR_CONFIGS}
-
-
-# === 日本語訳 ===
-# 言語別 Debater の共通指示テンプレート:
-# あなたは {language_name} 圏の視点を持つ討論エージェントです。
-# 他言語の Scholar の分析結果を読み、あなたの文化的視点から
-# 反論、補強、または新たな視点を提供します。
-#
-# ## 入力
-# 全言語の Scholar 分析結果を読み取る（自分以外の視点に注目）:
-# - {{scholar_analysis_en}}: 英語圏の分析
-# - {{scholar_analysis_de}}: ドイツ語圏の分析
-# - {{scholar_analysis_es}}: スペイン語圏の分析
-# - {{scholar_analysis_fr}}: フランス語圏の分析
-# - {{scholar_analysis_nl}}: オランダ語圏の分析
-# - {{scholar_analysis_pt}}: ポルトガル語圏の分析
-#
-# ## 討論の目的
-# 1. 他の Scholar の分析に対する反論点を提示する
-# 2. 自文化の視点から見落とされている証拠を指摘する
-# 3. 他言語の分析と自分の分析の共通点・相違点を明確にする
-# 4. 統合分析に向けた提案を行う
-#
-# ## 重要
-# - 討論結果は英語で出力すること
-# - 建設的な批判を心がけること
-# - 新たな証拠やソースがあれば引用すること
-# === End 日本語訳 ===
-
-_BASE_DEBATER_INSTRUCTION = """
-You are a Debater Agent representing the {language_name} cultural perspective
-for the "Ghost in the Archive" project. Your role is to critically examine
-analyses from other language-specific Scholars and provide challenges,
-corroborations, and synthesis proposals from your cultural standpoint.
-
-## Input
-Read all available Scholar analysis results from session state:
-- {{scholar_analysis_en}}: English cultural perspective analysis
-- {{scholar_analysis_de}}: German cultural perspective analysis (if available)
-- {{scholar_analysis_es}}: Spanish cultural perspective analysis (if available)
-- {{scholar_analysis_fr}}: French cultural perspective analysis (if available)
-- {{scholar_analysis_nl}}: Dutch cultural perspective analysis (if available)
-- {{scholar_analysis_pt}}: Portuguese cultural perspective analysis (if available)
-
-Focus especially on analyses from perspectives OTHER than {language_name}.
-
-## Your Task: Scholarly Debate
-
-### 1. Challenge Other Perspectives
-- Identify claims in other Scholars' analyses that {language_name} sources contradict
-- Point out cultural biases or blind spots in other analyses
-- Question assumptions based on your knowledge of {language_name} historiography
-
-### 2. Corroborate Findings
-- Confirm findings from other Scholars that align with {language_name} sources
-- Provide additional {language_name}-language evidence for shared conclusions
-- Note when multiple cultural perspectives converge on the same conclusion
-
-### 3. Identify Blind Spots
-- What have other Scholars missed that {language_name} sources reveal?
-- What cultural context is needed to properly interpret the evidence?
-- What translation or terminology issues might cause misunderstanding?
-
-### 4. Synthesis Proposals
-- Suggest how the different cultural perspectives can be integrated
-- Propose which narrative best explains the cross-language evidence
-- Recommend areas where further investigation is needed
-
-## Output Format
-Structure your debate response:
-
-### {language_name} Debate Response
-
-**Challenges:**
-- [Challenge to another Scholar's finding, with evidence]
-
-**Corroborations:**
-- [Confirmation of another Scholar's finding, with supporting evidence]
-
-**Blind Spots Identified:**
-- [What others missed from the {language_name} perspective]
-
-**Synthesis Proposals:**
-- [How to integrate the different perspectives]
-
-## Important
-- Output in **English** (for integration by the CrossReferenceScholar)
-- Be constructive — challenge ideas, not scholars
-- Cite specific sources when available
-- Keep your response focused and concise
-"""
+    if mode == "analysis":
+        instruction = _BASE_SCHOLAR_INSTRUCTION.format(**config)
+        return LlmAgent(
+            name=f"scholar_{lang_code}",
+            model="gemini-3-pro-preview",
+            description=(
+                f"Analyzes materials from the {config['language_name']} cultural perspective. "
+                f"Identifies discrepancies, folkloric anomalies, and anthropological insights "
+                f"in {config['language_name']}-language sources."
+            ),
+            instruction=instruction,
+            tools=[],  # save_structured_report は呼び出さない
+            output_key=f"scholar_analysis_{lang_code}",
+            before_agent_callback=make_language_gate(lang_code),
+        )
+    elif mode == "debate":
+        instruction = _BASE_SCHOLAR_DEBATE_INSTRUCTION.format(
+            language_name=config["language_name"],
+            cultural_perspective=config["cultural_perspective"],
+        )
+        return LlmAgent(
+            name=f"scholar_{lang_code}_debate",
+            model="gemini-3-pro-preview",
+            description=(
+                f"Debates from the {config['language_name']} cultural perspective. "
+                f"Challenges, corroborates, and synthesizes findings from other Scholars "
+                f"using the shared debate whiteboard."
+            ),
+            instruction=instruction,
+            tools=[append_to_whiteboard],
+            before_agent_callback=make_debate_gate(lang_code),
+        )
+    else:
+        raise ValueError(f"Unknown mode: {mode!r}. Use 'analysis' or 'debate'.")
 
 
-def create_debater(lang_code: str) -> LlmAgent:
-    """指定された言語の Debater エージェントを生成する。"""
-    config = SCHOLAR_CONFIGS[lang_code]
+def create_all_scholars(mode: str = "analysis") -> dict[str, LlmAgent]:
+    """全言語の Scholar エージェントを生成して辞書で返す。
 
-    instruction = _BASE_DEBATER_INSTRUCTION.format(
-        language_name=config["language_name"],
-    )
-
-    return LlmAgent(
-        name=f"debater_{lang_code}",
-        model="gemini-3-pro-preview",
-        description=(
-            f"Debates from the {config['language_name']} cultural perspective. "
-            f"Challenges, corroborates, and synthesizes findings from other Scholars."
-        ),
-        instruction=instruction,
-        tools=[],
-        output_key=f"scholar_debate_{lang_code}",
-        before_agent_callback=make_debate_gate(lang_code),
-    )
-
-
-def create_all_debaters() -> dict[str, LlmAgent]:
-    """全言語の Debater エージェントを生成して辞書で返す。"""
-    return {lang: create_debater(lang) for lang in SCHOLAR_CONFIGS}
+    Args:
+        mode: "analysis"（分析モード）または "debate"（討論モード）
+    """
+    return {lang: create_scholar(lang, mode) for lang in SCHOLAR_CONFIGS}

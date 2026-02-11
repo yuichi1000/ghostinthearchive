@@ -32,6 +32,9 @@ from .scholar_tools import (
     save_structured_report,
 )
 
+# Debate tools
+from .debate_tools import append_to_whiteboard
+
 # ThemeAnalyzer Agent LLM-facing tools
 from .theme_analyzer_tools import save_language_selection
 
@@ -61,6 +64,8 @@ __all__ = [
     "list_available_results",
     "save_mystery_report",
     "save_structured_report",
+    # Debate tools
+    "append_to_whiteboard",
     # ThemeAnalyzer LLM tools
     "save_language_selection",
 ]

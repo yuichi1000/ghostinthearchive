@@ -20,6 +20,7 @@ mock_adk.agents.run_config = MagicMock()
 mock_adk.agents.invocation_context = MagicMock()
 mock_adk.agents.BaseAgent = MagicMock
 mock_adk.agents.ParallelAgent = MagicMock
+mock_adk.agents.LoopAgent = MagicMock
 mock_adk.agents.callback_context = MagicMock()
 mock_adk.events = MagicMock()
 mock_adk.events.event = MagicMock()
