@@ -12,6 +12,10 @@ class SourceLanguage(str, Enum):
 
     EN = "en"
     ES = "es"
+    DE = "de"
+    FR = "fr"
+    NL = "nl"
+    PT = "pt"
 
 
 class SourceType(str, Enum):
@@ -23,6 +27,8 @@ class SourceType(str, Enum):
     NYPL = "nypl"
     PARES = "pares"
     INTERNET_ARCHIVE = "internet_archive"
+    EUROPEANA = "europeana"
+    DDB = "ddb"
 
 
 class ArchiveDocument(BaseModel):
@@ -35,7 +41,7 @@ class ArchiveDocument(BaseModel):
     date: Optional[str] = Field(None, description="ISO date string (YYYY-MM-DD)")
     source_url: str = Field(..., description="URL to the original source")
     summary: str = Field(..., description="Brief summary of the document content")
-    language: SourceLanguage = Field(..., description="Primary language: en or es")
+    language: SourceLanguage = Field(..., description="Primary language: en, es, de, fr, nl, or pt")
     location: str = Field(..., description="Physical location or origin")
     source_type: SourceType = Field(..., description="Source API type")
     raw_text: Optional[str] = Field(None, description="Full OCR or text content")

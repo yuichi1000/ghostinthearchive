@@ -26,11 +26,22 @@ def _rate_limit() -> None:
     _last_request_time = time.time()
 
 
+_LANG_CODE_MAP = {
+    "en": ["eng", "english"],
+    "es": ["spa", "spanish", "español"],
+    "de": ["ger", "deu", "german", "deutsch"],
+    "fr": ["fre", "fra", "french", "français"],
+    "nl": ["dut", "nld", "dutch", "nederlands"],
+    "pt": ["por", "portuguese", "português"],
+}
+
+
 def search_internet_archive(
     keywords: List[str],
     date_start: str = "1800",
     date_end: str = "1899",
     max_results: int = 20,
+    language: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Search Internet Archive for historical materials.
 
@@ -39,6 +50,7 @@ def search_internet_archive(
         date_start: Start year
         date_end: End year
         max_results: Maximum results to return
+        language: Optional ISO 639-1 language code (en, de, fr, etc.) to filter results
 
     Returns:
         Dict with documents, total_hits, error keys.
@@ -51,6 +63,12 @@ def search_internet_archive(
     end_year = date_end[:4] if len(date_end) >= 4 else date_end
 
     query = f"({search_text}) AND date:[{start_year}-01-01 TO {end_year}-12-31]"
+
+    # 言語フィルタ: ocr_detected_lang または language メタデータで絞り込み
+    if language and language in _LANG_CODE_MAP:
+        lang_codes = _LANG_CODE_MAP[language]
+        lang_filter = " OR ".join(f'language:"{code}"' for code in lang_codes)
+        query = f"{query} AND ({lang_filter})"
 
     params = {
         "q": query,
@@ -94,10 +112,10 @@ def search_internet_archive(
             if isinstance(date_str, list) and date_str:
                 date_str = str(date_str[0])
 
-            language = item.get("language", "")
-            if isinstance(language, list) and language:
-                language = str(language[0])
-            lang = SourceLanguage.ES if "spa" in str(language).lower() or "spanish" in str(language).lower() else SourceLanguage.EN
+            item_language = item.get("language", "")
+            if isinstance(item_language, list) and item_language:
+                item_language = str(item_language[0])
+            lang = _detect_source_language(str(item_language))
 
             combined = f"{title} {description}".lower()
             matched = [kw for kw in keywords if kw.lower() in combined]
@@ -120,6 +138,19 @@ def search_internet_archive(
 
     except (requests.RequestException, json.JSONDecodeError) as e:
         return {"documents": [], "total_hits": 0, "error": f"Internet Archive API error: {e}"}
+
+
+def _detect_source_language(lang_str: str) -> SourceLanguage:
+    """メタデータの言語文字列から SourceLanguage を判定する。"""
+    lower = lang_str.lower()
+    for lang_code, identifiers in _LANG_CODE_MAP.items():
+        for ident in identifiers:
+            if ident in lower:
+                try:
+                    return SourceLanguage(lang_code)
+                except ValueError:
+                    break
+    return SourceLanguage.EN
 
 
 def _parse_year(date_str: str) -> Optional[str]:
