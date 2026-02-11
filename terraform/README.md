@@ -62,5 +62,4 @@ echo -n "YOUR_VALUE" | gcloud secrets versions add google-oauth-client-id --data
 echo -n "YOUR_VALUE" | gcloud secrets versions add google-oauth-client-secret --data-file=-
 echo -n "YOUR_VALUE" | gcloud secrets versions add dpla-api-key --data-file=-
 echo -n "YOUR_VALUE" | gcloud secrets versions add nypl-api-token --data-file=-
-echo -n "YOUR_VALUE" | gcloud secrets versions add revalidate-secret --data-file=-
 ```

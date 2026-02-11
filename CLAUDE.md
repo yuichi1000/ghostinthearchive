@@ -92,13 +92,12 @@ web-admin と web-public で共通するコードは `packages/shared/`（`@ghos
 - **Data:** Cloud Storage, Firestore
 - **Web:** Next.js
 
-## Web Architecture (ISR)
+## Web Architecture
 
-- Next.js は ISR（Incremental Static Regeneration）で動作
-- 公開ページ（`/`, `/mystery/[id]`）: `revalidate = 86400`（24時間キャッシュ）
-  - 24時間以内のアクセスは Firestore にアクセスせずキャッシュを返す
-  - 記事公開・承認時は `/api/revalidate` で即座にキャッシュ破棄
-- 管理画面（`/admin`）: クライアントサイドレンダリング（毎回 Firestore アクセス）
+- **web-public**: SSG（Static Site Generation）で動作（`output: "export"`）
+  - ビルド時に全ページを静的 HTML として生成
+  - 記事更新時は Cloud Build で再ビルド・再デプロイ
+- **web-admin**: クライアントサイドレンダリング（毎回 Firestore アクセス）
 - 記事更新頻度: 1日最大1回
 
 ## TODO
