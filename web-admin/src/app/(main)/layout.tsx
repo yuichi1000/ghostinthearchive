@@ -1,5 +1,4 @@
 import { Header } from "@/components/header"
-import { Footer } from "@ghost/shared/src/components/footer"
 
 export default function AdminLayout({
   children,
@@ -10,7 +9,6 @@ export default function AdminLayout({
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">{children}</main>
-      <Footer />
     </div>
   )
 }
