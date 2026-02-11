@@ -5,9 +5,12 @@
 collected_documents_{lang} に結果を保存する。
 
 全 Librarian は gemini-2.5-flash を使用（資料検索は Flash で十分）。
+モデル設定は shared/model_config.py で一元管理（429 リトライ付き）。
 """
 
 from google.adk.agents import LlmAgent
+
+from shared.model_config import create_flash_model
 
 from .language_gate import make_language_gate
 from ..tools.librarian_tools import (
@@ -176,7 +179,7 @@ def create_librarian(lang_code: str) -> LlmAgent:
 
     return LlmAgent(
         name=f"librarian_{lang_code}",
-        model="gemini-2.5-flash",
+        model=create_flash_model(),
         description=(
             f"{config['language_name']}-language archive specialist. "
             f"Searches {config['sources_hint']} for {config['language_name']} primary sources."

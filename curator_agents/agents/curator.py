@@ -7,6 +7,8 @@ overlap with existing mysteries.
 
 from google.adk.agents import LlmAgent
 
+from shared.model_config import create_pro_model
+
 # === 日本語訳 ===
 # あなたは「Ghost in the Archive」プロジェクトのテーマ提案エージェントです。
 # 管理者が次の調査テーマを選ぶ際に、興味深いテーマを5件提案してください。
@@ -77,7 +79,7 @@ Suggest exactly 5 themes.
 
 curator_agent = LlmAgent(
     name="curator",
-    model="gemini-3-pro-preview",
+    model=create_pro_model(),
     description=(
         "Agent that suggests Fact × Folklore hybrid research themes. "
         "Outputs theme suggestions in English as JSON."

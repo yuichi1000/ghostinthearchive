@@ -9,6 +9,8 @@ CrossReferenceScholar の後継。output_key は既存と同じ "mystery_report"
 
 from google.adk.agents import LlmAgent
 
+from shared.model_config import create_pro_model
+
 from ..tools.scholar_tools import save_structured_report
 
 # === 日本語訳 ===
@@ -203,7 +205,7 @@ This call is mandatory — do NOT skip it.
 
 armchair_polymath_agent = LlmAgent(
     name="armchair_polymath",
-    model="gemini-3-pro-preview",
+    model=create_pro_model(),
     description=(
         "The Armchair Polymath: a sardonic, encyclopaedically learned synthesizer "
         "who integrates analysis results from multiple language-specific Scholars "
