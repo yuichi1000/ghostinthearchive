@@ -11,14 +11,14 @@ services:
       - GOOGLE_CLOUD_PROJECT=ghostinthearchive
       - GOOGLE_GENAI_USE_VERTEXAI=TRUE
       - GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/adc.json
-      - FIRESTORE_EMULATOR_HOST=
+      - FIRESTORE_EMULATOR_HOST=host.docker.internal:8080
     volumes:
       - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/keys/adc.json:ro
 
-  # NOTE: Pipeline runs on port 8002 (Curator on 8001) because they are
+  # NOTE: Mystery Pipeline runs on port 8002 (Curator on 8001) because they are
   # separate services with different resource/timeout requirements.
   # See services/mystery_pipeline.py docstring for details.
-  pipeline:
+  mystery-pipeline:
     build:
       context: .
       dockerfile: Dockerfile
