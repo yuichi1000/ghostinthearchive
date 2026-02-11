@@ -1,13 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { Archive, Search, Menu } from "lucide-react"
+import { Archive } from "lucide-react"
 
 export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
             <div className="relative">
@@ -18,24 +18,6 @@ export function Header() {
               Ghost in the Archive
             </span>
           </Link>
-
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
-            <Link
-              href="/"
-              className="text-sm text-muted-foreground hover:text-parchment transition-colors font-mono uppercase tracking-wide"
-            >
-              Discoveries
-            </Link>
-            <button className="p-2 text-muted-foreground hover:text-parchment transition-colors" aria-label="Search archives">
-              <Search className="w-4 h-4" />
-            </button>
-          </nav>
-
-          {/* Mobile menu button */}
-          <button className="md:hidden p-2 text-muted-foreground hover:text-parchment transition-colors" aria-label="Open menu">
-            <Menu className="w-5 h-5" />
-          </button>
         </div>
       </div>
     </header>
