@@ -57,6 +57,26 @@ export default function HomePage() {
       <main className="flex-1">
         <Hero />
 
+        {/* ヒーロー画像バナー */}
+        <section className="relative overflow-hidden -mt-32">
+          <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
+
+          <picture>
+            <source media="(max-width: 640px)" srcSet="/images/hero-bg_sm.webp" type="image/webp" />
+            <source media="(max-width: 828px)" srcSet="/images/hero-bg_md.webp" type="image/webp" />
+            <source media="(max-width: 1200px)" srcSet="/images/hero-bg_lg.webp" type="image/webp" />
+            <source media="(min-width: 1201px)" srcSet="/images/hero-bg_xl.webp" type="image/webp" />
+            <img
+              src="/images/hero-bg_xl.webp"
+              alt="Ghost in the Archive — AI agents at work in the archive"
+              className="w-full h-auto"
+              fetchPriority="high"
+            />
+          </picture>
+
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
+        </section>
+
         {/* Operational Disclosure */}
         <section className="py-16 border-t border-border/50">
           <div className="container mx-auto px-4">
