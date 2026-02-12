@@ -1,11 +1,13 @@
 """LLM-facing tool functions for the Illustrator Agent.
 
 Generates images using Imagen 3 and saves them to local storage.
+LLM ベースのプロンプト安全書き換えと画像-記事整合性検証を含む。
 """
 
 import json
 import logging
 import os
+import re
 import tempfile
 import time
 from datetime import datetime
@@ -21,6 +23,10 @@ from google.genai import types
 # Retry configuration
 MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 2
+
+# 画像検証の設定
+VALIDATION_CONFIDENCE_THRESHOLD = 0.6
+VALIDATION_MODEL = "gemini-2.5-flash"
 
 # Fallback image path
 ASSETS_DIR = Path(__file__).parent.parent / "assets"
@@ -241,6 +247,121 @@ def _build_safe_fallback_prompt(style: str) -> str:
         )
 
 
+def _get_style_description(style: str) -> str:
+    """スタイルの説明文を返す。"""
+    if style == "fact":
+        return "Black and white archival photograph, monochrome, silver gelatin print"
+    elif style == "folklore":
+        return "19th century woodcut engraving, cross-hatching, sepia toned"
+    return "Atmospheric, cinematic composition"
+
+
+def _rewrite_safe_prompt(prompt: str, style: str) -> str:
+    """Gemini Flash で元プロンプトを安全に書き換える。
+
+    単語置換ではなく、LLM が文脈を理解して:
+    - 人物・暴力・超自然 → 場所・建物・オブジェクト・風景に変換
+    - 時代・場所・雰囲気は維持
+    - スタイル指定を保持
+
+    Flash 呼び出し失敗時は既存の _sanitize_prompt にフォールバック。
+    """
+    rewrite_instruction = f"""Rewrite this image generation prompt to pass Imagen 3's safety filter.
+
+Rules:
+- Replace people, figures, creatures → locations, architecture, objects, landscapes
+- Replace violence, death, crime → aftermath scenes, empty spaces, symbolic objects
+- Replace supernatural elements → atmospheric natural phenomena (fog, storms, shadows)
+- KEEP the historical era, geographic location, and mood
+- KEEP the artistic style instructions
+- Output ONLY the rewritten prompt, nothing else
+
+Examples:
+- "A ghostly figure haunting a 1890s Salem courtroom" → "An empty 1890s Salem courtroom at dusk, long shadows stretching across wooden benches, dust motes in fading light from tall windows, abandoned judge's gavel"
+- "Jack the Ripper stalking foggy London alleys" → "A narrow gaslit alley in 1888 Whitechapel, wet cobblestones reflecting dim lamplight, fog rolling between dark brick buildings, a single abandoned top hat on the ground"
+- "Bell Witch attacking the Bell family" → "The weathered Bell farmhouse in 1817 Tennessee, wind-bent trees surrounding a lonely homestead, storm clouds gathering at twilight, a rocking chair moving on an empty porch"
+
+Original prompt: {prompt}"""
+
+    try:
+        client = _get_client()
+        response = client.models.generate_content(
+            model=VALIDATION_MODEL,
+            contents=rewrite_instruction,
+        )
+        rewritten = response.text.strip()
+        if rewritten:
+            logger.info(
+                "LLM prompt rewrite succeeded. original=%s, rewritten=%s",
+                prompt[:80], rewritten[:80],
+            )
+            return rewritten
+    except Exception as e:
+        logger.warning(
+            "LLM prompt rewrite failed, falling back to _sanitize_prompt: %s", e,
+        )
+
+    # フォールバック: 既存の単語置換
+    return _sanitize_prompt(prompt)
+
+
+def _build_contextual_safe_prompt(
+    style: str, tool_context: Optional[ToolContext],
+) -> str:
+    """記事内容から安全な新コンセプトを生成。
+
+    元プロンプトとは異なるアプローチで、記事の
+    場所・時代・雰囲気だけを使って安全なプロンプトを作る。
+
+    creative_content が取得できない場合、または Flash 呼び出し失敗時は
+    既存の _build_safe_fallback_prompt にフォールバック。
+    """
+    creative_content = None
+    if tool_context is not None:
+        creative_content = tool_context.state.get("creative_content")
+
+    if not creative_content or "NO_CONTENT" in str(creative_content):
+        return _build_safe_fallback_prompt(style)
+
+    style_desc = _get_style_description(style)
+    contextual_instruction = f"""Create a safe image generation prompt for an AI image generator based on this article.
+
+The prompt must be COMPLETELY SAFE:
+- NO people, faces, figures, or creatures
+- NO violence, weapons, blood, death, supernatural imagery
+- ONLY: landscapes, architecture, objects, documents, weather, nature
+
+Extract from the article: the historical era, geographic location, and overall mood.
+Create a visually compelling scene using ONLY safe elements.
+
+Style: {style_desc}
+Article (first 500 chars): {str(creative_content)[:500]}
+
+Output ONLY the image generation prompt, nothing else.
+
+Safe image prompt:"""
+
+    try:
+        client = _get_client()
+        response = client.models.generate_content(
+            model=VALIDATION_MODEL,
+            contents=contextual_instruction,
+        )
+        contextual_prompt = response.text.strip()
+        if contextual_prompt:
+            logger.info(
+                "Contextual safe prompt generated: %s", contextual_prompt[:80],
+            )
+            return contextual_prompt
+    except Exception as e:
+        logger.warning(
+            "Contextual safe prompt generation failed, using generic fallback: %s", e,
+        )
+
+    # フォールバック: 既存の汎用プロンプト
+    return _build_safe_fallback_prompt(style)
+
+
 def _get_client() -> genai.Client:
     """Get a configured genai client."""
     if os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").upper() == "TRUE":
@@ -390,14 +511,14 @@ def generate_image(
                 attempt + 1, MAX_RETRIES, current_prompt[:100],
             )
 
-            # Progressive retry strategy:
-            # attempt 0 failed → sanitize prompt for attempt 1
-            # attempt 1 failed → use safe fallback prompt for attempt 2
+            # LLM ベースのプログレッシブ・リトライ戦略:
+            # attempt 0 失敗 → LLM で知的書き換え（attempt 1 用）
+            # attempt 1 失敗 → 記事から安全な新コンセプト生成（attempt 2 用）
             if attempt == 0:
-                current_prompt = _sanitize_prompt(current_prompt)
+                current_prompt = _rewrite_safe_prompt(current_prompt, style)
                 prompt_sanitized = True
             elif attempt == 1:
-                current_prompt = _build_safe_fallback_prompt(style)
+                current_prompt = _build_contextual_safe_prompt(style, tool_context)
                 prompt_sanitized = True
             continue
 
@@ -429,13 +550,13 @@ def generate_image(
                 attempt + 1, MAX_RETRIES, last_error,
             )
 
-            # Progressive retry for other errors too
+            # LLM ベースのプログレッシブ・リトライ（その他エラー時も同様）
             if attempt == 0:
-                current_prompt = _sanitize_prompt(current_prompt)
+                current_prompt = _rewrite_safe_prompt(current_prompt, style)
                 prompt_sanitized = True
                 continue
             elif attempt == 1:
-                current_prompt = _build_safe_fallback_prompt(style)
+                current_prompt = _build_contextual_safe_prompt(style, tool_context)
                 prompt_sanitized = True
                 continue
 
@@ -482,3 +603,137 @@ def generate_image(
         "original_prompt": full_prompt,
         "attempts": MAX_RETRIES,
     }, ensure_ascii=False)
+
+
+def validate_image(
+    image_filepath: str,
+    expected_theme: str,
+    style: str = "auto",
+    tool_context: Optional[ToolContext] = None,
+) -> str:
+    """生成画像と記事内容の整合性を Gemini Flash で検証する。
+
+    生成された画像が記事テーマと一致するか、時代錯誤がないか、
+    スタイルが適切かをマルチモーダル LLM で評価する。
+    フェイルオープン: 検証自体が失敗した場合は現画像を使用する。
+
+    Args:
+        image_filepath: 生成画像のファイルパス。
+        expected_theme: 記事テーマの要約（2-5文、Illustrator LLM が作成）。
+        style: 使用したスタイル — "fact" / "folklore" / "auto"。
+        tool_context: ADK ToolContext（セッション状態への保存用）。
+
+    Returns:
+        JSON string: {"verdict": "pass"/"fail", "confidence": 0.0-1.0,
+                       "feedback": "...", "suggested_focus": "..."}
+                      または {"status": "error", "error": "..."} — フェイルオープン。
+    """
+    filepath = Path(image_filepath)
+    if not filepath.exists():
+        logger.warning("validate_image: ファイルが存在しない: %s", image_filepath)
+        return json.dumps({
+            "status": "error",
+            "error": f"Image file not found: {image_filepath}",
+        }, ensure_ascii=False)
+
+    # 画像を読み込む
+    try:
+        from PIL import Image as PILImage
+        img = PILImage.open(filepath)
+        img.load()  # 画像データの検証
+    except Exception as e:
+        logger.warning("validate_image: 画像読み込み失敗: %s", e)
+        return json.dumps({
+            "status": "error",
+            "error": f"Failed to load image: {e}",
+        }, ensure_ascii=False)
+
+    style_desc = _get_style_description(style)
+
+    validation_prompt = f"""Evaluate whether this image is appropriate as a hero image for the following article.
+
+Article summary: {expected_theme}
+Intended style: {style_desc}
+
+Criteria:
+1. THEME MATCH: Does the image relate to the article's subject (location, era, objects, atmosphere)?
+2. ERA CONSISTENCY: No anachronisms (modern elements in historical setting)?
+3. STYLE ADHERENCE: fact=B&W archival photo / folklore=woodcut/engraving?
+4. QUALITY: No obvious AI artifacts or distorted objects?
+
+Respond in JSON only: {{"verdict":"pass" or "fail", "confidence":0.0 to 1.0, "feedback":"one sentence", "suggested_focus":"if fail, what to focus on instead"}}"""
+
+    # 最大2回試行（1回目失敗時に1回リトライ）
+    max_attempts = 2
+    for attempt in range(max_attempts):
+        try:
+            client = _get_client()
+            # 画像バイトを読み込んで送信
+            image_bytes = filepath.read_bytes()
+            image_part = types.Part.from_bytes(
+                data=image_bytes,
+                mime_type=f"image/{filepath.suffix.lstrip('.').replace('jpg', 'jpeg')}",
+            )
+            response = client.models.generate_content(
+                model=VALIDATION_MODEL,
+                contents=[image_part, validation_prompt],
+            )
+            raw_text = response.text.strip()
+
+            # JSON パース試行
+            try:
+                result = json.loads(raw_text)
+            except json.JSONDecodeError:
+                # 正規表現で verdict と confidence を抽出
+                verdict_match = re.search(r'"verdict"\s*:\s*"(pass|fail)"', raw_text)
+                confidence_match = re.search(r'"confidence"\s*:\s*([\d.]+)', raw_text)
+                if verdict_match:
+                    result = {
+                        "verdict": verdict_match.group(1),
+                        "confidence": float(confidence_match.group(1)) if confidence_match else 0.5,
+                        "feedback": raw_text[:200],
+                        "suggested_focus": "",
+                    }
+                else:
+                    logger.warning(
+                        "validate_image: レスポンスのパースに失敗: %s", raw_text[:200],
+                    )
+                    return json.dumps({
+                        "status": "error",
+                        "error": f"Unparseable response: {raw_text[:200]}",
+                    }, ensure_ascii=False)
+
+            # confidence が閾値未満なら verdict を fail に上書き
+            confidence = float(result.get("confidence", 0))
+            if confidence < VALIDATION_CONFIDENCE_THRESHOLD:
+                result["verdict"] = "fail"
+                if "below threshold" not in result.get("feedback", ""):
+                    result["feedback"] = (
+                        f"Confidence {confidence:.2f} below threshold "
+                        f"{VALIDATION_CONFIDENCE_THRESHOLD}. "
+                        + result.get("feedback", "")
+                    )
+
+            logger.info(
+                "validate_image: verdict=%s, confidence=%.2f, feedback=%s",
+                result.get("verdict"), confidence, result.get("feedback", "")[:80],
+            )
+
+            # セッション状態に保存
+            if tool_context is not None:
+                tool_context.state["image_validation"] = result
+
+            return json.dumps(result, ensure_ascii=False)
+
+        except Exception as e:
+            logger.warning(
+                "validate_image: API エラー (attempt %d/%d): %s",
+                attempt + 1, max_attempts, e,
+            )
+            if attempt < max_attempts - 1:
+                time.sleep(2)
+                continue
+            return json.dumps({
+                "status": "error",
+                "error": f"Validation API error: {e}",
+            }, ensure_ascii=False)
