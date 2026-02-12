@@ -2,25 +2,50 @@
 
 プロジェクト内の全 ADK エージェントのプロパティと期待される eval シナリオの一覧。
 
-## Archive パイプライン（`archive_agents/`）
+## ブログ作成パイプライン（`mystery_agents/`）
 
-パイプライン順序: Librarian → Scholar → Storyteller → Illustrator → Publisher
+パイプライン順序: ThemeAnalyzer → ParallelLibrarians → [ScholarGate] → ParallelScholars(分析) → DebateLoop(討論) → [PolymathGate] → ArmchairPolymath → [StorytellerGate] → Storyteller → [PostStoryGate] → Illustrator → Translator → Publisher
 
 Curator はスタンドアロンエージェント（シーケンシャルパイプラインには含まれない）。
+
+### ThemeAnalyzer
+
+| プロパティ | 値 |
+|----------|-------|
+| モジュール | `mystery_agents/agents/theme_analyzer.py` |
+| 変数名 | `theme_analyzer_agent` |
+| モデル | `gemini-2.5-flash` |
+| 出力キー | `theme_analysis` |
+| ツール | `save_language_selection` |
+| 前段 | （なし — パイプライン最初のエージェント） |
+| チェックするマーカー | （なし） |
+| 出力するマーカー | （なし） |
+| プレースホルダー | （なし） |
+
+**Eval シナリオ:**
+
+| eval_id | 説明 | tool_uses | final_response キーワード |
+|---------|------|-----------|------------------------|
+| `theme_analyzer_geographic_selection` | 地理的手がかりに基づく言語選択（ニューオーリンズ → en, fr, es） | `save_language_selection` | `theme_analysis selected_languages en fr es` |
+| `theme_analyzer_cultural_selection` | 文化的手がかりに基づく言語選択（ペンシルベニア独系 → en, de） | `save_language_selection` | `theme_analysis selected_languages en de` |
+| `theme_analyzer_default_fallback` | デフォルトフォールバック（南部一般 → en, es） | `save_language_selection` | `theme_analysis selected_languages en es` |
+| `theme_analyzer_single_language` | 単一言語選択（西部開拓 → en のみ） | `save_language_selection` | `theme_analysis selected_languages en` |
+
+---
 
 ### Librarian
 
 | プロパティ | 値 |
 |----------|-------|
-| モジュール | `archive_agents/agents/librarian.py` |
-| 変数名 | `librarian_agent` |
-| モデル | `gemini-3-pro-preview` |
-| 出力キー | `collected_documents` |
-| ツール | `search_newspapers`, `search_archives`, `get_available_keywords` |
-| 前段 | （なし — 最初のエージェント） |
+| モジュール | `mystery_agents/agents/language_librarians.py` |
+| 変数名 | `create_librarian(lang_code)` ファクトリ関数 |
+| モデル | `gemini-2.5-flash` |
+| 出力キー | `collected_documents_{lang}` |
+| ツール | EN: `search_newspapers`, `search_archives`, `get_available_keywords` / 他言語: `search_archives` のみ |
+| 前段 | ThemeAnalyzer（言語選択） |
 | チェックするマーカー | （なし） |
 | 出力するマーカー | `NO_DOCUMENTS_FOUND` |
-| プレースホルダー | （なし） |
+| プレースホルダー | `{language_name}`, `{lang_code}`, `{cultural_context}`, `{sources_hint}`, `{newspaper_instruction}` |
 
 **Eval シナリオ:**
 
@@ -37,15 +62,15 @@ Curator はスタンドアロンエージェント（シーケンシャルパイ
 
 | プロパティ | 値 |
 |----------|-------|
-| モジュール | `archive_agents/agents/scholar.py` |
-| 変数名 | `scholar_agent` |
+| モジュール | `mystery_agents/agents/language_scholars.py` |
+| 変数名 | `create_scholar(lang_code, mode)` ファクトリ関数 |
 | モデル | `gemini-3-pro-preview` |
-| 出力キー | `mystery_report` |
-| ツール | （なし） |
-| 前段 | Librarian（`collected_documents`） |
+| 出力キー | `scholar_analysis_{lang}` |
+| ツール | 分析モード: （なし）/ 討論モード: `append_to_whiteboard` |
+| 前段 | Librarian（`collected_documents_{lang}`） |
 | チェックするマーカー | `NO_DOCUMENTS_FOUND` |
 | 出力するマーカー | `INSUFFICIENT_DATA` |
-| プレースホルダー | `{collected_documents}` |
+| プレースホルダー | 分析: `{collected_documents_{lang}}`, `{collected_documents_en}` / 討論: `{scholar_analysis_*}`, `{debate_whiteboard}` |
 
 **Eval シナリオ:**
 
@@ -59,16 +84,41 @@ Curator はスタンドアロンエージェント（シーケンシャルパイ
 
 ---
 
+### Armchair Polymath
+
+| プロパティ | 値 |
+|----------|-------|
+| モジュール | `mystery_agents/agents/armchair_polymath.py` |
+| 変数名 | `armchair_polymath_agent` |
+| モデル | `gemini-3-pro-preview` |
+| 出力キー | `mystery_report` |
+| ツール | `save_structured_report` |
+| 前段 | Scholar（`scholar_analysis_{lang}`）+ DebateLoop（`debate_whiteboard`） |
+| チェックするマーカー | 全 Scholar 分析が空 → `INSUFFICIENT_DATA` |
+| 出力するマーカー | `INSUFFICIENT_DATA` |
+| プレースホルダー | `{scholar_analysis_en}`, `{scholar_analysis_de}`, `{scholar_analysis_es}`, `{scholar_analysis_fr}`, `{scholar_analysis_nl}`, `{scholar_analysis_pt}`, `{debate_whiteboard}` |
+
+**Eval シナリオ:**
+
+| eval_id | 説明 | tool_uses | final_response キーワード |
+|---------|------|-----------|------------------------|
+| `armchair_polymath_cross_language` | 3言語統合分析（en+de+nl）ニューアムステルダム | `save_structured_report` | `mystery_report classification discrepancy hypothesis cross_reference` |
+| `armchair_polymath_single_language` | 単一言語分析（en）ボストン幽霊屋敷 | `save_structured_report` | `mystery_report hypothesis evidence historical_context` |
+| `armchair_polymath_debate_integration` | 討論ホワイトボード統合、ルイジアナ奴隷反乱 | `save_structured_report` | `mystery_report debate discrepancy cross_reference cultural_bias` |
+| `armchair_polymath_insufficient_data` | 全分析空 → 失敗 | `[]` | `INSUFFICIENT_DATA` |
+
+---
+
 ### Storyteller
 
 | プロパティ | 値 |
 |----------|-------|
-| モジュール | `archive_agents/agents/storyteller.py` |
+| モジュール | `mystery_agents/agents/storyteller.py` |
 | 変数名 | `storyteller_agent` |
 | モデル | `gemini-3-pro-preview` |
 | 出力キー | `creative_content` |
 | ツール | （なし） |
-| 前段 | Scholar（`mystery_report`） |
+| 前段 | Armchair Polymath（`mystery_report`） |
 | チェックするマーカー | `INSUFFICIENT_DATA` |
 | 出力するマーカー | `NO_CONTENT` |
 | プレースホルダー | `{mystery_report}` |
@@ -88,7 +138,7 @@ Curator はスタンドアロンエージェント（シーケンシャルパイ
 
 | プロパティ | 値 |
 |----------|-------|
-| モジュール | `archive_agents/agents/illustrator.py` |
+| モジュール | `mystery_agents/agents/illustrator.py` |
 | 変数名 | `illustrator_agent` |
 | モデル | `gemini-3-pro-preview` |
 | 出力キー | `visual_assets` |
@@ -112,15 +162,15 @@ Curator はスタンドアロンエージェント（シーケンシャルパイ
 
 | プロパティ | 値 |
 |----------|-------|
-| モジュール | `archive_agents/agents/publisher.py` |
+| モジュール | `mystery_agents/agents/publisher.py` |
 | 変数名 | `publisher_agent` |
-| モデル | `gemini-3-pro-preview` |
+| モデル | `gemini-2.5-flash` |
 | 出力キー | `published_episode` |
-| ツール | `upload_images`, `publish_mystery` |
-| 前段 | Illustrator（`visual_assets`）+ 全上流キー |
-| チェックするマーカー | 全上流マーカー（`NO_DOCUMENTS_FOUND`, `INSUFFICIENT_DATA`, `NO_CONTENT`） |
+| ツール | `publish_mystery` |
+| 前段 | Illustrator（`visual_assets`）+ Translator（`translation_result`）+ 全上流キー |
+| チェックするマーカー | 全上流マーカー（`NO_DOCUMENTS_FOUND`, `INSUFFICIENT_DATA`, `NO_CONTENT`, `NO_TRANSLATION`） |
 | 出力するマーカー | （なし） |
-| プレースホルダー | `{collected_documents}`, `{mystery_report}`, `{creative_content}`, `{visual_assets}` |
+| プレースホルダー | `{collected_documents_en}`, `{mystery_report}`, `{creative_content}`, `{visual_assets}`, `{translation_result}` |
 
 **Eval シナリオ:**
 
@@ -136,7 +186,7 @@ Curator はスタンドアロンエージェント（シーケンシャルパイ
 
 | プロパティ | 値 |
 |----------|-------|
-| モジュール | `archive_agents/agents/curator.py` |
+| モジュール | `curator_agents/agents/curator.py` |
 | 変数名 | `curator_agent` |
 | モデル | `gemini-3-pro-preview` |
 | 出力キー | `suggested_themes` |
@@ -209,27 +259,30 @@ Curator はスタンドアロンエージェント（シーケンシャルパイ
 
 ## Translator パイプライン（`translator_agents/`）
 
+ブログパイプライン内で Illustrator → Translator → Publisher の順で実行される。
+また、Curator のテーマ提案翻訳にも使用される汎用翻訳エージェント。
+
 ### Translator
 
 | プロパティ | 値 |
 |----------|-------|
 | モジュール | `translator_agents/agents/translator.py` |
 | 変数名 | `translator_agent` |
-| モデル | `gemini-3-pro-preview` |
+| モデル | `gemini-2.5-flash` |
 | 出力キー | `translation_result` |
 | ツール | （なし） |
-| 前段 | （Firestore から事前セットされたフィールドを読み取り） |
-| チェックするマーカー | `NO_CONTENT` |
+| 前段 | Storyteller（`creative_content`）経由で入力 |
+| チェックするマーカー | `NO_CONTENT`, `INSUFFICIENT_DATA` |
 | 出力するマーカー | `NO_TRANSLATION` |
-| プレースホルダー | `{title}`, `{summary}`, `{narrative_content}`, `{discrepancy_detected}`, `{hypothesis}`, `{alternative_hypotheses}`, `{political_climate}`, `{story_hooks}` |
+| プレースホルダー | （入力は user message JSON として受け取る） |
 
 **Eval シナリオ:**
 
 | eval_id | 説明 | tool_uses | final_response キーワード |
 |---------|------|-----------|------------------------|
-| `translator_complete_translation` | 完全な日英翻訳 | `[]` | `translation_result title_en summary_en narrative_content_en` |
+| `translator_complete_translation` | 全フィールド EN→JA 翻訳 | `[]` | `translation_result title_ja summary_ja narrative_content_ja discrepancy_detected_ja hypothesis_ja` |
 | `translator_no_content_skip` | NO_CONTENT 入力時の NO_TRANSLATION 出力 | `[]` | `NO_TRANSLATION NO_CONTENT` |
-| `translator_json_output_format` | _en フィールド付き JSON 出力構造の検証 | `[]` | `translation_result JSON title_en` |
+| `translator_json_output_format` | `_ja` フィールド付き JSON 出力構造の検証 | `[]` | `translation_result title_ja summary_ja hypothesis_ja alternative_hypotheses_ja story_hooks_ja` |
 
 ---
 

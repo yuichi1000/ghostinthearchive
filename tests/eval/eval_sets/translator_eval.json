@@ -1,0 +1,91 @@
+{
+  "eval_set_id": "translator_eval_v1",
+  "name": "Translator Agent Evaluation",
+  "description": "Tests Translator's English-to-Japanese translation with _ja suffix JSON output",
+  "eval_cases": [
+    {
+      "eval_id": "translator_complete_translation",
+      "conversation": [
+        {
+          "invocation_id": "inv_001",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "以下の英語記事データを日本語に翻訳してください。\n\n{\"title\": \"The Vanishing Settlers of New Amsterdam\", \"summary\": \"Dutch colonial records reveal a mysterious settlement that appears and disappears from official documents between 1645 and 1650.\", \"narrative_content\": \"In the autumn of 1645, a small Dutch settlement on the banks of the Hudson River was recorded in the colonial ledger...\", \"discrepancy_detected\": \"The settlement appears in Dutch records but is absent from English surveys conducted just two years later.\", \"hypothesis\": \"The settlement may have been deliberately erased from records during the English takeover.\", \"alternative_hypotheses\": [\"Natural disaster destroyed the settlement\", \"Residents relocated voluntarily\"], \"historical_context\": {\"political_climate\": \"Tensions between Dutch and English colonial powers were escalating in the 1640s.\"}, \"story_hooks\": [\"Why would an entire settlement vanish from history?\", \"What secrets did the Hudson Valley hold?\"]}"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "translation_result title_ja summary_ja narrative_content_ja discrepancy_detected_ja hypothesis_ja"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "translator_no_content_skip",
+      "conversation": [
+        {
+          "invocation_id": "inv_002",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "以下のコンテンツを翻訳してください。\n\nNO_CONTENT"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "NO_TRANSLATION NO_CONTENT"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "translator_json_output_format",
+      "conversation": [
+        {
+          "invocation_id": "inv_003",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "以下の Bell Witch 伝説に関する英語記事データを日本語に翻訳してください。\n\n{\"title\": \"The Bell Witch: Tennessee's Most Enduring Terror\", \"summary\": \"Between 1817 and 1821, the Bell family of Adams, Tennessee experienced a haunting that would become America's most documented supernatural case.\", \"narrative_content\": \"John Bell first noticed something strange in the fields surrounding his farm in Robertson County...\", \"discrepancy_detected\": \"Official county records make no mention of any disturbances at the Bell farm, despite extensive newspaper coverage.\", \"hypothesis\": \"The Bell Witch legend may have originated from a land dispute that was deliberately obscured.\", \"alternative_hypotheses\": [\"Mass hysteria amplified by frontier isolation\", \"Deliberate hoax for commercial purposes\"], \"historical_context\": {\"political_climate\": \"Post-War of 1812 Tennessee was experiencing rapid expansion and land speculation.\"}, \"story_hooks\": [\"What really happened on the Bell farm?\", \"Why did Andrew Jackson himself allegedly investigate?\"]}"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "translation_result title_ja summary_ja hypothesis_ja alternative_hypotheses_ja story_hooks_ja"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

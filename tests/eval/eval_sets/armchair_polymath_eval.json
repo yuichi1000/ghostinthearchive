@@ -1,0 +1,125 @@
+{
+  "eval_set_id": "armchair_polymath_eval_v1",
+  "name": "Armchair Polymath Agent Evaluation",
+  "description": "Tests Armchair Polymath's cross-language synthesis and structured report generation",
+  "eval_cases": [
+    {
+      "eval_id": "armchair_polymath_cross_language",
+      "conversation": [
+        {
+          "invocation_id": "inv_001",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "17世紀のニューアムステルダム（現ニューヨーク）におけるオランダ植民地の記録を統合分析してください。英語・ドイツ語・オランダ語の3言語の学者分析が利用可能です。オランダ語の記録では存在しないはずの集落が記載されており、英語の記録ではその集落の住民が突然消失したと報じています。ドイツ語圏の旅行記には異なる日付で同じ事件が記録されています。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "save_structured_report", "args": {}}
+            ],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "mystery_report classification discrepancy hypothesis cross_reference"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "armchair_polymath_single_language",
+      "conversation": [
+        {
+          "invocation_id": "inv_002",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "1880年代のボストンにおける幽霊屋敷の報告を分析してください。英語の学者分析のみが利用可能です。新聞記事と不動産記録の間に矛盾があり、建物の所有者が公式記録から消去されている可能性があります。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "save_structured_report", "args": {}}
+            ],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "mystery_report hypothesis evidence historical_context"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "armchair_polymath_debate_integration",
+      "conversation": [
+        {
+          "invocation_id": "inv_003",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "ルイジアナ州における1811年の奴隷反乱について統合分析してください。英語・フランス語・スペイン語の学者分析と討論ホワイトボードの記録が利用可能です。討論では各言語の学者が文化的バイアスについて議論しており、フランス語の学者は英語記録の信頼性に疑問を呈しています。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "save_structured_report", "args": {}}
+            ],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "mystery_report debate discrepancy cross_reference cultural_bias"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "armchair_polymath_insufficient_data",
+      "conversation": [
+        {
+          "invocation_id": "inv_004",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "2099年の火星植民地における歴史的事件について統合分析してください。学者分析は全て空です。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "INSUFFICIENT_DATA"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
