@@ -76,6 +76,11 @@ resource "google_cloud_run_v2_service" "web_admin" {
         value = google_cloud_run_v2_service.pipeline.uri
       }
 
+      env {
+        name  = "CLOUD_BUILD_TRIGGER_ID"
+        value = google_cloudbuild_trigger.web_public.trigger_id
+      }
+
       resources {
         limits = {
           cpu    = "1"
