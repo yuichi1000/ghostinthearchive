@@ -29,16 +29,16 @@ export function Hero() {
     }
 
     const particles: Particle[] = []
-    const particleCount = 50
+    const particleCount = 70
 
     for (let i = 0; i < particleCount; i++) {
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        size: Math.random() * 2 + 0.5,
+        size: Math.random() * 2.5 + 0.5,
         speedX: (Math.random() - 0.5) * 0.3,
         speedY: (Math.random() - 0.5) * 0.2,
-        opacity: Math.random() * 0.3 + 0.1,
+        opacity: Math.random() * 0.35 + 0.15,
       })
     }
 
