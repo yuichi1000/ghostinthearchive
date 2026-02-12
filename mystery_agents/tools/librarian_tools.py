@@ -16,6 +16,7 @@ from .chronicling_america import search_chronicling_america
 from .ddb import search_ddb
 from .dpla import search_dpla
 from .internet_archive import search_internet_archive
+from .link_validator import validate_documents
 from .loc_digital import search_loc_digital
 from .nypl_digital import search_nypl
 
@@ -126,6 +127,9 @@ def search_newspapers(
                 if len(all_docs) >= min_results:
                     break
 
+    # リンク品質検証
+    validation = validate_documents(all_docs)
+    all_docs = validation.verified_documents
     docs = [doc.model_dump() for doc in all_docs]
 
     result = {
@@ -136,6 +140,14 @@ def search_newspapers(
         "documents": docs,
         "error": error,
         "search_levels_used": levels_used,
+        "link_validation": {
+            "total_checked": validation.total_checked,
+            "reachable": validation.reachable,
+            "unreachable": validation.unreachable,
+            "removed_count": len(validation.removed_urls),
+            "removed_urls": validation.removed_urls,
+            "duration_ms": validation.duration_ms,
+        },
     }
 
     # Save raw search results to session state for downstream agents
@@ -292,11 +304,10 @@ def search_archives(
             hits = result.get("total_hits", 0)
             err = result.get("error")
             for doc in result.get("documents", []):
-                dump = doc.model_dump()
-                url = dump.get("source_url", "")
+                url = doc.source_url
                 if url not in seen_urls:
                     seen_urls.add(url)
-                    docs.append(dump)
+                    docs.append(doc)
         except Exception as e:
             err = str(e)
         return docs, hits, err
@@ -346,6 +357,11 @@ def search_archives(
     for kw_group in keyword_groups:
         all_keywords_used.extend(kw_group)
 
+    # リンク品質検証
+    validation = validate_documents(all_docs)
+    all_docs = validation.verified_documents
+    all_docs_dicts = [doc.model_dump() for doc in all_docs]
+
     # Build warnings for missing API keys
     warnings = []
     api_key_errors = {k: v for k, v in errors.items() if "not set" in str(v)}
@@ -360,10 +376,18 @@ def search_archives(
         "warnings": warnings if warnings else None,
         "keywords_used": all_keywords_used,
         "sources_searched": source_results,
-        "total_documents": len(all_docs),
-        "documents": all_docs,
+        "total_documents": len(all_docs_dicts),
+        "documents": all_docs_dicts,
         "errors": errors if errors else None,
         "fallback_used": fallback_used,
+        "link_validation": {
+            "total_checked": validation.total_checked,
+            "reachable": validation.reachable,
+            "unreachable": validation.unreachable,
+            "removed_count": len(validation.removed_urls),
+            "removed_urls": validation.removed_urls,
+            "duration_ms": validation.duration_ms,
+        },
     }
 
     # Save raw search results to session state for downstream agents
