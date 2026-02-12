@@ -102,14 +102,11 @@ web-admin と web-public で共通するコードは `packages/shared/`（`@ghos
 
 ## TODO
 
-- [ ] Cloud Run の `min-instances` 設定検討（コールドスタート vs 常時起動コスト）
+- [x] Cloud Run の `min-instances` 設定検討 → 全サービス min=0 維持（個人利用でコスト優先）
 - [ ] ADK 評価実行テストの CI/CD 統合（`GOOGLE_CLOUD_PROJECT` 環境変数設定、Vertex AI API 認証）
-- [ ] Librarian エージェントのリンク品質検証機能
+- [x] Librarian エージェントのリンク品質検証機能（PR #68）
   - 取得した資料リンクの疎通確認（HTTP HEAD リクエストでリンク切れ検出）
   - リンク先コンテンツと資料メタデータの整合性検証（誤ったリンクの除外）
-- [ ] Illustrator エージェントの画像生成堅牢化
-  - 記事内容との整合性を検証し、不適切な画像は再生成
-  - 画像生成失敗時のリトライ・フォールバック機構（プロンプト調整による再試行）
 - [ ] 管理画面の記事一覧 UI 改善（段階的対応）
   - Phase 1（30件〜）: 検索バー + 人気タグ表示
   - Phase 2（50件〜）: Era/地域ファセットフィルタ
