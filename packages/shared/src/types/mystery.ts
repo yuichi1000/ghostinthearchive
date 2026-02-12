@@ -254,14 +254,62 @@ export const CONFIDENCE_LEVEL_LABELS: Record<ConfidenceLevel, string> = {
 };
 
 /**
+ * パイプライン実行ステータス
+ */
+export type PipelineRunStatus = "running" | "completed" | "error";
+
+/**
+ * パイプライン種別
+ */
+export type PipelineRunType = "blog" | "translate" | "podcast";
+
+/**
+ * パイプライン実行ドキュメント
+ * Python 側 shared/pipeline_run.py と同期
+ */
+export interface PipelineRun {
+  id: string;
+  type: PipelineRunType;
+  status: PipelineRunStatus;
+  query: string | null;
+  mystery_id: string | null;
+  current_agent: string | null;
+  pipeline_log: AgentLogEntry[];
+  started_at: Date;
+  updated_at: Date;
+  completed_at: Date | null;
+  error_message: string | null;
+}
+
+/**
  * エージェント名の日本語ラベルマッピング
  */
 export const AGENT_NAME_LABELS: Record<string, string> = {
   theme_analyzer: "テーマ分析",
   librarian: "資料収集",
+  librarian_en: "資料収集（英語）",
+  librarian_es: "資料収集（スペイン語）",
+  librarian_de: "資料収集（ドイツ語）",
+  librarian_fr: "資料収集（フランス語）",
+  librarian_nl: "資料収集（オランダ語）",
+  librarian_pt: "資料収集（ポルトガル語）",
   scholar: "学際分析",
+  scholar_en: "学際分析（英語）",
+  scholar_es: "学際分析（スペイン語）",
+  scholar_de: "学際分析（ドイツ語）",
+  scholar_fr: "学際分析（フランス語）",
+  scholar_nl: "学際分析（オランダ語）",
+  scholar_pt: "学際分析（ポルトガル語）",
+  scholar_en_debate: "討論（英語）",
+  scholar_es_debate: "討論（スペイン語）",
+  scholar_de_debate: "討論（ドイツ語）",
+  scholar_fr_debate: "討論（フランス語）",
+  scholar_nl_debate: "討論（オランダ語）",
+  scholar_pt_debate: "討論（ポルトガル語）",
+  armchair_polymath: "統合分析",
   cross_reference_scholar: "統合分析",
   storyteller: "物語生成",
+  translator: "翻訳",
   scriptwriter: "脚本作成",
   illustrator: "画像生成",
   producer: "音声生成",

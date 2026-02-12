@@ -14,16 +14,36 @@ import {
   Palette,
   Mic,
   Upload,
+  Compass,
+  Brain,
+  Languages,
 } from "lucide-react"
 
 const AGENT_ICONS: Record<string, React.ReactNode> = {
+  theme_analyzer: <Compass className="w-4 h-4" />,
   librarian: <FileSearch className="w-4 h-4" />,
   scholar: <BookOpen className="w-4 h-4" />,
+  armchair_polymath: <Brain className="w-4 h-4" />,
   storyteller: <Pen className="w-4 h-4" />,
+  translator: <Languages className="w-4 h-4" />,
   scriptwriter: <FileText className="w-4 h-4" />,
   illustrator: <Palette className="w-4 h-4" />,
   producer: <Mic className="w-4 h-4" />,
   publisher: <Upload className="w-4 h-4" />,
+}
+
+/**
+ * エージェント名からベース名を解決してアイコンを返す
+ * 例: "librarian_en" → "librarian", "scholar_de_debate" → "scholar"
+ */
+function getAgentIcon(agentName: string): React.ReactNode {
+  if (AGENT_ICONS[agentName]) return AGENT_ICONS[agentName]
+  // "_debate" サフィックスを除去して再試行
+  const withoutDebate = agentName.replace(/_debate$/, "")
+  if (AGENT_ICONS[withoutDebate]) return AGENT_ICONS[withoutDebate]
+  // 言語サフィックス（_en, _es, _de 等）を除去して再試行
+  const baseName = withoutDebate.replace(/_[a-z]{2}$/, "")
+  return AGENT_ICONS[baseName] || null
 }
 
 const STATUS_CONFIG = {
@@ -76,7 +96,7 @@ export function PipelineTimeline({ logs, className }: PipelineTimelineProps) {
                 {/* Content */}
                 <div className="flex-1 pt-1">
                   <div className="flex items-center gap-2 mb-1">
-                    {AGENT_ICONS[log.agent_name]}
+                    {getAgentIcon(log.agent_name)}
                     <h4 className="font-mono text-sm uppercase tracking-wider text-parchment">
                       {label}
                     </h4>
