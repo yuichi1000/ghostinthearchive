@@ -1,0 +1,127 @@
+{
+  "eval_set_id": "theme_analyzer_eval_v1",
+  "name": "ThemeAnalyzer Agent Evaluation",
+  "description": "Tests ThemeAnalyzer's language selection capabilities based on investigation themes",
+  "eval_cases": [
+    {
+      "eval_id": "theme_analyzer_geographic_selection",
+      "conversation": [
+        {
+          "invocation_id": "inv_001",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "ニューオーリンズのフレンチクォーターにおけるブードゥー信仰と19世紀のクレオール文化の交差について調査してください。フランス植民地時代とスペイン統治時代の記録に矛盾がないか探してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "save_language_selection", "args": {}}
+            ],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "theme_analysis selected_languages en fr es"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "theme_analyzer_cultural_selection",
+      "conversation": [
+        {
+          "invocation_id": "inv_002",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "ペンシルベニア州のドイツ系移民コミュニティにおける「パウワウ」民間療法と魔術信仰について調査してください。ドイツ語の文献と英語の公式記録の間の乖離を分析してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "save_language_selection", "args": {}}
+            ],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "theme_analysis selected_languages en de"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "theme_analyzer_default_fallback",
+      "conversation": [
+        {
+          "invocation_id": "inv_003",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "アメリカ南部の田舎町で繰り返し報告される怪火現象について調査してください。地元の伝承と科学的記録を照合してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "save_language_selection", "args": {}}
+            ],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "theme_analysis selected_languages en es"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "theme_analyzer_single_language",
+      "conversation": [
+        {
+          "invocation_id": "inv_004",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "19世紀の西部開拓時代におけるオレゴン・トレイルの失踪者記録について調査してください。英語の一次資料のみで検証可能な歴史的矛盾を探してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "save_language_selection", "args": {}}
+            ],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "theme_analysis selected_languages en"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
