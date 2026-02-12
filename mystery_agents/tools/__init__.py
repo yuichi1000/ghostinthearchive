@@ -20,7 +20,7 @@ from .librarian_tools import (
 )
 
 # Illustrator Agent LLM-facing tools
-from .illustrator_tools import generate_image, resize_image_variants
+from .illustrator_tools import generate_image, resize_image_variants, validate_image
 
 # Scholar Agent LLM-facing tools
 from .scholar_tools import (
@@ -57,6 +57,7 @@ __all__ = [
     # Illustrator LLM tools
     "generate_image",
     "resize_image_variants",
+    "validate_image",
     # Scholar LLM tools
     "load_search_results",
     "load_multiple_search_results",
