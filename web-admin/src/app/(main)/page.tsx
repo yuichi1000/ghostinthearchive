@@ -69,11 +69,21 @@ export default function AdminPage() {
     error: mysteries.filter((m) => m.status === "error").length,
   }
 
+  // リビルド失敗は approve/archive の成否に影響しない（fire-and-forget）
+  const triggerRebuild = async () => {
+    try {
+      await fetch("/api/rebuild-public", { method: "POST" })
+    } catch (error) {
+      console.error("Failed to trigger rebuild:", error)
+    }
+  }
+
   const handleApprove = async (id: string) => {
     try {
       await approveMystery(id)
       setActionFeedback(`Case ${id} approved and published`)
       fetchMysteries()
+      triggerRebuild()
       setTimeout(() => setActionFeedback(null), 3000)
     } catch (error) {
       console.error("Failed to approve:", error)
@@ -87,6 +97,7 @@ export default function AdminPage() {
       await archiveMystery(id)
       setActionFeedback(`Case ${id} archived`)
       fetchMysteries()
+      triggerRebuild()
       setTimeout(() => setActionFeedback(null), 3000)
     } catch (error) {
       console.error("Failed to archive:", error)
