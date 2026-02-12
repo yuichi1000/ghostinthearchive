@@ -10,11 +10,15 @@ from mystery_agents.tools.illustrator_tools import (
     IMAGE_VARIANTS,
     MAX_RETRIES,
     FALLBACK_VARIANTS,
+    VALIDATION_CONFIDENCE_THRESHOLD,
+    _build_contextual_safe_prompt,
     _build_safe_fallback_prompt,
     _get_variants,
+    _rewrite_safe_prompt,
     _sanitize_prompt,
     generate_image,
     resize_image_variants,
+    validate_image,
 )
 
 
@@ -114,11 +118,13 @@ class TestGenerateImageRetry:
         assert result_data["prompt_sanitized"] is False
         assert mock_client.models.generate_images.call_count == 1
 
+    @patch("mystery_agents.tools.illustrator_tools._rewrite_safe_prompt")
     @patch("mystery_agents.tools.illustrator_tools._get_client")
-    def test_retry_on_safety_filter(self, mock_get_client):
-        """Should retry with sanitized prompt when safety filter blocks."""
+    def test_retry_on_safety_filter(self, mock_get_client, mock_rewrite):
+        """Should retry with rewritten prompt when safety filter blocks."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
+        mock_rewrite.return_value = "safe rewritten prompt"
 
         mock_image = MagicMock()
         # First call returns empty (safety filter), second succeeds
@@ -580,14 +586,21 @@ class TestBuildSafeFallbackPrompt:
 
 
 class TestGenerateImageProgressiveRetry:
-    """Tests for progressive retry strategy (3 stages)."""
+    """Tests for LLM-based progressive retry strategy (3 stages)."""
 
+    @patch("mystery_agents.tools.illustrator_tools._build_contextual_safe_prompt")
+    @patch("mystery_agents.tools.illustrator_tools._rewrite_safe_prompt")
     @patch("mystery_agents.tools.illustrator_tools._get_client")
     @patch("mystery_agents.tools.illustrator_tools.time.sleep")
-    def test_third_attempt_uses_safe_fallback_prompt(self, mock_sleep, mock_get_client):
-        """Should use _build_safe_fallback_prompt on the third attempt."""
+    def test_retry_calls_rewrite_then_contextual(
+        self, mock_sleep, mock_get_client, mock_rewrite, mock_contextual,
+    ):
+        """Should call _rewrite_safe_prompt on attempt 1, _build_contextual_safe_prompt on attempt 2."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
+
+        mock_rewrite.return_value = "rewritten safe prompt"
+        mock_contextual.return_value = "contextual safe prompt"
 
         prompts_used = []
 
@@ -603,23 +616,56 @@ class TestGenerateImageProgressiveRetry:
         assert len(prompts_used) == 3
         # Attempt 0: original prompt (with style prefix)
         assert "ghost" in prompts_used[0].lower()
-        # Attempt 1: sanitized prompt
-        assert "ghost" not in prompts_used[1].lower()
-        # Attempt 2: safe fallback prompt (completely different)
-        assert prompts_used[2] != prompts_used[1]
+        # Attempt 1: LLM rewrite が呼ばれる
+        mock_rewrite.assert_called_once()
+        assert prompts_used[1] == "rewritten safe prompt"
+        # Attempt 2: contextual safe prompt が呼ばれる
+        mock_contextual.assert_called_once()
+        assert prompts_used[2] == "contextual safe prompt"
 
+    @patch("mystery_agents.tools.illustrator_tools._rewrite_safe_prompt")
     @patch("mystery_agents.tools.illustrator_tools._get_client")
     @patch("mystery_agents.tools.illustrator_tools.time.sleep")
-    def test_success_on_third_attempt_with_safe_prompt(self, mock_sleep, mock_get_client):
-        """Should succeed on third attempt using safe fallback prompt."""
+    def test_success_on_second_attempt_with_rewritten_prompt(
+        self, mock_sleep, mock_get_client, mock_rewrite,
+    ):
+        """Should succeed on second attempt using LLM-rewritten prompt."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
+        mock_rewrite.return_value = "safe rewritten prompt"
 
         mock_image = MagicMock()
         mock_client.models.generate_images.side_effect = [
             MagicMock(generated_images=[]),  # Attempt 0: safety filter
-            MagicMock(generated_images=[]),  # Attempt 1: sanitized still blocked
-            MagicMock(generated_images=[MagicMock(image=mock_image)]),  # Attempt 2: safe prompt succeeds
+            MagicMock(generated_images=[MagicMock(image=mock_image)]),  # Attempt 1: rewritten succeeds
+        ]
+
+        result = generate_image("A ghost ship", style="folklore")
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert result_data["attempt"] == 2
+        assert result_data["prompt_sanitized"] is True
+        mock_rewrite.assert_called_once()
+
+    @patch("mystery_agents.tools.illustrator_tools._build_contextual_safe_prompt")
+    @patch("mystery_agents.tools.illustrator_tools._rewrite_safe_prompt")
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
+    def test_success_on_third_attempt_with_contextual_prompt(
+        self, mock_sleep, mock_get_client, mock_rewrite, mock_contextual,
+    ):
+        """Should succeed on third attempt using contextual safe prompt."""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_rewrite.return_value = "rewritten but still blocked"
+        mock_contextual.return_value = "contextual safe prompt"
+
+        mock_image = MagicMock()
+        mock_client.models.generate_images.side_effect = [
+            MagicMock(generated_images=[]),  # Attempt 0: safety filter
+            MagicMock(generated_images=[]),  # Attempt 1: rewritten still blocked
+            MagicMock(generated_images=[MagicMock(image=mock_image)]),  # Attempt 2: contextual succeeds
         ]
 
         result = generate_image("A ghost ship", style="folklore")
@@ -748,3 +794,318 @@ class TestGenerateImageRetrySuggestion:
         assert result_data["status"] == "fallback"
         assert "retry_suggestion" in result_data
         assert len(result_data["retry_suggestion"]) > 0
+
+
+class TestRewriteSafePrompt:
+    """Tests for _rewrite_safe_prompt (LLM-based prompt rewriting)."""
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_rewrite_returns_safe_prompt(self, mock_get_client):
+        """Flash 呼び出し成功でプロンプトが返る。"""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_response = MagicMock()
+        mock_response.text = "An empty 1890s Salem courtroom at dusk"
+        mock_client.models.generate_content.return_value = mock_response
+
+        result = _rewrite_safe_prompt("A ghostly figure haunting Salem", "fact")
+
+        assert result == "An empty 1890s Salem courtroom at dusk"
+        mock_client.models.generate_content.assert_called_once()
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_rewrite_falls_back_to_sanitize(self, mock_get_client):
+        """Flash 例外時に _sanitize_prompt() にフォールバック。"""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_client.models.generate_content.side_effect = Exception("API error")
+
+        result = _rewrite_safe_prompt("A ghost ship sailing", "folklore")
+
+        # _sanitize_prompt が適用される（"ghost" → "ethereal figure"）
+        assert "ghost" not in result
+        assert "ethereal figure" in result
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_rewrite_preserves_style(self, mock_get_client):
+        """スタイル情報がプロンプトに含まれる。"""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_response = MagicMock()
+        mock_response.text = "Safe prompt"
+        mock_client.models.generate_content.return_value = mock_response
+
+        _rewrite_safe_prompt("A ghost ship", "folklore")
+
+        call_args = mock_client.models.generate_content.call_args
+        # contents 引数にプロンプトが含まれる
+        prompt_text = call_args.kwargs.get("contents", "")
+        assert "ghost ship" in prompt_text.lower()
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_rewrite_empty_response_falls_back(self, mock_get_client):
+        """Flash が空レスポンスを返した場合 _sanitize_prompt にフォールバック。"""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_response = MagicMock()
+        mock_response.text = "   "
+        mock_client.models.generate_content.return_value = mock_response
+
+        result = _rewrite_safe_prompt("A ghost ship", "auto")
+
+        # 空文字列なので _sanitize_prompt にフォールバック
+        assert "ghost" not in result
+
+
+class TestBuildContextualSafePrompt:
+    """Tests for _build_contextual_safe_prompt (article-based safe prompt)."""
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_contextual_uses_article_content(self, mock_get_client):
+        """creative_content から状況依存プロンプトを生成。"""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_response = MagicMock()
+        mock_response.text = "A weathered farmhouse in 1817 Tennessee at twilight"
+        mock_client.models.generate_content.return_value = mock_response
+
+        mock_ctx = MagicMock()
+        mock_ctx.state = {"creative_content": "The Bell Witch legend of Tennessee..."}
+
+        result = _build_contextual_safe_prompt("folklore", mock_ctx)
+
+        assert result == "A weathered farmhouse in 1817 Tennessee at twilight"
+        mock_client.models.generate_content.assert_called_once()
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_contextual_falls_back_to_generic(self, mock_get_client):
+        """Flash 例外時に _build_safe_fallback_prompt() にフォールバック。"""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_client.models.generate_content.side_effect = Exception("API timeout")
+
+        mock_ctx = MagicMock()
+        mock_ctx.state = {"creative_content": "Some article content..."}
+
+        result = _build_contextual_safe_prompt("fact", mock_ctx)
+
+        # _build_safe_fallback_prompt("fact") の結果が返る
+        assert "black and white" in result.lower() or "monochrome" in result.lower()
+
+    def test_contextual_no_creative_content(self):
+        """creative_content なしで汎用フォールバック。"""
+        mock_ctx = MagicMock()
+        mock_ctx.state = {}
+
+        result = _build_contextual_safe_prompt("folklore", mock_ctx)
+
+        # _build_safe_fallback_prompt("folklore") の結果が返る
+        assert "woodcut" in result.lower() or "engraving" in result.lower()
+
+    def test_contextual_no_tool_context(self):
+        """tool_context が None で汎用フォールバック。"""
+        result = _build_contextual_safe_prompt("auto", None)
+
+        # _build_safe_fallback_prompt("auto") の結果が返る
+        assert len(result) > 20
+
+    def test_contextual_no_content_marker(self):
+        """creative_content に NO_CONTENT が含まれる場合は汎用フォールバック。"""
+        mock_ctx = MagicMock()
+        mock_ctx.state = {"creative_content": "NO_CONTENT"}
+
+        result = _build_contextual_safe_prompt("fact", mock_ctx)
+
+        assert "black and white" in result.lower() or "monochrome" in result.lower()
+
+
+class TestValidateImage:
+    """Tests for validate_image function."""
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_validate_pass(self, mock_get_client, tmp_path):
+        """confidence ≥ 0.6 で "pass"。"""
+        from PIL import Image as PILImage
+
+        img_path = tmp_path / "test.png"
+        PILImage.new("RGB", (100, 100), "red").save(str(img_path))
+
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_response = MagicMock()
+        mock_response.text = json.dumps({
+            "verdict": "pass",
+            "confidence": 0.85,
+            "feedback": "Image matches the article theme well",
+            "suggested_focus": "",
+        })
+        mock_client.models.generate_content.return_value = mock_response
+
+        result = json.loads(validate_image(str(img_path), "Bell Witch legend", "folklore"))
+
+        assert result["verdict"] == "pass"
+        assert result["confidence"] == 0.85
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_validate_fail_with_feedback(self, mock_get_client, tmp_path):
+        """confidence < 0.6 で "fail" + feedback。"""
+        from PIL import Image as PILImage
+
+        img_path = tmp_path / "test.png"
+        PILImage.new("RGB", (100, 100), "blue").save(str(img_path))
+
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_response = MagicMock()
+        mock_response.text = json.dumps({
+            "verdict": "fail",
+            "confidence": 0.3,
+            "feedback": "Image shows modern cityscape, not historical",
+            "suggested_focus": "Focus on 19th century rural Tennessee landscape",
+        })
+        mock_client.models.generate_content.return_value = mock_response
+
+        result = json.loads(validate_image(str(img_path), "Bell Witch legend", "folklore"))
+
+        assert result["verdict"] == "fail"
+        assert "suggested_focus" in result
+
+    def test_validate_image_not_found(self):
+        """存在しないパスで "error"。"""
+        result = json.loads(validate_image("/nonexistent/image.png", "test theme"))
+
+        assert result["status"] == "error"
+        assert "not found" in result["error"].lower()
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
+    def test_validate_api_error_returns_error(self, mock_sleep, mock_get_client, tmp_path):
+        """Gemini 例外時 "error"（フェイルオープン）。"""
+        from PIL import Image as PILImage
+
+        img_path = tmp_path / "test.png"
+        PILImage.new("RGB", (100, 100), "green").save(str(img_path))
+
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_client.models.generate_content.side_effect = Exception("API timeout")
+
+        result = json.loads(validate_image(str(img_path), "test theme"))
+
+        assert result["status"] == "error"
+        assert "API" in result["error"] or "error" in result["error"].lower()
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
+    def test_validate_retry_on_first_failure(self, mock_sleep, mock_get_client, tmp_path):
+        """1回目失敗 → 2回目成功。"""
+        from PIL import Image as PILImage
+
+        img_path = tmp_path / "test.png"
+        PILImage.new("RGB", (100, 100), "red").save(str(img_path))
+
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_response_ok = MagicMock()
+        mock_response_ok.text = json.dumps({
+            "verdict": "pass", "confidence": 0.9,
+            "feedback": "Good", "suggested_focus": "",
+        })
+        mock_client.models.generate_content.side_effect = [
+            Exception("Temporary error"),
+            mock_response_ok,
+        ]
+
+        result = json.loads(validate_image(str(img_path), "test theme"))
+
+        assert result["verdict"] == "pass"
+        assert mock_client.models.generate_content.call_count == 2
+        mock_sleep.assert_called_once_with(2)
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_validate_unparseable_response(self, mock_get_client, tmp_path):
+        """非JSON でも正規表現で verdict を抽出。"""
+        from PIL import Image as PILImage
+
+        img_path = tmp_path / "test.png"
+        PILImage.new("RGB", (100, 100), "red").save(str(img_path))
+
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_response = MagicMock()
+        mock_response.text = 'Here is my evaluation: "verdict": "pass", "confidence": 0.8 ...'
+        mock_client.models.generate_content.return_value = mock_response
+
+        result = json.loads(validate_image(str(img_path), "test theme"))
+
+        assert result["verdict"] == "pass"
+        assert result["confidence"] == 0.8
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_validate_saves_to_session_state(self, mock_get_client, tmp_path):
+        """state["image_validation"] に保存。"""
+        from PIL import Image as PILImage
+
+        img_path = tmp_path / "test.png"
+        PILImage.new("RGB", (100, 100), "red").save(str(img_path))
+
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_response = MagicMock()
+        mock_response.text = json.dumps({
+            "verdict": "pass", "confidence": 0.9,
+            "feedback": "Good", "suggested_focus": "",
+        })
+        mock_client.models.generate_content.return_value = mock_response
+
+        mock_ctx = MagicMock()
+        mock_ctx.state = {}
+
+        validate_image(str(img_path), "test theme", tool_context=mock_ctx)
+
+        assert "image_validation" in mock_ctx.state
+        assert mock_ctx.state["image_validation"]["verdict"] == "pass"
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_validate_low_confidence_overrides_pass(self, mock_get_client, tmp_path):
+        """verdict="pass" でも confidence < threshold なら "fail" に上書き。"""
+        from PIL import Image as PILImage
+
+        img_path = tmp_path / "test.png"
+        PILImage.new("RGB", (100, 100), "red").save(str(img_path))
+
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_response = MagicMock()
+        mock_response.text = json.dumps({
+            "verdict": "pass",
+            "confidence": 0.4,  # 閾値 0.6 未満
+            "feedback": "Marginal match",
+            "suggested_focus": "Better alignment needed",
+        })
+        mock_client.models.generate_content.return_value = mock_response
+
+        result = json.loads(validate_image(str(img_path), "test theme"))
+
+        assert result["verdict"] == "fail"
+        assert "below threshold" in result["feedback"]
+
+    def test_validate_corrupt_image(self, tmp_path):
+        """破損画像ファイルで "error"。"""
+        img_path = tmp_path / "corrupt.png"
+        img_path.write_bytes(b"not a real image")
+
+        result = json.loads(validate_image(str(img_path), "test theme"))
+
+        assert result["status"] == "error"
+        assert "load" in result["error"].lower() or "image" in result["error"].lower()

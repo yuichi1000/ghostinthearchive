@@ -1,7 +1,7 @@
 {
-  "eval_set_id": "illustrator_eval_v1",
+  "eval_set_id": "illustrator_eval_v2",
   "name": "Illustrator Agent Evaluation",
-  "description": "Tests Illustrator's image generation via full pipeline execution",
+  "description": "Tests Illustrator's image generation and validation via full pipeline execution",
   "eval_cases": [
     {
       "eval_id": "illustrator_fact_style",
@@ -85,6 +85,37 @@
             "parts": [
               {
                 "text": "NO_CONTENT"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "illustrator_with_validation",
+      "conversation": [
+        {
+          "invocation_id": "inv_004",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "ベル・ウィッチ伝説（1817年テネシー州）についての民俗学記事用の画像を生成し、記事との整合性を検証してください。"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "generate_image", "args": {}},
+              {"name": "validate_image", "args": {}}
+            ],
+            "intermediate_responses": []
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "visual_assets header validation pass"
               }
             ]
           }
