@@ -37,6 +37,12 @@ resource "google_project_iam_member" "web_admin_secrets" {
   member  = "serviceAccount:${google_service_account.web_admin.email}"
 }
 
+resource "google_project_iam_member" "web_admin_cloudbuild" {
+  project = var.project_id
+  role    = "roles/cloudbuild.builds.editor"
+  member  = "serviceAccount:${google_service_account.web_admin.email}"
+}
+
 # IAM roles for pipelines
 resource "google_project_iam_member" "pipelines_firestore" {
   project = var.project_id
