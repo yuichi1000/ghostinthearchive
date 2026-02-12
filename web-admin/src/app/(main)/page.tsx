@@ -1,14 +1,17 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import Link from "next/link"
 import { StatusBadge } from "@/components/status-badge"
 import { cn } from "@ghost/shared/src/lib/utils"
 import { Button } from "@ghost/shared/src/components/ui/button"
 import { getAllMysteries, approveMystery, archiveMystery, requestPodcast } from "@/lib/firestore/mysteries"
-import type { FirestoreMystery, MysteryStatus } from "@ghost/shared/src/types/mystery"
+import type { FirestoreMystery, MysteryStatus, PipelineRun } from "@ghost/shared/src/types/mystery"
 import { PipelineSummary } from "@/components/pipeline-summary"
 import { PipelineTimeline } from "@/components/pipeline-timeline"
+import { ActivePipelinePanel } from "@/components/active-pipeline-panel"
+import { usePipelineRuns } from "@/hooks/use-pipeline-runs"
+import { usePipelineRun } from "@/hooks/use-pipeline-run"
 import {
   Shield,
   FileText,
@@ -40,6 +43,15 @@ export default function AdminPage() {
   const [suggestions, setSuggestions] = useState<{ theme: string; description: string; theme_ja?: string; description_ja?: string }[]>([])
   const [suggestLoading, setSuggestLoading] = useState(false)
   const [pipelineLoading, setPipelineLoading] = useState(false)
+  const [currentRunId, setCurrentRunId] = useState<string | null>(null)
+  const [dismissedRunIds, setDismissedRunIds] = useState<Set<string>>(new Set())
+
+  // パイプライン進捗監視フック
+  const { runs: runningPipelines, dismiss: dismissRunning } = usePipelineRuns()
+  const currentRun = usePipelineRun(currentRunId)
+
+  // running → completed/error を検知して記事一覧を自動更新
+  const prevStatusRef = useRef<string | null>(null)
 
   const fetchMysteries = useCallback(async () => {
     try {
@@ -55,6 +67,38 @@ export default function AdminPage() {
   useEffect(() => {
     fetchMysteries()
   }, [fetchMysteries])
+
+  // パイプライン完了時に記事一覧を自動更新
+  useEffect(() => {
+    const status = currentRun?.status ?? null
+    if (prevStatusRef.current === "running" && (status === "completed" || status === "error")) {
+      fetchMysteries()
+    }
+    prevStatusRef.current = status
+  }, [currentRun?.status, fetchMysteries])
+
+  // running パイプライン + currentRun をマージ（ID 重複排除、currentRun 優先）
+  const mergedRuns = useMemo(() => {
+    const runsMap = new Map<string, PipelineRun>()
+    for (const r of runningPipelines) {
+      if (!dismissedRunIds.has(r.id)) {
+        runsMap.set(r.id, r)
+      }
+    }
+    // currentRun は完了/エラー後も表示するため優先
+    if (currentRun && !dismissedRunIds.has(currentRun.id)) {
+      runsMap.set(currentRun.id, currentRun)
+    }
+    return Array.from(runsMap.values())
+  }, [runningPipelines, currentRun, dismissedRunIds])
+
+  const handleDismissRun = useCallback((runId: string) => {
+    dismissRunning(runId)
+    setDismissedRunIds((prev) => new Set(prev).add(runId))
+    if (runId === currentRunId) {
+      setCurrentRunId(null)
+    }
+  }, [dismissRunning, currentRunId])
 
   const filteredMysteries = filter === "all"
     ? mysteries
@@ -113,6 +157,10 @@ export default function AdminPage() {
         body: JSON.stringify({ mysteryId: id }),
       })
       if (!res.ok) throw new Error("API request failed")
+      const data = await res.json()
+      if (data.run_id) {
+        setCurrentRunId(data.run_id)
+      }
       setActionFeedback(`Podcast generation started for Case ${id}`)
       fetchMysteries()
       setTimeout(() => setActionFeedback(null), 3000)
@@ -123,9 +171,6 @@ export default function AdminPage() {
     }
   }
 
-  // TODO: 調査パイプラインの進捗表示が現在機能していない。
-  // 以前は実行中の進捗がUIに表示されていたが、API のローカル/本番分岐修正時に失われた。
-  // 後日、パイプライン実行中のリアルタイム進捗表示を復旧すること（技術的負債）。
   const handleStartPipeline = async () => {
     if (!themeInput.trim()) return
     setPipelineLoading(true)
@@ -136,6 +181,10 @@ export default function AdminPage() {
         body: JSON.stringify({ query: themeInput.trim() }),
       })
       if (!res.ok) throw new Error("API request failed")
+      const data = await res.json()
+      if (data.run_id) {
+        setCurrentRunId(data.run_id)
+      }
       setActionFeedback("調査パイプラインを開始しました")
       setThemeInput("")
       setSuggestions([])
@@ -256,6 +305,19 @@ export default function AdminPage() {
             <p className="text-sm text-[#5fb3a1] font-mono">
               {actionFeedback}
             </p>
+          </div>
+        )}
+
+        {/* 実行中のパイプライン */}
+        {mergedRuns.length > 0 && (
+          <div className="space-y-3 mb-8">
+            {mergedRuns.map((run) => (
+              <ActivePipelinePanel
+                key={run.id}
+                run={run}
+                onDismiss={() => handleDismissRun(run.id)}
+              />
+            ))}
           </div>
         )}
 
