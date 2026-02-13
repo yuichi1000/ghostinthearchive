@@ -204,11 +204,14 @@ class TestGenerateImageFallback:
 
     @patch("mystery_agents.tools.illustrator_tools._get_client")
     @patch("mystery_agents.tools.illustrator_tools.time.sleep")
-    def test_fallback_when_generation_fails(self, mock_sleep, mock_get_client):
+    @patch("mystery_agents.tools.illustrator_tools.shutil.copy2")
+    @patch("mystery_agents.tools.illustrator_tools.tempfile.mkdtemp")
+    def test_fallback_when_generation_fails(self, mock_mkdtemp, mock_copy2, mock_sleep, mock_get_client):
         """Should return fallback image when all attempts fail."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         mock_client.models.generate_images.return_value = MagicMock(generated_images=[])
+        mock_mkdtemp.return_value = "/tmp/ghost_images_fallback"
 
         # Mock fallback image exists
         with patch.object(Path, "exists", return_value=True):
@@ -217,8 +220,30 @@ class TestGenerateImageFallback:
 
         assert result_data["status"] == "fallback"
         assert "fallback_header.webp" in result_data["filename"]
+        # フォールバック画像は temp にコピーされる
+        assert "/tmp/ghost_images_fallback/" in result_data["filepath"]
         assert result_data["note"] == "Using fallback image due to generation failure"
         assert "retry_suggestion" in result_data
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    @patch("mystery_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools.shutil.copy2")
+    @patch("mystery_agents.tools.illustrator_tools.tempfile.mkdtemp")
+    def test_fallback_copies_to_temp_preserving_originals(self, mock_mkdtemp, mock_copy2, mock_sleep, mock_get_client):
+        """静的アセットを temp にコピーし、元ファイルを保全すること。"""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_client.models.generate_images.return_value = MagicMock(generated_images=[])
+        mock_mkdtemp.return_value = "/tmp/ghost_images_fallback"
+
+        with patch.object(Path, "exists", return_value=True):
+            generate_image("A ghost ship", style="folklore")
+
+        # shutil.copy2 がメイン画像 + 4バリアントの計5回呼ばれること
+        assert mock_copy2.call_count == 5
+        # メイン画像のコピー元が静的アセットディレクトリであること
+        main_copy_src = mock_copy2.call_args_list[0][0][0]
+        assert "assets/fallback_header.webp" in str(main_copy_src)
 
     @patch("mystery_agents.tools.illustrator_tools._get_client")
     @patch("mystery_agents.tools.illustrator_tools.time.sleep")
@@ -495,21 +520,26 @@ class TestGenerateImageWithVariants:
 
     @patch("mystery_agents.tools.illustrator_tools._get_client")
     @patch("mystery_agents.tools.illustrator_tools.time.sleep")
-    def test_fallback_includes_pregenerated_variants(self, mock_sleep, mock_get_client):
-        """Should include pre-generated static variants in fallback response."""
+    @patch("mystery_agents.tools.illustrator_tools.shutil.copy2")
+    @patch("mystery_agents.tools.illustrator_tools.tempfile.mkdtemp")
+    def test_fallback_includes_pregenerated_variants(self, mock_mkdtemp, mock_copy2, mock_sleep, mock_get_client):
+        """Should include pre-generated static variants in fallback response (copied to temp)."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         mock_client.models.generate_images.return_value = MagicMock(generated_images=[])
+        mock_mkdtemp.return_value = "/tmp/ghost_images_fallback"
 
         with patch.object(Path, "exists", return_value=True):
             result = generate_image("A ghost ship", style="folklore")
             result_data = json.loads(result)
 
         assert result_data["status"] == "fallback"
-        assert result_data["variants"] == FALLBACK_VARIANTS
         assert len(result_data["variants"]) == 4
         labels = {v["label"] for v in result_data["variants"]}
         assert labels == {"sm", "md", "lg", "xl"}
+        # バリアントのパスが temp ディレクトリを指すこと
+        for v in result_data["variants"]:
+            assert v["filepath"].startswith("/tmp/ghost_images_fallback/")
 
 
 class TestGetVariantsLogging:
@@ -591,8 +621,10 @@ class TestGenerateImageProgressiveRetry:
     @patch("mystery_agents.tools.illustrator_tools._rewrite_safe_prompt")
     @patch("mystery_agents.tools.illustrator_tools._get_client")
     @patch("mystery_agents.tools.illustrator_tools.time.sleep")
+    @patch("mystery_agents.tools.illustrator_tools.shutil.copy2")
+    @patch("mystery_agents.tools.illustrator_tools.tempfile.mkdtemp", return_value="/tmp/ghost_images_fb")
     def test_retry_calls_rewrite_then_contextual(
-        self, mock_sleep, mock_get_client, mock_rewrite, mock_contextual,
+        self, mock_mkdtemp, mock_copy2, mock_sleep, mock_get_client, mock_rewrite, mock_contextual,
     ):
         """Should call _rewrite_safe_prompt on attempt 1, _build_contextual_safe_prompt on attempt 2."""
         mock_client = MagicMock()
@@ -702,7 +734,9 @@ class TestGenerateImageLogging:
 
     @patch("mystery_agents.tools.illustrator_tools._get_client")
     @patch("mystery_agents.tools.illustrator_tools.time.sleep")
-    def test_logs_safety_filter_warning(self, mock_sleep, mock_get_client, caplog):
+    @patch("mystery_agents.tools.illustrator_tools.shutil.copy2")
+    @patch("mystery_agents.tools.illustrator_tools.tempfile.mkdtemp", return_value="/tmp/ghost_images_fb")
+    def test_logs_safety_filter_warning(self, mock_mkdtemp, mock_copy2, mock_sleep, mock_get_client, caplog):
         """Should log warning when safety filter blocks generation."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
@@ -716,7 +750,9 @@ class TestGenerateImageLogging:
 
     @patch("mystery_agents.tools.illustrator_tools._get_client")
     @patch("mystery_agents.tools.illustrator_tools.time.sleep")
-    def test_logs_rate_limit_warning(self, mock_sleep, mock_get_client, caplog):
+    @patch("mystery_agents.tools.illustrator_tools.shutil.copy2")
+    @patch("mystery_agents.tools.illustrator_tools.tempfile.mkdtemp", return_value="/tmp/ghost_images_fb")
+    def test_logs_rate_limit_warning(self, mock_mkdtemp, mock_copy2, mock_sleep, mock_get_client, caplog):
         """Should log warning on rate limit errors."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
@@ -730,7 +766,9 @@ class TestGenerateImageLogging:
 
     @patch("mystery_agents.tools.illustrator_tools._get_client")
     @patch("mystery_agents.tools.illustrator_tools.time.sleep")
-    def test_logs_fallback_error(self, mock_sleep, mock_get_client, caplog):
+    @patch("mystery_agents.tools.illustrator_tools.shutil.copy2")
+    @patch("mystery_agents.tools.illustrator_tools.tempfile.mkdtemp", return_value="/tmp/ghost_images_fb")
+    def test_logs_fallback_error(self, mock_mkdtemp, mock_copy2, mock_sleep, mock_get_client, caplog):
         """Should log error when falling back to default image."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
@@ -780,7 +818,9 @@ class TestGenerateImageRetrySuggestion:
 
     @patch("mystery_agents.tools.illustrator_tools._get_client")
     @patch("mystery_agents.tools.illustrator_tools.time.sleep")
-    def test_fallback_includes_retry_suggestion(self, mock_sleep, mock_get_client):
+    @patch("mystery_agents.tools.illustrator_tools.shutil.copy2")
+    @patch("mystery_agents.tools.illustrator_tools.tempfile.mkdtemp", return_value="/tmp/ghost_images_fb")
+    def test_fallback_includes_retry_suggestion(self, mock_mkdtemp, mock_copy2, mock_sleep, mock_get_client):
         """Should include retry_suggestion field in fallback response."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
