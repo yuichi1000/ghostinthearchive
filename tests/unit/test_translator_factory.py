@@ -2,7 +2,7 @@
 
 import pytest
 
-from translator_agents.agents.translator import (
+from mystery_agents.agents.translator import (
     TRANSLATOR_CONFIGS,
     _BASE_TRANSLATOR_INSTRUCTION,
     create_all_translators,

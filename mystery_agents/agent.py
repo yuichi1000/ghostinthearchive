@@ -9,7 +9,7 @@ the multilingual investigation pipeline:
 各言語エージェントは before_agent_callback で selected_languages をチェックし、
 未選択の言語はスキップされる。DebateLoop は有意な分析が2言語以上の場合のみ実行される。
 パイプラインゲートにより、前段が失敗した場合は後続をスキップしてトークン消費を抑制する。
-PostStoryBlock では6言語の翻訳が並列実行される。
+PostStoryBlock では Illustrator と6言語翻訳が並列実行される。
 """
 
 from google.adk.agents import LoopAgent, ParallelAgent, SequentialAgent
@@ -28,8 +28,7 @@ from .agents.pipeline_gate import (
 from .agents.publisher import publisher_agent
 from .agents.storyteller import storyteller_agent
 from .agents.theme_analyzer import theme_analyzer_agent
-
-from translator_agents.agents.translator import create_all_translators
+from .agents.translator import create_all_translators
 
 # 言語別エージェントを生成
 all_librarians = create_all_librarians()
@@ -73,15 +72,23 @@ storyteller_block = SequentialAgent(
     before_agent_callback=make_storyteller_gate(),
 )
 
-# Illustrator + 並列翻訳（6言語） + Publisher ブロック（creative_content 空ならスキップ）
-post_story_block = SequentialAgent(
-    name="post_story_block",
+# Illustrator と翻訳を並列実行（どちらも creative_content を読むだけで独立）
+post_story_parallel = ParallelAgent(
+    name="post_story_parallel",
     sub_agents=[
         illustrator_agent,
         ParallelAgent(
             name="parallel_translators",
             sub_agents=list(all_translators.values()),
         ),
+    ],
+)
+
+# PostStoryBlock: 並列処理 → Publisher（creative_content 空ならスキップ）
+post_story_block = SequentialAgent(
+    name="post_story_block",
+    sub_agents=[
+        post_story_parallel,
         publisher_agent,
     ],
     before_agent_callback=make_post_story_gate(),

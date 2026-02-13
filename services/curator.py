@@ -29,7 +29,7 @@ from curator_agents.queries import (
     format_category_distribution,
 )
 from curator_agents.schemas import strip_markdown_codeblock, validate_suggestions
-from translator_agents.agents.translator import translator_agent
+from mystery_agents.agents.translator import translator_agent
 from shared.pipeline_failure import get_recent_failures
 
 logger = logging.getLogger(__name__)

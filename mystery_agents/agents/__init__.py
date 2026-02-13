@@ -10,6 +10,7 @@ from .language_librarians import create_all_librarians, create_librarian
 from .language_scholars import create_all_scholars, create_scholar
 from .publisher import publisher_agent
 from .storyteller import storyteller_agent
+from .translator import create_all_translators, create_translator, translator_agent
 
 __all__ = [
     "create_librarian",
@@ -20,4 +21,7 @@ __all__ = [
     "storyteller_agent",
     "illustrator_agent",
     "publisher_agent",
+    "create_translator",
+    "create_all_translators",
+    "translator_agent",
 ]
