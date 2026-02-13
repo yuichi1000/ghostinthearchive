@@ -26,11 +26,16 @@ _FAILURE_MARKERS = frozenset({
 
 
 def _is_meaningful(value: str) -> bool:
-    """セッション状態の値が有意なデータを含むか判定する。"""
+    """セッション状態の値が有意なデータを含むか判定する。
+
+    テキストの先頭が失敗マーカーで始まる場合のみ「無意味」と判定する。
+    ドキュメント本文の途中や末尾に部分的な失敗マーカーが含まれていても、
+    先頭に有意なデータがあれば有意とみなす。
+    """
     if not value:
         return False
-    text = str(value)
-    return not any(marker in text for marker in _FAILURE_MARKERS)
+    text = str(value).strip()
+    return not any(text.startswith(marker) for marker in _FAILURE_MARKERS)
 
 
 def _log_and_record_failure(callback_context: CallbackContext, stage: str, message: str) -> None:
