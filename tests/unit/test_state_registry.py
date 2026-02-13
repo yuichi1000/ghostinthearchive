@@ -1,6 +1,6 @@
 """Tests for shared/state_registry.py の整合性検証。"""
 
-from shared.state_registry import STATE_KEYS, StateKey, generate_mermaid
+from shared.state_registry import STATE_KEYS, generate_mermaid
 
 
 class TestStateKeyDefinitions:
@@ -21,7 +21,7 @@ class TestStateKeyDefinitions:
     def test_key_names_are_unique(self):
         """キー名が重複しない。"""
         names = [k.name for k in STATE_KEYS]
-        assert len(names) == len(set(names)), f"Duplicate key names found"
+        assert len(names) == len(set(names)), "Duplicate key names found"
 
     def test_all_keys_have_descriptions(self):
         """全てのキーに説明がある。"""
