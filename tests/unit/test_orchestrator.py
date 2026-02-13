@@ -1,6 +1,5 @@
 """Unit tests for shared/orchestrator.py"""
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -52,7 +51,7 @@ class TestRunPipeline:
         # Runner.run_async を AsyncGenerator としてモック
         async def mock_run_async(**kwargs):
             return
-            yield  # noqa: unreachable — AsyncGenerator にするために必要
+            yield  # AsyncGenerator にするために必要
 
         mock_runner_instance = MagicMock()
         mock_runner_instance.run_async = mock_run_async
