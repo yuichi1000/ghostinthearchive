@@ -1,4 +1,5 @@
 import { Header } from "@/components/header"
+import { LanguageProvider } from "@/contexts/language-context"
 
 export default function AdminLayout({
   children,
@@ -6,9 +7,11 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-1">{children}</main>
-    </div>
+    <LanguageProvider>
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1">{children}</main>
+      </div>
+    </LanguageProvider>
   )
 }

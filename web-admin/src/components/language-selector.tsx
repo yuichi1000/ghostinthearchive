@@ -7,7 +7,7 @@ import type { TranslationLang } from "@ghost/shared/src/types/mystery"
 /**
  * 利用可能な翻訳言語の定義
  */
-const ALL_LANGS = [
+export const ALL_LANGS = [
   { code: "en" as const, label: "English" },
   { code: "ja" as const, label: "日本語" },
   { code: "es" as const, label: "Español" },
@@ -70,7 +70,10 @@ export function LanguageSelector({
             return (
               <button
                 key={code}
-                onClick={() => {
+                onMouseDown={(e) => {
+                  // mousedown で即座に反映（document の mousedown ハンドラより先に発火）
+                  e.preventDefault()
+                  e.stopPropagation()
                   onLangChange(code)
                   setOpen(false)
                 }}
