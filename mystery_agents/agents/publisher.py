@@ -5,8 +5,8 @@ This agent handles content publishing and distribution:
 - Uploads images to Cloud Storage
 - Manages content lifecycle
 
-Input: All assets (mystery_report, creative_content, visual_assets, translation_ja)
-Output: Firestore documents with pending status (EN + JA fields)
+Input: All assets (mystery_report, creative_content, visual_assets, 6-lang translations)
+Output: Firestore documents with pending status (EN base + translations map)
 """
 
 from pathlib import Path
@@ -30,16 +30,21 @@ load_dotenv(Path(__file__).parent.parent / ".env")  # mystery_agents/.env
 # - {mystery_report}: Scholar の分析レポート（英語）
 # - {creative_content}: Storyteller のコンテンツ（英語）
 # - {visual_assets}: Illustrator のトップ画像アセット
-# - {translation_result}: Translator の日本語翻訳結果（JSON）
+# - {translation_result_ja}: 日本語翻訳結果（JSON）
+# - {translation_result_es}: スペイン語翻訳結果（JSON）
+# - {translation_result_de}: ドイツ語翻訳結果（JSON）
+# - {translation_result_fr}: フランス語翻訳結果（JSON）
+# - {translation_result_nl}: オランダ語翻訳結果（JSON）
+# - {translation_result_pt}: ポルトガル語翻訳結果（JSON）
 #
 # ## タスク
 # 1. mystery_report からデータを構造化（英語ベースフィールド）
-# 2. translation_result から日本語フィールド（*_ja）を取得
+# 2. 翻訳結果は publish_mystery ツールが session state から自動収集
 # 3. publish_mystery ツールで Firestore に保存
 #
 # ## フィールド命名規則
 # - ベースフィールド (title, summary 等) → 英語（原文）
-# - *_ja サフィックス (title_ja, summary_ja 等) → 日本語（翻訳）
+# - translations map → 各言語の翻訳
 # === End 日本語訳 ===
 
 PUBLISHER_INSTRUCTION = """
@@ -52,7 +57,12 @@ Reference the following data from the session state:
 - {mystery_report}: Scholar's analysis report (in English)
 - {creative_content}: Storyteller's content (in English)
 - {visual_assets}: Illustrator's hero image assets (raw JSON from generate_image)
-- {translation_result}: Translator's Japanese translation result (JSON)
+- {translation_result_ja}: Japanese translation result (JSON)
+- {translation_result_es}: Spanish translation result (JSON)
+- {translation_result_de}: German translation result (JSON)
+- {translation_result_fr}: French translation result (JSON)
+- {translation_result_nl}: Dutch translation result (JSON)
+- {translation_result_pt}: Portuguese translation result (JSON)
 
 ## Your Task
 
@@ -131,30 +141,11 @@ Major area code reference:
 Structure the mystery_report content as faithfully as possible.
 If information is missing, supplement from creative_content.
 
-### Step 2: Add Japanese translation fields
-
-Parse the {translation_result} JSON and add the Japanese fields to the data:
-
-```json
-{
-  "title_ja": "[Japanese title from translation_result]",
-  "summary_ja": "[Japanese summary from translation_result]",
-  "narrative_content_ja": "[Japanese narrative from translation_result]",
-  "discrepancy_detected_ja": "[Japanese discrepancy from translation_result]",
-  "hypothesis_ja": "[Japanese hypothesis from translation_result]",
-  "alternative_hypotheses_ja": ["..."],
-  "story_hooks_ja": ["..."],
-  "historical_context_ja": {
-    "political_climate": "[Japanese political climate from translation_result]"
-  }
-}
-```
-
-If {translation_result} is empty or contains "NO_TRANSLATION", skip the Japanese fields.
-
-### Step 3: Save to Firestore
+### Step 2: Save to Firestore
 
 Pass the constructed JSON to the `publish_mystery` tool to save to Firestore.
+The tool will automatically collect all 6 language translations from the session state
+and save them in the `translations` map.
 
 When calling `publish_mystery`, pass {visual_assets} as the second argument `visual_assets_json`.
 The `publish_mystery` tool will automatically upload images to Cloud Storage after generating the mystery_id,
@@ -173,6 +164,10 @@ Pipeline execution logs are injected externally, so the agent should leave it em
 **Important: The `raw_data` field should contain {collected_documents_en} verbatim.**
 This is the raw search metadata collected by the English Librarian. Save it as-is for future analysis (RAG, etc.).
 
+**Important: Do NOT include translation fields in the JSON.**
+The `publish_mystery` tool reads all translation results directly from the session state
+and builds the `translations` map automatically.
+
 ## Important
 - If mystery_report is empty or contains "NO_DOCUMENTS_FOUND" or "INSUFFICIENT_DATA",
   do not publish and report the situation.
@@ -185,7 +180,7 @@ publisher_agent = LlmAgent(
     model=create_flash_model(),
     description=(
         "Content manager agent that receives all assets and saves them to Firestore. "
-        "Saves both English (base fields) and Japanese (*_ja fields) content."
+        "Saves English base fields and multilingual translations (6 languages) via translations map."
     ),
     instruction=PUBLISHER_INSTRUCTION,
     tools=[publish_mystery],

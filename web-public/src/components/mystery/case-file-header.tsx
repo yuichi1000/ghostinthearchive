@@ -6,6 +6,7 @@ interface CaseFileHeaderProps {
   location: string
   timePeriod: string
   publishedAt?: Date
+  publishedLabel?: string
 }
 
 export function CaseFileHeader({
@@ -14,6 +15,7 @@ export function CaseFileHeader({
   location,
   timePeriod,
   publishedAt,
+  publishedLabel = "Published:",
 }: CaseFileHeaderProps) {
   return (
     <div className="mb-12">
@@ -47,7 +49,7 @@ export function CaseFileHeader({
         {publishedAt && (
           <span className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-gold" />
-            Published: {publishedAt.toLocaleDateString()}
+            {publishedLabel} {publishedAt.toLocaleDateString()}
           </span>
         )}
       </div>

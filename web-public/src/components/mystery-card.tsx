@@ -2,21 +2,23 @@ import Link from "next/link"
 import { FileText, MapPin, Calendar } from "lucide-react"
 import type { FirestoreMystery } from "@ghost/shared/src/types/mystery"
 import { cn } from "@ghost/shared/src/lib/utils"
-import { localizeMystery } from "@/lib/localize"
+import { localizeMystery } from "@ghost/shared/src/lib/localize"
+import type { SupportedLang } from "@/lib/i18n/config"
 
 interface MysteryCardProps {
   mystery: FirestoreMystery
+  lang?: SupportedLang
   className?: string
 }
 
-export function MysteryCard({ mystery, className }: MysteryCardProps) {
-  const { title, summary } = localizeMystery(mystery)
+export function MysteryCard({ mystery, lang = "en", className }: MysteryCardProps) {
+  const { title, summary } = localizeMystery(mystery, lang)
 
   const location = mystery.historical_context?.geographic_scope?.[0] || ""
   const timePeriod = mystery.historical_context?.time_period || ""
 
   return (
-    <Link href={`/mystery/${mystery.mystery_id}`} className={cn("block group no-underline", className)}>
+    <Link href={`/${lang}/mystery/${mystery.mystery_id}`} className={cn("block group no-underline", className)}>
       <article className="aged-card letterpress-border rounded-sm p-5 h-full transition-all duration-300 hover:bg-paper-light hover:border-parchment-dark/30 hover:shadow-lg hover:shadow-black/20">
         {/* File tab decoration */}
         <div className="flex items-start justify-between gap-3 mb-4">

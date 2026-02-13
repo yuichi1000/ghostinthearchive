@@ -77,11 +77,12 @@ web-admin と web-public で共通するコードは `packages/shared/`（`@ghos
 - Firebase クライアント設定（`lib/firebase/config.ts`）
 - Firestore 読み取りクエリ（`lib/firestore/queries.ts`）
 - ユーティリティ関数（`lib/utils.ts`）
+- ローカライズ関数（`lib/localize.ts` — `localizeMystery()`, `getTranslatedExcerpt()`）
 - 共通 UI コンポーネント（`evidence-block.tsx`, `footer.tsx`, `button.tsx`）
 
 **各アプリに残すもの（アプリ固有）:**
-- web-admin: 書き込み操作（approve, archive 等）、認証（NextAuth）、管理画面コンポーネント
-- web-public: ローカライズ（`localize.ts`）、公開サイト固有コンポーネント
+- web-admin: 書き込み操作（approve, archive 等）、認証（NextAuth）、管理画面コンポーネント、言語セレクタ
+- web-public: i18n 辞書（`lib/i18n/dictionaries/`）、言語スイッチャー、公開サイト固有コンポーネント
 - ページコンポーネント（`app/` 配下）は常にアプリ固有
 
 ## Tech Stack
@@ -95,8 +96,10 @@ web-admin と web-public で共通するコードは `packages/shared/`（`@ghos
 ## Web Architecture
 
 - **web-public**: SSG（Static Site Generation）で動作（`output: "export"`）
-  - ビルド時に全ページを静的 HTML として生成
-  - 記事更新時は Cloud Build で再ビルド・再デプロイ
+  - 7言語（en/ja/es/de/fr/nl/pt）× N記事 の静的 HTML をビルド時に生成
+  - `React.cache` で Firestore クエリを 7N→1 回に最適化
+  - 記事更新時は Cloud Build（E2_HIGHCPU_8）で再ビルド・再デプロイ
+  - ルート `/` はブラウザ言語を検出して `/{lang}/` にリダイレクト
 - **web-admin**: クライアントサイドレンダリング（毎回 Firestore アクセス）
 - 記事更新頻度: 1日最大1回
 
@@ -127,38 +130,40 @@ web-admin と web-public で共通するコードは `packages/shared/`（`@ghos
 | **Armchair Polymath** | 言語横断統合分析（書斎の安楽椅子学者） | scholar_analysis + debate_whiteboard | mystery_report |
 | **Storyteller** | 歴史的厳密さと怪異的情緒の融合（英語ブログ記事） | mystery_report | creative_content (英語ブログ原稿) |
 | **Illustrator** | トップ画像生成 | creative_content | visual_assets (Imagen 3 によるトップ画像1枚) |
-| **Translator** | 英語→日本語翻訳（管理画面用） | creative_content + structured_report | translation_ja (日本語翻訳) |
+| **Translator** | 英語→多言語翻訳（6言語並列） | creative_content + structured_report | translation_result_{lang} (各言語翻訳) |
 | **Publisher** | 納品・公開（EN+JA両方保存） | 全アセット | published_episode (Firestore 保存、管理画面反映) |
 
 ### 翻訳エージェント（`translator_agents/`）
 
-ブログパイプライン内で Illustrator → **Translator** → Publisher の順で実行される。
-また、Curator のテーマ提案翻訳にも使用される汎用翻訳エージェント。
+ブログパイプライン内で Illustrator → **ParallelTranslators** → Publisher の順で実行される。
+6言語（ja, es, de, fr, nl, pt）を並列翻訳する Factory パターン。
 
 | エージェント | 役割 | 入力 | 出力 |
 |------------|------|------|------|
-| **Translator** | 英語→日本語翻訳 | 英語フィールド（JSON） | 日本語翻訳フィールド（`*_ja`） |
+| **Translator (×6)** | 英語→各言語翻訳 | 英語フィールド（JSON） | `translation_result_{lang}` (各言語翻訳) |
+
+**Factory パターン:**
+- `create_translator(lang)` → 単一言語の `LlmAgent` を返す
+- `create_all_translators()` → 6言語分の dict を返す
+- `translator_agent = create_translator("ja")` で後方互換維持
 
 **状態遷移:**
 ```
-pending (EN原文 + JA翻訳 両方あり) → (Approve) → published
+pending (EN原文 + 翻訳あり) → (Approve) → published
 ```
 - `translating` ステータスは新規記事では不要（後方互換のため型定義には残す）
 
 **Firestore フィールド命名規則:**
 - ベースフィールド (`title`, `summary`, `narrative_content` 等) → **英語**（原文）
-- `*_ja` サフィックス (`title_ja`, `summary_ja` 等) → **日本語**（翻訳）
+- `translations` map (`translations.ja.title`, `translations.es.summary` 等) → **各言語翻訳**（新方式）
+- `*_ja` サフィックス → **レガシー**（後方互換用、`localizeMystery()` がフォールバックで参照）
 - `*_en` フィールド → 非推奨（レガシー、後方互換用）
 
-**翻訳対象フィールド:**
-- `title` → `title_ja`
-- `summary` → `summary_ja`
-- `narrative_content` → `narrative_content_ja`
-- `discrepancy_detected` → `discrepancy_detected_ja`
-- `hypothesis` → `hypothesis_ja`
-- `alternative_hypotheses` → `alternative_hypotheses_ja`
-- `historical_context.political_climate` → `historical_context_ja.political_climate`
-- `story_hooks` → `story_hooks_ja`
+**翻訳対象フィールド（translations map 内）:**
+- `title`, `summary`, `narrative_content`
+- `discrepancy_detected`, `hypothesis`, `alternative_hypotheses`
+- `historical_context.political_climate`, `story_hooks`
+- `evidence_a_excerpt`, `evidence_b_excerpt`, `additional_evidence_excerpts`
 
 ### Podcast 作成パイプライン（`podcast_agents/`）
 
@@ -232,11 +237,12 @@ pending (EN原文 + JA翻訳 両方あり) → (Approve) → published
 - **歴史的厳密さ**と**怪異的情緒**を両立させたブログ記事の作成
 - センセーショナリズムに走らず、学術的誠実さを保ちながらも、読者の好奇心を刺激する構成
 
-**Translator（翻訳家）**
-- 英語記事を日本語に翻訳（管理画面での内容確認用）
-- 歴史用語・民俗学用語の正確な翻訳
-- Fact × Folklore のニュアンス維持
-- ブログパイプライン内（Illustrator → Translator → Publisher）と Curator テーマ提案の両方で使用
+**Translator（翻訳家）** — Factory パターン × 6言語
+- 英語記事を6言語（ja/es/de/fr/nl/pt）に並列翻訳
+- 各言語に専用のトーンガイドライン（ja: 怪異情緒、de: Unheimlichkeit、fr: le mystérieux 等）
+- 歴史用語・民俗学用語の正確な翻訳、Fact × Folklore のニュアンス維持
+- ブログパイプライン内（Illustrator → ParallelTranslators → Publisher）で使用
+- `create_translator(lang)` / `create_all_translators()` Factory パターン
 
 **Scriptwriter（脚本家）**
 - Storyteller のブログ記事をベースにポッドキャスト用の脚本を作成
@@ -249,13 +255,14 @@ pending (EN原文 + JA翻訳 両方あり) → (Approve) → published
 ```
 ThemeAnalyzer → ParallelLibrarians → [ScholarGate] → ParallelScholars(分析)
   → DebateLoop(LoopAgent, max_iterations=2) → [PolymathGate] → ArmchairPolymath
-  → [StorytellerGate] → Storyteller(EN) → [PostStoryGate] → Illustrator → Translator(EN→JA) → Publisher(EN+JA保存) → Firestore
+  → [StorytellerGate] → Storyteller(EN) → [PostStoryGate] → Illustrator → ParallelTranslators(6言語) → Publisher(translations map保存) → Firestore
 ```
 
 - DebateLoop は有意な分析が2言語以上ある場合のみ実行される
 - Scholar は分析モードと討論モードの2つを持つ（単一ファクトリ関数 `create_scholar(lang, mode)`）
 - 討論モードの Scholar は `append_to_whiteboard` ツールで共有ホワイトボードに発言を記録
-- Translator はブログパイプライン内で実行される。Approve 時は翻訳不要（ステータス変更のみ）
+- ParallelTranslators は6言語の翻訳を並列実行する（`create_all_translators()`）
+- Approve 時は翻訳不要（ステータス変更のみ）
 
 **パイプラインゲート（カスケード障害対策）:**
 
@@ -290,7 +297,7 @@ output_key ベース:
 - `mystery_report` - Armchair Polymath の統合分析レポート（下流互換維持）
 - `creative_content` - Storyteller の英語ブログ原稿
 - `visual_assets` - Illustrator のトップ画像アセット
-- `translation_result` - Translator の翻訳結果（JSON形式）
+- `translation_result_{lang}` - Translator の翻訳結果（ja, es, de, fr, nl, pt 各言語、JSON形式）
 - `published_episode` - Publisher の公開結果
 
 tool_context.state ベース（構造化データ、LLM を経由しない正確なデータ）:
@@ -298,11 +305,10 @@ tool_context.state ベース（構造化データ、LLM を経由しない正確
 - `debate_whiteboard` - Scholar（討論モード）が `append_to_whiteboard` で累積書き込みする討論記録（`""` で初期化）
 - `structured_report` - Armchair Polymath の `save_structured_report` ツールが書き込む構造化分析JSON
 - `image_metadata` - Illustrator の `generate_image` ツールが書き込む画像メタデータ
-- `translation_ja` - Translator の翻訳結果（`*_ja` フィールド）
 
 **翻訳パイプライン（スタンドアロン実行時 `translator_agents`）:**
 - `title`, `summary`, `narrative_content` 等 - Firestore から事前セット
-- `translation_result` - Translator の翻訳結果（JSON形式）
+- `translation_result_{lang}` - Translator の翻訳結果（JSON形式）
 
 **Podcast パイプライン（`podcast_agents`）:**
 - `creative_content` - Firestore の narrative_content から事前セット
@@ -431,14 +437,15 @@ services/                     # Cloud Run サービスエントリポイント
 └── curator.py                # Curator Cloud Run サービス
 
 packages/shared/              # web-admin / web-public 共有コード (@ghost/shared)
-├── src/types/                # 型定義（mystery.ts）
+├── src/types/                # 型定義（mystery.ts: TranslatedContent, translations map 含む）
 ├── src/lib/firebase/         # Firebase クライアント設定
-├── src/lib/firestore/        # Firestore 読み取りクエリ
+├── src/lib/firestore/        # Firestore 読み取りクエリ（getAllPublishedMysteriesMap 含む）
+├── src/lib/localize.ts       # ローカライズ（localizeMystery, getTranslatedExcerpt）
 ├── src/lib/utils.ts          # ユーティリティ（cn 等）
 └── src/components/           # 共通 UI コンポーネント
 
 web-admin/                    # Next.js 管理画面（日本語表示優先）
-web-public/                   # Next.js 公開サイト（英語表示）
+web-public/                   # Next.js 公開サイト（7言語対応: en/ja/es/de/fr/nl/pt）
 docs/                         # ドキュメント（手順.md 等）
 
 tests/                        # テストスイート
