@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, Optional
 
 from google.genai import types
 
+from shared.constants import DEFAULT_SELECTED_LANGUAGES
+
 if TYPE_CHECKING:
     from google.adk.agents.callback_context import CallbackContext
 
@@ -23,9 +25,9 @@ def make_language_gate(lang_code: str):
     """
 
     def gate(callback_context: CallbackContext) -> Optional[types.Content]:
-        selected = callback_context.state.get("selected_languages", ["en"])
+        selected = callback_context.state.get("selected_languages", DEFAULT_SELECTED_LANGUAGES)
         if not isinstance(selected, list):
-            selected = ["en"]
+            selected = list(DEFAULT_SELECTED_LANGUAGES)
         if lang_code not in selected:
             return types.Content(
                 parts=[types.Part(text="")], role="model"
@@ -44,9 +46,9 @@ def make_debate_gate(lang_code: str):
     """
 
     def gate(callback_context: CallbackContext) -> Optional[types.Content]:
-        selected = callback_context.state.get("selected_languages", ["en"])
+        selected = callback_context.state.get("selected_languages", DEFAULT_SELECTED_LANGUAGES)
         if not isinstance(selected, list):
-            selected = ["en"]
+            selected = list(DEFAULT_SELECTED_LANGUAGES)
         if lang_code not in selected or len(selected) < 2:
             return types.Content(
                 parts=[types.Part(text="")], role="model"
@@ -70,9 +72,9 @@ def make_debate_loop_gate():
     """
 
     def gate(callback_context: CallbackContext) -> Optional[types.Content]:
-        selected = callback_context.state.get("selected_languages", ["en"])
+        selected = callback_context.state.get("selected_languages", DEFAULT_SELECTED_LANGUAGES)
         if not isinstance(selected, list):
-            selected = ["en"]
+            selected = list(DEFAULT_SELECTED_LANGUAGES)
 
         # 有意な分析を出した Scholar の数をカウント
         meaningful = 0
