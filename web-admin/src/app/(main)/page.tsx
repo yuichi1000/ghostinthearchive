@@ -5,7 +5,7 @@ import Link from "next/link"
 import { StatusBadge } from "@/components/status-badge"
 import { cn } from "@ghost/shared/src/lib/utils"
 import { Button } from "@ghost/shared/src/components/ui/button"
-import { getAllMysteries, approveMystery, archiveMystery, requestPodcast } from "@/lib/firestore/mysteries"
+import { getAllMysteries, approveMystery, archiveMystery } from "@/lib/firestore/mysteries"
 import type { FirestoreMystery, MysteryStatus, PipelineRun } from "@ghost/shared/src/types/mystery"
 import { localizeMystery } from "@ghost/shared/src/lib/localize"
 import { PipelineSummary } from "@/components/pipeline-summary"
@@ -28,9 +28,7 @@ import {
   Inbox,
   ChevronDown,
   ChevronUp,
-  Mic,
   Loader2,
-  AlertCircle,
   Search,
   Sparkles,
 } from "lucide-react"
@@ -149,29 +147,6 @@ export default function AdminPage() {
       setTimeout(() => setActionFeedback(null), 3000)
     } catch (error) {
       console.error("Failed to archive:", error)
-    }
-  }
-
-  const handlePodcast = async (id: string) => {
-    try {
-      await requestPodcast(id)
-      const res = await fetch("/api/podcasts/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mysteryId: id }),
-      })
-      if (!res.ok) throw new Error("API request failed")
-      const data = await res.json()
-      if (data.run_id) {
-        setCurrentRunId(data.run_id)
-      }
-      setActionFeedback(`Podcast generation started for Case ${id}`)
-      fetchMysteries()
-      setTimeout(() => setActionFeedback(null), 3000)
-    } catch (error) {
-      console.error("Failed to start podcast:", error)
-      setActionFeedback(`Failed to start podcast generation`)
-      setTimeout(() => setActionFeedback(null), 3000)
     }
   }
 
@@ -413,7 +388,6 @@ export default function AdminPage() {
                 lang={lang}
                 onApprove={() => handleApprove(mystery.mystery_id)}
                 onArchive={() => handleArchive(mystery.mystery_id)}
-                onPodcast={() => handlePodcast(mystery.mystery_id)}
               />
             ))}
           </div>
@@ -428,10 +402,9 @@ interface AdminMysteryCardProps {
   lang: PreviewLang
   onApprove: () => void
   onArchive: () => void
-  onPodcast: () => void
 }
 
-function AdminMysteryCard({ mystery, lang, onApprove, onArchive, onPodcast }: AdminMysteryCardProps) {
+function AdminMysteryCard({ mystery, lang, onApprove, onArchive }: AdminMysteryCardProps) {
   const [showPipeline, setShowPipeline] = useState(false)
   const isPending = mystery.status === "pending"
   const isTranslating = mystery.status === "translating"
@@ -511,32 +484,6 @@ function AdminMysteryCard({ mystery, lang, onApprove, onArchive, onPodcast }: Ad
               <Eye className="w-4 h-4" />
               View Published
             </Link>
-            {mystery.podcast_status === "generating" ? (
-              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Generating...
-              </span>
-            ) : mystery.podcast_status === "error" ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onPodcast}
-                className="border-blood-red/30 text-[#ff6b6b] hover:bg-blood-red/20 hover:text-[#ff6b6b] bg-transparent"
-              >
-                <AlertCircle className="w-4 h-4 mr-1" />
-                Retry Podcast
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onPodcast}
-                className="border-gold/30 text-gold hover:bg-gold/20 hover:text-gold bg-transparent"
-              >
-                <Mic className="w-4 h-4 mr-1" />
-                {mystery.podcast_status === "completed" ? "Podcast 再生成" : "Podcast 作成"}
-              </Button>
-            )}
           </div>
         ) : (
           <div className="flex items-center gap-3">
