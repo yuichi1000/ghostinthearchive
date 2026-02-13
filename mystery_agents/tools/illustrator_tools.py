@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import tempfile
 import time
 from datetime import datetime
@@ -569,15 +570,33 @@ def generate_image(
             "All %d attempts failed, using fallback image. last_error=%s, original_prompt=%s",
             MAX_RETRIES, last_error, full_prompt[:200],
         )
+
+        # 静的アセットを temp にコピーしてから返す
+        # （Publisher の _upload_images_internal がリネーム＋削除するため、
+        #   元の静的ファイルを保全する）
+        temp_dir = Path(tempfile.mkdtemp(prefix="ghost_images_"))
+        fallback_copy = temp_dir / FALLBACK_IMAGE_PATH.name
+        shutil.copy2(FALLBACK_IMAGE_PATH, fallback_copy)
+
+        variant_copies = []
+        for v in FALLBACK_VARIANTS:
+            src = Path(v["filepath"])
+            if src.exists():
+                dst = temp_dir / src.name
+                shutil.copy2(src, dst)
+                variant_copies.append({**v, "filepath": str(dst), "filename": src.name})
+            else:
+                logger.warning("Fallback variant not found: %s", src)
+
         fallback_result = {
             "status": "fallback",
-            "filepath": str(FALLBACK_IMAGE_PATH),
+            "filepath": str(fallback_copy),
             "filename": FALLBACK_IMAGE_PATH.name,
             "note": "Using fallback image due to generation failure",
             "original_prompt": full_prompt,
             "last_error": last_error,
             "attempts": MAX_RETRIES,
-            "variants": FALLBACK_VARIANTS,
+            "variants": variant_copies,
             "retry_suggestion": (
                 "Try generating with a completely different visual concept. "
                 "Focus on locations, architecture, or symbolic objects instead of the original subject. "
