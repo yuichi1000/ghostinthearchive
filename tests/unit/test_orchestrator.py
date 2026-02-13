@@ -1,10 +1,11 @@
 """Unit tests for shared/orchestrator.py"""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from shared.orchestrator import PipelineResult, run_pipeline
+from tests.fakes import FakeInMemorySessionService
 
 
 def _make_event(author: str | None = None, text: str | None = None):
@@ -21,6 +22,23 @@ def _make_event(author: str | None = None, text: str | None = None):
         event.content = None
 
     return event
+
+
+def _make_runner(events=None):
+    """テスト用の Runner モックを生成する。
+
+    events が None の場合は空の AsyncGenerator を返す。
+    """
+    async def mock_run_async(**kwargs):
+        if events:
+            for e in events:
+                yield e
+        return
+        yield  # AsyncGenerator にするために必要
+
+    runner = MagicMock()
+    runner.run_async = mock_run_async
+    return runner
 
 
 class TestPipelineResult:
@@ -46,28 +64,12 @@ class TestRunPipeline:
         self, mock_create, mock_started, mock_completed, mock_complete
     ):
         """run_id 未指定時に pipeline_run を自動作成する。"""
-        agent = MagicMock()
+        fake_session = FakeInMemorySessionService()
 
-        # Runner.run_async を AsyncGenerator としてモック
-        async def mock_run_async(**kwargs):
-            return
-            yield  # AsyncGenerator にするために必要
-
-        mock_runner_instance = MagicMock()
-        mock_runner_instance.run_async = mock_run_async
-
-        # InMemorySessionService のモック
-        mock_session = MagicMock()
-        mock_session.state = {}
-
-        mock_session_service = AsyncMock()
-        mock_session_service.create_session = AsyncMock()
-        mock_session_service.get_session = AsyncMock(return_value=mock_session)
-
-        with patch("shared.orchestrator.Runner", return_value=mock_runner_instance), \
-             patch("shared.orchestrator.InMemorySessionService", return_value=mock_session_service):
+        with patch("shared.orchestrator.Runner", return_value=_make_runner()), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
             result = await run_pipeline(
-                agent=agent,
+                agent=MagicMock(),
                 app_name="test_app",
                 user_message="test query",
                 initial_state={"key": "value"},
@@ -86,26 +88,12 @@ class TestRunPipeline:
         self, mock_create, mock_started, mock_completed, mock_complete
     ):
         """run_id 指定時は pipeline_run を新規作成しない。"""
-        agent = MagicMock()
+        fake_session = FakeInMemorySessionService()
 
-        async def mock_run_async(**kwargs):
-            return
-            yield
-
-        mock_runner_instance = MagicMock()
-        mock_runner_instance.run_async = mock_run_async
-
-        mock_session = MagicMock()
-        mock_session.state = {}
-
-        mock_session_service = AsyncMock()
-        mock_session_service.create_session = AsyncMock()
-        mock_session_service.get_session = AsyncMock(return_value=mock_session)
-
-        with patch("shared.orchestrator.Runner", return_value=mock_runner_instance), \
-             patch("shared.orchestrator.InMemorySessionService", return_value=mock_session_service):
+        with patch("shared.orchestrator.Runner", return_value=_make_runner()), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
             result = await run_pipeline(
-                agent=agent,
+                agent=MagicMock(),
                 app_name="test_app",
                 user_message="test query",
                 initial_state={},
@@ -124,31 +112,16 @@ class TestRunPipeline:
         self, mock_create, mock_started, mock_completed, mock_complete
     ):
         """エージェント遷移が正しく追跡される。"""
-        agent = MagicMock()
-
         events = [
             _make_event(author="librarian", text="Found documents"),
             _make_event(author="scholar", text="Analysis complete"),
         ]
+        fake_session = FakeInMemorySessionService()
 
-        async def mock_run_async(**kwargs):
-            for e in events:
-                yield e
-
-        mock_runner_instance = MagicMock()
-        mock_runner_instance.run_async = mock_run_async
-
-        mock_session = MagicMock()
-        mock_session.state = {}
-
-        mock_session_service = AsyncMock()
-        mock_session_service.create_session = AsyncMock()
-        mock_session_service.get_session = AsyncMock(return_value=mock_session)
-
-        with patch("shared.orchestrator.Runner", return_value=mock_runner_instance), \
-             patch("shared.orchestrator.InMemorySessionService", return_value=mock_session_service):
+        with patch("shared.orchestrator.Runner", return_value=_make_runner(events)), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
             result = await run_pipeline(
-                agent=agent,
+                agent=MagicMock(),
                 app_name="test_app",
                 user_message="test",
                 initial_state={},
@@ -170,31 +143,16 @@ class TestRunPipeline:
         self, mock_create, mock_started, mock_completed, mock_complete
     ):
         """skip_authors に含まれるエージェントはログ対象外。"""
-        agent = MagicMock()
-
         events = [
             _make_event(author="ghost_commander", text="Starting"),
             _make_event(author="librarian", text="Found documents"),
         ]
+        fake_session = FakeInMemorySessionService()
 
-        async def mock_run_async(**kwargs):
-            for e in events:
-                yield e
-
-        mock_runner_instance = MagicMock()
-        mock_runner_instance.run_async = mock_run_async
-
-        mock_session = MagicMock()
-        mock_session.state = {}
-
-        mock_session_service = AsyncMock()
-        mock_session_service.create_session = AsyncMock()
-        mock_session_service.get_session = AsyncMock(return_value=mock_session)
-
-        with patch("shared.orchestrator.Runner", return_value=mock_runner_instance), \
-             patch("shared.orchestrator.InMemorySessionService", return_value=mock_session_service):
+        with patch("shared.orchestrator.Runner", return_value=_make_runner(events)), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
             result = await run_pipeline(
-                agent=agent,
+                agent=MagicMock(),
                 app_name="test_app",
                 user_message="test",
                 initial_state={},
@@ -215,31 +173,16 @@ class TestRunPipeline:
         self, mock_create, mock_started, mock_completed, mock_complete
     ):
         """テキスト出力時に on_text コールバックが呼ばれる。"""
-        agent = MagicMock()
         received_texts = []
-
         events = [
             _make_event(author="storyteller", text="Once upon a time"),
         ]
+        fake_session = FakeInMemorySessionService()
 
-        async def mock_run_async(**kwargs):
-            for e in events:
-                yield e
-
-        mock_runner_instance = MagicMock()
-        mock_runner_instance.run_async = mock_run_async
-
-        mock_session = MagicMock()
-        mock_session.state = {}
-
-        mock_session_service = AsyncMock()
-        mock_session_service.create_session = AsyncMock()
-        mock_session_service.get_session = AsyncMock(return_value=mock_session)
-
-        with patch("shared.orchestrator.Runner", return_value=mock_runner_instance), \
-             patch("shared.orchestrator.InMemorySessionService", return_value=mock_session_service):
+        with patch("shared.orchestrator.Runner", return_value=_make_runner(events)), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
             await run_pipeline(
-                agent=agent,
+                agent=MagicMock(),
                 app_name="test_app",
                 user_message="test",
                 initial_state={},
@@ -253,23 +196,19 @@ class TestRunPipeline:
     @patch("shared.orchestrator.create_pipeline_run", return_value="run-005")
     async def test_error_marks_pipeline_run(self, mock_create, mock_error):
         """例外発生時に pipeline_run をエラーマークする。"""
-        agent = MagicMock()
-
-        async def mock_run_async(**kwargs):
+        async def error_run_async(**kwargs):
             raise RuntimeError("Something went wrong")
             yield
 
-        mock_runner_instance = MagicMock()
-        mock_runner_instance.run_async = mock_run_async
+        runner = MagicMock()
+        runner.run_async = error_run_async
+        fake_session = FakeInMemorySessionService()
 
-        mock_session_service = AsyncMock()
-        mock_session_service.create_session = AsyncMock()
-
-        with patch("shared.orchestrator.Runner", return_value=mock_runner_instance), \
-             patch("shared.orchestrator.InMemorySessionService", return_value=mock_session_service):
+        with patch("shared.orchestrator.Runner", return_value=runner), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
             with pytest.raises(RuntimeError, match="Something went wrong"):
                 await run_pipeline(
-                    agent=agent,
+                    agent=MagicMock(),
                     app_name="test_app",
                     user_message="test",
                     initial_state={},
@@ -286,28 +225,17 @@ class TestRunPipeline:
         self, mock_create, mock_started, mock_completed, mock_complete
     ):
         """blog パイプラインでは session state から mystery_id を抽出する。"""
-        agent = MagicMock()
+        # Runner 実行後のセッション状態をシミュレート
+        fake_session = FakeInMemorySessionService(
+            post_run_state={
+                "published_episode": '{"mystery_id": "OCC-MA-617-20260208143025", "status": "success"}'
+            }
+        )
 
-        async def mock_run_async(**kwargs):
-            return
-            yield
-
-        mock_runner_instance = MagicMock()
-        mock_runner_instance.run_async = mock_run_async
-
-        mock_session = MagicMock()
-        mock_session.state = {
-            "published_episode": '{"mystery_id": "OCC-MA-617-20260208143025", "status": "success"}'
-        }
-
-        mock_session_service = AsyncMock()
-        mock_session_service.create_session = AsyncMock()
-        mock_session_service.get_session = AsyncMock(return_value=mock_session)
-
-        with patch("shared.orchestrator.Runner", return_value=mock_runner_instance), \
-             patch("shared.orchestrator.InMemorySessionService", return_value=mock_session_service):
+        with patch("shared.orchestrator.Runner", return_value=_make_runner()), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
             result = await run_pipeline(
-                agent=agent,
+                agent=MagicMock(),
                 app_name="test_app",
                 user_message="test",
                 initial_state={},
@@ -324,26 +252,12 @@ class TestRunPipeline:
         self, mock_create, mock_complete
     ):
         """podcast パイプラインでは mystery_id 抽出をスキップする。"""
-        agent = MagicMock()
+        fake_session = FakeInMemorySessionService()
 
-        async def mock_run_async(**kwargs):
-            return
-            yield
-
-        mock_runner_instance = MagicMock()
-        mock_runner_instance.run_async = mock_run_async
-
-        mock_session = MagicMock()
-        mock_session.state = {}
-
-        mock_session_service = AsyncMock()
-        mock_session_service.create_session = AsyncMock()
-        mock_session_service.get_session = AsyncMock(return_value=mock_session)
-
-        with patch("shared.orchestrator.Runner", return_value=mock_runner_instance), \
-             patch("shared.orchestrator.InMemorySessionService", return_value=mock_session_service):
+        with patch("shared.orchestrator.Runner", return_value=_make_runner()), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
             result = await run_pipeline(
-                agent=agent,
+                agent=MagicMock(),
                 app_name="test_app",
                 user_message="test",
                 initial_state={},
