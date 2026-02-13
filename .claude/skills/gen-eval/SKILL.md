@@ -38,7 +38,6 @@ allowed-tools: Read, Glob, Grep, Bash, Write, Edit
 |-------------------|------------|-----------|
 | `mystery_agents/` | mystery（ブログ） | `ghost_commander` |
 | `podcast_agents/` | podcast | `podcast_commander` |
-| `translator_agents/` | translator | `translator_commander` |
 
 このスキルのディレクトリにある `agent-catalog.md` と照合し、以下を把握する:
 - 前段エージェントとその `output_key`（このエージェントが読み取るセッション状態キー）
