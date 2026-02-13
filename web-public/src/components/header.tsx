@@ -1,15 +1,20 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Archive } from "lucide-react"
 import { LanguageSwitcher } from "./language-switcher"
 import type { SupportedLang } from "@/lib/i18n/config"
 
 interface HeaderProps {
   lang?: SupportedLang
+  nav?: { about: string }
 }
 
-export function Header({ lang = "en" }: HeaderProps) {
+export function Header({ lang = "en", nav }: HeaderProps) {
+  const pathname = usePathname()
+  const isAboutActive = pathname === `/${lang}/about`
+
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
       <div className="container mx-auto px-4">
@@ -25,8 +30,24 @@ export function Header({ lang = "en" }: HeaderProps) {
             </span>
           </Link>
 
-          {/* Language Switcher */}
-          <LanguageSwitcher currentLang={lang} />
+          {/* Nav + Language Switcher */}
+          <div className="flex items-center gap-4">
+            {nav && (
+              <nav>
+                <Link
+                  href={`/${lang}/about`}
+                  className={`text-sm font-mono uppercase tracking-wider transition-colors no-underline ${
+                    isAboutActive
+                      ? "text-gold"
+                      : "text-muted-foreground hover:text-parchment"
+                  }`}
+                >
+                  {nav.about}
+                </Link>
+              </nav>
+            )}
+            <LanguageSwitcher currentLang={lang} />
+          </div>
         </div>
       </div>
     </header>

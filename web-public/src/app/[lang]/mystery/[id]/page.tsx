@@ -96,7 +96,7 @@ export default async function MysteryDetailPage({
 
   return (
     <div className="min-h-screen flex flex-col film-grain">
-      <Header lang={lang} />
+      <Header lang={lang} nav={dict.nav} />
 
       <main className="flex-1 py-8 md:py-12">
         <div className="container mx-auto px-4">

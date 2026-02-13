@@ -25,12 +25,20 @@ const dict: Dictionary = {
       accuracy: "Precisão não garantida",
     },
   },
+  nav: {
+    about: "Sobre",
+  },
   home: {
     latestDiscoveries: "Últimas descobertas",
+    featuredStory: "Investigação em destaque",
     noMysteries: "Nenhum mistério ainda",
     noMysteriesDesc:
       "Não há mistérios publicados no momento. Volte para novas descobertas.",
     classifiedRedacted: "Casos adicionais permanecem classificados",
+  },
+  about: {
+    title: "Sobre | Ghost in the Archive",
+    heading: "Sobre este arquivo",
   },
   detail: {
     returnToArchive: "Voltar ao arquivo",

@@ -24,12 +24,20 @@ const dict: Dictionary = {
       accuracy: "Accuracy not guaranteed",
     },
   },
+  nav: {
+    about: "About",
+  },
   home: {
     latestDiscoveries: "Latest Discoveries",
+    featuredStory: "Featured Investigation",
     noMysteries: "No Mysteries Yet",
     noMysteriesDesc:
       "No published mysteries at this time. Check back for new discoveries.",
     classifiedRedacted: "Additional cases remain classified",
+  },
+  about: {
+    title: "About | Ghost in the Archive",
+    heading: "About This Archive",
   },
   detail: {
     returnToArchive: "Return to Archive",
