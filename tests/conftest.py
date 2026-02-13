@@ -74,6 +74,14 @@ sys.modules["google.cloud.storage"] = mock_storage
 mock_firestore_v1 = MagicMock()
 sys.modules["google.cloud.firestore_v1"] = mock_firestore_v1
 
+# Mock google.cloud.texttospeech (used by podcast_agents/tools/tts.py)
+mock_tts = MagicMock()
+sys.modules["google.cloud.texttospeech"] = mock_tts
+
+# Mock pydub (used by podcast_agents/tools/tts.py)
+mock_pydub = MagicMock()
+sys.modules["pydub"] = mock_pydub
+
 import json
 from datetime import datetime, timezone
 from pathlib import Path
