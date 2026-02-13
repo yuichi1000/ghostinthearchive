@@ -1,0 +1,208 @@
+"""Pipeline Orchestrator - ADK パイプラインの実行制御
+
+Runner セットアップ、イベントループ処理、進捗追跡、セッション管理を一元化する。
+CLI と Cloud Run Service の両方から呼ばれるビジネスロジック層。
+"""
+
+import asyncio
+import json
+import logging
+from dataclasses import dataclass, field
+from typing import Callable
+
+from google.adk.agents.run_config import RunConfig
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai import types
+
+from mystery_agents.utils.pipeline_logger import PipelineLogger
+from shared.pipeline_run import (
+    create_pipeline_run,
+    update_agent_started,
+    update_agent_completed,
+    complete_pipeline_run,
+    error_pipeline_run,
+)
+
+logger = logging.getLogger(__name__)
+
+# イベントコールバック型
+OnText = Callable[[str], None]
+
+
+@dataclass
+class PipelineResult:
+    """パイプライン実行結果"""
+
+    run_id: str | None
+    mystery_id: str | None = None  # blog パイプラインのみ
+    logs: list[dict] = field(default_factory=list)
+    session_state: dict = field(default_factory=dict)
+
+
+async def run_pipeline(
+    agent,
+    app_name: str,
+    user_message: str,
+    initial_state: dict,
+    *,
+    run_id: str | None = None,
+    run_type: str = "blog",
+    timeout_seconds: int = 1800,
+    max_llm_calls: int = 120,
+    skip_authors: set[str] | None = None,
+    on_text: OnText | None = None,
+) -> PipelineResult:
+    """ADK パイプラインを実行する。
+
+    責務:
+    1. pipeline_run ドキュメント作成（run_id 未指定時）
+    2. InMemorySessionService + Runner セットアップ
+    3. イベントループ処理（エージェント遷移検出、進捗追跡、Firestore 同期）
+    4. セッション状態からの結果抽出
+    5. pipeline_run 完了/エラーマーク
+
+    Args:
+        agent: ADK Agent（ghost_commander / podcast_commander）
+        app_name: ADK アプリケーション名
+        user_message: ユーザーメッセージ（パイプライン起動テキスト）
+        initial_state: セッション初期状態
+        run_id: パイプライン実行 ID（未指定時は自動生成）
+        run_type: パイプライン種別 ("blog", "podcast")
+        timeout_seconds: タイムアウト秒数
+        max_llm_calls: LLM 呼び出し上限
+        skip_authors: ログ対象外のエージェント名セット
+        on_text: テキスト出力コールバック（CLI の print 等）
+
+    Returns:
+        PipelineResult: 実行結果
+    """
+    if skip_authors is None:
+        skip_authors = set()
+
+    # pipeline_run ドキュメント作成
+    if run_id is None:
+        create_kwargs = {"query": user_message} if run_type == "blog" else {}
+        run_id = create_pipeline_run(run_type, **create_kwargs)
+
+    # Runner + Session セットアップ
+    session_service = InMemorySessionService()
+    runner = Runner(
+        agent=agent,
+        app_name=app_name,
+        session_service=session_service,
+    )
+
+    user_id = "pipeline_user"
+    session_id = "pipeline_session"
+
+    state = {
+        "pipeline_log": [],
+        "pipeline_run_id": run_id,
+        **initial_state,
+    }
+
+    await session_service.create_session(
+        app_name=app_name,
+        user_id=user_id,
+        session_id=session_id,
+        state=state,
+    )
+
+    # 進捗追跡
+    pipeline_logger = PipelineLogger()
+    current_agent_name: str | None = None
+    accumulated_text: list[str] = []
+    current_log_index: int | None = None
+
+    run_config = RunConfig(max_llm_calls=max_llm_calls)
+
+    try:
+        async with asyncio.timeout(timeout_seconds):
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=types.Content(
+                    role="user",
+                    parts=[types.Part(text=user_message)],
+                ),
+                run_config=run_config,
+            ):
+                # エージェント遷移検出
+                author = getattr(event, "author", None)
+                if author and author not in skip_authors and author != current_agent_name:
+                    # 前のエージェントを完了マーク
+                    if current_agent_name:
+                        summary = " ".join(accumulated_text)[:200]
+                        pipeline_logger.complete_agent(summary or "(no text output)")
+                        completed_logs = pipeline_logger.get_logs()
+                        if completed_logs:
+                            update_agent_completed(
+                                run_id, current_log_index, completed_logs[-1]
+                            )
+                        accumulated_text = []
+                    # 新しいエージェントを開始
+                    current_agent_name = author
+                    pipeline_logger.start_agent(current_agent_name)
+                    current_log_index = update_agent_started(
+                        run_id, current_agent_name, pipeline_logger.get_logs()[-1]
+                    )
+
+                # テキスト出力処理
+                if event.content and event.content.parts:
+                    for part in event.content.parts:
+                        if hasattr(part, "text") and part.text:
+                            if on_text:
+                                on_text(part.text)
+                            accumulated_text.append(part.text[:100])
+
+        # 最後のエージェントを完了マーク
+        if current_agent_name:
+            summary = " ".join(accumulated_text)[:200]
+            pipeline_logger.complete_agent(summary or "(no text output)")
+            completed_logs = pipeline_logger.get_logs()
+            if completed_logs:
+                update_agent_completed(
+                    run_id, current_log_index, completed_logs[-1]
+                )
+
+        # セッション状態を取得
+        session = await session_service.get_session(
+            app_name=app_name,
+            user_id=user_id,
+            session_id=session_id,
+        )
+        session_state = dict(session.state) if session else {}
+
+        # pipeline_log をセッション状態に保存
+        if session:
+            session.state["pipeline_log"] = pipeline_logger.get_logs()
+
+        # mystery_id 抽出（blog パイプラインのみ）
+        mystery_id = None
+        if run_type == "blog" and session_state:
+            published = session_state.get("published_episode", "")
+            if isinstance(published, str) and published.startswith("{"):
+                try:
+                    published_data = json.loads(published)
+                    mystery_id = published_data.get("mystery_id")
+                except (json.JSONDecodeError, AttributeError):
+                    pass
+            elif isinstance(published, dict):
+                mystery_id = published.get("mystery_id")
+
+        complete_pipeline_run(run_id, mystery_id=mystery_id)
+
+        return PipelineResult(
+            run_id=run_id,
+            mystery_id=mystery_id,
+            logs=pipeline_logger.get_logs(),
+            session_state=session_state,
+        )
+
+    except TimeoutError:
+        error_pipeline_run(run_id, f"Pipeline timed out after {timeout_seconds}s")
+        raise
+    except Exception as e:
+        error_pipeline_run(run_id, str(e))
+        raise

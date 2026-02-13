@@ -50,18 +50,32 @@ class MysteryIdRequest(BaseModel):
 
 
 async def _run_investigate(query: str, run_id: str) -> None:
-    """Background task wrapper for the blog pipeline."""
-    try:
-        from mystery_agents.cli import investigate
+    """Background task wrapper for the blog pipeline.
 
-        await investigate(query, run_id=run_id)
+    CLI を経由せず Orchestrator を直接呼ぶことで、stdout ノイズを除去する。
+    """
+    try:
+        from shared.orchestrator import run_pipeline
+        from mystery_agents.agent import ghost_commander
+
+        await run_pipeline(
+            agent=ghost_commander,
+            app_name="ghost_in_the_archive",
+            user_message=query,
+            initial_state={"investigation_query": query},
+            run_id=run_id,
+            run_type="blog",
+        )
     except Exception as e:
         logger.exception("Blog pipeline failed: %s", e)
         error_pipeline_run(run_id, str(e))
 
 
 async def _run_podcast(mystery_id: str, run_id: str) -> None:
-    """Background task wrapper for the podcast pipeline."""
+    """Background task wrapper for the podcast pipeline.
+
+    Podcast は CLI 経由のまま（Firestore 読み込み・podcast_status 管理が CLI 固有のため）。
+    """
     try:
         from podcast_agents.cli import generate_podcast
 

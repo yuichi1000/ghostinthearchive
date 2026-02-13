@@ -636,6 +636,29 @@ class TestCleanupTempImages:
         assert "Failed to delete temp image" in caplog.text
 
 
+class TestPublishMysterySchemaVersion:
+    """Tests for schema_version field in publish_mystery()."""
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_schema_version_set_to_2(self, mock_get_db, mock_get_bucket):
+        """publish_mystery() は schema_version: 2 を設定する。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_bucket = MagicMock()
+        mock_get_bucket.return_value = mock_bucket
+
+        mystery_json = _make_mystery_json()
+
+        result = publish_mystery(mystery_json, "")
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["schema_version"] == 2
+
+
 class TestPublishMysteryEvidenceFiltering:
     """Tests for evidence excerpt validation in publish_mystery()."""
 

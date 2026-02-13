@@ -14,20 +14,8 @@ from dotenv import load_dotenv
 # .env はプロジェクトルートに配置
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-from google.adk.agents.run_config import RunConfig
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
-from google.genai import types
-
 from .agent import ghost_commander
-from .utils.pipeline_logger import PipelineLogger
-from shared.pipeline_run import (
-    create_pipeline_run,
-    update_agent_started,
-    update_agent_completed,
-    complete_pipeline_run,
-    error_pipeline_run,
-)
+from shared.orchestrator import run_pipeline
 
 # プロジェクト全体のログを有効化（Publisher, Illustrator 等の既存ログが出力される）
 logging.basicConfig(
@@ -36,6 +24,19 @@ logging.basicConfig(
 )
 
 PIPELINE_TIMEOUT_SECONDS = 1800  # 30 minutes
+
+# オーケストレーター/パラレルエージェントはログ対象外
+_SKIP_AUTHORS = {
+    "ghost_commander",
+    "parallel_librarians",
+    "parallel_scholars",
+    "debate_loop",           # LoopAgent の実際の名前
+    "parallel_translators",  # 翻訳 ParallelAgent
+    "scholar_block",
+    "polymath_block",
+    "storyteller_block",
+    "post_story_block",
+}
 
 
 async def investigate(query: str, *, run_id: str | None = None) -> str | None:
@@ -57,152 +58,33 @@ async def investigate(query: str, *, run_id: str | None = None) -> str | None:
     print("-" * 70)
     print()
 
-    # Create pipeline run for progress tracking (if not provided)
-    if run_id is None:
-        run_id = create_pipeline_run("blog", query=query)
-
-    # Create runner with in-memory session
-    session_service = InMemorySessionService()
-    runner = Runner(
+    # Orchestrator 呼び出し（print コールバック付き）
+    result = await run_pipeline(
         agent=ghost_commander,
         app_name="ghost_in_the_archive",
-        session_service=session_service,
+        user_message=query,
+        initial_state={"investigation_query": query},
+        run_id=run_id,
+        run_type="blog",
+        timeout_seconds=PIPELINE_TIMEOUT_SECONDS,
+        max_llm_calls=120,
+        skip_authors=_SKIP_AUTHORS,
+        on_text=lambda text: print(text),
     )
-
-    # Create a session
-    user_id = "investigator"
-    session_id = "investigation_session"
-
-    await session_service.create_session(
-        app_name="ghost_in_the_archive",
-        user_id=user_id,
-        session_id=session_id,
-        state={
-            "pipeline_log": [],
-            "investigation_query": query,
-            "pipeline_run_id": run_id,
-        },
-    )
-
-    # Pipeline logger
-    logger = PipelineLogger()
-    current_agent_name: str | None = None
-    accumulated_text: list[str] = []
-    current_log_index: int | None = None
-
-    # 多言語パイプライン: 3言語 × (Librarian ~5回 + Scholar ~3回)
-    # + ThemeAnalyzer 1回 + CrossRef 3回 + 既存4エージェント ≈ 70、余裕を持って 120
-    run_config = RunConfig(max_llm_calls=120)
-
-    try:
-        async with asyncio.timeout(PIPELINE_TIMEOUT_SECONDS):
-            # Run the investigation
-            async for event in runner.run_async(
-                user_id=user_id,
-                session_id=session_id,
-                new_message=types.Content(
-                    role="user",
-                    parts=[types.Part(text=query)],
-                ),
-                run_config=run_config,
-            ):
-                # Detect agent transitions via event.author
-                author = getattr(event, "author", None)
-                # オーケストレーター/パラレルエージェントはログ対象外
-                _SKIP_AUTHORS = {
-                    "ghost_commander",
-                    "parallel_librarians",
-                    "parallel_scholars",
-                    "debate_loop",           # LoopAgent の実際の名前
-                    "parallel_translators",  # 翻訳 ParallelAgent
-                    "scholar_block",
-                    "polymath_block",
-                    "storyteller_block",
-                    "post_story_block",
-                }
-                if author and author not in _SKIP_AUTHORS and author != current_agent_name:
-                    # Complete previous agent
-                    if current_agent_name:
-                        summary = " ".join(accumulated_text)[:200]
-                        logger.complete_agent(summary or "(no text output)")
-                        # Update pipeline run with completed agent
-                        completed_logs = logger.get_logs()
-                        if completed_logs:
-                            update_agent_completed(
-                                run_id, current_log_index, completed_logs[-1]
-                            )
-                        accumulated_text = []
-                    # Start new agent
-                    current_agent_name = author
-                    logger.start_agent(current_agent_name)
-                    # Update pipeline run with new agent
-                    current_log_index = update_agent_started(
-                        run_id, current_agent_name, logger.get_logs()[-1]
-                    )
-
-                # Print text responses from agents
-                if event.content and event.content.parts:
-                    for part in event.content.parts:
-                        if hasattr(part, "text") and part.text:
-                            print(part.text)
-                            accumulated_text.append(part.text[:100])
-
-        # Complete final agent
-        if current_agent_name:
-            summary = " ".join(accumulated_text)[:200]
-            logger.complete_agent(summary or "(no text output)")
-            completed_logs = logger.get_logs()
-            if completed_logs:
-                update_agent_completed(
-                    run_id, current_log_index, completed_logs[-1]
-                )
-
-        # Store pipeline log in session state for Publisher
-        session = await session_service.get_session(
-            app_name="ghost_in_the_archive",
-            user_id=user_id,
-            session_id=session_id,
-        )
-        if session:
-            session.state["pipeline_log"] = logger.get_logs()
-
-        # Extract mystery_id from published_episode
-        mystery_id = None
-        if session:
-            published = session.state.get("published_episode", "")
-            if isinstance(published, str) and published.startswith("{"):
-                import json
-
-                try:
-                    published_data = json.loads(published)
-                    mystery_id = published_data.get("mystery_id")
-                except (json.JSONDecodeError, AttributeError):
-                    pass
-            elif isinstance(published, dict):
-                mystery_id = published.get("mystery_id")
-
-        complete_pipeline_run(run_id, mystery_id=mystery_id)
-
-    except TimeoutError:
-        error_pipeline_run(run_id, f"Pipeline timed out after {PIPELINE_TIMEOUT_SECONDS}s")
-        raise
-    except Exception as e:
-        error_pipeline_run(run_id, str(e))
-        raise
 
     print()
     print("=" * 70)
     print("Investigation Complete")
     print("=" * 70)
 
-    # Print execution summary
+    # 実行ログのサマリ表示
     print("\nExecution Log:")
-    for log in logger.get_logs():
-        icon = "✓" if log["status"] == "completed" else "✗" if log["status"] == "error" else "⋯"
+    for log in result.logs:
+        icon = "\u2713" if log["status"] == "completed" else "\u2717" if log["status"] == "error" else "\u22ef"
         dur = f'{log["duration_seconds"]}s' if log["duration_seconds"] else "running"
         print(f"  {icon} {log['agent_name']:28s} {dur:>8s}")
 
-    return run_id
+    return result.run_id
 
 
 def main():
