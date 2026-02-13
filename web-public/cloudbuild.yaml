@@ -1,5 +1,6 @@
 # Cloud Build configuration for web-public (SSG)
 # Triggered when a mystery is published
+# 7言語 × N記事 の静的ページを生成
 
 steps:
   # ルートで依存インストール（workspaces で @ghost/shared をローカル解決）
@@ -23,5 +24,6 @@ steps:
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
 
-timeout: '600s'
+timeout: '1800s'

@@ -1,16 +1,29 @@
 import { Lightbulb } from "lucide-react"
 
+interface HypothesisSectionLabels {
+  hypothesis?: string
+  alternativeHypotheses?: string
+}
+
 interface HypothesisSectionProps {
   hypothesis: string
   alternativeHypotheses: string[]
+  labels?: HypothesisSectionLabels
 }
 
-export function HypothesisSection({ hypothesis, alternativeHypotheses }: HypothesisSectionProps) {
+export function HypothesisSection({
+  hypothesis,
+  alternativeHypotheses,
+  labels,
+}: HypothesisSectionProps) {
+  const hypothesisLabel = labels?.hypothesis ?? "Hypothesis"
+  const altLabel = labels?.alternativeHypotheses ?? "Alternative Hypotheses:"
+
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
         <Lightbulb className="w-5 h-5 text-gold" />
-        <h2 className="font-serif text-xl text-parchment">Hypothesis</h2>
+        <h2 className="font-serif text-xl text-parchment">{hypothesisLabel}</h2>
       </div>
       <div className="pl-8 border-l-2 border-gold/30">
         <p className="text-foreground/80 leading-relaxed">
@@ -19,7 +32,7 @@ export function HypothesisSection({ hypothesis, alternativeHypotheses }: Hypothe
       </div>
       {alternativeHypotheses.length > 0 && (
         <div className="mt-4 pl-8">
-          <p className="text-sm text-muted-foreground mb-2 font-mono uppercase tracking-wide">Alternative Hypotheses:</p>
+          <p className="text-sm text-muted-foreground mb-2 font-mono uppercase tracking-wide">{altLabel}</p>
           <ul className="space-y-2">
             {alternativeHypotheses.map((alt, i) => (
               <li key={i} className="flex items-start gap-2 text-sm text-foreground/70">

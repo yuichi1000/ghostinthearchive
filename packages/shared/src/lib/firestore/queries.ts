@@ -3,6 +3,7 @@
  * 公開記事の取得・変換ヘルパー
  */
 
+import { cache } from "react";
 import type {
   FirestoreMystery,
   MysteryStatus,
@@ -73,6 +74,16 @@ export async function getPublishedMysteryIds(): Promise<string[]> {
   const snapshot = await getDocs(q);
   return snapshot.docs.map((doc) => doc.id);
 }
+
+/**
+ * 全公開済みミステリーを Map<id, mystery> で返す（React.cache 付き）
+ * SSG ビルド時に 7言語 × N記事 の全ページで同一データを共有し、
+ * Firestore クエリを 7N 回 → 1回に削減する
+ */
+export const getAllPublishedMysteriesMap = cache(async (): Promise<Map<string, FirestoreMystery>> => {
+  const mysteries = await getPublishedMysteries(1000);
+  return new Map(mysteries.map((m) => [m.mystery_id, m]));
+});
 
 /**
  * FirestoreMysteryをMysteryCardDataに変換

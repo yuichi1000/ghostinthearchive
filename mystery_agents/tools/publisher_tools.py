@@ -227,12 +227,26 @@ def publish_mystery(
                 data["multilingual_analysis"] = multilingual
                 data["languages_analyzed"] = list(multilingual.keys())
 
-            # Overlay Japanese translation from session state
-            translation_ja = tool_context.state.get("translation_ja")
-            if translation_ja and isinstance(translation_ja, dict):
-                for key, value in translation_ja.items():
-                    if key.endswith("_ja"):
-                        data[key] = value
+            # 全言語の翻訳結果を translations map に収集
+            translations: dict[str, dict] = {}
+            for lang in ["ja", "es", "de", "fr", "nl", "pt"]:
+                translation_result = tool_context.state.get(f"translation_result_{lang}")
+                if not translation_result:
+                    continue
+                # output_key の値は LLM テキスト出力（JSON 文字列の場合がある）
+                if isinstance(translation_result, str):
+                    if "NO_TRANSLATION" in translation_result:
+                        continue
+                    try:
+                        parsed = json.loads(translation_result, strict=False)
+                        if isinstance(parsed, dict):
+                            translations[lang] = parsed
+                    except (json.JSONDecodeError, ValueError):
+                        logger.warning("Failed to parse translation_result_%s as JSON", lang)
+                elif isinstance(translation_result, dict):
+                    translations[lang] = translation_result
+            if translations:
+                data["translations"] = translations
 
         # Auto-generate mystery_id from classification, state_code, and area_code
         classification = data.get("classification")

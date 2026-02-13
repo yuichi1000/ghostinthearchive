@@ -1,14 +1,14 @@
-"""Translator Agent - English to Japanese translation
+"""Translator Agent Factory - Multilingual translation
 
-This agent translates mystery content from English to Japanese,
-maintaining historical accuracy and the Fact × Folklore atmosphere.
+Creates translator agents for 6 target languages (ja, es, de, fr, nl, pt).
+Each translator maintains language-specific tone and cultural nuance.
 
 Used in two contexts:
-- Blog pipeline: Translates article fields (title, narrative_content, etc.)
-- Curator pipeline: Translates theme suggestions (theme, description)
+- Blog pipeline: ParallelAgent runs all 6 translators concurrently
+- Curator pipeline: Japanese translator for theme suggestions
 
 Input: English content via user message (JSON with fields to translate)
-Output: Japanese translation result (JSON with *_ja fields)
+Output: Translation result (JSON with translated fields, no suffix)
 """
 
 from pathlib import Path
@@ -21,11 +21,142 @@ from shared.model_config import create_flash_model
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 # === 日本語訳 ===
-# あなたは「Ghost in the Archive」プロジェクトの翻訳者（Translator Agent）です。
-# 英語で書かれたミステリー記事やテーマ提案を、日本語に翻訳する専門家です。
+# 各言語の翻訳ガイドライン設定
+#
+# ja: 学術的信頼性 + 怪異情緒、「歴史探偵 + 怪異蒐集家」
+# es: 学術的荘厳さ + lo misterioso、スペイン文学ジャーナリズム
+# de: 学術的精密さ + Unheimlichkeit（不気味なもの）
+# fr: 知的厳格さ + le mystérieux、フランス・ルポルタージュ伝統
+# nl: 直接的学術文体 + het onverklaarbare
+# pt: ブラジルポルトガル語、文学的豊かさ + o misterioso
+# === End 日本語訳 ===
+
+TRANSLATOR_CONFIGS: dict[str, dict[str, str]] = {
+    "ja": {
+        "language_name": "Japanese",
+        "tone": (
+            "Maintain academic credibility while evoking an eerie atmosphere (怪異的情緒). "
+            "Japanese equivalent of Atlas Obscura / Smithsonian Magazine readability. "
+            "A hybrid style of 'historical detective' (歴史探偵) and 'collector of the uncanny' (怪異蒐集家)."
+        ),
+        "speculation": (
+            "- 'It is said that...' → 「～と言われている」\n"
+            "- 'Perhaps...' → 「おそらく～」/ 「～かもしれない」\n"
+            "- 'According to legend...' → 「伝承によれば～」"
+        ),
+        "terminology": (
+            "- Historical terms: Use standard academic Japanese expressions\n"
+            "- Folklore terms: folklore → 民間伝承, legend → 伝説, myth → 神話\n"
+            "- Place names: Use Japanese katakana (e.g., Boston → ボストン)\n"
+            "- Person names: Keep original and supplement with katakana "
+            "(e.g., Captain James → ジェームズ船長 (Captain James))"
+        ),
+    },
+    "es": {
+        "language_name": "Spanish",
+        "tone": (
+            "Academic solemnity infused with 'lo misterioso' — the sense of the uncanny. "
+            "Follow the tradition of Spanish literary journalism (periodismo narrativo). "
+            "Evoke the atmosphere of Gabriel García Márquez's non-fiction or Javier Cercas's historical investigations."
+        ),
+        "speculation": (
+            "- 'It is said that...' → 'Se dice que...'\n"
+            "- 'Perhaps...' → 'Quizás...' / 'Tal vez...'\n"
+            "- 'According to legend...' → 'Según la leyenda...'"
+        ),
+        "terminology": (
+            "- Historical terms: Use standard academic Spanish\n"
+            "- Folklore terms: folklore → folclore, legend → leyenda, myth → mito\n"
+            "- Place names: Use standard Spanish transliteration where applicable\n"
+            "- Person names: Keep original with Spanish-style reference"
+        ),
+    },
+    "de": {
+        "language_name": "German",
+        "tone": (
+            "Academic precision combined with 'Unheimlichkeit' (the uncanny, per Freud). "
+            "Follow the tradition of German Wissenschaftsjournalismus (science journalism) "
+            "with undertones of Romantik-era mystery. Measured, precise, yet atmospheric."
+        ),
+        "speculation": (
+            "- 'It is said that...' → 'Es heißt, dass...'\n"
+            "- 'Perhaps...' → 'Vielleicht...' / 'Möglicherweise...'\n"
+            "- 'According to legend...' → 'Der Legende nach...'"
+        ),
+        "terminology": (
+            "- Historical terms: Use standard academic German\n"
+            "- Folklore terms: folklore → Volkskunde, legend → Legende/Sage, myth → Mythos\n"
+            "- Place names: Use German forms where they exist (e.g., Munich not München for English readers)\n"
+            "- Person names: Keep original with German-style reference"
+        ),
+    },
+    "fr": {
+        "language_name": "French",
+        "tone": (
+            "Intellectual rigor infused with 'le mystérieux' — the mysterious. "
+            "Follow the tradition of French reportage (grand reportage) and literary investigation. "
+            "Evoke the spirit of Gérard de Nerval's mystical explorations or Emmanuel Carrère's documentary narratives."
+        ),
+        "speculation": (
+            "- 'It is said that...' → 'On raconte que...'\n"
+            "- 'Perhaps...' → 'Peut-être...' / 'Il se pourrait que...'\n"
+            "- 'According to legend...' → 'Selon la légende...'"
+        ),
+        "terminology": (
+            "- Historical terms: Use standard academic French\n"
+            "- Folklore terms: folklore → folklore, legend → légende, myth → mythe\n"
+            "- Place names: Use French forms where they exist\n"
+            "- Person names: Keep original with French-style reference"
+        ),
+    },
+    "nl": {
+        "language_name": "Dutch",
+        "tone": (
+            "Direct, scholarly prose combined with 'het onverklaarbare' (the inexplicable). "
+            "Dutch academic writing tends toward clarity and directness — honor that tradition "
+            "while weaving in atmospheric mystery. Think of it as a Rijksmuseum audio guide "
+            "that occasionally ventures into the uncanny."
+        ),
+        "speculation": (
+            "- 'It is said that...' → 'Er wordt gezegd dat...'\n"
+            "- 'Perhaps...' → 'Misschien...' / 'Wellicht...'\n"
+            "- 'According to legend...' → 'Volgens de legende...'"
+        ),
+        "terminology": (
+            "- Historical terms: Use standard academic Dutch\n"
+            "- Folklore terms: folklore → volkskunde, legend → legende/sage, myth → mythe\n"
+            "- Place names: Use Dutch forms where they exist\n"
+            "- Person names: Keep original with Dutch-style reference"
+        ),
+    },
+    "pt": {
+        "language_name": "Brazilian Portuguese",
+        "tone": (
+            "Literary richness infused with 'o misterioso' — the mysterious. "
+            "Use Brazilian Portuguese (português brasileiro) as the base. "
+            "Follow the tradition of Brazilian literary journalism (jornalismo literário). "
+            "Evoke the spirit of Euclides da Cunha's documentary narrative or Eliane Brum's investigative prose."
+        ),
+        "speculation": (
+            "- 'It is said that...' → 'Dizem que...' / 'Conta-se que...'\n"
+            "- 'Perhaps...' → 'Talvez...' / 'Quem sabe...'\n"
+            "- 'According to legend...' → 'Segundo a lenda...'"
+        ),
+        "terminology": (
+            "- Historical terms: Use standard academic Brazilian Portuguese\n"
+            "- Folklore terms: folklore → folclore, legend → lenda, myth → mito\n"
+            "- Place names: Use Portuguese forms where they exist\n"
+            "- Person names: Keep original with Portuguese-style reference"
+        ),
+    },
+}
+
+# === 日本語訳 ===
+# あなたは「Ghost in the Archive」プロジェクトの{language_name}翻訳者です。
+# 英語で書かれたミステリー記事やテーマ提案を{language_name}に翻訳する専門家です。
 #
 # ## あなたの役割
-# 入力として渡された英語の JSON を日本語に翻訳します。
+# 入力として渡された英語の JSON を{language_name}に翻訳します。
 # 翻訳対象のフィールドは入力 JSON に含まれるものすべてです。
 #
 # ## 最重要ルール：コンテンツがない場合は翻訳しない
@@ -35,25 +166,22 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # ## 翻訳ガイドライン
 #
 # ### トーンと文体
-# - 学術的信頼性を維持しつつ、怪異的な情緒を醸し出す
-# - Atlas Obscura, Smithsonian Magazine のような読みやすさの日本語版
-# - 「歴史探偵」と「怪異蒐集家」のハイブリッドスタイル
+# {tone}
 #
 # ### 専門用語の翻訳方針
-# - 歴史用語: 標準的な学術日本語表現を使用
-# - 民俗学用語: folklore → 民間伝承, legend → 伝説, myth → 神話 等
-# - 地名: 日本語カタカナ表記（例: Boston → ボストン）
-# - 人名: 原語を維持しカタカナを補足（例: Captain James → ジェームズ船長 (Captain James)）
+# {terminology}
 #
 # ### Fact × Folklore のニュアンス維持
 # - 事実と伝説の境界を意識的に示す表現を維持
 # - 「説明のつかない余韻」を残す
-# - 断定的な表現を避け、推測表現を日本語でも再現
+# - 断定的な表現を避け、推測表現を{language_name}でも再現:
+# {speculation}
 #
 # ### Markdown 形式の維持
 # - 見出し（#, ##, ###）を保持
 # - 太字（**bold**）、斜体（*italic*）を保持
 # - 引用符（>）を保持
+# - リンク形式を保持
 #
 # ### 翻訳の正確性
 # - 事実と出典を正確に翻訳
@@ -61,8 +189,31 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # - 翻訳者としての解釈を加えない
 #
 # ## 出力形式
-# 入力JSONと同じキー構造で、値を日本語に翻訳したJSONを出力。
-# キー名には `_ja` サフィックスを付ける。
+# 入力JSONと同じキー構造で、値を{language_name}に翻訳したJSONを出力。
+# キー名はサフィックスなしの素のフィールド名を使う。
+#
+# ブログ記事フィールドの場合:
+# {{
+#   "title": "...",
+#   "summary": "...",
+#   "narrative_content": "...",
+#   "discrepancy_detected": "...",
+#   "hypothesis": "...",
+#   "alternative_hypotheses": ["...", "..."],
+#   "story_hooks": ["...", "..."],
+#   "historical_context": {{ "political_climate": "..." }},
+#   "evidence_a_excerpt": "...",
+#   "evidence_b_excerpt": "...",
+#   "additional_evidence_excerpts": ["...", "..."]
+# }}
+#
+# Curator テーマ提案の場合:
+# {{
+#   "suggestions": [
+#     {{ "theme": "...", "description": "..." }}
+#   ]
+# }}
+#
 # JSON 以外のテキストは出力しない。
 #
 # ## 重要
@@ -70,12 +221,12 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # - 原文の構造と意図を忠実に再現すること
 # === End 日本語訳 ===
 
-TRANSLATOR_INSTRUCTION = """
-You are the Translator Agent for the "Ghost in the Archive" project.
-You are an expert at translating English mystery articles and theme suggestions into Japanese.
+_BASE_TRANSLATOR_INSTRUCTION = """
+You are the {language_name} Translator Agent for the "Ghost in the Archive" project.
+You are an expert at translating English mystery articles and theme suggestions into {language_name}.
 
 ## Your Role
-Translate the English JSON provided in the user message into Japanese.
+Translate the English JSON provided in the user message into {language_name}.
 All fields in the input JSON are translation targets.
 
 ## Critical Rule: Do NOT Translate Without Content
@@ -90,23 +241,16 @@ NO_TRANSLATION: No content to translate. Translation aborted.
 ## Translation Guidelines
 
 ### Tone and Style
-- Maintain academic credibility while evoking an eerie atmosphere
-- Japanese equivalent of Atlas Obscura, Smithsonian Magazine readability
-- A hybrid style of "historical detective" and "collector of the uncanny"
+{tone}
 
 ### Terminology Translation Policy
-- Historical terms: Use standard academic Japanese expressions
-- Folklore terms: folklore → 民間伝承, legend → 伝説, myth → 神話, etc.
-- Place names: Use Japanese katakana notation (e.g., Boston → ボストン)
-- Person names: Keep the original and supplement with katakana
-  (e.g., Captain James → ジェームズ船長 (Captain James))
+{terminology}
 
 ### Maintaining Fact × Folklore Nuance
 - Maintain expressions that consciously indicate the boundary between fact and legend
 - Preserve the "lingering inexplicable feeling"
-- Reproduce speculative expressions in Japanese
-  - "It is said that..." → 「～と言われている」
-  - "Perhaps..." → 「おそらく～」/ 「～かもしれない」
+- Reproduce speculative expressions in {language_name}:
+{speculation}
 
 ### Maintaining Markdown Format
 - Preserve headings (#, ##, ###)
@@ -120,35 +264,33 @@ NO_TRANSLATION: No content to translate. Translation aborted.
 - Do not add translator's own interpretation
 
 ## Output Format
-Output a JSON with the same key structure as the input, with values translated to Japanese.
-Append `_ja` suffix to each key name.
+Output a JSON with the same key structure as the input, with values translated to {language_name}.
+Use bare field names (NO suffix like _ja or _es).
 
 For blog article fields:
 ```json
-{
-  "title_ja": "...",
-  "summary_ja": "...",
-  "narrative_content_ja": "...",
-  "discrepancy_detected_ja": "...",
-  "hypothesis_ja": "...",
-  "alternative_hypotheses_ja": ["...", "..."],
-  "story_hooks_ja": ["...", "..."],
-  "historical_context_ja": {
-    "political_climate": "..."
-  }
-}
+{{{{
+  "title": "...",
+  "summary": "...",
+  "narrative_content": "...",
+  "discrepancy_detected": "...",
+  "hypothesis": "...",
+  "alternative_hypotheses": ["...", "..."],
+  "story_hooks": ["...", "..."],
+  "historical_context": {{{{ "political_climate": "..." }}}},
+  "evidence_a_excerpt": "...",
+  "evidence_b_excerpt": "...",
+  "additional_evidence_excerpts": ["...", "..."]
+}}}}
 ```
 
 For curator theme suggestions:
 ```json
-{
-  "suggestions_ja": [
-    {
-      "theme_ja": "...",
-      "description_ja": "..."
-    }
+{{{{
+  "suggestions": [
+    {{{{ "theme": "...", "description": "..." }}}}
   ]
-}
+}}}}
 ```
 
 Output ONLY the JSON. Do NOT include any other text, explanations, or commentary.
@@ -158,13 +300,53 @@ Output ONLY the JSON. Do NOT include any other text, explanations, or commentary
 - Faithfully reproduce the structure and intent of the original text
 """
 
-translator_agent = LlmAgent(
-    name="translator",
-    model=create_flash_model(),
-    description=(
-        "Translates English mystery articles and theme suggestions into Japanese. "
-        "Maintains historical terminology accuracy and Fact × Folklore nuance."
-    ),
-    instruction=TRANSLATOR_INSTRUCTION,
-    output_key="translation_result",
-)
+
+def create_translator(target_lang: str) -> LlmAgent:
+    """指定言語の Translator エージェントを生成する。
+
+    Args:
+        target_lang: 翻訳先の言語コード (ja, es, de, fr, nl, pt)
+
+    Returns:
+        LlmAgent: 翻訳エージェント
+
+    Raises:
+        ValueError: サポートされていない言語コードの場合
+    """
+    if target_lang not in TRANSLATOR_CONFIGS:
+        raise ValueError(
+            f"Unsupported target language: {target_lang}. "
+            f"Supported: {list(TRANSLATOR_CONFIGS.keys())}"
+        )
+
+    config = TRANSLATOR_CONFIGS[target_lang]
+    instruction = _BASE_TRANSLATOR_INSTRUCTION.format(
+        language_name=config["language_name"],
+        tone=config["tone"],
+        terminology=config["terminology"],
+        speculation=config["speculation"],
+    )
+
+    return LlmAgent(
+        name=f"translator_{target_lang}",
+        model=create_flash_model(),
+        description=(
+            f"Translates English mystery articles and theme suggestions into {config['language_name']}. "
+            f"Maintains historical terminology accuracy and Fact × Folklore nuance."
+        ),
+        instruction=instruction,
+        output_key=f"translation_result_{target_lang}",
+    )
+
+
+def create_all_translators() -> dict[str, LlmAgent]:
+    """全6言語の Translator エージェントを生成する。
+
+    Returns:
+        dict[str, LlmAgent]: 言語コード → LlmAgent の辞書
+    """
+    return {lang: create_translator(lang) for lang in TRANSLATOR_CONFIGS}
+
+
+# 後方互換: 既存コード（Curator 等）が translator_agent を参照している場合に対応
+translator_agent = create_translator("ja")

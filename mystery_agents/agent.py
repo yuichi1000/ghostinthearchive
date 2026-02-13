@@ -9,6 +9,7 @@ the multilingual investigation pipeline:
 各言語エージェントは before_agent_callback で selected_languages をチェックし、
 未選択の言語はスキップされる。DebateLoop は有意な分析が2言語以上の場合のみ実行される。
 パイプラインゲートにより、前段が失敗した場合は後続をスキップしてトークン消費を抑制する。
+PostStoryBlock では6言語の翻訳が並列実行される。
 """
 
 from google.adk.agents import LoopAgent, ParallelAgent, SequentialAgent
@@ -28,12 +29,15 @@ from .agents.publisher import publisher_agent
 from .agents.storyteller import storyteller_agent
 from .agents.theme_analyzer import theme_analyzer_agent
 
-from translator_agents.agents.translator import translator_agent
+from translator_agents.agents.translator import create_all_translators
 
 # 言語別エージェントを生成
 all_librarians = create_all_librarians()
 all_scholars = create_all_scholars(mode="analysis")
 all_scholars_debate = create_all_scholars(mode="debate")
+
+# 全6言語の翻訳エージェントを生成
+all_translators = create_all_translators()
 
 # 討論ループ（LoopAgent: 最大2ラウンド、有意な分析が2言語未満ならスキップ）
 debate_loop = LoopAgent(
@@ -69,10 +73,17 @@ storyteller_block = SequentialAgent(
     before_agent_callback=make_storyteller_gate(),
 )
 
-# Illustrator + Translator + Publisher ブロック（creative_content 空ならスキップ）
+# Illustrator + 並列翻訳（6言語） + Publisher ブロック（creative_content 空ならスキップ）
 post_story_block = SequentialAgent(
     name="post_story_block",
-    sub_agents=[illustrator_agent, translator_agent, publisher_agent],
+    sub_agents=[
+        illustrator_agent,
+        ParallelAgent(
+            name="parallel_translators",
+            sub_agents=list(all_translators.values()),
+        ),
+        publisher_agent,
+    ],
     before_agent_callback=make_post_story_gate(),
 )
 
@@ -83,7 +94,8 @@ ghost_commander = SequentialAgent(
         "Ghost in the Archive multilingual blog creation pipeline. "
         "Executes ThemeAnalyzer → ParallelLibrarians → ScholarBlock → DebateLoop "
         "→ PolymathBlock → StorytellerBlock → PostStoryBlock "
-        "to research, analyze, debate, create content, generate images, translate to Japanese, "
+        "to research, analyze, debate, create content, generate images, "
+        "translate to 6 languages (ja/es/de/fr/nl/pt) in parallel, "
         "and publish historical mysteries and folkloric anomalies. "
         "Pipeline gates skip downstream agents when upstream stages fail."
     ),

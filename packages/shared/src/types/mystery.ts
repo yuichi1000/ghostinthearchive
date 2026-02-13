@@ -22,6 +22,27 @@ export type SourceType = "newspaper" | "loc_digital" | "dpla" | "nypl"
 /** ソース言語 */
 export type SourceLanguage = "en" | "es" | "de" | "fr" | "nl" | "pt";
 
+/** 翻訳対象言語（ソース言語 + 日本語） */
+export type TranslationLang = "ja" | "es" | "de" | "fr" | "nl" | "pt";
+
+/**
+ * 翻訳済みコンテンツ
+ * translations map の各言語エントリ
+ */
+export interface TranslatedContent {
+  title: string;
+  summary: string;
+  narrative_content: string;
+  discrepancy_detected?: string;
+  hypothesis?: string;
+  alternative_hypotheses?: string[];
+  story_hooks?: string[];
+  historical_context?: { political_climate?: string };
+  evidence_a_excerpt?: string;
+  evidence_b_excerpt?: string;
+  additional_evidence_excerpts?: string[];
+}
+
 /** ミステリーのステータス */
 export type MysteryStatus = "pending" | "translating" | "published" | "archived" | "error";
 
@@ -177,7 +198,10 @@ export interface FirestoreMystery extends MysteryReport {
   /** ポッドキャスト生成ステータス */
   podcast_status?: PodcastStatus;
 
-  // === 日本語翻訳フィールド ===
+  /** 多言語翻訳 map (言語コード → 翻訳済みコンテンツ) */
+  translations?: Record<string, TranslatedContent>;
+
+  // === 日本語翻訳フィールド（レガシー、translations map に移行済み） ===
   /** タイトル（日本語） */
   title_ja?: string;
   /** サマリー（日本語） */
@@ -310,6 +334,12 @@ export const AGENT_NAME_LABELS: Record<string, string> = {
   cross_reference_scholar: "統合分析",
   storyteller: "物語生成",
   translator: "翻訳",
+  translator_ja: "翻訳（日本語）",
+  translator_es: "翻訳（スペイン語）",
+  translator_de: "翻訳（ドイツ語）",
+  translator_fr: "翻訳（フランス語）",
+  translator_nl: "翻訳（オランダ語）",
+  translator_pt: "翻訳（ポルトガル語）",
   scriptwriter: "脚本作成",
   illustrator: "画像生成",
   producer: "音声生成",

@@ -53,7 +53,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html className="dark" suppressHydrationWarning>
       {gtmId && <GoogleTagManager gtmId={gtmId} />}
       <body className={`${playfair.variable} ${inter.variable} ${notoSansJP.variable} font-sans antialiased`}>
         {children}
