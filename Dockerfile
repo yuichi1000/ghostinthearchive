@@ -20,7 +20,6 @@ COPY shared/ ./shared/
 COPY mystery_agents/ ./mystery_agents/
 COPY curator_agents/ ./curator_agents/
 COPY podcast_agents/ ./podcast_agents/
-COPY translator_agents/ ./translator_agents/
 COPY services/ ./services/
 
 # Environment variables

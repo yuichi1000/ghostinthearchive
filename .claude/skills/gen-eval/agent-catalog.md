@@ -4,7 +4,7 @@
 
 ## ブログ作成パイプライン（`mystery_agents/`）
 
-パイプライン順序: ThemeAnalyzer → ParallelLibrarians → [ScholarGate] → ParallelScholars(分析) → DebateLoop(討論) → [PolymathGate] → ArmchairPolymath → [StorytellerGate] → Storyteller → [PostStoryGate] → Illustrator → Translator → Publisher
+パイプライン順序: ThemeAnalyzer → ParallelLibrarians → [ScholarGate] → ParallelScholars(分析) → DebateLoop(討論) → [PolymathGate] → ArmchairPolymath → [StorytellerGate] → Storyteller → [PostStoryGate] → Parallel(Illustrator, ParallelTranslators) → Publisher
 
 Curator はスタンドアロンエージェント（シーケンシャルパイプラインには含まれない）。
 
@@ -257,16 +257,16 @@ Curator はスタンドアロンエージェント（シーケンシャルパイ
 
 ---
 
-## Translator パイプライン（`translator_agents/`）
+## Translator（`mystery_agents/agents/translator.py`）
 
-ブログパイプライン内で Illustrator → Translator → Publisher の順で実行される。
+ブログパイプライン内で Illustrator と並列実行される翻訳エージェント。
 また、Curator のテーマ提案翻訳にも使用される汎用翻訳エージェント。
 
 ### Translator
 
 | プロパティ | 値 |
 |----------|-------|
-| モジュール | `translator_agents/agents/translator.py` |
+| モジュール | `mystery_agents/agents/translator.py` |
 | 変数名 | `translator_agent` |
 | モデル | `gemini-2.5-flash` |
 | 出力キー | `translation_result` |

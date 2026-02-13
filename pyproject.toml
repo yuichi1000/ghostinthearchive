@@ -30,7 +30,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["mystery_agents*", "curator_agents*", "podcast_agents*", "translator_agents*", "shared*", "services*"]
+include = ["mystery_agents*", "curator_agents*", "podcast_agents*", "shared*", "services*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -61,7 +61,7 @@ ignore = ["E501"]
 "tests/**" = ["E402"]
 
 [tool.coverage.run]
-source = ["mystery_agents", "curator_agents", "podcast_agents", "translator_agents", "shared"]
+source = ["mystery_agents", "curator_agents", "podcast_agents", "shared"]
 omit = ["*/tests/*", "*/__pycache__/*"]
 
 [tool.coverage.report]

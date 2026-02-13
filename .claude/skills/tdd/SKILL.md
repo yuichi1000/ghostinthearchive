@@ -64,7 +64,7 @@ disable-model-invocation: false
 | `mystery_agents/agents/pipeline_gate.py` | `tests/unit/test_pipeline_gate.py` |
 | `mystery_agents/agents/language_gate.py` | `tests/unit/test_language_gate.py` |
 | `mystery_agents/utils/pipeline_logger.py` | `tests/unit/test_pipeline_logger.py` |
-| `translator_agents/agents/translator.py` | `tests/unit/test_translator_factory.py` |
+| `mystery_agents/agents/translator.py` | `tests/unit/test_translator_factory.py` |
 | `shared/model_config.py` | `tests/unit/test_model_config.py` |
 | `shared/pipeline_failure.py` | `tests/unit/test_pipeline_failure.py` |
 | `shared/pipeline_run.py` | `tests/unit/test_pipeline_run.py` |

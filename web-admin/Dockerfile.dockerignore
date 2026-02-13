@@ -14,7 +14,6 @@ node_modules
 # Python パイプライン（不要）
 mystery_agents/
 podcast_agents/
-translator_agents/
 shared/
 tests/
 *.py
