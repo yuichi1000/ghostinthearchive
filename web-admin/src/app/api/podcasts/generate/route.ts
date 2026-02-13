@@ -1,11 +1,9 @@
 /**
- * POST /api/translate
+ * POST /api/podcasts/generate
  *
- * Triggers translation pipeline via HTTP POST to Pipeline Cloud Run Service.
+ * Triggers podcast generation pipeline via HTTP POST to Pipeline Cloud Run Service.
  * - Production: IAM-authenticated HTTP call to Cloud Run Service
  * - Local: Direct HTTP call to localhost (docker compose)
- *
- * Status should already be set to "translating" by approveMystery().
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -41,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     const authHeaders = await getAuthHeaders();
 
-    const response = await fetch(`${pipelineServiceUrl}/translate`, {
+    const response = await fetch(`${pipelineServiceUrl}/podcast`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -55,7 +53,7 @@ export async function POST(request: NextRequest) {
       const errorBody = await response.text();
       console.error(`Pipeline service error (${response.status}):`, errorBody);
       return NextResponse.json(
-        { error: "Failed to start translation" },
+        { error: "Failed to start podcast pipeline" },
         { status: 500 }
       );
     }
@@ -64,13 +62,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       status: "accepted",
       mysteryId,
-      message: "Translation started",
+      message: "Podcast pipeline started",
       run_id: data.run_id,
     });
   } catch (error) {
-    console.error("Failed to run translation:", error);
+    console.error("Failed to start podcast pipeline:", error);
     return NextResponse.json(
-      { error: "Failed to run translation" },
+      { error: "Failed to start podcast pipeline" },
       { status: 500 }
     );
   }
