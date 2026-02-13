@@ -171,7 +171,8 @@ def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
         # 本番: Firebase Storage REST API 形式（セキュリティルール allow read: if true が適用される）
         storage_public_host = os.environ.get("STORAGE_EMULATOR_PUBLIC_HOST", "") or os.environ.get("STORAGE_EMULATOR_HOST", "")
         if storage_public_host:
-            public_url = f"{storage_public_host}/v0/b/{bucket.name}/o/{blob_name.replace('/', '%2F')}?alt=media"
+            host = storage_public_host if storage_public_host.startswith("http") else f"http://{storage_public_host}"
+            public_url = f"{host}/v0/b/{bucket.name}/o/{blob_name.replace('/', '%2F')}?alt=media"
         else:
             public_url = (
                 f"https://firebasestorage.googleapis.com/v0/b/{bucket.name}"
@@ -475,7 +476,8 @@ def upload_images(mystery_id: str, image_paths: str) -> str:
             # 本番: Firebase Storage REST API 形式（セキュリティルール allow read: if true が適用される）
             storage_public_host = os.environ.get("STORAGE_EMULATOR_PUBLIC_HOST", "") or os.environ.get("STORAGE_EMULATOR_HOST", "")
             if storage_public_host:
-                public_url = f"{storage_public_host}/v0/b/{bucket.name}/o/{blob_name.replace('/', '%2F')}?alt=media"
+                host = storage_public_host if storage_public_host.startswith("http") else f"http://{storage_public_host}"
+                public_url = f"{host}/v0/b/{bucket.name}/o/{blob_name.replace('/', '%2F')}?alt=media"
             else:
                 public_url = (
                     f"https://firebasestorage.googleapis.com/v0/b/{bucket.name}"
