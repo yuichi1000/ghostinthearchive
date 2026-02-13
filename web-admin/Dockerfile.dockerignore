@@ -12,7 +12,7 @@ node_modules
 .firebase
 
 # Python パイプライン（不要）
-archive_agents/
+mystery_agents/
 podcast_agents/
 translator_agents/
 shared/
