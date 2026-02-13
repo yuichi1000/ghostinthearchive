@@ -25,7 +25,7 @@
 
 ADK (Agent Development Kit) を活用した 2 つの独立したパイプラインで構成されます。
 
-### ブログ作成パイプライン（`archive_agents/`）
+### ブログ作成パイプライン（`mystery_agents/`）
 
 ```
 Librarian → Scholar → Storyteller → Visualizer → Publisher → Firestore
@@ -74,7 +74,7 @@ ghostinthearchive/
 ├── shared/                       # インフラ共有層
 │   └── firestore.py              # Firebase Admin 初期化, Firestore/Storage クライアント
 │
-├── archive_agents/               # ブログ作成パイプライン
+├── mystery_agents/               # ブログ作成パイプライン
 │   ├── agent.py                  # root_agent = ghost_commander
 │   ├── agents/                   # 各エージェント定義
 │   ├── tools/                    # Publisher 用 Firestore/Storage ツール
