@@ -9,12 +9,6 @@ import logging
 import sys
 from pathlib import Path
 
-# プロジェクト全体のログを有効化（Publisher, Illustrator 等の既存ログが出力される）
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(name)s [%(levelname)s] %(message)s",
-)
-
 from dotenv import load_dotenv
 
 # .env はプロジェクトルートに配置
@@ -35,6 +29,11 @@ from shared.pipeline_run import (
     error_pipeline_run,
 )
 
+# プロジェクト全体のログを有効化（Publisher, Illustrator 等の既存ログが出力される）
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(name)s [%(levelname)s] %(message)s",
+)
 
 PIPELINE_TIMEOUT_SECONDS = 1800  # 30 minutes
 
