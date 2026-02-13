@@ -171,3 +171,110 @@ class TestGetExistingTitles:
 
             titles = get_existing_titles()
             assert titles == ["Mystery A"]
+
+
+class TestGetCategoryDistribution:
+    """Tests for get_category_distribution helper."""
+
+    def test_counts_categories_from_mystery_ids(self):
+        mock_docs = []
+        ids = [
+            "HIS-MA-617-20260101120000",
+            "HIS-NY-212-20260102120000",
+            "OCC-PA-215-20260103120000",
+            "FLK-LA-504-20260104120000",
+        ]
+        for mid in ids:
+            doc = MagicMock()
+            doc.to_dict.return_value = {"mystery_id": mid}
+            mock_docs.append(doc)
+
+        mock_db = MagicMock()
+        mock_db.collection.return_value.select.return_value.stream.return_value = mock_docs
+
+        with patch("services.curator.get_firestore_client", return_value=mock_db):
+            from services.curator import get_category_distribution
+
+            dist = get_category_distribution()
+            assert dist == {"HIS": 2, "OCC": 1, "FLK": 1}
+
+    def test_returns_empty_dict_on_error(self):
+        with patch(
+            "services.curator.get_firestore_client",
+            side_effect=Exception("Connection failed"),
+        ):
+            from services.curator import get_category_distribution
+
+            dist = get_category_distribution()
+            assert dist == {}
+
+    def test_skips_invalid_mystery_ids(self):
+        mock_docs = []
+        # 有効な ID
+        doc1 = MagicMock()
+        doc1.to_dict.return_value = {"mystery_id": "CRM-IL-312-20260101120000"}
+        mock_docs.append(doc1)
+        # 空の mystery_id
+        doc2 = MagicMock()
+        doc2.to_dict.return_value = {"mystery_id": ""}
+        mock_docs.append(doc2)
+        # mystery_id フィールドなし
+        doc3 = MagicMock()
+        doc3.to_dict.return_value = {}
+        mock_docs.append(doc3)
+        # 不正なプレフィックス
+        doc4 = MagicMock()
+        doc4.to_dict.return_value = {"mystery_id": "XXX-MA-617-20260101120000"}
+        mock_docs.append(doc4)
+
+        mock_db = MagicMock()
+        mock_db.collection.return_value.select.return_value.stream.return_value = mock_docs
+
+        with patch("services.curator.get_firestore_client", return_value=mock_db):
+            from services.curator import get_category_distribution
+
+            dist = get_category_distribution()
+            assert dist == {"CRM": 1}
+
+
+class TestFormatCategoryDistribution:
+    """Tests for format_category_distribution helper."""
+
+    def test_empty_distribution_returns_cold_start_message(self):
+        from services.curator import format_category_distribution
+
+        result = format_category_distribution({})
+        assert "fresh start" in result
+        assert "HIS" in result
+        assert "LOC" in result
+
+    def test_with_data_shows_all_categories(self):
+        from services.curator import format_category_distribution
+
+        dist = {"HIS": 3, "OCC": 2, "FLK": 1}
+        result = format_category_distribution(dist)
+        # 全8カテゴリが表示される
+        for cat in ["HIS", "FLK", "ANT", "OCC", "URB", "CRM", "REL", "LOC"]:
+            assert cat in result
+        assert "3 article(s)" in result
+        assert "0 article(s)" in result
+
+    def test_identifies_underrepresented_categories(self):
+        from services.curator import format_category_distribution
+
+        # 平均 = 8/8 = 1.0 → 0件のカテゴリが underrepresented
+        dist = {"HIS": 3, "OCC": 2, "FLK": 1, "ANT": 1, "URB": 1}
+        result = format_category_distribution(dist)
+        assert "Underrepresented" in result
+        # CRM, REL, LOC が0件なので underrepresented
+        assert "CRM" in result
+        assert "REL" in result
+        assert "LOC" in result
+
+    def test_uniform_distribution_no_underrepresented(self):
+        from services.curator import format_category_distribution
+
+        # 全カテゴリ同数 → underrepresented なし
+        dist = {cat: 2 for cat in ["HIS", "FLK", "ANT", "OCC", "URB", "CRM", "REL", "LOC"]}
+        result = format_category_distribution(dist)
+        assert "Underrepresented" not in result
