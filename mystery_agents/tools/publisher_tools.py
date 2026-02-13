@@ -10,6 +10,7 @@ to reduce dependency on LLM text interpretation for critical fields.
 import json
 import logging
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -19,6 +20,42 @@ from google.adk.tools.tool_context import ToolContext
 from shared.firestore import get_firestore_client, get_storage_bucket
 
 logger = logging.getLogger(__name__)
+
+# 翻訳対象の全言語リスト
+_TRANSLATION_LANGUAGES = ["ja", "es", "de", "fr", "nl", "pt"]
+
+
+def _extract_json_from_text(text: str) -> Optional[dict]:
+    """LLM テキスト出力から JSON dict を抽出する。
+
+    Gemini は JSON を markdown コードブロック（```json ... ```）で包むことがある。
+    直接パースを試み、失敗時にコードブロックを剥がしてリトライする。
+
+    Args:
+        text: LLM の出力テキスト
+
+    Returns:
+        パース済みの dict、または抽出できなかった場合は None
+    """
+    # 1. 直接パースを試行
+    try:
+        parsed = json.loads(text, strict=False)
+        if isinstance(parsed, dict):
+            return parsed
+    except (json.JSONDecodeError, ValueError):
+        pass
+
+    # 2. markdown コードブロックを剥がしてリトライ
+    match = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", text, re.DOTALL)
+    if match:
+        try:
+            parsed = json.loads(match.group(1), strict=False)
+            if isinstance(parsed, dict):
+                return parsed
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    return None
 
 
 def _generate_mystery_id(classification: str, state_code: str, area_code: str) -> str:
@@ -229,7 +266,7 @@ def publish_mystery(
 
             # 全言語の翻訳結果を translations map に収集
             translations: dict[str, dict] = {}
-            for lang in ["ja", "es", "de", "fr", "nl", "pt"]:
+            for lang in _TRANSLATION_LANGUAGES:
                 translation_result = tool_context.state.get(f"translation_result_{lang}")
                 if not translation_result:
                     continue
@@ -237,14 +274,23 @@ def publish_mystery(
                 if isinstance(translation_result, str):
                     if "NO_TRANSLATION" in translation_result:
                         continue
-                    try:
-                        parsed = json.loads(translation_result, strict=False)
-                        if isinstance(parsed, dict):
-                            translations[lang] = parsed
-                    except (json.JSONDecodeError, ValueError):
-                        logger.warning("Failed to parse translation_result_%s as JSON", lang)
+                    parsed = _extract_json_from_text(translation_result)
+                    if parsed:
+                        translations[lang] = parsed
+                    else:
+                        logger.warning(
+                            "Failed to parse translation_result_%s as JSON (first 200 chars: %s)",
+                            lang, translation_result[:200],
+                        )
                 elif isinstance(translation_result, dict):
                     translations[lang] = translation_result
+
+            # 翻訳収集のサマリログ
+            skipped = [l for l in _TRANSLATION_LANGUAGES if l not in translations]
+            logger.info(
+                "Translations collected: %s, skipped: %s",
+                list(translations.keys()), skipped,
+            )
             if translations:
                 data["translations"] = translations
 

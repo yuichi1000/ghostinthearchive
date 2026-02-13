@@ -1,9 +1,10 @@
 """Unit tests for Publisher multilingual translations map construction."""
 
 import json
+import logging
 from unittest.mock import MagicMock, patch
 
-from mystery_agents.tools.publisher_tools import publish_mystery
+from mystery_agents.tools.publisher_tools import _extract_json_from_text, publish_mystery
 
 
 def _make_mystery_json(**overrides):
@@ -212,3 +213,105 @@ class TestPublisherTranslationsMap:
         assert result_data["status"] == "success"
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert set(saved_data["translations"].keys()) == {"ja", "es", "de", "fr", "nl", "pt"}
+
+
+class TestExtractJsonFromText:
+    """Tests for _extract_json_from_text helper."""
+
+    def test_parses_raw_json(self):
+        """素の JSON 文字列をパースできること。"""
+        text = '{"title": "Test", "summary": "Hello"}'
+        result = _extract_json_from_text(text)
+        assert result == {"title": "Test", "summary": "Hello"}
+
+    def test_parses_json_in_markdown_codeblock(self):
+        """```json ... ``` で包まれた JSON をパースできること。"""
+        text = '```json\n{"title": "Test", "summary": "Hello"}\n```'
+        result = _extract_json_from_text(text)
+        assert result == {"title": "Test", "summary": "Hello"}
+
+    def test_parses_json_in_plain_codeblock(self):
+        """``` ... ```（json タグなし）で包まれた JSON をパースできること。"""
+        text = '```\n{"title": "Test"}\n```'
+        result = _extract_json_from_text(text)
+        assert result == {"title": "Test"}
+
+    def test_parses_json_with_surrounding_text(self):
+        """前後に余計なテキストがあるコードブロック内の JSON をパースできること。"""
+        text = 'Here is the translation:\n```json\n{"title": "Test"}\n```\nDone.'
+        result = _extract_json_from_text(text)
+        assert result == {"title": "Test"}
+
+    def test_returns_none_for_broken_text(self):
+        """完全に壊れたテキストでは None を返すこと。"""
+        result = _extract_json_from_text("this is not json at all")
+        assert result is None
+
+    def test_returns_none_for_empty_string(self):
+        """空文字列では None を返すこと。"""
+        result = _extract_json_from_text("")
+        assert result is None
+
+    def test_returns_none_for_json_array(self):
+        """JSON 配列では None を返すこと（dict のみ受け付ける）。"""
+        result = _extract_json_from_text('[1, 2, 3]')
+        assert result is None
+
+    def test_handles_multiline_json_in_codeblock(self):
+        """複数行 JSON のコードブロックをパースできること。"""
+        text = '```json\n{\n  "title": "テスト",\n  "summary": "要約"\n}\n```'
+        result = _extract_json_from_text(text)
+        assert result == {"title": "テスト", "summary": "要約"}
+
+
+class TestPublisherCodeblockTranslation:
+    """Tests for Publisher handling markdown codeblock-wrapped translations."""
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_parses_codeblock_wrapped_translation(
+        self, mock_get_db, mock_get_bucket
+    ):
+        """コードブロックで包まれた翻訳結果を正しくパースすること。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "translation_result_ja": json.dumps({"title": "日本語タイトル"}),
+            "translation_result_es": '```json\n{"title": "Título en español", "summary": "Resumen"}\n```',
+            "translation_result_de": 'Here is the translation:\n```json\n{"title": "Deutscher Titel"}\n```',
+        }
+
+        tool_context = _make_tool_context(state)
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+
+        assert saved_data["translations"]["ja"]["title"] == "日本語タイトル"
+        assert saved_data["translations"]["es"]["title"] == "Título en español"
+        assert saved_data["translations"]["de"]["title"] == "Deutscher Titel"
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_logs_translation_summary(
+        self, mock_get_db, mock_get_bucket, caplog
+    ):
+        """翻訳収集のサマリログが出力されること。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "translation_result_ja": json.dumps({"title": "日本語"}),
+            "translation_result_es": "NO_TRANSLATION: No content.",
+        }
+
+        tool_context = _make_tool_context(state)
+        with caplog.at_level(logging.INFO, logger="mystery_agents.tools.publisher_tools"):
+            publish_mystery(_make_mystery_json(), "", tool_context)
+
+        assert any("Translations collected" in msg for msg in caplog.messages)
+        assert any("['ja']" in msg for msg in caplog.messages)
