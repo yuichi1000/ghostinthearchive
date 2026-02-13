@@ -635,3 +635,94 @@ class TestCleanupTempImages:
 
         assert "Failed to delete temp image" in caplog.text
 
+
+class TestPublishMysteryEvidenceFiltering:
+    """Tests for evidence excerpt validation in publish_mystery()."""
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_empty_excerpt_additional_evidence_filtered(
+        self, mock_get_db, mock_get_bucket
+    ):
+        """additional_evidence の空 excerpt は除外される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_bucket = MagicMock()
+        mock_get_bucket.return_value = mock_bucket
+
+        mystery_json = _make_mystery_json(
+            additional_evidence=[
+                {"source_url": "https://a.com", "relevant_excerpt": "Good"},
+                {"source_url": "https://b.com", "relevant_excerpt": ""},
+                {"source_url": "https://c.com", "relevant_excerpt": "Also good"},
+            ]
+        )
+
+        result = publish_mystery(mystery_json, "")
+        result_data = json.loads(result)
+        assert result_data["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert len(saved["additional_evidence"]) == 2
+        assert all(ev["relevant_excerpt"] for ev in saved["additional_evidence"])
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_valid_additional_evidence_preserved(
+        self, mock_get_db, mock_get_bucket
+    ):
+        """正常な additional_evidence はそのまま保持される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_bucket = MagicMock()
+        mock_get_bucket.return_value = mock_bucket
+
+        mystery_json = _make_mystery_json(
+            additional_evidence=[
+                {"source_url": "https://a.com", "relevant_excerpt": "Excerpt 1"},
+                {"source_url": "https://b.com", "relevant_excerpt": "Excerpt 2"},
+            ]
+        )
+
+        result = publish_mystery(mystery_json, "")
+        result_data = json.loads(result)
+        assert result_data["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert len(saved["additional_evidence"]) == 2
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_empty_excerpt_evidence_a_warns_but_saves(
+        self, mock_get_db, mock_get_bucket, caplog
+    ):
+        """evidence_a の excerpt が空でも警告のみで保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_bucket = MagicMock()
+        mock_get_bucket.return_value = mock_bucket
+
+        mystery_json = _make_mystery_json(
+            evidence_a={
+                "source_type": "newspaper",
+                "source_language": "en",
+                "source_title": "Test",
+                "source_date": "1842-01-01",
+                "source_url": "https://example.com",
+                "relevant_excerpt": "",
+                "location_context": "Boston",
+            }
+        )
+
+        with caplog.at_level(logging.WARNING, logger="mystery_agents.tools.publisher_tools"):
+            result = publish_mystery(mystery_json, "")
+
+        result_data = json.loads(result)
+        assert result_data["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        # evidence_a は除外されない
+        assert "evidence_a" in saved
+        # 警告ログが出力されている
+        assert any("evidence_a" in r.message and "relevant_excerpt" in r.message for r in caplog.records)
+

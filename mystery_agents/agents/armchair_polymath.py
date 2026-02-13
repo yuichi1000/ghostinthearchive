@@ -44,6 +44,11 @@ from ..tools.scholar_tools import save_structured_report
 # 5. 統合 Mystery Report を英語で作成
 # 6. save_structured_report を必ず呼び出す
 #
+# ## 重要: evidence の relevant_excerpt は必須
+# すべての evidence オブジェクト（evidence_a, evidence_b, additional_evidence 各項目）には
+# 空でない relevant_excerpt を必ず含めること。具体的な抜粋が見つからない場合は、
+# 元資料の内容を簡潔に言い換えること。空の excerpt は絶対に不可。
+#
 # ## ガード
 # - 全言語の分析が空 → INSUFFICIENT_DATA を出力
 # - 1言語のみ → その結果のみで Master Report 作成
@@ -182,8 +187,26 @@ After completing your analysis, you MUST call `save_structured_report` with a JS
     "relevant_excerpt": "Excerpt",
     "location_context": "Location"
   }},
-  "evidence_b": {{ "..." }},
-  "additional_evidence": [ {{ "..." }} ],
+  "evidence_b": {{
+    "source_type": "newspaper/archive/book",
+    "source_language": "en/de/es/fr/nl/pt",
+    "source_title": "Contrasting source name",
+    "source_date": "YYYY-MM-DD",
+    "source_url": "URL",
+    "relevant_excerpt": "A direct quote or close paraphrase from this source",
+    "location_context": "Location"
+  }},
+  "additional_evidence": [
+    {{
+      "source_type": "newspaper/archive/book",
+      "source_language": "en/de/es/fr/nl/pt",
+      "source_title": "Additional source name",
+      "source_date": "YYYY-MM-DD",
+      "source_url": "URL",
+      "relevant_excerpt": "A direct quote or close paraphrase — NEVER leave empty",
+      "location_context": "Location"
+    }}
+  ],
   "hypothesis": "Primary hypothesis in English",
   "alternative_hypotheses": ["Alt 1", "Alt 2"],
   "confidence_level": "high|medium|low",
@@ -201,6 +224,10 @@ After completing your analysis, you MUST call `save_structured_report` with a JS
 ```
 
 This call is mandatory — do NOT skip it.
+
+**CRITICAL: Every evidence object MUST include a non-empty `relevant_excerpt`.**
+If you cannot find a specific verbatim quote, write a brief paraphrase of the source material.
+NEVER leave `relevant_excerpt` as an empty string — items with empty excerpts will be automatically removed.
 """
 
 armchair_polymath_agent = LlmAgent(
