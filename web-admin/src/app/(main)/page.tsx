@@ -120,7 +120,7 @@ export default function AdminPage() {
   // リビルド失敗は approve/archive の成否に影響しない（fire-and-forget）
   const triggerRebuild = async () => {
     try {
-      await fetch("/api/rebuild-public", { method: "POST" })
+      await fetch("/api/deployments/rebuild", { method: "POST" })
     } catch (error) {
       console.error("Failed to trigger rebuild:", error)
     }
@@ -155,7 +155,7 @@ export default function AdminPage() {
   const handlePodcast = async (id: string) => {
     try {
       await requestPodcast(id)
-      const res = await fetch("/api/podcast", {
+      const res = await fetch("/api/podcasts/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mysteryId: id }),
@@ -179,7 +179,7 @@ export default function AdminPage() {
     if (!themeInput.trim()) return
     setPipelineLoading(true)
     try {
-      const res = await fetch("/api/pipeline", {
+      const res = await fetch("/api/mysteries/investigate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: themeInput.trim() }),
@@ -206,7 +206,7 @@ export default function AdminPage() {
     setSuggestLoading(true)
     setSuggestions([])
     try {
-      const res = await fetch("/api/suggest-theme", { method: "POST" })
+      const res = await fetch("/api/themes/suggest", { method: "POST" })
       if (!res.ok) throw new Error("API request failed")
       const data = await res.json()
       setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : [])

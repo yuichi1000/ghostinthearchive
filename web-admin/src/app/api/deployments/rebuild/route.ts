@@ -1,5 +1,5 @@
 /**
- * POST /api/rebuild-public
+ * POST /api/deployments/rebuild
  *
  * approve/archive 後に web-public の SSG リビルドを発火する。
  * - 本番: google-auth-library で access token を取得し、Cloud Build triggers.run を呼び出す

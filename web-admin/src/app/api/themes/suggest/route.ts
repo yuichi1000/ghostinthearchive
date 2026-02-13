@@ -1,5 +1,5 @@
 /**
- * POST /api/suggest-theme
+ * POST /api/themes/suggest
  *
  * Calls the Curator Cloud Run Service to generate theme suggestions.
  * - Production: IAM-authenticated HTTP call to Cloud Run Service

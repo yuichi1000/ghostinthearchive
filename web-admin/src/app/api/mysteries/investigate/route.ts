@@ -1,7 +1,7 @@
 /**
- * POST /api/podcast
+ * POST /api/mysteries/investigate
  *
- * Triggers podcast generation pipeline via HTTP POST to Pipeline Cloud Run Service.
+ * Triggers blog creation pipeline via HTTP POST to Pipeline Cloud Run Service.
  * - Production: IAM-authenticated HTTP call to Cloud Run Service
  * - Local: Direct HTTP call to localhost (docker compose)
  */
@@ -28,24 +28,24 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { mysteryId } = body;
+    const { query } = body;
 
-    if (!mysteryId || typeof mysteryId !== "string") {
+    if (!query || typeof query !== "string") {
       return NextResponse.json(
-        { error: "mysteryId is required" },
+        { error: "query is required" },
         { status: 400 }
       );
     }
 
     const authHeaders = await getAuthHeaders();
 
-    const response = await fetch(`${pipelineServiceUrl}/podcast`, {
+    const response = await fetch(`${pipelineServiceUrl}/investigate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...authHeaders,
       },
-      body: JSON.stringify({ mystery_id: mysteryId }),
+      body: JSON.stringify({ query }),
       signal: AbortSignal.timeout(30000),
     });
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       const errorBody = await response.text();
       console.error(`Pipeline service error (${response.status}):`, errorBody);
       return NextResponse.json(
-        { error: "Failed to start podcast pipeline" },
+        { error: "Failed to start blog pipeline" },
         { status: 500 }
       );
     }
@@ -61,14 +61,14 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json({
       status: "accepted",
-      mysteryId,
-      message: "Podcast pipeline started",
+      query,
+      message: "Blog pipeline started",
       run_id: data.run_id,
     });
   } catch (error) {
-    console.error("Failed to start podcast pipeline:", error);
+    console.error("Failed to start blog pipeline:", error);
     return NextResponse.json(
-      { error: "Failed to start podcast pipeline" },
+      { error: "Failed to start blog pipeline" },
       { status: 500 }
     );
   }
