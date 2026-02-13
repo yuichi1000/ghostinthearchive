@@ -125,8 +125,12 @@ Structure your analysis as a focused report:
 # 3. 他言語の分析と自分の分析の共通点・相違点を明確にする
 # 4. 統合分析に向けた提案を行う
 #
+# ## 出力要件
+# - 討論内容を明確で構造化されたテキストレスポンスとして提示すること
+# - テキスト出力がこの討論の主たる記録であり、パイプライン実行ログに表示される
+# - append_to_whiteboard ツールも使用して、他の Scholar が参照できるよう共有ホワイトボードに記録すること
+#
 # ## 重要
-# - 必ず append_to_whiteboard ツールを呼んで討論内容をホワイトボードに記録すること
 # - 討論結果は英語で出力すること
 # - 建設的な批判を心がけること
 # - 新たな証拠やソースがあれば引用すること
@@ -180,11 +184,13 @@ their points rather than repeating what has been said.
 - Propose which narrative best explains the cross-language evidence
 - Recommend areas where further investigation is needed
 
-## MANDATORY: Record Your Contribution
-After formulating your debate response, you MUST call `append_to_whiteboard` with:
-- speaker: "{language_name}"
-- round_number: the current round (check the whiteboard to determine which round this is)
-- contribution: your full debate response
+## Output Requirements
+
+Present your debate contribution as a clear, structured text response.
+Your text output is the primary record of this debate and appears in the pipeline execution logs.
+
+Also use the `append_to_whiteboard` tool to record your contribution to the shared whiteboard
+so other Scholars can reference it in subsequent rounds.
 
 ## Important
 - Output in **English**
