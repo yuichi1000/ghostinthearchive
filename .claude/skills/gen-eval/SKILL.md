@@ -16,7 +16,7 @@ allowed-tools: Read, Glob, Grep, Bash, Write, Edit
 
 ## ワークフロー
 
-`$ARGUMENTS` が空の場合は、エージェントモジュールパス（例: `archive_agents/agents/scholar.py`）の指定を求める。
+`$ARGUMENTS` が空の場合は、エージェントモジュールパス（例: `mystery_agents/agents/scholar.py`）の指定を求める。
 
 ### Step 1: エージェントモジュール解析
 
@@ -36,7 +36,7 @@ allowed-tools: Read, Glob, Grep, Bash, Write, Edit
 
 | パスプレフィックス | パイプライン | コマンダー |
 |-------------------|------------|-----------|
-| `archive_agents/` | archive（ブログ） | `ghost_commander` |
+| `mystery_agents/` | mystery（ブログ） | `ghost_commander` |
 | `podcast_agents/` | podcast | `podcast_commander` |
 | `translator_agents/` | translator | `translator_commander` |
 
