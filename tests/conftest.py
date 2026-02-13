@@ -203,7 +203,7 @@ def mock_storage_bucket():
     mock_bucket.blob.return_value = mock_blob
     mock_blob.upload_from_filename.return_value = None
     mock_blob.make_public.return_value = None
-    mock_blob.public_url = "https://storage.googleapis.com/test-bucket/image.png"
+    mock_blob.public_url = "https://firebasestorage.googleapis.com/v0/b/test-bucket/o/image.png?alt=media"
 
     return mock_bucket
 
