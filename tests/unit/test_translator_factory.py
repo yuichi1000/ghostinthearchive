@@ -139,3 +139,44 @@ class TestTranslatorConfigs:
     def test_portuguese_uses_brazilian_portuguese(self):
         """Portuguese config should specify Brazilian Portuguese."""
         assert TRANSLATOR_CONFIGS["pt"]["language_name"] == "Brazilian Portuguese"
+
+
+class TestTranslatorSessionStateReferences:
+    """Tests for session state placeholder references in Translator instruction."""
+
+    def _format_instruction(self, lang: str = "ja") -> str:
+        config = TRANSLATOR_CONFIGS[lang]
+        return _BASE_TRANSLATOR_INSTRUCTION.format(
+            language_name=config["language_name"],
+            tone=config["tone"],
+            terminology=config["terminology"],
+            speculation=config["speculation"],
+        )
+
+    def test_instruction_contains_creative_content_placeholder(self):
+        """フォーマット後の instruction に {creative_content} プレースホルダーが含まれること。"""
+        formatted = self._format_instruction()
+        assert "{creative_content}" in formatted
+
+    def test_instruction_contains_mystery_report_placeholder(self):
+        """フォーマット後の instruction に {mystery_report} プレースホルダーが含まれること。"""
+        formatted = self._format_instruction()
+        assert "{mystery_report}" in formatted
+
+    def test_instruction_contains_structured_report_placeholder(self):
+        """フォーマット後の instruction に {structured_report} プレースホルダーが含まれること。"""
+        formatted = self._format_instruction()
+        assert "{structured_report}" in formatted
+
+    def test_instruction_prohibits_markdown_codeblocks(self):
+        """instruction が markdown コードブロックでの出力を禁止していること。"""
+        formatted = self._format_instruction()
+        assert "Do NOT wrap it in markdown code blocks" in formatted
+
+    def test_all_languages_have_session_state_placeholders(self):
+        """全6言語で session state プレースホルダーが正しくフォーマットされること。"""
+        for lang in TRANSLATOR_CONFIGS:
+            formatted = self._format_instruction(lang)
+            assert "{creative_content}" in formatted, f"{lang}: creative_content missing"
+            assert "{mystery_report}" in formatted, f"{lang}: mystery_report missing"
+            assert "{structured_report}" in formatted, f"{lang}: structured_report missing"

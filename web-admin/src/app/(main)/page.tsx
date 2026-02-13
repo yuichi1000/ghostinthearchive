@@ -446,12 +446,12 @@ function AdminMysteryCard({ mystery, onApprove, onArchive, onPodcast }: AdminMys
 
       {/* Title (Japanese preferred for admin) */}
       <h3 className="font-serif text-lg text-parchment mb-1 leading-tight">
-        {mystery.title_ja || mystery.title}
+        {mystery.translations?.ja?.title || mystery.title_ja || mystery.title}
       </h3>
 
       {/* Summary (Japanese preferred for admin) */}
       <p className="text-sm text-foreground/80 leading-relaxed mb-4 line-clamp-2">
-        {mystery.summary_ja || mystery.summary}
+        {mystery.translations?.ja?.summary || mystery.summary_ja || mystery.summary}
       </p>
 
       {/* Metadata */}
