@@ -1,12 +1,20 @@
 """Firestore tools for the Podcast pipeline.
 
-Reads mystery data from Firestore and writes podcast results back.
+`podcasts` コレクション（新設）を操作するツール群。
+脚本生成と音声生成の2フェーズに対応。
+
+既存の `mysteries` コレクションからの記事読み込み（load_mystery）も維持。
 """
 
 import json
+import logging
 from datetime import datetime, timezone
 
 from shared.firestore import get_firestore_client
+
+logger = logging.getLogger(__name__)
+
+PODCASTS_COLLECTION = "podcasts"
 
 
 def load_mystery(mystery_id: str) -> dict | None:
@@ -25,69 +33,120 @@ def load_mystery(mystery_id: str) -> dict | None:
     return doc.to_dict()
 
 
-def save_podcast_result(mystery_id: str, podcast_script: str, audio_assets: str) -> str:
-    """Save podcast generation results to Firestore.
-
-    Updates the mystery document with podcast_script, audio_assets,
-    and sets podcast_status to "completed".
+def create_podcast(mystery_id: str, custom_instructions: str = "") -> str:
+    """podcasts コレクションに新規ドキュメントを作成する。
 
     Args:
-        mystery_id: The mystery document ID.
-        podcast_script: The generated podcast script text.
-        audio_assets: JSON string of audio asset metadata.
+        mystery_id: 元記事の mystery ID
+        custom_instructions: 管理者からのカスタム指示
 
     Returns:
-        JSON string with status.
-    """
-    try:
-        db = get_firestore_client()
-        now = datetime.now(timezone.utc)
-
-        update_data = {
-            "podcast_script": podcast_script,
-            "podcast_status": "completed",
-            "updatedAt": now,
-        }
-
-        if audio_assets:
-            try:
-                update_data["audio_assets"] = json.loads(audio_assets)
-            except (json.JSONDecodeError, TypeError):
-                update_data["audio_assets"] = audio_assets
-
-        db.collection("mysteries").document(mystery_id).update(update_data)
-
-        return json.dumps({
-            "status": "success",
-            "mystery_id": mystery_id,
-        }, ensure_ascii=False)
-
-    except Exception as e:
-        # Mark as error
-        try:
-            db = get_firestore_client()
-            db.collection("mysteries").document(mystery_id).update({
-                "podcast_status": "error",
-                "updatedAt": datetime.now(timezone.utc),
-            })
-        except Exception:
-            pass
-
-        return json.dumps({
-            "status": "error",
-            "error": str(e),
-        }, ensure_ascii=False)
-
-
-def set_podcast_status(mystery_id: str, status: str) -> None:
-    """Update podcast_status field in Firestore.
-
-    Args:
-        mystery_id: The mystery document ID.
-        status: One of "generating", "completed", "error".
+        作成された podcast_id
     """
     db = get_firestore_client()
-    db.collection("mysteries").document(mystery_id).update({
-        "podcast_status": status,
-        "updatedAt": datetime.now(timezone.utc),
+    now = datetime.now(timezone.utc)
+
+    # mystery からタイトルを取得
+    mystery = load_mystery(mystery_id)
+    mystery_title = mystery.get("title", mystery_id) if mystery else mystery_id
+
+    doc_data = {
+        "mystery_id": mystery_id,
+        "mystery_title": mystery_title,
+        "status": "script_generating",
+        "custom_instructions": custom_instructions,
+        "script": None,
+        "script_ja": None,
+        "audio": None,
+        "pipeline_run_id": None,
+        "created_at": now,
+        "updated_at": now,
+        "error_message": None,
+    }
+
+    _, doc_ref = db.collection(PODCASTS_COLLECTION).add(doc_data)
+    podcast_id = doc_ref.id
+    logger.info("Podcast created: %s (mystery=%s)", podcast_id, mystery_id)
+    return podcast_id
+
+
+def get_podcast(podcast_id: str) -> dict | None:
+    """podcast ドキュメントを取得する。
+
+    Args:
+        podcast_id: Podcast ドキュメント ID
+
+    Returns:
+        ドキュメントデータ、存在しない場合は None
+    """
+    db = get_firestore_client()
+    doc = db.collection(PODCASTS_COLLECTION).document(podcast_id).get()
+    if not doc.exists:
+        return None
+    data = doc.to_dict()
+    data["podcast_id"] = doc.id
+    return data
+
+
+def save_script_result(
+    podcast_id: str,
+    structured_script: dict,
+    script_ja: str,
+) -> None:
+    """脚本生成結果を保存し、ステータスを script_ready に更新する。
+
+    Args:
+        podcast_id: Podcast ドキュメント ID
+        structured_script: 構造化脚本 JSON
+        script_ja: 日本語訳テキスト
+    """
+    db = get_firestore_client()
+    db.collection(PODCASTS_COLLECTION).document(podcast_id).update({
+        "script": structured_script,
+        "script_ja": script_ja,
+        "status": "script_ready",
+        "updated_at": datetime.now(timezone.utc),
+        "error_message": None,
     })
+    logger.info("Script saved for podcast %s", podcast_id)
+
+
+def save_audio_result(podcast_id: str, audio_metadata: dict) -> None:
+    """音声生成結果を保存し、ステータスを audio_ready に更新する。
+
+    Args:
+        podcast_id: Podcast ドキュメント ID
+        audio_metadata: 音声メタデータ
+            {"gcs_path", "public_url", "duration_seconds", "voice_name", "format"}
+    """
+    db = get_firestore_client()
+    db.collection(PODCASTS_COLLECTION).document(podcast_id).update({
+        "audio": audio_metadata,
+        "status": "audio_ready",
+        "updated_at": datetime.now(timezone.utc),
+        "error_message": None,
+    })
+    logger.info("Audio saved for podcast %s", podcast_id)
+
+
+def set_podcast_status(
+    podcast_id: str,
+    status: str,
+    error_message: str | None = None,
+) -> None:
+    """Podcast のステータスを更新する。
+
+    Args:
+        podcast_id: Podcast ドキュメント ID
+        status: 新しいステータス
+        error_message: エラーメッセージ（エラー時のみ）
+    """
+    db = get_firestore_client()
+    update_data: dict = {
+        "status": status,
+        "updated_at": datetime.now(timezone.utc),
+    }
+    if error_message is not None:
+        update_data["error_message"] = error_message[:500]
+    db.collection(PODCASTS_COLLECTION).document(podcast_id).update(update_data)
+    logger.info("Podcast %s status → %s", podcast_id, status)

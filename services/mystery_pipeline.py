@@ -14,9 +14,10 @@ resource limits, timeouts, and CPU allocation strategies:
 Combining them would force the expensive Pipeline config onto Curator.
 
 Endpoints:
-    POST /investigate  - Start blog creation pipeline
-    POST /podcast      - Start podcast generation pipeline
-    GET  /health       - Health check
+    POST /investigate              - Start blog creation pipeline
+    POST /podcast/generate-script  - Start podcast script generation
+    POST /podcast/generate-audio   - Start podcast audio generation
+    GET  /health                   - Health check
 """
 
 import asyncio
@@ -45,8 +46,15 @@ class InvestigateRequest(BaseModel):
     query: str
 
 
-class MysteryIdRequest(BaseModel):
+class GenerateScriptRequest(BaseModel):
     mystery_id: str
+    custom_instructions: str = ""
+
+
+class GenerateAudioRequest(BaseModel):
+    podcast_id: str
+    script: dict | None = None  # 管理者が編集した脚本
+    voice_name: str = "en-US-Studio-O"
 
 
 async def _run_investigate(query: str, run_id: str) -> None:
@@ -71,18 +79,31 @@ async def _run_investigate(query: str, run_id: str) -> None:
         error_pipeline_run(run_id, str(e))
 
 
-async def _run_podcast(mystery_id: str, run_id: str) -> None:
-    """Background task wrapper for the podcast pipeline.
-
-    Podcast は CLI 経由のまま（Firestore 読み込み・podcast_status 管理が CLI 固有のため）。
-    """
+async def _run_generate_script(
+    mystery_id: str, custom_instructions: str, run_id: str
+) -> None:
+    """Background task wrapper for podcast script generation."""
     try:
-        from podcast_agents.cli import generate_podcast
+        from podcast_agents.cli import generate_script
 
-        await generate_podcast(mystery_id, run_id=run_id)
+        await generate_script(mystery_id, custom_instructions, run_id=run_id)
     except Exception as e:
-        logger.exception("Podcast pipeline failed: %s", e)
+        logger.exception("Podcast script generation failed: %s", e)
         error_pipeline_run(run_id, str(e))
+
+
+async def _run_generate_audio(
+    podcast_id: str,
+    script: dict | None,
+    voice_name: str,
+) -> None:
+    """Background task wrapper for podcast audio generation."""
+    try:
+        from podcast_agents.cli import generate_audio
+
+        await generate_audio(podcast_id, script_override=script, voice_name=voice_name)
+    except Exception as e:
+        logger.exception("Podcast audio generation failed: %s", e)
 
 
 @app.get("/health")
@@ -104,17 +125,38 @@ async def investigate_endpoint(body: InvestigateRequest):
         )
 
 
-@app.post("/podcast")
-async def podcast_endpoint(body: MysteryIdRequest):
+@app.post("/podcast/generate-script")
+async def generate_script_endpoint(body: GenerateScriptRequest):
+    """脚本 + 日本語訳を生成（fire-and-forget）"""
     try:
         run_id = create_pipeline_run("podcast", mystery_id=body.mystery_id)
-        asyncio.create_task(_run_podcast(body.mystery_id, run_id))
+        asyncio.create_task(
+            _run_generate_script(body.mystery_id, body.custom_instructions, run_id)
+        )
         return JSONResponse(content={"status": "accepted", "run_id": run_id})
     except Exception as e:
-        logger.exception("Failed to start podcast pipeline: %s", e)
+        logger.exception("Failed to start podcast script generation: %s", e)
         return JSONResponse(
             status_code=500,
-            content={"error": "Failed to start podcast pipeline", "detail": str(e)},
+            content={"error": "Failed to start podcast script generation", "detail": str(e)},
+        )
+
+
+@app.post("/podcast/generate-audio")
+async def generate_audio_endpoint(body: GenerateAudioRequest):
+    """音声生成（fire-and-forget）"""
+    try:
+        asyncio.create_task(
+            _run_generate_audio(body.podcast_id, body.script, body.voice_name)
+        )
+        return JSONResponse(
+            content={"status": "accepted", "podcast_id": body.podcast_id}
+        )
+    except Exception as e:
+        logger.exception("Failed to start podcast audio generation: %s", e)
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Failed to start podcast audio generation", "detail": str(e)},
         )
 
 

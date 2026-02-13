@@ -1,12 +1,13 @@
 """Podcast Pipeline - CLI Entry Point
 
-Generates a podcast (script + audio) for a published mystery article.
-Reads the article from Firestore, runs Scriptwriter -> Producer, and saves results back.
+脚本生成と音声生成の2つのモードを提供する。
 
 Usage:
-    python -m podcast_agents <mystery_id>
+    python -m podcast_agents script <mystery_id> [--instructions "..."]
+    python -m podcast_agents audio <podcast_id> [--voice "en-US-Studio-O"]
 
-Also serves as the entry point for Cloud Run Jobs.
+脚本生成: Scriptwriter → Podcast Translator（JA）の ADK パイプラインを実行
+音声生成: 確定脚本を TTS で音声合成し GCS にアップロード
 """
 
 import asyncio
@@ -17,34 +18,52 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-from .agent import podcast_commander
+from .agent import podcast_script_commander
 from .tools.firestore_tools import (
     load_mystery,
-    save_podcast_result,
+    create_podcast,
+    get_podcast,
+    save_script_result,
+    save_audio_result,
     set_podcast_status,
 )
+from .tools.tts import generate_podcast_audio, DEFAULT_VOICE_NAME
 from shared.orchestrator import run_pipeline
 from shared.pipeline_run import create_pipeline_run
 
 
-PIPELINE_TIMEOUT_SECONDS = 1200  # 20 minutes
+PIPELINE_TIMEOUT_SECONDS = 1200  # 20分
 
 
-async def generate_podcast(mystery_id: str, *, run_id: str | None = None) -> str | None:
-    """Generate a podcast for a given mystery article.
+async def generate_script(
+    mystery_id: str,
+    custom_instructions: str = "",
+    *,
+    run_id: str | None = None,
+) -> tuple[str, str]:
+    """脚本 + 日本語訳を生成する。
+
+    1. mystery から narrative_content 取得
+    2. podcasts ドキュメント作成 (status=script_generating)
+    3. run_pipeline(podcast_script_commander)
+    4. session state から structured_script + podcast_script_ja 取得
+    5. podcasts 更新 (status=script_ready)
 
     Args:
-        mystery_id: The Firestore document ID of the mystery.
-        run_id: Optional pre-created pipeline run ID. If None, creates a new one.
+        mystery_id: Firestore の mystery ドキュメント ID
+        custom_instructions: 管理者からのカスタム指示
+        run_id: 事前作成済みのパイプライン実行 ID
 
     Returns:
-        The pipeline run ID.
+        (podcast_id, run_id) のタプル
     """
     print("=" * 70)
-    print("Ghost in the Archive - Podcast Generation")
+    print("Ghost in the Archive - Podcast Script Generation")
     print("=" * 70)
     print()
     print(f"Mystery ID: {mystery_id}")
+    if custom_instructions:
+        print(f"Custom Instructions: {custom_instructions}")
     print()
 
     # Firestore から記事読み込み
@@ -61,59 +80,196 @@ async def generate_podcast(mystery_id: str, *, run_id: str | None = None) -> str
     print("-" * 70)
     print()
 
-    # Podcast 生成中マーク
-    set_podcast_status(mystery_id, "generating")
+    # podcasts ドキュメント作成
+    podcast_id = create_podcast(mystery_id, custom_instructions)
+    print(f"Podcast ID: {podcast_id}")
 
     # pipeline_run ドキュメント作成（未指定時）
     if run_id is None:
         run_id = create_pipeline_run("podcast", mystery_id=mystery_id)
 
+    # pipeline_run_id を podcast に紐付け
+    set_podcast_status(podcast_id, "script_generating")
+    from shared.firestore import get_firestore_client
+    db = get_firestore_client()
+    db.collection("podcasts").document(podcast_id).update({
+        "pipeline_run_id": run_id,
+    })
+
     try:
         # Orchestrator 呼び出し
         result = await run_pipeline(
-            agent=podcast_commander,
+            agent=podcast_script_commander,
             app_name="ghost_in_the_archive_podcast",
-            user_message=f"\u4ee5\u4e0b\u306e\u30d6\u30ed\u30b0\u8a18\u4e8b\u304b\u3089\u30dd\u30c3\u30c9\u30ad\u30e3\u30b9\u30c8\u3092\u4f5c\u6210\u3057\u3066\u304f\u3060\u3055\u3044: {title}",
-            initial_state={"creative_content": narrative_content},
+            user_message=f"以下のブログ記事からポッドキャストを作成してください: {title}",
+            initial_state={
+                "creative_content": narrative_content,
+                "custom_instructions": custom_instructions,
+            },
             run_id=run_id,
             run_type="podcast",
             timeout_seconds=PIPELINE_TIMEOUT_SECONDS,
             max_llm_calls=30,
-            skip_authors={"podcast_commander"},
+            skip_authors={"podcast_script_commander"},
             on_text=lambda text: print(text),
         )
 
-        # Podcast 固有の後処理: セッション状態から結果取得 → Firestore 保存
-        podcast_script = result.session_state.get("podcast_script", "")
-        audio_assets = result.session_state.get("audio_assets", "")
-        save_result = save_podcast_result(mystery_id, podcast_script, audio_assets)
+        # セッション状態から結果取得
+        structured_script = result.session_state.get("structured_script", {})
+        script_ja = result.session_state.get("podcast_script_ja", "")
+
+        # Firestore に保存
+        save_script_result(podcast_id, structured_script, script_ja)
 
         print()
         print("=" * 70)
-        print(f"Podcast generation complete: {save_result}")
+        print(f"Script generation complete!")
+        print(f"  Podcast ID: {podcast_id}")
+        if structured_script:
+            print(f"  Episode: {structured_script.get('episode_title', 'N/A')}")
+            print(f"  Segments: {len(structured_script.get('segments', []))}")
         print("=" * 70)
 
-        return result.run_id
+        return podcast_id, result.run_id
 
     except TimeoutError:
         print(f"Error: Pipeline timed out after {PIPELINE_TIMEOUT_SECONDS}s")
-        set_podcast_status(mystery_id, "error")
+        set_podcast_status(podcast_id, "error", "Pipeline timed out")
         raise
     except Exception as e:
-        print(f"Error during podcast generation: {e}")
-        set_podcast_status(mystery_id, "error")
+        print(f"Error during script generation: {e}")
+        set_podcast_status(podcast_id, "error", str(e))
+        raise
+
+
+async def generate_audio(
+    podcast_id: str,
+    script_override: dict | None = None,
+    voice_name: str = DEFAULT_VOICE_NAME,
+) -> dict:
+    """確定脚本から音声を生成する。
+
+    1. podcasts ドキュメント取得
+    2. script_override があれば使用（管理者の編集反映）
+    3. status → audio_generating
+    4. tts.generate_podcast_audio() 呼び出し
+    5. podcasts 更新 (status=audio_ready, audio={...})
+
+    Args:
+        podcast_id: Podcast ドキュメント ID
+        script_override: 管理者が編集した脚本（None の場合は保存済み脚本を使用）
+        voice_name: TTS ボイス名
+
+    Returns:
+        音声メタデータ dict
+    """
+    print("=" * 70)
+    print("Ghost in the Archive - Podcast Audio Generation")
+    print("=" * 70)
+    print()
+    print(f"Podcast ID: {podcast_id}")
+    print(f"Voice: {voice_name}")
+    print()
+
+    # podcast ドキュメント取得
+    podcast = get_podcast(podcast_id)
+    if not podcast:
+        raise ValueError(f"Podcast '{podcast_id}' not found.")
+
+    # 脚本を取得
+    if script_override:
+        script = script_override
+        print("Using script override from admin")
+    else:
+        script = podcast.get("script")
+        if not script:
+            raise ValueError(f"Podcast '{podcast_id}' has no script. Run script generation first.")
+
+    segments = script.get("segments", [])
+    if not segments:
+        raise ValueError("Script has no segments.")
+
+    print(f"Episode: {script.get('episode_title', 'N/A')}")
+    print(f"Segments: {len(segments)}")
+    print("-" * 70)
+    print()
+
+    # ステータス更新
+    set_podcast_status(podcast_id, "audio_generating")
+
+    try:
+        # TTS 音声生成
+        audio_metadata = generate_podcast_audio(
+            segments=segments,
+            podcast_id=podcast_id,
+            voice_name=voice_name,
+        )
+
+        # Firestore に保存
+        save_audio_result(podcast_id, audio_metadata)
+
+        print()
+        print("=" * 70)
+        print("Audio generation complete!")
+        print(f"  Duration: {audio_metadata['duration_seconds']}s")
+        print(f"  URL: {audio_metadata['public_url']}")
+        print(f"  GCS: {audio_metadata['gcs_path']}")
+        print("=" * 70)
+
+        return audio_metadata
+
+    except Exception as e:
+        print(f"Error during audio generation: {e}")
+        set_podcast_status(podcast_id, "error", str(e))
         raise
 
 
 def main():
     """Main entry point."""
     if len(sys.argv) < 2:
-        print("Usage: python -m podcast_agents <mystery_id>")
-        print('Example: python -m podcast_agents "MYSTERY-1820-BOSTON-001"')
+        print("Usage:")
+        print('  python -m podcast_agents script <mystery_id> [--instructions "..."]')
+        print('  python -m podcast_agents audio <podcast_id> [--voice "en-US-Studio-O"]')
         sys.exit(1)
 
-    mystery_id = sys.argv[1]
-    asyncio.run(generate_podcast(mystery_id))
+    command = sys.argv[1]
+
+    if command == "script":
+        if len(sys.argv) < 3:
+            print("Usage: python -m podcast_agents script <mystery_id> [--instructions '...']")
+            sys.exit(1)
+
+        mystery_id = sys.argv[2]
+        instructions = ""
+
+        # --instructions パース
+        for i, arg in enumerate(sys.argv[3:], start=3):
+            if arg == "--instructions" and i + 1 < len(sys.argv):
+                instructions = sys.argv[i + 1]
+                break
+
+        asyncio.run(generate_script(mystery_id, instructions))
+
+    elif command == "audio":
+        if len(sys.argv) < 3:
+            print("Usage: python -m podcast_agents audio <podcast_id> [--voice '...']")
+            sys.exit(1)
+
+        podcast_id = sys.argv[2]
+        voice = DEFAULT_VOICE_NAME
+
+        # --voice パース
+        for i, arg in enumerate(sys.argv[3:], start=3):
+            if arg == "--voice" and i + 1 < len(sys.argv):
+                voice = sys.argv[i + 1]
+                break
+
+        asyncio.run(generate_audio(podcast_id, voice_name=voice))
+
+    else:
+        print(f"Unknown command: {command}")
+        print("Available commands: script, audio")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
