@@ -40,11 +40,12 @@ async def generate_script(
     custom_instructions: str = "",
     *,
     run_id: str | None = None,
+    podcast_id: str | None = None,
 ) -> tuple[str, str]:
     """脚本 + 日本語訳を生成する。
 
     1. mystery から narrative_content 取得
-    2. podcasts ドキュメント作成 (status=script_generating)
+    2. podcasts ドキュメント作成（または外部から受け取り）
     3. run_pipeline(podcast_script_commander)
     4. session state から structured_script + podcast_script_ja 取得
     5. podcasts 更新 (status=script_ready)
@@ -53,6 +54,7 @@ async def generate_script(
         mystery_id: Firestore の mystery ドキュメント ID
         custom_instructions: 管理者からのカスタム指示
         run_id: 事前作成済みのパイプライン実行 ID
+        podcast_id: 事前作成済みの podcast ドキュメント ID
 
     Returns:
         (podcast_id, run_id) のタプル
@@ -80,8 +82,9 @@ async def generate_script(
     print("-" * 70)
     print()
 
-    # podcasts ドキュメント作成
-    podcast_id = create_podcast(mystery_id, custom_instructions)
+    # podcasts ドキュメント作成（外部から渡されていない場合は自前で作成: CLI 利用時）
+    if podcast_id is None:
+        podcast_id = create_podcast(mystery_id, custom_instructions)
     print(f"Podcast ID: {podcast_id}")
 
     # pipeline_run ドキュメント作成（未指定時）
@@ -89,7 +92,6 @@ async def generate_script(
         run_id = create_pipeline_run("podcast", mystery_id=mystery_id)
 
     # pipeline_run_id を podcast に紐付け
-    set_podcast_status(podcast_id, "script_generating")
     from shared.firestore import get_firestore_client
     db = get_firestore_client()
     db.collection("podcasts").document(podcast_id).update({
