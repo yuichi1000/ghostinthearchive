@@ -4,6 +4,7 @@ from .document import ArchiveDocument, SearchResults, SourceLanguage, SourceType
 from .mystery_id import (
     AREA_CODES,
     CLASSIFICATION_DESCRIPTIONS,
+    CLASSIFICATION_DESCRIPTIONS_EN,
     ClassificationCode,
     parse_mystery_id,
     validate_mystery_id,
@@ -26,6 +27,7 @@ __all__ = [
     # Mystery ID schemas (Publisher input)
     "ClassificationCode",
     "CLASSIFICATION_DESCRIPTIONS",
+    "CLASSIFICATION_DESCRIPTIONS_EN",
     "AREA_CODES",
     "validate_mystery_id",
     "parse_mystery_id",
