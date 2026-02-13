@@ -463,6 +463,24 @@ def build_analysis_context(filepaths: list[str] | None = None) -> str:
     return json.dumps(analysis_context, ensure_ascii=False, indent=2)
 
 
+def _validate_evidence(evidence: dict, label: str) -> list[str]:
+    """evidence オブジェクトの必須フィールドを検証する。
+
+    Args:
+        evidence: evidence オブジェクト（source_url, relevant_excerpt 等）
+        label: ログ用ラベル（例: "evidence_a", "additional_evidence[0]"）
+
+    Returns:
+        警告メッセージのリスト（問題がなければ空リスト）
+    """
+    warnings: list[str] = []
+    if not evidence.get("relevant_excerpt", "").strip():
+        warnings.append(f"{label}: relevant_excerpt is empty or missing")
+    if not evidence.get("source_url", "").strip():
+        warnings.append(f"{label}: source_url is empty or missing")
+    return warnings
+
+
 def save_structured_report(
     report_json: str,
     tool_context: ToolContext,
@@ -472,6 +490,10 @@ def save_structured_report(
     Called by the Scholar Agent after completing analysis to store
     structured data (evidence, hypothesis, etc.) directly in session
     state, bypassing LLM text interpretation for downstream agents.
+
+    evidence バリデーション:
+    - evidence_a / evidence_b: 空 excerpt は警告のみ（構造上必須のため除外しない）
+    - additional_evidence: 空 excerpt の項目はフィルタリング（除外）
 
     Args:
         report_json: JSON string containing the structured report with fields:
@@ -494,7 +516,7 @@ def save_structured_report(
         tool_context: ADK tool context for session state access.
 
     Returns:
-        JSON string with save status.
+        JSON string with save status and warnings.
     """
     try:
         report_data = json.loads(report_json)
@@ -504,6 +526,31 @@ def save_structured_report(
             ensure_ascii=False,
         )
 
+    # evidence バリデーション
+    warnings: list[str] = []
+
+    # evidence_a / evidence_b: 警告のみ（構造上必須のため除外しない）
+    for key in ("evidence_a", "evidence_b"):
+        ev = report_data.get(key)
+        if ev and isinstance(ev, dict):
+            warnings.extend(_validate_evidence(ev, key))
+
+    # additional_evidence: 空 excerpt の項目をフィルタリング
+    additional = report_data.get("additional_evidence")
+    if additional and isinstance(additional, list):
+        filtered = []
+        for i, ev in enumerate(additional):
+            if not isinstance(ev, dict):
+                continue
+            excerpt = ev.get("relevant_excerpt", "").strip()
+            if excerpt:
+                filtered.append(ev)
+            else:
+                warnings.append(
+                    f"additional_evidence[{i}]: removed (empty relevant_excerpt)"
+                )
+        report_data["additional_evidence"] = filtered
+
     # Store structured report in session state
     tool_context.state["structured_report"] = report_data
 
@@ -512,6 +559,7 @@ def save_structured_report(
             "status": "success",
             "message": "Structured report saved to session state",
             "fields_saved": list(report_data.keys()),
+            "warnings": warnings,
         },
         ensure_ascii=False,
     )

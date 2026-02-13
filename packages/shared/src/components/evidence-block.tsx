@@ -23,6 +23,10 @@ export function EvidenceBlock({ evidence, label, translatedExcerpt, labels, clas
   const viewLabel = labels?.view ?? "View"
   const originalTextLabel = labels?.originalText ?? "Original text"
 
+  // 空 excerpt のフォールバック: テキスト部分を非表示にする（既存 Firestore データ対応）
+  const hasExcerpt = !!evidence.relevant_excerpt?.trim()
+  const hasTranslatedExcerpt = !!translatedExcerpt?.trim()
+
   return (
     <figure className={cn("relative group", className)}>
       {label && (
@@ -42,36 +46,43 @@ export function EvidenceBlock({ evidence, label, translatedExcerpt, labels, clas
 
         {/* Date badge + Quote marks row */}
         <div className="flex items-start justify-between mb-1">
-          <div className="text-4xl text-parchment/20 font-serif leading-none" aria-hidden="true">
-            &ldquo;
-          </div>
+          {(hasExcerpt || hasTranslatedExcerpt) && (
+            <div className="text-4xl text-parchment/20 font-serif leading-none" aria-hidden="true">
+              &ldquo;
+            </div>
+          )}
           {evidence.source_date && (
-            <div className="px-2 py-0.5 bg-blood-red/20 border border-blood-red/30 rounded-sm shrink-0">
+            <div className={cn(
+              "px-2 py-0.5 bg-blood-red/20 border border-blood-red/30 rounded-sm shrink-0",
+              !(hasExcerpt || hasTranslatedExcerpt) && "ml-auto"
+            )}>
               <span className="text-xs font-mono text-[#ff6b6b]">{evidence.source_date}</span>
             </div>
           )}
         </div>
 
-        {/* Evidence text: 翻訳があればメインに、原文はサブに */}
-        {translatedExcerpt ? (
+        {/* Evidence text: 翻訳があればメインに、原文はサブに。空 excerpt は非表示。 */}
+        {hasTranslatedExcerpt ? (
           <div className="relative pl-6">
             <p className="text-sm text-foreground/90 leading-relaxed font-mono whitespace-pre-wrap">
               {translatedExcerpt}
             </p>
-            <div className="mt-3 pt-3 border-t border-border/30">
-              <p className="text-xs text-muted-foreground/60 mb-1 font-mono uppercase tracking-wider">
-                {originalTextLabel}
-              </p>
-              <p className="text-xs text-foreground/50 leading-relaxed font-mono whitespace-pre-wrap">
-                {evidence.relevant_excerpt}
-              </p>
-            </div>
+            {hasExcerpt && (
+              <div className="mt-3 pt-3 border-t border-border/30">
+                <p className="text-xs text-muted-foreground/60 mb-1 font-mono uppercase tracking-wider">
+                  {originalTextLabel}
+                </p>
+                <p className="text-xs text-foreground/50 leading-relaxed font-mono whitespace-pre-wrap">
+                  {evidence.relevant_excerpt}
+                </p>
+              </div>
+            )}
           </div>
-        ) : (
+        ) : hasExcerpt ? (
           <p className="relative text-sm text-foreground/90 leading-relaxed pl-6 font-mono whitespace-pre-wrap">
             {evidence.relevant_excerpt}
           </p>
-        )}
+        ) : null}
       </blockquote>
 
       {/* Source citation */}

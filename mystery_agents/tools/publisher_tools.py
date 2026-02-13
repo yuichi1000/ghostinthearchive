@@ -316,10 +316,23 @@ def publish_mystery(
         data.setdefault("additional_evidence", [])
         data["additional_evidence"] = data["additional_evidence"][:5]
 
-        # additional_evidence の source_url 欠落チェック
+        # evidence_a / evidence_b の空 excerpt 警告（除外はしない）
+        for key in ("evidence_a", "evidence_b"):
+            ev = data.get(key)
+            if ev and isinstance(ev, dict):
+                if not ev.get("relevant_excerpt", "").strip():
+                    logger.warning("%s has empty relevant_excerpt, title=%s", key, ev.get("source_title", "unknown"))
+
+        # additional_evidence の source_url 欠落チェック + 空 excerpt フィルタリング
+        filtered_additional = []
         for i, ev in enumerate(data.get("additional_evidence", [])):
             if not ev.get("source_url"):
                 logger.warning("additional_evidence[%d] missing source_url, title=%s", i, ev.get("source_title", "unknown"))
+            if not ev.get("relevant_excerpt", "").strip():
+                logger.warning("additional_evidence[%d] removed (empty relevant_excerpt), title=%s", i, ev.get("source_title", "unknown"))
+                continue
+            filtered_additional.append(ev)
+        data["additional_evidence"] = filtered_additional
         data.setdefault("alternative_hypotheses", [])
         data.setdefault("research_questions", [])
         data.setdefault("story_hooks", [])
