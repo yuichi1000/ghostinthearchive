@@ -24,12 +24,20 @@ const dict: Dictionary = {
       accuracy: "正確性は保証されません",
     },
   },
+  nav: {
+    about: "このサイトについて",
+  },
   home: {
     latestDiscoveries: "最新の発見",
+    featuredStory: "注目の調査",
     noMysteries: "ミステリーはまだありません",
     noMysteriesDesc:
       "現在公開中のミステリーはありません。新しい発見をお待ちください。",
     classifiedRedacted: "追加の事件は機密扱いのままです",
+  },
+  about: {
+    title: "このサイトについて | Ghost in the Archive",
+    heading: "このアーカイブについて",
   },
   detail: {
     returnToArchive: "アーカイブに戻る",

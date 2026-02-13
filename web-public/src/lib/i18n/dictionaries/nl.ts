@@ -25,12 +25,20 @@ const dict: Dictionary = {
       accuracy: "Nauwkeurigheid niet gegarandeerd",
     },
   },
+  nav: {
+    about: "Over ons",
+  },
   home: {
     latestDiscoveries: "Laatste ontdekkingen",
+    featuredStory: "Uitgelicht onderzoek",
     noMysteries: "Nog geen mysteries",
     noMysteriesDesc:
       "Er zijn momenteel geen gepubliceerde mysteries. Kom later terug voor nieuwe ontdekkingen.",
     classifiedRedacted: "Aanvullende zaken blijven gerubriceerd",
+  },
+  about: {
+    title: "Over ons | Ghost in the Archive",
+    heading: "Over dit archief",
   },
   detail: {
     returnToArchive: "Terug naar archief",

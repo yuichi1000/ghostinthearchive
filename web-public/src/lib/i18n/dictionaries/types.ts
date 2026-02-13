@@ -18,11 +18,19 @@ export interface Dictionary {
       accuracy: string;
     };
   };
+  nav: {
+    about: string;
+  };
   home: {
     latestDiscoveries: string;
+    featuredStory: string;
     noMysteries: string;
     noMysteriesDesc: string;
     classifiedRedacted: string;
+  };
+  about: {
+    title: string;
+    heading: string;
   };
   detail: {
     returnToArchive: string;
