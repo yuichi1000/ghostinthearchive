@@ -12,15 +12,19 @@ export interface PipelinePhase {
 }
 
 export const PIPELINE_PHASES: PipelinePhase[] = [
-  { id: "theme",        label: "テーマ分析",  match: (n) => n === "theme_analyzer" },
-  { id: "research",     label: "資料収集",    match: (n) => n.startsWith("librarian") },
-  { id: "analysis",     label: "学際分析",    match: (n) => n.startsWith("scholar") && !n.includes("debate") },
-  { id: "debate",       label: "討論",        match: (n) => n.includes("debate") },
-  { id: "integration",  label: "統合分析",    match: (n) => n === "armchair_polymath" },
-  { id: "narrative",    label: "物語生成",    match: (n) => n === "storyteller" },
-  { id: "illustration", label: "画像生成",    match: (n) => n === "illustrator" },
-  { id: "translation",  label: "翻訳",        match: (n) => n.startsWith("translator") },
-  { id: "publish",      label: "公開処理",    match: (n) => n === "publisher" },
+  // ブログパイプライン
+  { id: "theme",              label: "テーマ分析",  match: (n) => n === "theme_analyzer" },
+  { id: "research",           label: "資料収集",    match: (n) => n.startsWith("librarian") },
+  { id: "analysis",           label: "学際分析",    match: (n) => n.startsWith("scholar") && !n.includes("debate") },
+  { id: "debate",             label: "討論",        match: (n) => n.includes("debate") },
+  { id: "integration",        label: "統合分析",    match: (n) => n === "armchair_polymath" },
+  { id: "narrative",          label: "物語生成",    match: (n) => n === "storyteller" },
+  { id: "illustration",       label: "画像生成",    match: (n) => n === "illustrator" },
+  { id: "translation",        label: "翻訳",        match: (n) => n.startsWith("translator") },
+  { id: "publish",            label: "公開処理",    match: (n) => n === "publisher" },
+  // Podcast パイプライン
+  { id: "scriptwriting",      label: "脚本作成",    match: (n) => n === "scriptwriter" },
+  { id: "script_translation", label: "脚本翻訳",    match: (n) => n === "podcast_translator_ja" },
 ]
 
 /**

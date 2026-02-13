@@ -56,7 +56,17 @@ def mock_generate_audio():
 
 
 @pytest.fixture
-def client(mock_create_pipeline_run, mock_investigate, mock_generate_script, mock_generate_audio):
+def mock_create_podcast():
+    """Mock create_podcast（generate_script_endpoint 内で遅延 import される）."""
+    with patch(
+        "podcast_agents.tools.firestore_tools.create_podcast",
+        return_value="test-podcast-id-456",
+    ) as mock:
+        yield mock
+
+
+@pytest.fixture
+def client(mock_create_pipeline_run, mock_investigate, mock_generate_script, mock_generate_audio, mock_create_podcast):
     """Create FastAPI test client with mocked dependencies."""
     from fastapi.testclient import TestClient
 
@@ -118,7 +128,7 @@ class TestInvestigateEndpoint:
 class TestGenerateScriptEndpoint:
     """Tests for POST /podcast/generate-script."""
 
-    def test_returns_accepted_with_run_id(self, client, mock_create_pipeline_run):
+    def test_returns_accepted_with_run_id_and_podcast_id(self, client, mock_create_pipeline_run):
         response = client.post(
             "/podcast/generate-script",
             json={"mystery_id": "OCC-MA-617-20260207143025"},
@@ -127,6 +137,7 @@ class TestGenerateScriptEndpoint:
         data = response.json()
         assert data["status"] == "accepted"
         assert data["run_id"] == "test-run-id-123"
+        assert data["podcast_id"] == "test-podcast-id-456"
 
     def test_accepts_custom_instructions(self, client, mock_create_pipeline_run):
         response = client.post(
@@ -152,7 +163,7 @@ class TestGenerateScriptEndpoint:
         assert response.status_code == 422
 
     def test_create_pipeline_run_failure_returns_500(
-        self, mock_create_pipeline_run_failure, mock_generate_script
+        self, mock_create_pipeline_run_failure, mock_generate_script, mock_create_podcast
     ):
         from fastapi.testclient import TestClient
 

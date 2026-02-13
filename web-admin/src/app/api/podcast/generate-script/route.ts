@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
       mystery_id,
       message: "Podcast script generation started",
       run_id: data.run_id,
+      podcast_id: data.podcast_id,
     });
   } catch (error) {
     console.error("Failed to start podcast script generation:", error);
