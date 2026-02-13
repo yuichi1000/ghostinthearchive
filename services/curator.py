@@ -9,7 +9,9 @@ Endpoints:
     GET  /health         - Health check
 """
 
+import asyncio
 import json
+import logging
 import os
 
 from fastapi import FastAPI
@@ -26,23 +28,30 @@ from curator_agents.queries import (
     get_category_distribution,
     format_category_distribution,
 )
+from curator_agents.schemas import strip_markdown_codeblock, validate_suggestions
 from translator_agents.agents.translator import translator_agent
 from shared.pipeline_failure import get_recent_failures
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
 
-async def run_curator() -> dict:
+async def run_curator() -> list[dict]:
     """Run the Curator agent and return parsed English suggestions."""
-    existing_titles = get_existing_titles()
+    # 3つの Firestore クエリを並列実行
+    existing_titles, recent_failures, distribution = await asyncio.gather(
+        asyncio.to_thread(get_existing_titles),
+        asyncio.to_thread(get_recent_failures, 20),
+        asyncio.to_thread(get_category_distribution),
+    )
+
     titles_text = (
         "\n".join(f"- {t}" for t in existing_titles)
         if existing_titles
         else "(None - no themes have been investigated yet)"
     )
 
-    # 最近失敗したテーマを取得し、Curator に渡す
-    recent_failures = get_recent_failures(limit=20)
     failed_themes = list({f["theme"] for f in recent_failures if f.get("theme")})
     failed_themes_text = (
         "\n".join(f"- {t}" for t in failed_themes)
@@ -50,8 +59,6 @@ async def run_curator() -> dict:
         else "(None)"
     )
 
-    # カテゴリ分布を取得してプロンプト用テキストに変換
-    distribution = get_category_distribution()
     category_distribution_text = format_category_distribution(distribution)
 
     session_service = InMemorySessionService()
@@ -89,14 +96,10 @@ async def run_curator() -> dict:
                 if hasattr(part, "text") and part.text:
                     result_text += part.text
 
-    # Extract JSON from the result (handle markdown code blocks)
-    cleaned = result_text.strip()
-    if "```json" in cleaned:
-        cleaned = cleaned.split("```json", 1)[1].split("```", 1)[0].strip()
-    elif "```" in cleaned:
-        cleaned = cleaned.split("```", 1)[1].split("```", 1)[0].strip()
-
-    return json.loads(cleaned)
+    # マークダウンコードブロック除去 + JSON パース + スキーマ検証
+    cleaned = strip_markdown_codeblock(result_text)
+    raw_suggestions = json.loads(cleaned)
+    return validate_suggestions(raw_suggestions)
 
 
 async def translate_suggestions(suggestions: list[dict]) -> list[dict]:
@@ -147,17 +150,13 @@ async def translate_suggestions(suggestions: list[dict]) -> list[dict]:
                 if hasattr(part, "text") and part.text:
                     result_text += part.text
 
-    # Parse translation result
-    cleaned = result_text.strip()
-    if "```json" in cleaned:
-        cleaned = cleaned.split("```json", 1)[1].split("```", 1)[0].strip()
-    elif "```" in cleaned:
-        cleaned = cleaned.split("```", 1)[1].split("```", 1)[0].strip()
+    # マークダウンコードブロック除去
+    cleaned = strip_markdown_codeblock(result_text)
 
     try:
         translation = json.loads(cleaned)
     except json.JSONDecodeError:
-        # If translation fails, return original suggestions without Japanese
+        # 翻訳パース失敗時は英語のみで返す
         return suggestions
 
     # Merge English and Japanese
@@ -191,7 +190,7 @@ async def suggest_theme():
         try:
             bilingual_suggestions = await translate_suggestions(suggestions)
         except Exception as e:
-            print(f"Warning: Translation failed, returning English only: {e}")
+            logger.warning("翻訳失敗、英語のみで返却: %s", e)
             bilingual_suggestions = suggestions
 
         return JSONResponse(content={"suggestions": bilingual_suggestions})

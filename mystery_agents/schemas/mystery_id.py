@@ -43,6 +43,18 @@ CLASSIFICATION_DESCRIPTIONS = {
     ClassificationCode.LOC: "特定の場所に紐づく怪異、心霊スポット",
 }
 
+# Classification code descriptions in English (for Curator prompts)
+CLASSIFICATION_DESCRIPTIONS_EN = {
+    ClassificationCode.HIS: "Historical record discrepancies, missing persons, document gaps",
+    ClassificationCode.FLK: "Local traditions, festivals, oral traditions, folk beliefs",
+    ClassificationCode.ANT: "Rituals, social structures, material culture, cross-cultural contact",
+    ClassificationCode.OCC: "Unexplainable phenomena, supernatural events",
+    ClassificationCode.URB: "Modern rumors, contemporary ghost stories",
+    ClassificationCode.CRM: "Unsolved crimes, disappearances, mysterious deaths",
+    ClassificationCode.REL: "Religious taboos, curses, cults",
+    ClassificationCode.LOC: "Place-bound anomalies, haunted locations",
+}
+
 
 # Common US area codes by city (reference for agents)
 # Format: "CITY_NAME": ("STATE_CODE", "AREA_CODE")

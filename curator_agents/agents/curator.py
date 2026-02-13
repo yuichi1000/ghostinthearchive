@@ -10,6 +10,11 @@ from google.genai import types
 
 from shared.model_config import create_pro_model
 
+from curator_agents.schemas import build_category_prompt_section
+
+# カテゴリ定義を ClassificationCode enum から動的生成
+_CATEGORY_SECTION = build_category_prompt_section()
+
 # === 日本語訳 ===
 # あなたは「Ghost in the Archive」プロジェクトのテーマ提案エージェントです。
 # 管理者が次の調査テーマを選ぶ際に、興味深いテーマを5件提案してください。
@@ -20,14 +25,7 @@ from shared.model_config import create_pro_model
 #
 # ## カテゴリバランス
 # 各テーマには以下の8分類コードのいずれかが対応します：
-# - HIS（歴史）: 歴史的記録の矛盾、消失した人物、文書の欠落
-# - FLK（民俗）: 地方伝承、祭り、口承伝統、民間信仰
-# - ANT（人類学）: 儀礼、社会構造、物質文化、異文化接触
-# - OCC（怪奇）: 説明不能な現象、超常的事象
-# - URB（都市伝説）: 近代の噂話、現代の怪談
-# - CRM（未解決事件）: 未解決犯罪、失踪事件、謎の死
-# - REL（信仰・禁忌）: 宗教的タブー、呪い、カルト
-# - LOC（地霊・場所）: 特定の場所に紐づく怪異、心霊スポット
+# （ClassificationCode enum から動的生成）
 #
 # 現在のカテゴリ分布:
 # {category_distribution}
@@ -83,6 +81,7 @@ from shared.model_config import create_pro_model
 # 5件のテーマを提案してください。
 # === End 日本語訳 ===
 
+# カテゴリ定義部分のみ動的挿入し、ADK セッション状態プレースホルダーはそのまま保持
 CURATOR_INSTRUCTION = """
 You are the Theme Suggestion Agent for the "Ghost in the Archive" project.
 Suggest 5 interesting research themes when the administrator is choosing the next investigation topic.
@@ -93,14 +92,7 @@ The themes you suggest should also be Fact × Folklore hybrids.
 
 ## Category Balance
 Each theme corresponds to one of the following 8 classification codes:
-- HIS (History): Historical record discrepancies, missing persons, document gaps
-- FLK (Folklore): Local traditions, festivals, oral traditions, folk beliefs
-- ANT (Anthropology): Rituals, social structures, material culture, cross-cultural contact
-- OCC (Occult): Unexplainable phenomena, supernatural events
-- URB (Urban Legend): Modern rumors, contemporary ghost stories
-- CRM (Crime): Unsolved crimes, disappearances, mysterious deaths
-- REL (Religion): Religious taboos, curses, cults
-- LOC (Locus): Place-bound anomalies, haunted locations
+""" + _CATEGORY_SECTION + """
 
 Current category distribution:
 {category_distribution}
