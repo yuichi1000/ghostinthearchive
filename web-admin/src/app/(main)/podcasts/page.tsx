@@ -30,6 +30,7 @@ export default function PodcastsPage() {
   const [customInstructions, setCustomInstructions] = useState("")
   const [generating, setGenerating] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
+  const [feedbackIsError, setFeedbackIsError] = useState(false)
 
   // Podcast タイプのパイプラインのみ表示
   const { runs: runningPipelines, dismiss: dismissRunning } = usePipelineRuns()
@@ -88,20 +89,26 @@ export default function PodcastsPage() {
           custom_instructions: customInstructions.trim(),
         }),
       })
-      if (!res.ok) throw new Error("API request failed")
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.detail || errorData.error || `API error (${res.status})`)
+      }
       const data = await res.json()
 
       if (data.podcast_id) {
         router.push(`/podcasts/${data.podcast_id}`)
       } else {
         setFeedback("脚本生成を開始しました")
+        setFeedbackIsError(false)
         fetchData()
         setTimeout(() => setFeedback(null), 3000)
       }
     } catch (error) {
       console.error("Failed to generate script:", error)
-      setFeedback("脚本生成の開始に失敗しました")
-      setTimeout(() => setFeedback(null), 3000)
+      const message = error instanceof Error ? error.message : "不明なエラー"
+      setFeedback(`脚本生成の開始に失敗しました: ${message}`)
+      setFeedbackIsError(true)
+      setTimeout(() => setFeedback(null), 5000)
     } finally {
       setGenerating(false)
     }
@@ -188,8 +195,16 @@ export default function PodcastsPage() {
 
         {/* フィードバック */}
         {feedback && (
-          <div className="fixed top-20 right-4 z-50 px-4 py-3 bg-teal/20 border border-teal/30 rounded-sm animate-in fade-in slide-in-from-right-5">
-            <p className="text-sm text-[#5fb3a1] font-mono">{feedback}</p>
+          <div className={cn(
+            "fixed top-20 right-4 z-50 px-4 py-3 rounded-sm animate-in fade-in slide-in-from-right-5",
+            feedbackIsError
+              ? "bg-blood-red/10 border border-blood-red/30"
+              : "bg-teal/20 border border-teal/30"
+          )}>
+            <p className={cn(
+              "text-sm font-mono",
+              feedbackIsError ? "text-[#ff6b6b]" : "text-[#5fb3a1]"
+            )}>{feedback}</p>
           </div>
         )}
 
