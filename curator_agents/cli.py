@@ -25,16 +25,21 @@ from google.genai import types
 
 from .agents.curator import curator_agent
 from .queries import get_existing_titles, get_category_distribution, format_category_distribution
+from .schemas import strip_markdown_codeblock, validate_suggestions
 from shared.pipeline_failure import get_recent_failures
 
 
 async def suggest_themes() -> None:
     """Run the Curator agent and output JSON to stdout."""
-    existing_titles = get_existing_titles()
+    # 3つの Firestore クエリを並列実行
+    existing_titles, recent_failures, distribution = await asyncio.gather(
+        asyncio.to_thread(get_existing_titles),
+        asyncio.to_thread(get_recent_failures, 20),
+        asyncio.to_thread(get_category_distribution),
+    )
+
     titles_text = "\n".join(f"- {t}" for t in existing_titles) if existing_titles else "(なし - まだ調査済みのテーマはありません)"
 
-    # 最近失敗したテーマを取得し、Curator に渡す
-    recent_failures = get_recent_failures(limit=20)
     failed_themes = list({f["theme"] for f in recent_failures if f.get("theme")})
     failed_themes_text = (
         "\n".join(f"- {t}" for t in failed_themes)
@@ -42,8 +47,6 @@ async def suggest_themes() -> None:
         else "(None)"
     )
 
-    # カテゴリ分布を取得してプロンプト用テキストに変換
-    distribution = get_category_distribution()
     category_distribution_text = format_category_distribution(distribution)
 
     session_service = InMemorySessionService()
@@ -81,20 +84,21 @@ async def suggest_themes() -> None:
                 if hasattr(part, "text") and part.text:
                     result_text += part.text
 
-    # Extract JSON from the result (handle markdown code blocks)
-    cleaned = result_text.strip()
-    if "```json" in cleaned:
-        cleaned = cleaned.split("```json", 1)[1].split("```", 1)[0].strip()
-    elif "```" in cleaned:
-        cleaned = cleaned.split("```", 1)[1].split("```", 1)[0].strip()
+    # マークダウンコードブロック除去 + JSON パース + スキーマ検証
+    cleaned = strip_markdown_codeblock(result_text)
 
-    # Validate JSON and output
     try:
-        suggestions = json.loads(cleaned)
-        print(json.dumps(suggestions, ensure_ascii=False))
+        raw_suggestions = json.loads(cleaned)
     except json.JSONDecodeError:
         print(json.dumps({"error": "Failed to parse suggestions", "raw": result_text[:500]}, ensure_ascii=False))
         sys.exit(1)
+
+    suggestions = validate_suggestions(raw_suggestions)
+    if not suggestions:
+        print(json.dumps({"error": "All suggestions failed schema validation", "raw": result_text[:500]}, ensure_ascii=False))
+        sys.exit(1)
+
+    print(json.dumps(suggestions, ensure_ascii=False))
 
 
 def main():
