@@ -2,12 +2,13 @@
 
 import Link from "next/link"
 import { Archive } from "lucide-react"
+import { HeaderLanguageSelector } from "@/components/header-language-selector"
 
 export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
       <div className="container mx-auto px-4">
-        <div className="flex items-center h-16">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
             <div className="relative">
@@ -18,6 +19,9 @@ export function Header() {
               Ghost in the Archive
             </span>
           </Link>
+
+          {/* グローバル言語セレクタ */}
+          <HeaderLanguageSelector />
         </div>
       </div>
     </header>
