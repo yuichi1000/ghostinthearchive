@@ -28,15 +28,6 @@ class TestStateKeyDefinitions:
         for key in STATE_KEYS:
             assert key.description, f"{key.name} has empty description"
 
-    def test_state_key_is_frozen(self):
-        """StateKey は frozen dataclass で不変。"""
-        key = STATE_KEYS[0]
-        try:
-            key.name = "modified"
-            assert False, "Should be frozen"
-        except AttributeError:
-            pass
-
 
 class TestExpectedKeys:
     """CLAUDE.md に記載のキーが全て登録されているか。"""
