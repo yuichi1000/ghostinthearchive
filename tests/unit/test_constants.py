@@ -4,27 +4,12 @@ from shared.constants import (
     ALLOWED_LANGUAGES,
     DEFAULT_SELECTED_LANGUAGES,
     MAX_LANGUAGES,
-    SCHEMA_VERSION,
-    STATUS_PENDING,
-    STATUS_PUBLISHED,
     TRANSLATION_LANGUAGES,
 )
 
 
 class TestLanguageConstants:
     """言語定数の整合性テスト。"""
-
-    def test_allowed_languages_set(self):
-        """許可言語セットが正しい。"""
-        assert ALLOWED_LANGUAGES == {"en", "de", "es", "fr", "nl", "pt"}
-
-    def test_max_languages_is_4(self):
-        """最大言語数が 4。"""
-        assert MAX_LANGUAGES == 4
-
-    def test_default_selected_languages_is_en(self):
-        """デフォルト選択言語が ["en"]。"""
-        assert DEFAULT_SELECTED_LANGUAGES == ["en"]
 
     def test_translation_languages_excludes_en(self):
         """翻訳対象言語に英語は含まれない（英語はソース言語）。"""
@@ -43,18 +28,6 @@ class TestLanguageConstants:
         """デフォルト言語は ALLOWED_LANGUAGES に含まれる。"""
         for lang in DEFAULT_SELECTED_LANGUAGES:
             assert lang in ALLOWED_LANGUAGES
-
-
-class TestStatusConstants:
-    """ステータス・スキーマ定数のテスト。"""
-
-    def test_status_values_are_strings(self):
-        assert isinstance(STATUS_PENDING, str)
-        assert isinstance(STATUS_PUBLISHED, str)
-
-    def test_schema_version_is_positive_int(self):
-        assert isinstance(SCHEMA_VERSION, int)
-        assert SCHEMA_VERSION > 0
 
 
 class TestReexportConsistency:

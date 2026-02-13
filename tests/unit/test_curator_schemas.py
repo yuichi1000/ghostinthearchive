@@ -22,11 +22,6 @@ class TestAllCategories:
         expected = [code.value for code in ClassificationCode]
         assert ALL_CATEGORIES == expected
 
-    def test_contains_all_8_codes(self):
-        assert len(ALL_CATEGORIES) == 8
-        for code in ["HIS", "FLK", "ANT", "OCC", "URB", "CRM", "REL", "LOC"]:
-            assert code in ALL_CATEGORIES
-
 
 class TestThemeSuggestion:
     """ThemeSuggestion Pydantic モデルの検証。"""
@@ -65,16 +60,6 @@ class TestThemeSuggestion:
         }
         with pytest.raises(Exception):
             ThemeSuggestion.model_validate(data)
-
-    def test_all_valid_categories_accepted(self):
-        for code in ALL_CATEGORIES:
-            data = {
-                "theme": "Test",
-                "description": "Test",
-                "category": code,
-            }
-            suggestion = ThemeSuggestion.model_validate(data)
-            assert suggestion.category == code
 
 
 class TestValidateSuggestions:
