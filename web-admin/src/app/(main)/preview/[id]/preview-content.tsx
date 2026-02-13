@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { EvidenceBlock } from "@ghost/shared/src/components/evidence-block"
 import { localizeMystery, getTranslatedExcerpt } from "@ghost/shared/src/lib/localize"
 import { LanguageSelector, type PreviewLang } from "@/components/language-selector"
+import { useLanguage } from "@/contexts/language-context"
 import type { FirestoreMystery } from "@ghost/shared/src/types/mystery"
 import {
   ArrowLeft,
@@ -37,7 +38,13 @@ interface PreviewContentProps {
 }
 
 export function PreviewContent({ mystery }: PreviewContentProps) {
-  const [lang, setLang] = useState<PreviewLang>("en")
+  const { lang: globalLang } = useLanguage()
+  const [lang, setLang] = useState<PreviewLang>(globalLang)
+
+  // グローバル言語が初期化された場合に同期（SSR→クライアント遷移時）
+  useEffect(() => {
+    setLang(globalLang)
+  }, [globalLang])
 
   // translations map に存在する言語
   const availableLangs = Object.keys(mystery.translations ?? {})

@@ -7,11 +7,14 @@ import { cn } from "@ghost/shared/src/lib/utils"
 import { Button } from "@ghost/shared/src/components/ui/button"
 import { getAllMysteries, approveMystery, archiveMystery, requestPodcast } from "@/lib/firestore/mysteries"
 import type { FirestoreMystery, MysteryStatus, PipelineRun } from "@ghost/shared/src/types/mystery"
+import { localizeMystery } from "@ghost/shared/src/lib/localize"
 import { PipelineSummary } from "@/components/pipeline-summary"
 import { PipelineTimeline } from "@/components/pipeline-timeline"
 import { ActivePipelinePanel } from "@/components/active-pipeline-panel"
 import { usePipelineRuns } from "@/hooks/use-pipeline-runs"
 import { usePipelineRun } from "@/hooks/use-pipeline-run"
+import { useLanguage } from "@/contexts/language-context"
+import type { PreviewLang } from "@/components/language-selector"
 import {
   Shield,
   FileText,
@@ -35,6 +38,7 @@ import {
 type FilterStatus = "all" | MysteryStatus | "translating"
 
 export default function AdminPage() {
+  const { lang } = useLanguage()
   const [filter, setFilter] = useState<FilterStatus>("all")
   const [mysteries, setMysteries] = useState<FirestoreMystery[]>([])
   const [loading, setLoading] = useState(true)
@@ -406,6 +410,7 @@ export default function AdminPage() {
               <AdminMysteryCard
                 key={mystery.mystery_id}
                 mystery={mystery}
+                lang={lang}
                 onApprove={() => handleApprove(mystery.mystery_id)}
                 onArchive={() => handleArchive(mystery.mystery_id)}
                 onPodcast={() => handlePodcast(mystery.mystery_id)}
@@ -420,18 +425,20 @@ export default function AdminPage() {
 
 interface AdminMysteryCardProps {
   mystery: FirestoreMystery
+  lang: PreviewLang
   onApprove: () => void
   onArchive: () => void
   onPodcast: () => void
 }
 
-function AdminMysteryCard({ mystery, onApprove, onArchive, onPodcast }: AdminMysteryCardProps) {
+function AdminMysteryCard({ mystery, lang, onApprove, onArchive, onPodcast }: AdminMysteryCardProps) {
   const [showPipeline, setShowPipeline] = useState(false)
   const isPending = mystery.status === "pending"
   const isTranslating = mystery.status === "translating"
   const location = mystery.historical_context?.geographic_scope?.[0] || ""
   const timePeriod = mystery.historical_context?.time_period || ""
   const hasPipelineLog = mystery.pipeline_log && mystery.pipeline_log.length > 0
+  const { title, summary } = localizeMystery(mystery, lang)
 
   return (
     <article className="aged-card letterpress-border rounded-sm p-5">
@@ -444,14 +451,14 @@ function AdminMysteryCard({ mystery, onApprove, onArchive, onPodcast }: AdminMys
         <StatusBadge status={mystery.status} />
       </div>
 
-      {/* Title (Japanese preferred for admin) */}
+      {/* タイトル（グローバル言語設定に連動） */}
       <h3 className="font-serif text-lg text-parchment mb-1 leading-tight">
-        {mystery.translations?.ja?.title || mystery.title_ja || mystery.title}
+        {title}
       </h3>
 
-      {/* Summary (Japanese preferred for admin) */}
+      {/* サマリー（グローバル言語設定に連動） */}
       <p className="text-sm text-foreground/80 leading-relaxed mb-4 line-clamp-2">
-        {mystery.translations?.ja?.summary || mystery.summary_ja || mystery.summary}
+        {summary}
       </p>
 
       {/* Metadata */}
