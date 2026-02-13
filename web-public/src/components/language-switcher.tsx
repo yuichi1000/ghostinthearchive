@@ -57,6 +57,7 @@ export function LanguageSwitcher({ currentLang }: LanguageSwitcherProps) {
             <Link
               key={lang}
               href={getPathForLang(lang)}
+              prefetch={false}
               onClick={() => handleSelect(lang)}
               className={`block px-4 py-2 text-sm no-underline transition-colors ${
                 lang === currentLang
