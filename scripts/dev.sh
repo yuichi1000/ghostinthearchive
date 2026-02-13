@@ -44,6 +44,35 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM
 
+# 指定ポートを使用中のプロセスを停止する関数
+stop_port() {
+    local port=$1
+    local pids
+    pids=$(lsof -ti :"$port" 2>/dev/null || true)
+    if [ -n "$pids" ]; then
+        log_info "ポート $port のプロセスを終了中 (PID: $pids)..."
+        echo "$pids" | xargs kill 2>/dev/null || true
+    fi
+}
+
+# 全開発プロセスを停止する関数
+stop_all() {
+    log_info "開発環境のプロセスを停止しています..."
+
+    # Firebase エミュレータ（UI: 4000, Firestore: 8080, Storage: 9199）
+    stop_port 4000
+    stop_port 8080
+    stop_port 9199
+
+    # Next.js 開発サーバー（web-public: 3000, web-admin: 3001）
+    stop_port 3000
+    stop_port 3001
+
+    # プロセス終了を待機
+    sleep 2
+    log_success "全プロセスを停止しました"
+}
+
 # ヘッダー表示
 echo ""
 echo "========================================"
@@ -154,6 +183,45 @@ case "$MODE" in
         wait $PUBLIC_PID
         ;;
 
+    "stop")
+        stop_all
+        ;;
+
+    "restart")
+        stop_all
+        log_info "Firebase エミュレータ + web-public + web-admin を再起動します..."
+
+        # Firebase エミュレータをバックグラウンドで起動
+        start_emulator
+
+        # web-public (port 3000)
+        log_info "web-public 開発サーバーを起動中..."
+        (cd web-public && npm run dev) &
+        PUBLIC_PID=$!
+
+        # web-admin (port 3001)
+        log_info "web-admin 開発サーバーを起動中..."
+        (cd web-admin && npm run dev -- -p 3001) &
+        ADMIN_PID=$!
+
+        # 起動を待つ
+        sleep 3
+
+        log_success "開発環境が再起動しました"
+        echo ""
+        echo "  - Emulator UI: http://localhost:4000"
+        echo "  - Firestore:   localhost:8080"
+        echo "  - Storage:     localhost:9199"
+        echo "  - Public:      http://localhost:3000"
+        echo "  - Admin:       http://localhost:3001"
+        echo ""
+        echo "終了するには Ctrl+C を押してください"
+        echo ""
+
+        # プロセスを監視
+        wait $PUBLIC_PID
+        ;;
+
     "help"|"-h"|"--help")
         echo "Usage: $0 [mode] [args...]"
         echo ""
@@ -162,6 +230,8 @@ case "$MODE" in
         echo "  emulator - Firebase エミュレータのみ起動"
         echo "  web      - web-public + web-admin 開発サーバーを起動"
         echo "  agent    - Pythonエージェントを実行（引数でクエリ指定可）"
+        echo "  restart  - 全プロセスを停止してから再起動"
+        echo "  stop     - 全プロセスを停止"
         echo "  help     - このヘルプを表示"
         echo ""
         echo "Examples:"
@@ -172,7 +242,7 @@ case "$MODE" in
 
     *)
         log_error "不明なモード: $MODE"
-        echo "使用方法: $0 [all|emulator|web|agent|help]"
+        echo "使用方法: $0 [all|emulator|web|agent|restart|stop|help]"
         exit 1
         ;;
 esac
