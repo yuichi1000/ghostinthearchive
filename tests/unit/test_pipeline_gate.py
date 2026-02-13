@@ -44,6 +44,26 @@ class TestIsMeaningful:
     def test_real_content_is_meaningful(self):
         assert _is_meaningful("The Bell Witch haunting of Adams, Tennessee...") is True
 
+    def test_trailing_failure_marker_is_still_meaningful(self):
+        """ドキュメント本文の末尾に失敗マーカーがあっても有意と判定する。
+
+        Librarian が資料を見つけたが、特定のサブ検索で見つからなかった場合に
+        出力末尾に NO_DOCUMENTS_FOUND を付加するケースの再現。
+        """
+        text = (
+            "**Document 1**\n"
+            "- **Title**: A history of Block Island\n"
+            "- **Source URL**: https://www.loc.gov/item/rc01002999/\n"
+            "\n---\n\n"
+            "NO_DOCUMENTS_FOUND: No English-language documents found for "
+            '"Palatine Light" in newspapers.'
+        )
+        assert _is_meaningful(text) is True
+
+    def test_whitespace_before_failure_marker_is_not_meaningful(self):
+        """先頭に空白があっても失敗マーカーで始まれば無意味と判定する。"""
+        assert _is_meaningful("  NO_DOCUMENTS_FOUND: nothing.") is False
+
 
 class TestScholarGate:
     """make_scholar_gate のテスト。"""
@@ -66,6 +86,21 @@ class TestScholarGate:
         ctx = MockCallbackContext(state={
             "selected_languages": ["en", "de"],
             "collected_documents_en": "Found 5 documents about Bell Witch...",
+            "collected_documents_de": "NO_DOCUMENTS_FOUND: No German-language documents found.",
+        })
+        gate = make_scholar_gate()
+        result = gate(ctx)
+        assert result is None
+
+    def test_docs_with_trailing_marker_proceeds(self):
+        """Librarian がドキュメントを見つけたが末尾に NO_DOCUMENTS_FOUND がある場合。"""
+        docs_with_trailing_marker = (
+            "**Document 1**\n- **Title**: A history of Block Island\n\n---\n\n"
+            "NO_DOCUMENTS_FOUND: No documents found for specific sub-query."
+        )
+        ctx = MockCallbackContext(state={
+            "selected_languages": ["en", "de"],
+            "collected_documents_en": docs_with_trailing_marker,
             "collected_documents_de": "NO_DOCUMENTS_FOUND: No German-language documents found.",
         })
         gate = make_scholar_gate()
