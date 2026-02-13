@@ -10,11 +10,16 @@ the multilingual investigation pipeline:
 未選択の言語はスキップされる。DebateLoop は有意な分析が2言語以上の場合のみ実行される。
 パイプラインゲートにより、前段が失敗した場合は後続をスキップしてトークン消費を抑制する。
 PostStoryBlock では Illustrator と6言語翻訳が並列実行される。
+
+DebateLoop 内部は SequentialAgent(debate_round) で構成:
+  parallel_debate_scholars → convergence_checker
+収束判定により新規論点が枯渇した場合、max_iterations 前にループを早期終了する。
 """
 
 from google.adk.agents import LoopAgent, ParallelAgent, SequentialAgent
 
 from .agents.armchair_polymath import armchair_polymath_agent
+from .agents.convergence_checker import convergence_checker_agent
 from .agents.illustrator import illustrator_agent
 from .agents.language_gate import make_debate_loop_gate
 from .agents.language_librarians import create_all_librarians
@@ -38,10 +43,24 @@ all_scholars_debate = create_all_scholars(mode="debate")
 # 全6言語の翻訳エージェントを生成
 all_translators = create_all_translators()
 
+# 討論ラウンド: 全 Scholar が並列で議論 → 収束判定
+# SequentialAgent でラップし、convergence_checker の escalate で早期終了可能にする
+debate_round = SequentialAgent(
+    name="debate_round",
+    sub_agents=[
+        ParallelAgent(
+            name="parallel_debate_scholars",
+            sub_agents=list(all_scholars_debate.values()),
+        ),
+        convergence_checker_agent,
+    ],
+)
+
 # 討論ループ（LoopAgent: 最大2ラウンド、有意な分析が2言語未満ならスキップ）
+# 収束判定により max_iterations 前に早期終了する場合がある
 debate_loop = LoopAgent(
     name="debate_loop",
-    sub_agents=list(all_scholars_debate.values()),
+    sub_agents=[debate_round],
     max_iterations=2,
     before_agent_callback=make_debate_loop_gate(),
 )
