@@ -12,6 +12,8 @@ from urllib.parse import urlparse
 
 import requests
 
+from shared.http_retry import create_retry_session
+
 from ..schemas.document import ArchiveDocument, SourceType
 
 logger = logging.getLogger(__name__)
@@ -21,6 +23,9 @@ _DEAD_LINK_STATUSES = {404, 410}
 
 # SourceType ごとの期待ドメインリスト
 # 空リスト = ドメイン検証スキップ（DPLA のようにパートナー機関ドメインが多様なケース）
+# リンク検証は URL 数が多いためリトライ回数を抑制
+_session = create_retry_session(retries=2)
+
 EXPECTED_DOMAINS: dict[SourceType, list[str]] = {
     SourceType.NEWSPAPER: ["loc.gov"],
     SourceType.LOC_DIGITAL: ["loc.gov"],
@@ -92,11 +97,11 @@ def verify_link(
     """
     start = time.monotonic()
     try:
-        resp = requests.head(url, timeout=timeout, allow_redirects=True)
+        resp = _session.head(url, timeout=timeout, allow_redirects=True)
 
         # HEAD 非対応の場合は GET にフォールバック
         if resp.status_code == 405:
-            resp = requests.get(url, timeout=timeout, stream=True)
+            resp = _session.get(url, timeout=timeout, stream=True)
             resp.close()
 
         elapsed_ms = int((time.monotonic() - start) * 1000)

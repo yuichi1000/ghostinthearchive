@@ -11,10 +11,13 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+from shared.http_retry import create_retry_session
+
 from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
 from .search_utils import build_search_query
 
 BASE_URL = "https://api.repo.nypl.org/api/v2/items/search"
+_session = create_retry_session()
 MIN_REQUEST_DELAY = 1.0
 _last_request_time = 0.0
 
@@ -68,7 +71,7 @@ def search_nypl(
     _rate_limit()
 
     try:
-        response = requests.get(
+        response = _session.get(
             BASE_URL,
             params=params,
             timeout=30,
