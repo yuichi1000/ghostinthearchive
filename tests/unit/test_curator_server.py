@@ -138,18 +138,18 @@ class TestGetExistingTitles:
             mock_doc2,
         ]
 
-        with patch("services.curator.get_firestore_client", return_value=mock_db):
-            from services.curator import get_existing_titles
+        with patch("curator_agents.queries.get_firestore_client", return_value=mock_db):
+            from curator_agents.queries import get_existing_titles
 
             titles = get_existing_titles()
             assert titles == ["Mystery A", "Mystery B"]
 
     def test_returns_empty_list_on_error(self):
         with patch(
-            "services.curator.get_firestore_client",
+            "curator_agents.queries.get_firestore_client",
             side_effect=Exception("Connection failed"),
         ):
-            from services.curator import get_existing_titles
+            from curator_agents.queries import get_existing_titles
 
             titles = get_existing_titles()
             assert titles == []
@@ -166,8 +166,8 @@ class TestGetExistingTitles:
             mock_doc2,
         ]
 
-        with patch("services.curator.get_firestore_client", return_value=mock_db):
-            from services.curator import get_existing_titles
+        with patch("curator_agents.queries.get_firestore_client", return_value=mock_db):
+            from curator_agents.queries import get_existing_titles
 
             titles = get_existing_titles()
             assert titles == ["Mystery A"]
@@ -192,18 +192,18 @@ class TestGetCategoryDistribution:
         mock_db = MagicMock()
         mock_db.collection.return_value.select.return_value.stream.return_value = mock_docs
 
-        with patch("services.curator.get_firestore_client", return_value=mock_db):
-            from services.curator import get_category_distribution
+        with patch("curator_agents.queries.get_firestore_client", return_value=mock_db):
+            from curator_agents.queries import get_category_distribution
 
             dist = get_category_distribution()
             assert dist == {"HIS": 2, "OCC": 1, "FLK": 1}
 
     def test_returns_empty_dict_on_error(self):
         with patch(
-            "services.curator.get_firestore_client",
+            "curator_agents.queries.get_firestore_client",
             side_effect=Exception("Connection failed"),
         ):
-            from services.curator import get_category_distribution
+            from curator_agents.queries import get_category_distribution
 
             dist = get_category_distribution()
             assert dist == {}
@@ -230,8 +230,8 @@ class TestGetCategoryDistribution:
         mock_db = MagicMock()
         mock_db.collection.return_value.select.return_value.stream.return_value = mock_docs
 
-        with patch("services.curator.get_firestore_client", return_value=mock_db):
-            from services.curator import get_category_distribution
+        with patch("curator_agents.queries.get_firestore_client", return_value=mock_db):
+            from curator_agents.queries import get_category_distribution
 
             dist = get_category_distribution()
             assert dist == {"CRM": 1}
@@ -241,7 +241,7 @@ class TestFormatCategoryDistribution:
     """Tests for format_category_distribution helper."""
 
     def test_empty_distribution_returns_cold_start_message(self):
-        from services.curator import format_category_distribution
+        from curator_agents.queries import format_category_distribution
 
         result = format_category_distribution({})
         assert "fresh start" in result
@@ -249,7 +249,7 @@ class TestFormatCategoryDistribution:
         assert "LOC" in result
 
     def test_with_data_shows_all_categories(self):
-        from services.curator import format_category_distribution
+        from curator_agents.queries import format_category_distribution
 
         dist = {"HIS": 3, "OCC": 2, "FLK": 1}
         result = format_category_distribution(dist)
@@ -260,7 +260,7 @@ class TestFormatCategoryDistribution:
         assert "0 article(s)" in result
 
     def test_identifies_underrepresented_categories(self):
-        from services.curator import format_category_distribution
+        from curator_agents.queries import format_category_distribution
 
         # 平均 = 8/8 = 1.0 → 0件のカテゴリが underrepresented
         dist = {"HIS": 3, "OCC": 2, "FLK": 1, "ANT": 1, "URB": 1}
@@ -272,7 +272,7 @@ class TestFormatCategoryDistribution:
         assert "LOC" in result
 
     def test_uniform_distribution_no_underrepresented(self):
-        from services.curator import format_category_distribution
+        from curator_agents.queries import format_category_distribution
 
         # 全カテゴリ同数 → underrepresented なし
         dist = {cat: 2 for cat in ["HIS", "FLK", "ANT", "OCC", "URB", "CRM", "REL", "LOC"]}

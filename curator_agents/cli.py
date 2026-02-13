@@ -24,24 +24,27 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
 from .agents.curator import curator_agent
-from shared.firestore import get_firestore_client
-
-
-def get_existing_titles() -> list[str]:
-    """Fetch titles of all existing mysteries from Firestore."""
-    try:
-        db = get_firestore_client()
-        docs = db.collection("mysteries").select(["title"]).stream(timeout=10)
-        return [doc.to_dict().get("title", "") for doc in docs if doc.to_dict().get("title")]
-    except Exception as e:
-        print(f"Warning: Could not fetch existing titles: {e}", file=sys.stderr)
-        return []
+from .queries import get_existing_titles, get_category_distribution, format_category_distribution
+from shared.pipeline_failure import get_recent_failures
 
 
 async def suggest_themes() -> None:
     """Run the Curator agent and output JSON to stdout."""
     existing_titles = get_existing_titles()
     titles_text = "\n".join(f"- {t}" for t in existing_titles) if existing_titles else "(なし - まだ調査済みのテーマはありません)"
+
+    # 最近失敗したテーマを取得し、Curator に渡す
+    recent_failures = get_recent_failures(limit=20)
+    failed_themes = list({f["theme"] for f in recent_failures if f.get("theme")})
+    failed_themes_text = (
+        "\n".join(f"- {t}" for t in failed_themes)
+        if failed_themes
+        else "(None)"
+    )
+
+    # カテゴリ分布を取得してプロンプト用テキストに変換
+    distribution = get_category_distribution()
+    category_distribution_text = format_category_distribution(distribution)
 
     session_service = InMemorySessionService()
     runner = Runner(
@@ -57,7 +60,11 @@ async def suggest_themes() -> None:
         app_name="ghost_in_the_archive_curator",
         user_id=user_id,
         session_id=session_id,
-        state={"existing_titles": titles_text},
+        state={
+            "existing_titles": titles_text,
+            "failed_themes": failed_themes_text,
+            "category_distribution": category_distribution_text,
+        },
     )
 
     result_text = ""
