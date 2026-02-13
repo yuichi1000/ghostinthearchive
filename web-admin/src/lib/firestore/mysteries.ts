@@ -7,7 +7,6 @@
 import type {
   FirestoreMystery,
   MysteryStatus,
-  PodcastStatus,
 } from "@ghost/shared/src/types/mystery";
 import { docToMystery } from "@ghost/shared/src/lib/firestore/queries";
 
@@ -96,23 +95,6 @@ export async function archiveMystery(mysteryId: string): Promise<void> {
 
   await updateDoc(docRef, {
     status: "archived" as MysteryStatus,
-    updatedAt: Timestamp.now(),
-  });
-}
-
-/**
- * Podcast 生成をリクエスト
- * podcast_status を "generating" に更新
- */
-export async function requestPodcast(mysteryId: string): Promise<void> {
-  const { doc, updateDoc, Timestamp } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("@ghost/shared/src/lib/firebase/config");
-
-  const db = getFirestoreDb();
-  const docRef = doc(db, COLLECTIONS.MYSTERIES, mysteryId);
-
-  await updateDoc(docRef, {
-    podcast_status: "generating" as PodcastStatus,
     updatedAt: Timestamp.now(),
   });
 }
