@@ -1,6 +1,5 @@
 """Unit tests for podcast_agents/tools/firestore_tools.py - Podcast Firestore ツール."""
 
-from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest

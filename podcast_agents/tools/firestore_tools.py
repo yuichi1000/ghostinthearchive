@@ -6,7 +6,6 @@
 既存の `mysteries` コレクションからの記事読み込み（load_mystery）も維持。
 """
 
-import json
 import logging
 from datetime import datetime, timezone
 

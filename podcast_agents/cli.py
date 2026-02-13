@@ -123,7 +123,7 @@ async def generate_script(
 
         print()
         print("=" * 70)
-        print(f"Script generation complete!")
+        print("Script generation complete!")
         print(f"  Podcast ID: {podcast_id}")
         if structured_script:
             print(f"  Episode: {structured_script.get('episode_title', 'N/A')}")

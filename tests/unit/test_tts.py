@@ -1,6 +1,5 @@
 """Unit tests for podcast_agents/tools/tts.py - TTS 音声生成."""
 
-import io
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,7 +9,6 @@ from podcast_agents.tools.tts import (
     _split_by_sentences,
     synthesize_segment,
     generate_podcast_audio,
-    MAX_TTS_BYTES,
 )
 
 
