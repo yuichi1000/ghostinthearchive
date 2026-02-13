@@ -19,7 +19,8 @@
       "Read(logs/**)",
       "Read(.adk/**)",
       "Read(uv.lock)",
-      "Read(package-lock.json)"
+      "Read(package-lock.json)",
+      "Read(firebase-debug.log)"
     ]
   }
 }
