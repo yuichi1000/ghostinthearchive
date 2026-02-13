@@ -4,13 +4,25 @@ import { ExternalLink, FileText } from "lucide-react"
 import type { Evidence } from "../types/mystery"
 import { cn } from "../lib/utils"
 
+interface EvidenceLabels {
+  source?: string
+  view?: string
+  originalText?: string
+}
+
 interface EvidenceBlockProps {
   evidence: Evidence
   label?: string
+  translatedExcerpt?: string
+  labels?: EvidenceLabels
   className?: string
 }
 
-export function EvidenceBlock({ evidence, label, className }: EvidenceBlockProps) {
+export function EvidenceBlock({ evidence, label, translatedExcerpt, labels, className }: EvidenceBlockProps) {
+  const sourceLabel = labels?.source ?? "Source:"
+  const viewLabel = labels?.view ?? "View"
+  const originalTextLabel = labels?.originalText ?? "Original text"
+
   return (
     <figure className={cn("relative group", className)}>
       {label && (
@@ -40,10 +52,26 @@ export function EvidenceBlock({ evidence, label, className }: EvidenceBlockProps
           )}
         </div>
 
-        {/* Evidence text */}
-        <p className="relative text-sm text-foreground/90 leading-relaxed pl-6 font-mono whitespace-pre-wrap">
-          {evidence.relevant_excerpt}
-        </p>
+        {/* Evidence text: 翻訳があればメインに、原文はサブに */}
+        {translatedExcerpt ? (
+          <div className="relative pl-6">
+            <p className="text-sm text-foreground/90 leading-relaxed font-mono whitespace-pre-wrap">
+              {translatedExcerpt}
+            </p>
+            <div className="mt-3 pt-3 border-t border-border/30">
+              <p className="text-xs text-muted-foreground/60 mb-1 font-mono uppercase tracking-wider">
+                {originalTextLabel}
+              </p>
+              <p className="text-xs text-foreground/50 leading-relaxed font-mono whitespace-pre-wrap">
+                {evidence.relevant_excerpt}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="relative text-sm text-foreground/90 leading-relaxed pl-6 font-mono whitespace-pre-wrap">
+            {evidence.relevant_excerpt}
+          </p>
+        )}
       </blockquote>
 
       {/* Source citation */}
@@ -51,7 +79,7 @@ export function EvidenceBlock({ evidence, label, className }: EvidenceBlockProps
         <div className="flex items-start gap-2 flex-1 min-w-0">
           <FileText className="w-4 h-4 text-gold shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
-            <span className="text-parchment/80 font-medium">Source: </span>
+            <span className="text-parchment/80 font-medium">{sourceLabel} </span>
             {evidence.source_title}
           </p>
         </div>
@@ -62,7 +90,7 @@ export function EvidenceBlock({ evidence, label, className }: EvidenceBlockProps
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-xs text-gold hover:text-parchment transition-colors shrink-0 no-underline"
           >
-            View
+            {viewLabel}
             <ExternalLink className="w-3 h-3" />
           </a>
         )}

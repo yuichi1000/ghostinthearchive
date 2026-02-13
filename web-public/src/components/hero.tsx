@@ -1,8 +1,13 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import type { Dictionary } from "@/lib/i18n/dictionaries"
 
-export function Hero() {
+interface HeroProps {
+  dict?: Dictionary
+}
+
+export function Hero({ dict }: HeroProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -73,6 +78,13 @@ export function Hero() {
     }
   }, [])
 
+  // デフォルト英語テキスト
+  const badge = dict?.hero.badge ?? "Active Research Protocol"
+  const title = dict?.hero.title ?? "Ghost in the Archive"
+  const subtitle = dict?.hero.subtitle ?? "AI-driven excavation of historical ghosts from the depths of the archives"
+  const description = dict?.hero.description ?? "Unearthing contradictions, anomalies, and unexplained patterns buried in the depths of public digital archives. Where historical record meets folkloric mystery."
+  const sources = dict?.hero.sources ?? "LOC • DPLA • NYPL • Internet Archive"
+
   return (
     <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
       <canvas
@@ -88,27 +100,26 @@ export function Hero() {
         <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 border border-blood-red/30 bg-blood-red/10 rounded-sm">
           <span className="w-2 h-2 bg-blood-red rounded-full animate-pulse" />
           <span className="text-xs font-mono uppercase tracking-widest text-[#ff6b6b]">
-            Active Research Protocol
+            {badge}
           </span>
         </div>
 
         <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl text-parchment mb-4 tracking-tight text-balance">
-          Ghost in the Archive
+          {title}
         </h1>
 
         <p className="text-lg md:text-xl text-muted-foreground mb-6">
-          AI-driven excavation of historical ghosts from the depths of the archives
+          {subtitle}
         </p>
 
         <p className="text-base md:text-lg text-foreground/70 max-w-2xl mx-auto leading-relaxed mb-8 text-pretty">
-          Unearthing contradictions, anomalies, and unexplained patterns buried in the depths of public digital archives.
-          Where historical record meets folkloric mystery.
+          {description}
         </p>
 
         <div className="flex items-center justify-center gap-4 text-muted-foreground">
           <div className="h-px w-16 bg-gradient-to-r from-transparent to-border" />
           <span className="text-xs font-mono uppercase tracking-widest">
-            LOC • DPLA • NYPL • Internet Archive
+            {sources}
           </span>
           <div className="h-px w-16 bg-gradient-to-l from-transparent to-border" />
         </div>

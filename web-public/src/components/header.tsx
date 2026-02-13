@@ -2,14 +2,20 @@
 
 import Link from "next/link"
 import { Archive } from "lucide-react"
+import { LanguageSwitcher } from "./language-switcher"
+import type { SupportedLang } from "@/lib/i18n/config"
 
-export function Header() {
+interface HeaderProps {
+  lang?: SupportedLang
+}
+
+export function Header({ lang = "en" }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
       <div className="container mx-auto px-4">
-        <div className="flex items-center h-16">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
+          <Link href={`/${lang}`} className="flex items-center gap-3 group">
             <div className="relative">
               <Archive className="w-6 h-6 text-gold" />
               <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blood-red rounded-full animate-pulse" />
@@ -18,6 +24,9 @@ export function Header() {
               Ghost in the Archive
             </span>
           </Link>
+
+          {/* Language Switcher */}
+          <LanguageSwitcher currentLang={lang} />
         </div>
       </div>
     </header>
