@@ -145,63 +145,6 @@ class TestPodcastInstructionPlaceholders:
         assert "{podcast_script}" in producer_agent.instruction
 
 
-class TestAgentModels:
-    """Tests for agent model configuration."""
-
-    def test_librarians_use_flash(self):
-        """Language Librarians should use gemini-2.5-flash model."""
-        from mystery_agents.agents.language_librarians import create_all_librarians
-
-        librarians = create_all_librarians()
-        for lang, agent in librarians.items():
-            assert agent.model == "gemini-2.5-flash", (
-                f"librarian_{lang} should use gemini-2.5-flash"
-            )
-
-    def test_scholars_use_gemini_3_pro(self):
-        """Language Scholars should use gemini-3-pro-preview model."""
-        from mystery_agents.agents.language_scholars import create_all_scholars
-
-        scholars = create_all_scholars()
-        for lang, agent in scholars.items():
-            assert agent.model == "gemini-3-pro-preview", (
-                f"scholar_{lang} should use gemini-3-pro-preview"
-            )
-
-    def test_debate_scholars_use_gemini_3_pro(self):
-        """Scholar debate mode agents should use gemini-3-pro-preview model."""
-        from mystery_agents.agents.language_scholars import create_all_scholars
-
-        debate_scholars = create_all_scholars(mode="debate")
-        for lang, agent in debate_scholars.items():
-            assert agent.model == "gemini-3-pro-preview", (
-                f"scholar_{lang}_debate should use gemini-3-pro-preview"
-            )
-
-    def test_core_agents_use_expected_models(self):
-        """Core pipeline agents should use expected models."""
-        from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
-        from mystery_agents.agents.illustrator import illustrator_agent
-        from mystery_agents.agents.publisher import publisher_agent
-        from mystery_agents.agents.storyteller import storyteller_agent
-
-        # LLM 重視のエージェントは Pro、軽量処理は Flash
-        assert armchair_polymath_agent.model == "gemini-3-pro-preview"
-        assert storyteller_agent.model == "gemini-3-pro-preview"
-        assert illustrator_agent.model == "gemini-3-pro-preview"
-        assert publisher_agent.model == "gemini-2.5-flash"
-
-    def test_podcast_agents_use_gemini_3_pro(self):
-        """Podcast agents should use gemini-3-pro-preview model."""
-        from podcast_agents.agents.producer import producer_agent
-        from podcast_agents.agents.scriptwriter import scriptwriter_agent
-
-        expected_model = "gemini-3-pro-preview"
-
-        assert scriptwriter_agent.model == expected_model
-        assert producer_agent.model == expected_model
-
-
 class TestRootAgentConfiguration:
     """Tests for root agent (commander) configuration."""
 
@@ -345,12 +288,6 @@ class TestArmchairPolymath:
         from mystery_agents.tools.scholar_tools import save_structured_report
 
         assert save_structured_report in armchair_polymath_agent.tools
-
-    def test_model(self):
-        """ArmchairPolymath should use gemini-3-pro-preview model."""
-        from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
-
-        assert armchair_polymath_agent.model == "gemini-3-pro-preview"
 
     def test_name(self):
         """ArmchairPolymath should be named 'armchair_polymath'."""

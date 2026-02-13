@@ -559,54 +559,6 @@ jobs:
 
 本プロジェクトでは TDD の原則に従って開発を進める。
 
-#### コード修正時のワークフロー
-
-1. **既存テストの確認**
-   - 修正対象のコードに関連するテストが存在するか確認
-   - `pytest tests/ -v --collect-only` で関連テストを特定
-   - 既存テストがある場合は、まずそのテストを実行して現状を把握
-
-2. **テスト追加の判断基準**
-   以下のいずれかに該当する場合、先にテストを作成または更新する：
-   - 新機能の追加（新しい関数・クラス・エンドポイント）
-   - バグ修正（再発防止のためのリグレッションテスト）
-   - 既存ロジックの変更（振る舞いが変わる修正）
-   - リファクタリング（既存テストで振る舞いが保たれることを確認）
-
-3. **テスト不要のケース**
-   - ドキュメントのみの変更
-   - コメントの追加・修正
-   - 型ヒントの追加（ロジック変更なし）
-   - 設定ファイルの軽微な調整
-
-#### Red-Green-Refactor サイクル
-
-```
-1. Red:    失敗するテストを書く（期待する振る舞いを定義）
-2. Green:  テストが通る最小限のコードを実装
-3. Refactor: コードを整理（テストが通り続けることを確認）
-```
-
-#### 修正前チェックリスト
-
-```bash
-# 1. 関連テストの確認
-pytest tests/ -v --collect-only -k "関連キーワード"
-
-# 2. 既存テストの実行
-pytest tests/unit/ -v
-
-# 3. 修正後のテスト実行
-pytest tests/unit/ -v --tb=short
-```
-
-#### テストファイルの配置規則
-
-| 対象コード | テストファイル |
-|-----------|---------------|
-| `mystery_agents/schemas/*.py` | `tests/unit/test_schemas.py` |
-| `mystery_agents/tools/*.py` | `tests/unit/test_*.py` or `tests/integration/test_*.py` |
-| `mystery_agents/utils/*.py` | `tests/unit/test_*.py` |
-| `podcast_agents/**/*.py` | `tests/unit/test_*.py` or `tests/integration/test_*.py` |
-| エージェント間連携 | `tests/integration/test_agent_handover.py` |
-| エージェント品質 | `tests/eval/eval_sets/*.json` |
+- コード変更前に必ず既存テストを確認・実行する
+- テスト追加時は重複チェック必須（`pytest tests/ -v --collect-only -k "keyword"`）
+- 詳細なワークフロー・配置規則・肥大化防止ルールは `/tdd` スキルを参照
