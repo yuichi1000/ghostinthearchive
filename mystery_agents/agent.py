@@ -139,4 +139,21 @@ ghost_commander = SequentialAgent(
     ],
 )
 
+# オーケストレーター/パラレルエージェントはログ対象外
+# 実際にテキストを生成するリーフエージェントのみ進捗表示する
+SKIP_AUTHORS = {
+    "ghost_commander",
+    "parallel_librarians",
+    "parallel_scholars",
+    "parallel_debate_scholars",
+    "debate_loop",
+    "debate_round",
+    "parallel_translators",
+    "scholar_block",
+    "polymath_block",
+    "storyteller_block",
+    "post_story_block",
+    "post_story_parallel",
+}
+
 root_agent = ghost_commander
