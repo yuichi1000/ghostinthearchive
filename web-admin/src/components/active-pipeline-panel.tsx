@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { cn } from "@ghost/shared/src/lib/utils"
-import { AGENT_NAME_LABELS } from "@ghost/shared/src/types/mystery"
 import type { PipelineRun } from "@ghost/shared/src/types/mystery"
+import { resolvePhaseLabel } from "@/lib/pipeline-phases"
 import { PipelineSummary } from "@/components/pipeline-summary"
 import { PipelineTimeline } from "@/components/pipeline-timeline"
 import {
@@ -51,7 +51,7 @@ export function ActivePipelinePanel({ run, onDismiss }: ActivePipelinePanelProps
   }, [run.status, run.started_at])
 
   const agentLabel = run.current_agent
-    ? (AGENT_NAME_LABELS[run.current_agent] || run.current_agent)
+    ? resolvePhaseLabel(run.current_agent)
     : null
 
   const typeLabel = run.type === "blog" ? "ブログ調査" : run.type === "podcast" ? "Podcast 生成" : "翻訳"

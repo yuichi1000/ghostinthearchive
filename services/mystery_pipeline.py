@@ -23,6 +23,12 @@ import asyncio
 import logging
 import os
 
+# プロジェクト全体のログを有効化（Publisher, Illustrator 等の既存ログが出力される）
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(name)s [%(levelname)s] %(message)s",
+)
+
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
