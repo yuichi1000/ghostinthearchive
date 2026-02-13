@@ -40,9 +40,14 @@ export async function POST() {
     if (!response.ok) {
       const errorBody = await response.text();
       console.error(`Curator service error (${response.status}):`, errorBody);
+      let detail = errorBody;
+      try {
+        const parsed = JSON.parse(errorBody);
+        detail = parsed.detail || parsed.error || parsed.message || errorBody;
+      } catch { /* テキストのまま */ }
       return NextResponse.json(
-        { error: "Failed to generate theme suggestions" },
-        { status: 500 }
+        { error: "Failed to generate theme suggestions", detail },
+        { status: response.status }
       );
     }
 
@@ -51,7 +56,7 @@ export async function POST() {
   } catch (error) {
     console.error("Failed to generate theme suggestions:", error);
     return NextResponse.json(
-      { error: "Failed to generate theme suggestions" },
+      { error: "Failed to generate theme suggestions", detail: String(error) },
       { status: 500 }
     );
   }
