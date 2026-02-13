@@ -38,12 +38,28 @@ export interface PhaseGroup {
 }
 
 /**
+ * スキップされたエージェントのログエントリか判定する。
+ * Orchestrator 側で除外するのが本筋だが、修正前の既存ログデータへの防御として
+ * ダッシュボード側でもフィルタする。
+ */
+function isSkippedEntry(log: AgentLogEntry): boolean {
+  return (
+    log.duration_seconds !== null &&
+    log.duration_seconds < 1.0 &&
+    (!log.output_summary || log.output_summary === "(no text output)")
+  )
+}
+
+/**
  * ログ配列をフェーズごとにグループ化する
  */
 export function groupLogsByPhase(logs: AgentLogEntry[]): PhaseGroup[] {
   const groups: PhaseGroup[] = []
 
   for (const log of logs) {
+    // スキップされたエントリを除外（language_gate による空応答等）
+    if (isSkippedEntry(log)) continue
+
     const phase = PIPELINE_PHASES.find((p) => p.match(log.agent_name))
     if (!phase) continue
 

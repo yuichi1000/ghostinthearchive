@@ -2,6 +2,11 @@
 
 Runner セットアップ、イベントループ処理、進捗追跡、セッション管理を一元化する。
 CLI と Cloud Run Service の両方から呼ばれるビジネスロジック層。
+
+並列実行エージェント（ParallelAgent）のインターリーブイベントに対応:
+- エージェントごとに独立したテキスト蓄積とログインデックスを管理
+- 同一エージェントの複数イベントを1エントリに集約（2重エントリ防止）
+- スキップされたエージェント（空テキスト + 短時間）のログを除去
 """
 
 import asyncio
@@ -26,6 +31,9 @@ from shared.pipeline_run import (
 
 logger = logging.getLogger(__name__)
 
+# スキップされたエージェント判定の閾値（秒）
+_SKIP_DURATION_THRESHOLD = 0.5
+
 # イベントコールバック型
 OnText = Callable[[str], None]
 
@@ -38,6 +46,43 @@ class PipelineResult:
     mystery_id: str | None = None  # blog パイプラインのみ
     logs: list[dict] = field(default_factory=list)
     session_state: dict = field(default_factory=dict)
+
+
+def _complete_agent(
+    pipeline_logger: PipelineLogger,
+    run_id: str | None,
+    agent_name: str,
+    texts: list[str],
+    log_index: int | None,
+) -> None:
+    """エージェントを完了マークし、スキップ判定を行う。
+
+    空テキスト + 短時間（< 0.5s）のエージェントはスキップとみなし、ログから除去する。
+    """
+    summary = " ".join(texts)[:200] or "(no text output)"
+    pipeline_logger.complete_agent(agent_name, summary)
+
+    # スキップ判定: 空テキスト + 短時間ならログから除去
+    completed_log = None
+    for log in reversed(pipeline_logger.get_logs()):
+        if log["agent_name"] == agent_name and log["status"] == "completed":
+            completed_log = log
+            break
+
+    if completed_log:
+        duration = completed_log.get("duration_seconds") or 0
+        is_skipped = (
+            not texts
+            and duration < _SKIP_DURATION_THRESHOLD
+        )
+        if is_skipped:
+            pipeline_logger.remove_last_log(agent_name)
+            return
+
+    # Firestore に完了を通知
+    completed_logs = pipeline_logger.get_logs()
+    if completed_logs:
+        update_agent_completed(run_id, log_index, completed_log)
 
 
 async def run_pipeline(
@@ -61,6 +106,11 @@ async def run_pipeline(
     3. イベントループ処理（エージェント遷移検出、進捗追跡、Firestore 同期）
     4. セッション状態からの結果抽出
     5. pipeline_run 完了/エラーマーク
+
+    並列実行対応:
+    - agent_texts: エージェントごとのテキスト蓄積
+    - agent_log_indices: エージェントごとの Firestore ログインデックス
+    - 新規 author 検出時にエントリ作成、既存 author は蓄積のみ
 
     Args:
         agent: ADK Agent（ghost_commander / podcast_commander）
@@ -109,11 +159,10 @@ async def run_pipeline(
         state=state,
     )
 
-    # 進捗追跡
+    # 進捗追跡（並列対応: エージェントごとの dict で管理）
     pipeline_logger = PipelineLogger()
-    current_agent_name: str | None = None
-    accumulated_text: list[str] = []
-    current_log_index: int | None = None
+    agent_texts: dict[str, list[str]] = {}  # {agent_name: [text_chunks]}
+    agent_log_indices: dict[str, int | None] = {}  # {agent_name: firestore_index}
 
     run_config = RunConfig(max_llm_calls=max_llm_calls)
 
@@ -130,22 +179,26 @@ async def run_pipeline(
             ):
                 # エージェント遷移検出
                 author = getattr(event, "author", None)
-                if author and author not in skip_authors and author != current_agent_name:
-                    # 前のエージェントを完了マーク
-                    if current_agent_name:
-                        summary = " ".join(accumulated_text)[:200]
-                        pipeline_logger.complete_agent(summary or "(no text output)")
-                        completed_logs = pipeline_logger.get_logs()
-                        if completed_logs:
-                            update_agent_completed(
-                                run_id, current_log_index, completed_logs[-1]
+                if not author or author in skip_authors:
+                    # skip_authors のイベントはステージ境界として検出
+                    # 前ステージの全 active エージェントを一括完了
+                    if author and author in skip_authors and agent_texts:
+                        for name in list(agent_texts.keys()):
+                            _complete_agent(
+                                pipeline_logger,
+                                run_id,
+                                name,
+                                agent_texts.pop(name),
+                                agent_log_indices.pop(name, None),
                             )
-                        accumulated_text = []
-                    # 新しいエージェントを開始
-                    current_agent_name = author
-                    pipeline_logger.start_agent(current_agent_name)
-                    current_log_index = update_agent_started(
-                        run_id, current_agent_name, pipeline_logger.get_logs()[-1]
+                    continue
+
+                # 新規エージェントの場合のみエントリ作成
+                if author not in agent_texts:
+                    agent_texts[author] = []
+                    pipeline_logger.start_agent(author)
+                    agent_log_indices[author] = update_agent_started(
+                        run_id, author, pipeline_logger.get_logs()[-1]
                     )
 
                 # テキスト出力処理
@@ -154,17 +207,17 @@ async def run_pipeline(
                         if hasattr(part, "text") and part.text:
                             if on_text:
                                 on_text(part.text)
-                            accumulated_text.append(part.text[:100])
+                            agent_texts[author].append(part.text[:100])
 
-        # 最後のエージェントを完了マーク
-        if current_agent_name:
-            summary = " ".join(accumulated_text)[:200]
-            pipeline_logger.complete_agent(summary or "(no text output)")
-            completed_logs = pipeline_logger.get_logs()
-            if completed_logs:
-                update_agent_completed(
-                    run_id, current_log_index, completed_logs[-1]
-                )
+        # 残存エージェントを完了マーク
+        for name in list(agent_texts.keys()):
+            _complete_agent(
+                pipeline_logger,
+                run_id,
+                name,
+                agent_texts.pop(name),
+                agent_log_indices.pop(name, None),
+            )
 
         # セッション状態を取得
         session = await session_service.get_session(
