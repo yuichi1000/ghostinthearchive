@@ -165,7 +165,7 @@ pytest tests/unit/ -v --tb=short
 ## リファレンス
 
 - 依存別モックパターンの詳細は [mock-patterns.md](mock-patterns.md) を参照
-- テスト配置規則・TDD ワークフローは `CLAUDE.md` を参照
+- テスト配置規則・TDD ワークフローは `/tdd` スキルを参照
 - 既存テストの模範:
   - `tests/unit/test_illustrator_tools.py`（genai モック、リトライ、JSON アサーション）
   - `tests/integration/test_publisher_tools.py`（Firestore モック、emulator skip）
