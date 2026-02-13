@@ -265,3 +265,111 @@ class TestRunPipeline:
             )
 
         assert result.mystery_id is None
+
+
+class TestParallelAgentTracking:
+    """並列エージェントのインターリーブイベント追跡テスト"""
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.update_agent_completed")
+    @patch("shared.orchestrator.update_agent_started", return_value=0)
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-100")
+    async def test_interleaved_parallel_events_single_entry(
+        self, mock_create, mock_started, mock_completed, mock_complete
+    ):
+        """並列エージェントの交互イベントが1エントリずつに集約される。"""
+        events = [
+            # ParallelAgent 内でインターリーブ
+            _make_event(author="librarian_en", text="Searching LOC..."),
+            _make_event(author="librarian_es", text="Buscando en DPLA..."),
+            _make_event(author="librarian_en", text="Found 5 documents"),
+            _make_event(author="librarian_es", text="Encontré 3 documentos"),
+        ]
+        fake_session = FakeInMemorySessionService()
+
+        with patch("shared.orchestrator.Runner", return_value=_make_runner(events)), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            result = await run_pipeline(
+                agent=MagicMock(),
+                app_name="test_app",
+                user_message="test",
+                initial_state={},
+            )
+
+        # 各エージェントが1エントリのみ（2重エントリなし）
+        assert mock_started.call_count == 2
+        assert len(result.logs) == 2
+        assert result.logs[0]["agent_name"] == "librarian_en"
+        assert result.logs[1]["agent_name"] == "librarian_es"
+
+        # テキストが蓄積されている
+        assert "Searching LOC..." in result.logs[0]["output_summary"]
+        assert "Buscando en DPLA..." in result.logs[1]["output_summary"]
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.update_agent_completed")
+    @patch("shared.orchestrator.update_agent_started", return_value=0)
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-101")
+    async def test_skip_author_triggers_stage_boundary(
+        self, mock_create, mock_started, mock_completed, mock_complete
+    ):
+        """skip_authors イベントがステージ境界として機能し、前ステージを一括完了する。"""
+        events = [
+            _make_event(author="librarian_en", text="Found docs"),
+            _make_event(author="librarian_es", text="Encontré docs"),
+            # ステージ境界: scholar_block（skip_authors）
+            _make_event(author="scholar_block"),
+            _make_event(author="scholar_en", text="Analysis done"),
+        ]
+        fake_session = FakeInMemorySessionService()
+
+        with patch("shared.orchestrator.Runner", return_value=_make_runner(events)), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            result = await run_pipeline(
+                agent=MagicMock(),
+                app_name="test_app",
+                user_message="test",
+                initial_state={},
+                skip_authors={"scholar_block"},
+            )
+
+        # librarian_en, librarian_es, scholar_en の3エントリ
+        assert len(result.logs) == 3
+        # scholar_block のイベントで librarian 2つが完了済み
+        assert result.logs[0]["status"] == "completed"
+        assert result.logs[1]["status"] == "completed"
+        assert result.logs[2]["status"] == "completed"
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.update_agent_completed")
+    @patch("shared.orchestrator.update_agent_started", return_value=0)
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-102")
+    async def test_skipped_agent_empty_text_short_duration_removed(
+        self, mock_create, mock_started, mock_completed, mock_complete
+    ):
+        """空テキスト + 短時間のスキップエージェントがログから除去される。"""
+        # language_gate でスキップされたエージェント: テキストなし
+        events = [
+            _make_event(author="librarian_en", text="Found documents"),
+            _make_event(author="librarian_de"),  # テキストなし = スキップ
+        ]
+        fake_session = FakeInMemorySessionService()
+
+        with patch("shared.orchestrator.Runner", return_value=_make_runner(events)), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            result = await run_pipeline(
+                agent=MagicMock(),
+                app_name="test_app",
+                user_message="test",
+                initial_state={},
+            )
+
+        # librarian_de はスキップ判定（テストでは duration ≈ 0 なので除去される）
+        # librarian_en のみ残る
+        agent_names = [log["agent_name"] for log in result.logs]
+        assert "librarian_en" in agent_names
+        # librarian_de は空テキスト + 短時間で除去される
+        assert "librarian_de" not in agent_names

@@ -64,7 +64,7 @@ async def _run_investigate(query: str, run_id: str) -> None:
     """
     try:
         from shared.orchestrator import run_pipeline
-        from mystery_agents.agent import ghost_commander
+        from mystery_agents.agent import ghost_commander, SKIP_AUTHORS
 
         await run_pipeline(
             agent=ghost_commander,
@@ -73,6 +73,7 @@ async def _run_investigate(query: str, run_id: str) -> None:
             initial_state={"investigation_query": query},
             run_id=run_id,
             run_type="blog",
+            skip_authors=SKIP_AUTHORS,
         )
     except Exception as e:
         logger.exception("Blog pipeline failed: %s", e)

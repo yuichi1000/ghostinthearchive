@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 # .env はプロジェクトルートに配置
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-from .agent import ghost_commander
+from .agent import ghost_commander, SKIP_AUTHORS
 from shared.orchestrator import run_pipeline
 
 # プロジェクト全体のログを有効化（Publisher, Illustrator 等の既存ログが出力される）
@@ -24,19 +24,6 @@ logging.basicConfig(
 )
 
 PIPELINE_TIMEOUT_SECONDS = 1800  # 30 minutes
-
-# オーケストレーター/パラレルエージェントはログ対象外
-_SKIP_AUTHORS = {
-    "ghost_commander",
-    "parallel_librarians",
-    "parallel_scholars",
-    "debate_loop",           # LoopAgent の実際の名前
-    "parallel_translators",  # 翻訳 ParallelAgent
-    "scholar_block",
-    "polymath_block",
-    "storyteller_block",
-    "post_story_block",
-}
 
 
 async def investigate(query: str, *, run_id: str | None = None) -> str | None:
@@ -68,7 +55,7 @@ async def investigate(query: str, *, run_id: str | None = None) -> str | None:
         run_type="blog",
         timeout_seconds=PIPELINE_TIMEOUT_SECONDS,
         max_llm_calls=120,
-        skip_authors=_SKIP_AUTHORS,
+        skip_authors=SKIP_AUTHORS,
         on_text=lambda text: print(text),
     )
 
