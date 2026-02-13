@@ -52,6 +52,20 @@ stop_port() {
     if [ -n "$pids" ]; then
         log_info "ポート $port のプロセスを終了中 (PID: $pids)..."
         echo "$pids" | xargs kill 2>/dev/null || true
+
+        # ポートが解放されるまで待機（最大5秒、SIGTERM で終了しなければ SIGKILL）
+        local i=0
+        while [ $i -lt 10 ]; do
+            if ! lsof -ti :"$port" &>/dev/null; then
+                break
+            fi
+            if [ $i -eq 6 ]; then
+                log_warn "ポート $port のプロセスが応答しないため強制終了します..."
+                lsof -ti :"$port" 2>/dev/null | xargs kill -9 2>/dev/null || true
+            fi
+            sleep 0.5
+            i=$((i + 1))
+        done
     fi
 }
 
@@ -68,8 +82,10 @@ stop_all() {
     stop_port 3000
     stop_port 3001
 
-    # プロセス終了を待機
-    sleep 2
+    # Next.js のロックファイルを削除（残存するとロック競合で起動失敗する）
+    rm -f "$PROJECT_ROOT/web-public/.next/dev/lock"
+    rm -f "$PROJECT_ROOT/web-admin/.next/dev/lock"
+
     log_success "全プロセスを停止しました"
 }
 
