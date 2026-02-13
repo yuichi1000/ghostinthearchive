@@ -17,12 +17,16 @@ from typing import Optional
 
 from google.adk.tools.tool_context import ToolContext
 
+from shared.constants import (
+    ALLOWED_LANGUAGES,
+    SCHEMA_VERSION,
+    STATUS_PENDING,
+    STATUS_PUBLISHED,
+    TRANSLATION_LANGUAGES,
+)
 from shared.firestore import get_firestore_client, get_storage_bucket
 
 logger = logging.getLogger(__name__)
-
-# 翻訳対象の全言語リスト
-_TRANSLATION_LANGUAGES = ["ja", "es", "de", "fr", "nl", "pt"]
 
 
 def _extract_json_from_text(text: str) -> Optional[dict]:
@@ -261,7 +265,7 @@ def publish_mystery(
 
             # 各言語の Scholar 分析を multilingual_analysis として保存
             multilingual = {}
-            for lang in ["en", "de", "es", "fr", "nl", "pt"]:
+            for lang in ALLOWED_LANGUAGES:
                 analysis = tool_context.state.get(f"scholar_analysis_{lang}")
                 if analysis and "INSUFFICIENT_DATA" not in str(analysis):
                     multilingual[lang] = str(analysis)
@@ -271,7 +275,7 @@ def publish_mystery(
 
             # 全言語の翻訳結果を translations map に収集
             translations: dict[str, dict] = {}
-            for lang in _TRANSLATION_LANGUAGES:
+            for lang in TRANSLATION_LANGUAGES:
                 translation_result = tool_context.state.get(f"translation_result_{lang}")
                 if not translation_result:
                     continue
@@ -291,7 +295,7 @@ def publish_mystery(
                     translations[lang] = translation_result
 
             # 翻訳収集のサマリログ
-            skipped = [lang for lang in _TRANSLATION_LANGUAGES if lang not in translations]
+            skipped = [lang for lang in TRANSLATION_LANGUAGES if lang not in translations]
             logger.info(
                 "Translations collected: %s, skipped: %s",
                 list(translations.keys()), skipped,
@@ -366,13 +370,13 @@ def publish_mystery(
         now = datetime.now(timezone.utc)
 
         # スキーマバージョン（ドキュメント構造の世代管理）
-        data["schema_version"] = 2
+        data["schema_version"] = SCHEMA_VERSION
 
         # Set timestamps and status
-        data["status"] = data.get("status", "pending")
+        data["status"] = data.get("status", STATUS_PENDING)
         data["createdAt"] = now
         data["updatedAt"] = now
-        if data["status"] == "published":
+        if data["status"] == STATUS_PUBLISHED:
             data["publishedAt"] = now
         data["analysis_timestamp"] = data.get("analysis_timestamp", now.isoformat())
 

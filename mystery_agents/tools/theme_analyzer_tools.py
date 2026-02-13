@@ -7,10 +7,7 @@ import json
 
 from google.adk.tools.tool_context import ToolContext
 
-# 許可される言語コード
-ALLOWED_LANGUAGES = {"en", "de", "es", "fr", "nl", "pt"}
-# 同時に選択できる最大言語数（コスト・時間制御）
-MAX_LANGUAGES = 4
+from shared.constants import ALLOWED_LANGUAGES, DEFAULT_SELECTED_LANGUAGES, MAX_LANGUAGES
 
 
 def save_language_selection(
@@ -35,7 +32,7 @@ def save_language_selection(
         languages = json.loads(languages_json)
     except json.JSONDecodeError as e:
         # パースエラー時は英語のみにフォールバック
-        tool_context.state["selected_languages"] = ["en"]
+        tool_context.state["selected_languages"] = list(DEFAULT_SELECTED_LANGUAGES)
         return json.dumps(
             {
                 "status": "fallback",
@@ -46,7 +43,7 @@ def save_language_selection(
         )
 
     if not isinstance(languages, list):
-        languages = ["en"]
+        languages = list(DEFAULT_SELECTED_LANGUAGES)
 
     # バリデーション: 許可リスト以外を除外
     valid = [lang for lang in languages if isinstance(lang, str) and lang in ALLOWED_LANGUAGES]

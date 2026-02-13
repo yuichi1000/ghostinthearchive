@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, Optional
 
 from google.genai import types
 
+from shared.constants import DEFAULT_SELECTED_LANGUAGES
+
 if TYPE_CHECKING:
     from google.adk.agents.callback_context import CallbackContext
 
@@ -61,9 +63,9 @@ def make_scholar_gate():
     """全 Librarian が失敗した場合に ParallelScholars をスキップ。"""
 
     def gate(callback_context: CallbackContext) -> Optional[types.Content]:
-        selected = callback_context.state.get("selected_languages", ["en"])
+        selected = callback_context.state.get("selected_languages", DEFAULT_SELECTED_LANGUAGES)
         if not isinstance(selected, list):
-            selected = ["en"]
+            selected = list(DEFAULT_SELECTED_LANGUAGES)
 
         for lang in selected:
             docs = callback_context.state.get(f"collected_documents_{lang}", "")
@@ -87,9 +89,9 @@ def make_polymath_gate():
     """全 Scholar が失敗した場合に ArmchairPolymath をスキップ。"""
 
     def gate(callback_context: CallbackContext) -> Optional[types.Content]:
-        selected = callback_context.state.get("selected_languages", ["en"])
+        selected = callback_context.state.get("selected_languages", DEFAULT_SELECTED_LANGUAGES)
         if not isinstance(selected, list):
-            selected = ["en"]
+            selected = list(DEFAULT_SELECTED_LANGUAGES)
 
         for lang in selected:
             analysis = callback_context.state.get(f"scholar_analysis_{lang}", "")
