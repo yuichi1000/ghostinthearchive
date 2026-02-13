@@ -9,7 +9,6 @@ from unittest.mock import MagicMock, patch
 from mystery_agents.tools.illustrator_tools import (
     IMAGE_VARIANTS,
     MAX_RETRIES,
-    FALLBACK_VARIANTS,
     _build_contextual_safe_prompt,
     _build_safe_fallback_prompt,
     _get_variants,
