@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+from shared.http_retry import create_retry_session
+
 from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
 from .search_utils import build_search_query
 
@@ -31,6 +33,7 @@ BASE_URL = "https://www.loc.gov/search/"
 # Rate limiting: minimum delay between requests (seconds)
 MIN_REQUEST_DELAY = 3.0  # Conservative to respect rate limits
 _last_request_time = 0.0
+_session = create_retry_session()
 
 
 def _rate_limit() -> None:
@@ -111,7 +114,7 @@ def search_chronicling_america(
     _rate_limit()
 
     try:
-        response = requests.get(
+        response = _session.get(
             BASE_URL,
             params=params,
             timeout=30,
