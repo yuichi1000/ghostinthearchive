@@ -365,6 +365,9 @@ def publish_mystery(
 
         now = datetime.now(timezone.utc)
 
+        # スキーマバージョン（ドキュメント構造の世代管理）
+        data["schema_version"] = 2
+
         # Set timestamps and status
         data["status"] = data.get("status", "pending")
         data["createdAt"] = now

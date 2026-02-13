@@ -159,6 +159,8 @@ export interface MysteryReport {
 export type PodcastStatus = "generating" | "completed" | "error";
 
 export interface FirestoreMystery extends MysteryReport {
+  /** スキーマバージョン: 1 = legacy (*_ja/*_en), 2 = translations map */
+  schema_version?: number;
   /** ステータス: pending, translating, published, archived */
   status: MysteryStatus;
   /** 作成日時（Firestoreタイムスタンプ） */
