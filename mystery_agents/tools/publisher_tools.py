@@ -168,11 +168,15 @@ def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
             continue
 
         # Build public URL (use STORAGE_EMULATOR_PUBLIC_HOST for browser-accessible URL)
+        # 本番: Firebase Storage REST API 形式（セキュリティルール allow read: if true が適用される）
         storage_public_host = os.environ.get("STORAGE_EMULATOR_PUBLIC_HOST", "") or os.environ.get("STORAGE_EMULATOR_HOST", "")
         if storage_public_host:
             public_url = f"{storage_public_host}/v0/b/{bucket.name}/o/{blob_name.replace('/', '%2F')}?alt=media"
         else:
-            public_url = f"https://storage.googleapis.com/{bucket.name}/{blob_name}"
+            public_url = (
+                f"https://firebasestorage.googleapis.com/v0/b/{bucket.name}"
+                f"/o/{blob_name.replace('/', '%2F')}?alt=media"
+            )
 
         lbl = variant_suffix.lstrip("_") if variant_suffix else "original"
         if lbl == "original":
@@ -348,6 +352,16 @@ def publish_mystery(
             except Exception as e:
                 logger.error("Image upload failed, continuing without images: %s", e)
 
+        # 画像処理結果の診断ログ
+        if "images" in data:
+            logger.info("Images prepared: hero=%s, variants=%s",
+                        data["images"].get("hero", "MISSING"),
+                        list(data["images"].get("variants", {}).keys()))
+        else:
+            logger.warning("No images attached. image_metadata=%s, visual_assets_json=%s",
+                           type(image_source).__name__ if image_source else "None",
+                           "provided" if visual_assets_json and visual_assets_json.strip() else "empty")
+
         now = datetime.now(timezone.utc)
 
         # Set timestamps and status
@@ -458,11 +472,15 @@ def upload_images(mystery_id: str, image_paths: str) -> str:
 
             # エミュレータではmake_public()が使えないため、URLを直接構築
             # STORAGE_EMULATOR_PUBLIC_HOST: ブラウザからアクセス可能なURL用ホスト
+            # 本番: Firebase Storage REST API 形式（セキュリティルール allow read: if true が適用される）
             storage_public_host = os.environ.get("STORAGE_EMULATOR_PUBLIC_HOST", "") or os.environ.get("STORAGE_EMULATOR_HOST", "")
             if storage_public_host:
                 public_url = f"{storage_public_host}/v0/b/{bucket.name}/o/{blob_name.replace('/', '%2F')}?alt=media"
             else:
-                public_url = f"https://storage.googleapis.com/{bucket.name}/{blob_name}"
+                public_url = (
+                    f"https://firebasestorage.googleapis.com/v0/b/{bucket.name}"
+                    f"/o/{blob_name.replace('/', '%2F')}?alt=media"
+                )
 
             uploaded.append({
                 "path": local_path,
