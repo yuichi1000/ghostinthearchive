@@ -286,7 +286,7 @@ def publish_mystery(
                     translations[lang] = translation_result
 
             # 翻訳収集のサマリログ
-            skipped = [l for l in _TRANSLATION_LANGUAGES if l not in translations]
+            skipped = [lang for lang in _TRANSLATION_LANGUAGES if lang not in translations]
             logger.info(
                 "Translations collected: %s, skipped: %s",
                 list(translations.keys()), skipped,
