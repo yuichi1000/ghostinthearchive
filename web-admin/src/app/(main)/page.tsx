@@ -41,6 +41,7 @@ export default function AdminPage() {
   const [mysteries, setMysteries] = useState<FirestoreMystery[]>([])
   const [loading, setLoading] = useState(true)
   const [actionFeedback, setActionFeedback] = useState<string | null>(null)
+  const [actionFeedbackIsError, setActionFeedbackIsError] = useState(false)
   const [themeInput, setThemeInput] = useState("")
   const [suggestions, setSuggestions] = useState<{ theme: string; description: string; theme_ja?: string; description_ja?: string }[]>([])
   const [suggestLoading, setSuggestLoading] = useState(false)
@@ -128,13 +129,16 @@ export default function AdminPage() {
     try {
       await approveMystery(id)
       setActionFeedback(`Case ${id} approved and published`)
+      setActionFeedbackIsError(false)
       fetchMysteries()
       triggerRebuild()
       setTimeout(() => setActionFeedback(null), 3000)
     } catch (error) {
       console.error("Failed to approve:", error)
-      setActionFeedback(`Failed to approve case`)
-      setTimeout(() => setActionFeedback(null), 3000)
+      const message = error instanceof Error ? error.message : "不明なエラー"
+      setActionFeedback(`承認に失敗しました: ${message}`)
+      setActionFeedbackIsError(true)
+      setTimeout(() => setActionFeedback(null), 5000)
     }
   }
 
@@ -142,11 +146,16 @@ export default function AdminPage() {
     try {
       await archiveMystery(id)
       setActionFeedback(`Case ${id} archived`)
+      setActionFeedbackIsError(false)
       fetchMysteries()
       triggerRebuild()
       setTimeout(() => setActionFeedback(null), 3000)
     } catch (error) {
       console.error("Failed to archive:", error)
+      const message = error instanceof Error ? error.message : "不明なエラー"
+      setActionFeedback(`アーカイブに失敗しました: ${message}`)
+      setActionFeedbackIsError(true)
+      setTimeout(() => setActionFeedback(null), 5000)
     }
   }
 
@@ -159,19 +168,25 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: themeInput.trim() }),
       })
-      if (!res.ok) throw new Error("API request failed")
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.detail || errorData.error || `API error (${res.status})`)
+      }
       const data = await res.json()
       if (data.run_id) {
         setCurrentRunId(data.run_id)
       }
       setActionFeedback("調査パイプラインを開始しました")
+      setActionFeedbackIsError(false)
       setThemeInput("")
       setSuggestions([])
       setTimeout(() => setActionFeedback(null), 3000)
     } catch (error) {
       console.error("Failed to start pipeline:", error)
-      setActionFeedback("パイプラインの開始に失敗しました")
-      setTimeout(() => setActionFeedback(null), 3000)
+      const message = error instanceof Error ? error.message : "不明なエラー"
+      setActionFeedback(`パイプラインの開始に失敗しました: ${message}`)
+      setActionFeedbackIsError(true)
+      setTimeout(() => setActionFeedback(null), 5000)
     } finally {
       setPipelineLoading(false)
     }
@@ -182,13 +197,18 @@ export default function AdminPage() {
     setSuggestions([])
     try {
       const res = await fetch("/api/themes/suggest", { method: "POST" })
-      if (!res.ok) throw new Error("API request failed")
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.detail || errorData.error || `API error (${res.status})`)
+      }
       const data = await res.json()
       setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : [])
     } catch (error) {
       console.error("Failed to get suggestions:", error)
-      setActionFeedback("テーマ提案の取得に失敗しました")
-      setTimeout(() => setActionFeedback(null), 3000)
+      const message = error instanceof Error ? error.message : "不明なエラー"
+      setActionFeedback(`テーマ提案の取得に失敗しました: ${message}`)
+      setActionFeedbackIsError(true)
+      setTimeout(() => setActionFeedback(null), 5000)
     } finally {
       setSuggestLoading(false)
     }
@@ -280,8 +300,16 @@ export default function AdminPage() {
 
         {/* Action feedback toast */}
         {actionFeedback && (
-          <div className="fixed top-20 right-4 z-50 px-4 py-3 bg-teal/20 border border-teal/30 rounded-sm animate-in fade-in slide-in-from-right-5">
-            <p className="text-sm text-[#5fb3a1] font-mono">
+          <div className={cn(
+            "fixed top-20 right-4 z-50 px-4 py-3 rounded-sm animate-in fade-in slide-in-from-right-5",
+            actionFeedbackIsError
+              ? "bg-blood-red/10 border border-blood-red/30"
+              : "bg-teal/20 border border-teal/30"
+          )}>
+            <p className={cn(
+              "text-sm font-mono",
+              actionFeedbackIsError ? "text-[#ff6b6b]" : "text-[#5fb3a1]"
+            )}>
               {actionFeedback}
             </p>
           </div>

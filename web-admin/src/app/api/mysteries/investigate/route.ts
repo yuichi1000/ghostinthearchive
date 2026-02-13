@@ -52,9 +52,14 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorBody = await response.text();
       console.error(`Pipeline service error (${response.status}):`, errorBody);
+      let detail = errorBody;
+      try {
+        const parsed = JSON.parse(errorBody);
+        detail = parsed.detail || parsed.error || parsed.message || errorBody;
+      } catch { /* テキストのまま */ }
       return NextResponse.json(
-        { error: "Failed to start blog pipeline" },
-        { status: 500 }
+        { error: "Failed to start blog pipeline", detail },
+        { status: response.status }
       );
     }
 
@@ -68,7 +73,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Failed to start blog pipeline:", error);
     return NextResponse.json(
-      { error: "Failed to start blog pipeline" },
+      { error: "Failed to start blog pipeline", detail: String(error) },
       { status: 500 }
     );
   }

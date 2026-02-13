@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react"
 import Link from "next/link"
+import { cn } from "@ghost/shared/src/lib/utils"
 import { Button } from "@ghost/shared/src/components/ui/button"
 import { usePodcast } from "@/hooks/use-podcast"
 import { usePipelineRun } from "@/hooks/use-pipeline-run"
@@ -32,6 +33,7 @@ export function PodcastDetail({ podcastId }: PodcastDetailProps) {
   const [saving, setSaving] = useState(false)
   const [audioGenerating, setAudioGenerating] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
+  const [feedbackIsError, setFeedbackIsError] = useState(false)
   const hasUnsavedChanges = useRef(false)
 
   // podcast のステータスが audio_generating に変わったらローカルの generating フラグもリセット
@@ -53,11 +55,14 @@ export function PodcastDetail({ podcastId }: PodcastDetailProps) {
       await updatePodcastScript(podcastId, editedScript)
       hasUnsavedChanges.current = false
       setFeedback("脚本を保存しました")
+      setFeedbackIsError(false)
       setTimeout(() => setFeedback(null), 3000)
     } catch (error) {
       console.error("Failed to save script:", error)
-      setFeedback("脚本の保存に失敗しました")
-      setTimeout(() => setFeedback(null), 3000)
+      const message = error instanceof Error ? error.message : "不明なエラー"
+      setFeedback(`脚本の保存に失敗しました: ${message}`)
+      setFeedbackIsError(true)
+      setTimeout(() => setFeedback(null), 5000)
     } finally {
       setSaving(false)
     }
@@ -78,14 +83,20 @@ export function PodcastDetail({ podcastId }: PodcastDetailProps) {
           script: scriptToSend,
         }),
       })
-      if (!res.ok) throw new Error("API request failed")
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.detail || errorData.error || `API error (${res.status})`)
+      }
       setFeedback("音声生成を開始しました")
+      setFeedbackIsError(false)
       setTimeout(() => setFeedback(null), 3000)
     } catch (error) {
       console.error("Failed to generate audio:", error)
       setAudioGenerating(false)
-      setFeedback("音声生成の開始に失敗しました")
-      setTimeout(() => setFeedback(null), 3000)
+      const message = error instanceof Error ? error.message : "不明なエラー"
+      setFeedback(`音声生成の開始に失敗しました: ${message}`)
+      setFeedbackIsError(true)
+      setTimeout(() => setFeedback(null), 5000)
     }
   }, [podcast, podcastId, editedScript])
 
@@ -98,15 +109,20 @@ export function PodcastDetail({ podcastId }: PodcastDetailProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mystery_id: podcast.mystery_id }),
       })
-      if (!res.ok) throw new Error("API request failed")
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.detail || errorData.error || `API error (${res.status})`)
+      }
       const data = await res.json()
       if (data.podcast_id) {
         window.location.href = `/podcasts/${data.podcast_id}`
       }
     } catch (error) {
       console.error("Failed to retry:", error)
-      setFeedback("再試行に失敗しました")
-      setTimeout(() => setFeedback(null), 3000)
+      const message = error instanceof Error ? error.message : "不明なエラー"
+      setFeedback(`再試行に失敗しました: ${message}`)
+      setFeedbackIsError(true)
+      setTimeout(() => setFeedback(null), 5000)
     }
   }, [podcast])
 
@@ -142,8 +158,16 @@ export function PodcastDetail({ podcastId }: PodcastDetailProps) {
       <div className="container mx-auto px-4">
         {/* フィードバック */}
         {feedback && (
-          <div className="fixed top-20 right-4 z-50 px-4 py-3 bg-teal/20 border border-teal/30 rounded-sm animate-in fade-in slide-in-from-right-5">
-            <p className="text-sm text-[#5fb3a1] font-mono">{feedback}</p>
+          <div className={cn(
+            "fixed top-20 right-4 z-50 px-4 py-3 rounded-sm animate-in fade-in slide-in-from-right-5",
+            feedbackIsError
+              ? "bg-blood-red/10 border border-blood-red/30"
+              : "bg-teal/20 border border-teal/30"
+          )}>
+            <p className={cn(
+              "text-sm font-mono",
+              feedbackIsError ? "text-[#ff6b6b]" : "text-[#5fb3a1]"
+            )}>{feedback}</p>
           </div>
         )}
 
