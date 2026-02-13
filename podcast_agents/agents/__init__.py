@@ -1,9 +1,9 @@
-"""Podcast Agents - Scriptwriter & Producer"""
+"""Podcast Agents - Scriptwriter & Podcast Translator"""
 
 from .scriptwriter import scriptwriter_agent
-from .producer import producer_agent
+from .podcast_translator import podcast_translator_ja
 
 __all__ = [
     "scriptwriter_agent",
-    "producer_agent",
+    "podcast_translator_ja",
 ]

@@ -156,7 +156,74 @@ export interface MysteryReport {
  * MysteryReportにステータス管理フィールドを追加
  */
 /** Podcast 生成ステータス */
-export type PodcastStatus = "generating" | "completed" | "error";
+export type PodcastStatus = "script_generating" | "script_ready" | "audio_generating" | "audio_ready" | "error";
+
+/** Podcast 脚本セグメント */
+export interface PodcastSegment {
+  /** セグメント種別 */
+  type: "intro" | "body" | "outro";
+  /** セグメントラベル（例: "Historical Background"） */
+  label: string;
+  /** ナレーションテキスト（TTS に渡す） */
+  text: string;
+  /** SFX/BGM 指示（TTS には渡さない） */
+  notes?: string;
+}
+
+/** Podcast 構造化脚本 */
+export interface PodcastScript {
+  /** エピソードタイトル */
+  episode_title: string;
+  /** 想定再生時間（分） */
+  estimated_duration_minutes: number;
+  /** セグメント一覧 */
+  segments: PodcastSegment[];
+}
+
+/** Podcast 音声メタデータ */
+export interface PodcastAudio {
+  /** GCS パス（gs://bucket/path） */
+  gcs_path: string;
+  /** 公開 URL */
+  public_url: string;
+  /** 再生時間（秒） */
+  duration_seconds: number;
+  /** TTS ボイス名 */
+  voice_name: string;
+  /** ファイルフォーマット */
+  format: string;
+}
+
+/**
+ * Podcast ドキュメント（podcasts コレクション）
+ * mystery_id でミステリー記事とリンク
+ */
+export interface FirestorePodcast {
+  /** Podcast ドキュメント ID */
+  podcast_id: string;
+  /** リンク先ミステリー記事 ID */
+  mystery_id: string;
+  /** 記事タイトル（非正規化、表示用） */
+  mystery_title: string;
+  /** 生成ステータス */
+  status: PodcastStatus;
+  /** 管理者のカスタム指示 */
+  custom_instructions?: string;
+  /** 構造化英語脚本 */
+  script?: PodcastScript;
+  /** 日本語訳（レビュー用、プレーンテキスト） */
+  script_ja?: string;
+  /** 音声メタデータ */
+  audio?: PodcastAudio;
+  /** パイプライン実行 ID */
+  pipeline_run_id?: string;
+  /** 作成日時 */
+  created_at: Date;
+  /** 更新日時 */
+  updated_at: Date;
+  /** エラーメッセージ */
+  error_message?: string | null;
+}
 
 export interface FirestoreMystery extends MysteryReport {
   /** スキーマバージョン: 1 = legacy (*_ja/*_en), 2 = translations map */
@@ -345,6 +412,7 @@ export const AGENT_NAME_LABELS: Record<string, string> = {
   debate_loop: "討論",
   parallel_translators: "翻訳",
   scriptwriter: "脚本作成",
+  podcast_translator_ja: "脚本翻訳（日本語）",
   illustrator: "画像生成",
   producer: "音声生成",
   publisher: "公開処理",
