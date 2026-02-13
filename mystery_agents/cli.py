@@ -5,6 +5,7 @@ The agent definition lives in mystery_agents/agent.py (ADK convention).
 """
 
 import asyncio
+import logging
 import sys
 from pathlib import Path
 
@@ -28,6 +29,11 @@ from shared.pipeline_run import (
     error_pipeline_run,
 )
 
+# プロジェクト全体のログを有効化（Publisher, Illustrator 等の既存ログが出力される）
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(name)s [%(levelname)s] %(message)s",
+)
 
 PIPELINE_TIMEOUT_SECONDS = 1800  # 30 minutes
 
@@ -107,7 +113,8 @@ async def investigate(query: str, *, run_id: str | None = None) -> str | None:
                     "ghost_commander",
                     "parallel_librarians",
                     "parallel_scholars",
-                    "parallel_debaters",
+                    "debate_loop",           # LoopAgent の実際の名前
+                    "parallel_translators",  # 翻訳 ParallelAgent
                     "scholar_block",
                     "polymath_block",
                     "storyteller_block",

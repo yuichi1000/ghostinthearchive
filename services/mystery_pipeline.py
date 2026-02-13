@@ -30,6 +30,12 @@ import uvicorn
 
 from shared.pipeline_run import create_pipeline_run, error_pipeline_run
 
+# プロジェクト全体のログを有効化（Publisher, Illustrator 等の既存ログが出力される）
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(name)s [%(levelname)s] %(message)s",
+)
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI()

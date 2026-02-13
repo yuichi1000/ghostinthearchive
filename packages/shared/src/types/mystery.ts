@@ -340,6 +340,8 @@ export const AGENT_NAME_LABELS: Record<string, string> = {
   translator_fr: "翻訳（フランス語）",
   translator_nl: "翻訳（オランダ語）",
   translator_pt: "翻訳（ポルトガル語）",
+  debate_loop: "討論",
+  parallel_translators: "翻訳",
   scriptwriter: "脚本作成",
   illustrator: "画像生成",
   producer: "音声生成",
