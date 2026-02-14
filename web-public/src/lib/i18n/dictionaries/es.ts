@@ -68,8 +68,6 @@ const dict: Dictionary = {
       "Investigación impulsada por IA sobre misterios históricos y anomalías folclóricas de archivos digitales públicos.",
     primarySources: "Fuentes primarias",
     technical: "Técnico",
-    technicalDescription:
-      "Construido con Google Agent Development Kit (ADK) y Vertex AI.",
     classification: "Clasificación:",
   },
 };
