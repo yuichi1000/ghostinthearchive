@@ -109,6 +109,10 @@ async def generate_script(
             initial_state={
                 "creative_content": narrative_content,
                 "custom_instructions": custom_instructions,
+                # 後続エージェントの instruction プレースホルダー解決用に初期化
+                # ScriptPlanner/Scriptwriter が output_key で上書きする
+                "script_outline": "",
+                "podcast_script": "",
             },
             run_id=run_id,
             run_type="podcast",
