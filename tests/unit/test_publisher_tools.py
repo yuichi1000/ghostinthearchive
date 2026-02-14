@@ -749,3 +749,39 @@ class TestPublishMysteryEvidenceFiltering:
         # 警告ログが出力されている
         assert any("evidence_a" in r.message and "relevant_excerpt" in r.message for r in caplog.records)
 
+
+class TestPublishMysteryStateWriteback:
+    """publish_mystery が tool_context.state に published_mystery_id を書き込むテスト"""
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_sets_published_mystery_id_in_state(self, mock_get_db, mock_get_bucket):
+        """成功時に tool_context.state["published_mystery_id"] が設定される。"""
+        mock_get_db.return_value = MagicMock()
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert "published_mystery_id" in state
+        assert state["published_mystery_id"] == result_data["mystery_id"]
+        # mystery_id 形式チェック
+        assert state["published_mystery_id"].startswith("OCC-MA-617-")
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_no_state_write_without_tool_context(self, mock_get_db, mock_get_bucket):
+        """tool_context が None の場合でもエラーにならない。"""
+        mock_get_db.return_value = MagicMock()
+        mock_get_bucket.return_value = MagicMock()
+
+        result = publish_mystery(_make_mystery_json(), "", None)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+

@@ -409,6 +409,10 @@ def publish_mystery(
         mystery_id = data["mystery_id"]
         db.collection("mysteries").document(mystery_id).set(data)
 
+        # mystery_id をセッション状態に直接保存（LLM テキスト解析に依存しない確実な受け渡し）
+        if tool_context is not None:
+            tool_context.state["published_mystery_id"] = mystery_id
+
         return json.dumps({
             "status": "success",
             "mystery_id": mystery_id,
