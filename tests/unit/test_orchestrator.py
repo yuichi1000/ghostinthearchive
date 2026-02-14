@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from shared.orchestrator import PipelineResult, run_pipeline
+from shared.orchestrator import PipelineResult, _detect_gate_failure, run_pipeline
 from tests.fakes import FakeInMemorySessionService
 
 
@@ -56,12 +56,12 @@ class TestRunPipeline:
     """run_pipeline() のテスト"""
 
     @pytest.mark.asyncio
-    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.error_pipeline_run")
     @patch("shared.orchestrator.update_agent_completed")
     @patch("shared.orchestrator.update_agent_started", return_value=0)
     @patch("shared.orchestrator.create_pipeline_run", return_value="run-001")
     async def test_creates_pipeline_run_when_not_provided(
-        self, mock_create, mock_started, mock_completed, mock_complete
+        self, mock_create, mock_started, mock_completed, mock_error
     ):
         """run_id 未指定時に pipeline_run を自動作成する。"""
         fake_session = FakeInMemorySessionService()
@@ -80,12 +80,12 @@ class TestRunPipeline:
         assert result.run_id == "run-001"
 
     @pytest.mark.asyncio
-    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.error_pipeline_run")
     @patch("shared.orchestrator.update_agent_completed")
     @patch("shared.orchestrator.update_agent_started", return_value=0)
     @patch("shared.orchestrator.create_pipeline_run")
     async def test_skips_create_when_run_id_provided(
-        self, mock_create, mock_started, mock_completed, mock_complete
+        self, mock_create, mock_started, mock_completed, mock_error
     ):
         """run_id 指定時は pipeline_run を新規作成しない。"""
         fake_session = FakeInMemorySessionService()
@@ -104,12 +104,12 @@ class TestRunPipeline:
         assert result.run_id == "existing-run"
 
     @pytest.mark.asyncio
-    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.error_pipeline_run")
     @patch("shared.orchestrator.update_agent_completed")
     @patch("shared.orchestrator.update_agent_started", return_value=0)
     @patch("shared.orchestrator.create_pipeline_run", return_value="run-002")
     async def test_agent_transitions_tracked(
-        self, mock_create, mock_started, mock_completed, mock_complete
+        self, mock_create, mock_started, mock_completed, mock_error
     ):
         """エージェント遷移が正しく追跡される。"""
         events = [
@@ -135,12 +135,12 @@ class TestRunPipeline:
         assert result.logs[1]["agent_name"] == "scholar"
 
     @pytest.mark.asyncio
-    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.error_pipeline_run")
     @patch("shared.orchestrator.update_agent_completed")
     @patch("shared.orchestrator.update_agent_started", return_value=0)
     @patch("shared.orchestrator.create_pipeline_run", return_value="run-003")
     async def test_skip_authors_are_ignored(
-        self, mock_create, mock_started, mock_completed, mock_complete
+        self, mock_create, mock_started, mock_completed, mock_error
     ):
         """skip_authors に含まれるエージェントはログ対象外。"""
         events = [
@@ -165,12 +165,12 @@ class TestRunPipeline:
         assert result.logs[0]["agent_name"] == "librarian"
 
     @pytest.mark.asyncio
-    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.error_pipeline_run")
     @patch("shared.orchestrator.update_agent_completed")
     @patch("shared.orchestrator.update_agent_started", return_value=0)
     @patch("shared.orchestrator.create_pipeline_run", return_value="run-004")
     async def test_on_text_callback_called(
-        self, mock_create, mock_started, mock_completed, mock_complete
+        self, mock_create, mock_started, mock_completed, mock_error
     ):
         """テキスト出力時に on_text コールバックが呼ばれる。"""
         received_texts = []
@@ -271,12 +271,12 @@ class TestParallelAgentTracking:
     """並列エージェントのインターリーブイベント追跡テスト"""
 
     @pytest.mark.asyncio
-    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.error_pipeline_run")
     @patch("shared.orchestrator.update_agent_completed")
     @patch("shared.orchestrator.update_agent_started", return_value=0)
     @patch("shared.orchestrator.create_pipeline_run", return_value="run-100")
     async def test_interleaved_parallel_events_single_entry(
-        self, mock_create, mock_started, mock_completed, mock_complete
+        self, mock_create, mock_started, mock_completed, mock_error
     ):
         """並列エージェントの交互イベントが1エントリずつに集約される。"""
         events = [
@@ -308,12 +308,12 @@ class TestParallelAgentTracking:
         assert "Buscando en DPLA..." in result.logs[1]["output_summary"]
 
     @pytest.mark.asyncio
-    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.error_pipeline_run")
     @patch("shared.orchestrator.update_agent_completed")
     @patch("shared.orchestrator.update_agent_started", return_value=0)
     @patch("shared.orchestrator.create_pipeline_run", return_value="run-101")
     async def test_skip_author_triggers_stage_boundary(
-        self, mock_create, mock_started, mock_completed, mock_complete
+        self, mock_create, mock_started, mock_completed, mock_error
     ):
         """skip_authors イベントがステージ境界として機能し、前ステージを一括完了する。"""
         events = [
@@ -343,12 +343,12 @@ class TestParallelAgentTracking:
         assert result.logs[2]["status"] == "completed"
 
     @pytest.mark.asyncio
-    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.error_pipeline_run")
     @patch("shared.orchestrator.update_agent_completed")
     @patch("shared.orchestrator.update_agent_started", return_value=0)
     @patch("shared.orchestrator.create_pipeline_run", return_value="run-102")
     async def test_skipped_agent_empty_text_short_duration_removed(
-        self, mock_create, mock_started, mock_completed, mock_complete
+        self, mock_create, mock_started, mock_completed, mock_error
     ):
         """空テキスト + 短時間のスキップエージェントがログから除去される。"""
         # language_gate でスキップされたエージェント: テキストなし
@@ -379,12 +379,12 @@ class TestSequentialAgentCompletion:
     """sequential_agents による直列完了テスト"""
 
     @pytest.mark.asyncio
-    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.error_pipeline_run")
     @patch("shared.orchestrator.update_agent_completed")
     @patch("shared.orchestrator.update_agent_started", return_value=0)
     @patch("shared.orchestrator.create_pipeline_run", return_value="run-200")
     async def test_sequential_agent_auto_completes_predecessor(
-        self, mock_create, mock_started, mock_completed, mock_complete
+        self, mock_create, mock_started, mock_completed, mock_error
     ):
         """sequential_agents 内で新エージェント開始時に前のエージェントが自動完了される。"""
         events = [
@@ -416,12 +416,12 @@ class TestSequentialAgentCompletion:
         assert all(log["status"] == "completed" for log in result.logs)
 
     @pytest.mark.asyncio
-    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.error_pipeline_run")
     @patch("shared.orchestrator.update_agent_completed")
     @patch("shared.orchestrator.update_agent_started", return_value=0)
     @patch("shared.orchestrator.create_pipeline_run", return_value="run-201")
     async def test_sequential_agents_does_not_affect_non_members(
-        self, mock_create, mock_started, mock_completed, mock_complete
+        self, mock_create, mock_started, mock_completed, mock_error
     ):
         """sequential_agents に含まれないエージェントは直列完了の対象外。"""
         events = [
@@ -450,12 +450,12 @@ class TestSequentialAgentCompletion:
         assert len(result.logs) == 3
 
     @pytest.mark.asyncio
-    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.error_pipeline_run")
     @patch("shared.orchestrator.update_agent_completed")
     @patch("shared.orchestrator.update_agent_started", return_value=0)
     @patch("shared.orchestrator.create_pipeline_run", return_value="run-202")
     async def test_no_sequential_agents_same_behavior(
-        self, mock_create, mock_started, mock_completed, mock_complete
+        self, mock_create, mock_started, mock_completed, mock_error
     ):
         """sequential_agents 未指定時は従来と同じ挙動。"""
         events = [
@@ -476,3 +476,162 @@ class TestSequentialAgentCompletion:
         assert len(result.logs) == 2
         assert result.logs[0]["agent_name"] == "script_planner"
         assert result.logs[1]["agent_name"] == "scriptwriter"
+
+
+class TestDetectGateFailure:
+    """_detect_gate_failure() の単体テスト"""
+
+    def test_empty_state_returns_insufficient_data_message(self):
+        """空セッション → 資料不足メッセージを返す。"""
+        result = _detect_gate_failure({})
+        assert "資料が見つからなかった" in result
+
+    def test_insufficient_mystery_report_returns_message(self):
+        """mystery_report が INSUFFICIENT_DATA → 資料不足メッセージ。"""
+        state = {"mystery_report": "INSUFFICIENT_DATA: No data available"}
+        result = _detect_gate_failure(state)
+        assert "資料が見つからなかった" in result
+
+    def test_no_creative_content_returns_message(self):
+        """mystery_report あり + creative_content が NO_CONTENT → 記事生成失敗メッセージ。"""
+        state = {
+            "mystery_report": "A valid report about historical mysteries...",
+            "creative_content": "NO_CONTENT: Story generation failed",
+        }
+        result = _detect_gate_failure(state)
+        assert "記事の生成に失敗" in result
+
+    def test_both_present_returns_publish_error(self):
+        """全フィールド有意 + mystery_id なし → 公開処理失敗メッセージ。"""
+        state = {
+            "mystery_report": "A valid detailed analysis...",
+            "creative_content": "A compelling blog post about...",
+        }
+        result = _detect_gate_failure(state)
+        assert "公開処理で問題" in result
+
+    def test_empty_creative_content_returns_message(self):
+        """mystery_report あり + creative_content が空文字 → 記事生成失敗メッセージ。"""
+        state = {
+            "mystery_report": "A valid analysis result...",
+            "creative_content": "",
+        }
+        result = _detect_gate_failure(state)
+        assert "記事の生成に失敗" in result
+
+
+class TestGateFailureIntegration:
+    """blog パイプラインのゲート失敗 → error_pipeline_run の統合テスト"""
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.error_pipeline_run")
+    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-300")
+    async def test_blog_gate_failure_marks_error(
+        self, mock_create, mock_complete, mock_error
+    ):
+        """mystery_report が INSUFFICIENT_DATA → error_pipeline_run が呼ばれる。"""
+        fake_session = FakeInMemorySessionService(
+            post_run_state={
+                "mystery_report": "INSUFFICIENT_DATA: All scholars failed",
+            }
+        )
+
+        with patch("shared.orchestrator.Runner", return_value=_make_runner()), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            result = await run_pipeline(
+                agent=MagicMock(),
+                app_name="test_app",
+                user_message="test",
+                initial_state={},
+                run_type="blog",
+            )
+
+        assert result.mystery_id is None
+        mock_error.assert_called_once()
+        assert "資料が見つからなかった" in mock_error.call_args[0][1]
+        mock_complete.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.error_pipeline_run")
+    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-301")
+    async def test_blog_gate_failure_no_creative_content(
+        self, mock_create, mock_complete, mock_error
+    ):
+        """creative_content が NO_CONTENT → error_pipeline_run が呼ばれる。"""
+        fake_session = FakeInMemorySessionService(
+            post_run_state={
+                "mystery_report": "Valid analysis content here...",
+                "creative_content": "NO_CONTENT: generation failed",
+            }
+        )
+
+        with patch("shared.orchestrator.Runner", return_value=_make_runner()), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            result = await run_pipeline(
+                agent=MagicMock(),
+                app_name="test_app",
+                user_message="test",
+                initial_state={},
+                run_type="blog",
+            )
+
+        assert result.mystery_id is None
+        mock_error.assert_called_once()
+        assert "記事の生成に失敗" in mock_error.call_args[0][1]
+        mock_complete.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.error_pipeline_run")
+    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.update_agent_completed")
+    @patch("shared.orchestrator.update_agent_started", return_value=0)
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-302")
+    async def test_blog_success_not_affected(
+        self, mock_create, mock_started, mock_completed, mock_complete, mock_error
+    ):
+        """mystery_id あり → 従来通り complete_pipeline_run が呼ばれる。"""
+        fake_session = FakeInMemorySessionService(
+            post_run_state={
+                "published_episode": '{"mystery_id": "HIS-NY-212-20260210120000"}',
+            }
+        )
+
+        with patch("shared.orchestrator.Runner", return_value=_make_runner()), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            result = await run_pipeline(
+                agent=MagicMock(),
+                app_name="test_app",
+                user_message="test",
+                initial_state={},
+                run_type="blog",
+            )
+
+        assert result.mystery_id == "HIS-NY-212-20260210120000"
+        mock_complete.assert_called_once_with("run-302", mystery_id="HIS-NY-212-20260210120000")
+        mock_error.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.error_pipeline_run")
+    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-303")
+    async def test_podcast_not_affected(
+        self, mock_create, mock_complete, mock_error
+    ):
+        """podcast パイプラインは mystery_id なしでも complete_pipeline_run。"""
+        fake_session = FakeInMemorySessionService()
+
+        with patch("shared.orchestrator.Runner", return_value=_make_runner()), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            result = await run_pipeline(
+                agent=MagicMock(),
+                app_name="test_app",
+                user_message="test",
+                initial_state={},
+                run_type="podcast",
+            )
+
+        assert result.mystery_id is None
+        mock_complete.assert_called_once_with("run-303", mystery_id=None)
+        mock_error.assert_not_called()
