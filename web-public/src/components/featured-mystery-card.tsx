@@ -3,6 +3,7 @@ import { FileText, MapPin, Calendar, Star } from "lucide-react"
 import { ResponsiveHeroImage } from "@/components/responsive-hero-image"
 import type { FirestoreMystery } from "@ghost/shared/src/types/mystery"
 import { localizeMystery } from "@ghost/shared/src/lib/localize"
+import { cn } from "@ghost/shared/src/lib/utils"
 import type { SupportedLang } from "@/lib/i18n/config"
 
 interface FeaturedMysteryCardProps {
@@ -16,24 +17,35 @@ export function FeaturedMysteryCard({ mystery, lang, label }: FeaturedMysteryCar
 
   const location = mystery.historical_context?.geographic_scope?.[0] || ""
   const timePeriod = mystery.historical_context?.time_period || ""
+  const hasImage = !!mystery.images?.hero
 
   return (
     <Link href={`/${lang}/mystery/${mystery.mystery_id}`} className="block group no-underline">
-      <article className="aged-card letterpress-border rounded-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-black/20">
+      <article className={cn(
+        "aged-card letterpress-border rounded-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-black/20",
+        hasImage && "lg:grid lg:grid-cols-2"
+      )}>
         {/* ヒーロー画像 */}
-        {mystery.images?.hero && (
-          <div className="relative overflow-hidden">
+        {hasImage && (
+          <div className="relative overflow-hidden max-h-56 sm:max-h-64 lg:max-h-none lg:h-full">
             <ResponsiveHeroImage
-              hero={mystery.images.hero}
-              variants={mystery.images.variants}
+              hero={mystery.images!.hero}
+              variants={mystery.images!.variants}
               alt={title}
               priority
+              className="w-full h-full object-cover"
             />
-            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[hsl(var(--card))] to-transparent pointer-events-none" />
+            {/* モバイル: 下方向グラデーション */}
+            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[hsl(var(--card))] to-transparent pointer-events-none lg:hidden" />
+            {/* PC: 右方向グラデーション（画像右端） */}
+            <div className="hidden lg:block absolute top-0 right-0 bottom-0 w-24 bg-gradient-to-l from-[hsl(var(--card))] to-transparent pointer-events-none" />
           </div>
         )}
 
-        <div className="p-6 md:p-8">
+        <div className={cn(
+          "p-6 md:p-8",
+          hasImage && "lg:flex lg:flex-col lg:justify-center lg:py-10 lg:px-10"
+        )}>
           {/* フィーチャーバッジ */}
           <div className="flex items-center gap-2 mb-4">
             <Star className="w-4 h-4 text-gold" />
