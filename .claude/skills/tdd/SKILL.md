@@ -95,7 +95,7 @@ disable-model-invocation: false
 | `shared/pipeline_failure.py` | `tests/unit/test_pipeline_failure.py` |
 | `shared/pipeline_run.py` | `tests/unit/test_pipeline_run.py` |
 | `shared/orchestrator.py` | `tests/unit/test_orchestrator.py` |
-| `services/mystery_pipeline.py` | `tests/unit/test_pipeline_server.py` |
+| `services/pipeline_server.py` | `tests/unit/test_pipeline_server.py` |
 | `services/curator.py` | `tests/unit/test_curator_server.py` |
 | `podcast_agents/tools/script_tools.py`（save_podcast_script） | `tests/unit/test_script_tools.py` |
 | `podcast_agents/tools/script_tools.py`（多段階生成ツール） | `tests/unit/test_script_planner_tools.py` |
