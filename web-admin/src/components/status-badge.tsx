@@ -2,7 +2,7 @@ import React from "react"
 import { cn } from "@ghost/shared/src/lib/utils"
 import type { DiscrepancyType, ConfidenceLevel, MysteryStatus } from "@ghost/shared/src/types/mystery"
 import { DISCREPANCY_TYPE_LABELS } from "@ghost/shared/src/types/mystery"
-import { Clock, Ghost, FileQuestion, AlertTriangle, MapPin, User, CheckCircle, XCircle, Clock3, Languages } from "lucide-react"
+import { Clock, Ghost, FileQuestion, AlertTriangle, MapPin, User, CheckCircle, XCircle, Clock3 } from "lucide-react"
 
 // Discrepancy type badge
 const discrepancyConfig: Record<DiscrepancyType, { icon: React.ReactNode; className: string }> = {
@@ -90,15 +90,11 @@ export function ConfidenceBadge({ level, className }: ConfidenceBadgeProps) {
 }
 
 // Status badge (for admin)
-const statusConfig: Record<MysteryStatus, { icon: React.ReactNode; label: string; className: string }> = {
+// レガシーデータ（translating, error）が来た場合のフォールバック付き
+const statusConfig: Partial<Record<MysteryStatus, { icon: React.ReactNode; label: string; className: string }>> = {
   pending: {
     icon: <Clock3 className="w-3.5 h-3.5" />,
     label: "Pending Review",
-    className: "bg-gold/20 text-[#d4af37] border-gold/30",
-  },
-  translating: {
-    icon: <Languages className="w-3.5 h-3.5" />,
-    label: "Translating",
     className: "bg-gold/20 text-[#d4af37] border-gold/30",
   },
   published: {
@@ -111,11 +107,11 @@ const statusConfig: Record<MysteryStatus, { icon: React.ReactNode; label: string
     label: "Archived",
     className: "bg-blood-red/20 text-[#ff6b6b] border-blood-red/30",
   },
-  error: {
-    icon: <AlertTriangle className="w-3.5 h-3.5" />,
-    label: "Error",
-    className: "bg-blood-red/20 text-[#ff6b6b] border-blood-red/30",
-  },
+}
+
+const fallbackConfig = {
+  icon: <Clock3 className="w-3.5 h-3.5" />,
+  className: "bg-muted text-muted-foreground border-border",
 }
 
 interface StatusBadgeProps {
@@ -129,12 +125,12 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
     <span
       className={cn(
         "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-sm border font-mono uppercase tracking-wide",
-        config.className,
+        config?.className ?? fallbackConfig.className,
         className
       )}
     >
-      {config.icon}
-      {config.label}
+      {config?.icon ?? fallbackConfig.icon}
+      {config?.label ?? status}
     </span>
   )
 }
