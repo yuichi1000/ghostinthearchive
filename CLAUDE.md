@@ -103,20 +103,6 @@ web-admin と web-public で共通するコードは `packages/shared/`（`@ghos
 - **web-admin**: クライアントサイドレンダリング（毎回 Firestore アクセス）
 - 記事更新頻度: 1日最大1回
 
-## TODO
-
-- [x] Cloud Run の `min-instances` 設定検討 → 全サービス min=0 維持（個人利用でコスト優先）
-- [ ] ADK 評価実行テストの CI/CD 統合（`GOOGLE_CLOUD_PROJECT` 環境変数設定、Vertex AI API 認証）
-- [x] Librarian エージェントのリンク品質検証機能（PR #68）
-  - 取得した資料リンクの疎通確認（HTTP HEAD リクエストでリンク切れ検出）
-  - リンク先コンテンツと資料メタデータの整合性検証（誤ったリンクの除外）
-- [ ] 管理画面の記事一覧 UI 改善（段階的対応）
-  - Phase 1（30件〜）: 検索バー + 人気タグ表示
-  - Phase 2（50件〜）: Era/地域ファセットフィルタ
-  - Phase 3（100件〜）: ページネーション
-- [ ] Europeana API キー取得後の再統合（europeana.py 復元 + 疎通テスト）
-- [ ] Gallica SRU API 統合（gallica.py 新規作成）
-
 ## Multi-Agent System
 
 複数の独立した ADK パイプラインで構成：
