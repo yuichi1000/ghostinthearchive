@@ -33,5 +33,5 @@ ENV GOOGLE_GENAI_USE_VERTEXAI=TRUE
 # mystery pipeline: python -m mystery_agents "<query>"
 # podcast pipeline: python -m podcast_agents "<mystery_id>"
 # curator service:  python services/curator.py
-# pipeline service: python services/mystery_pipeline.py
+# pipeline server:  python services/pipeline_server.py
 ENTRYPOINT ["python"]

@@ -1,4 +1,4 @@
-"""Unit tests for services/mystery_pipeline.py (FastAPI HTTP wrapper for pipelines)."""
+"""Unit tests for services/pipeline_server.py (FastAPI HTTP wrapper for pipelines)."""
 
 from unittest.mock import AsyncMock, patch
 
@@ -9,7 +9,7 @@ import pytest
 def mock_create_pipeline_run():
     """Mock create_pipeline_run to return a fake run_id."""
     with patch(
-        "services.mystery_pipeline.create_pipeline_run",
+        "services.pipeline_server.create_pipeline_run",
         return_value="test-run-id-123",
     ) as mock:
         yield mock
@@ -19,7 +19,7 @@ def mock_create_pipeline_run():
 def mock_create_pipeline_run_failure():
     """Mock create_pipeline_run that raises an exception."""
     with patch(
-        "services.mystery_pipeline.create_pipeline_run",
+        "services.pipeline_server.create_pipeline_run",
         side_effect=Exception("Firestore unavailable"),
     ) as mock:
         yield mock
@@ -29,7 +29,7 @@ def mock_create_pipeline_run_failure():
 def mock_investigate():
     """Mock the investigate function."""
     with patch(
-        "services.mystery_pipeline._run_investigate",
+        "services.pipeline_server._run_investigate",
         new_callable=AsyncMock,
     ) as mock:
         yield mock
@@ -39,7 +39,7 @@ def mock_investigate():
 def mock_generate_script():
     """Mock the generate script function."""
     with patch(
-        "services.mystery_pipeline._run_generate_script",
+        "services.pipeline_server._run_generate_script",
         new_callable=AsyncMock,
     ) as mock:
         yield mock
@@ -49,7 +49,7 @@ def mock_generate_script():
 def mock_generate_audio():
     """Mock the generate audio function."""
     with patch(
-        "services.mystery_pipeline._run_generate_audio",
+        "services.pipeline_server._run_generate_audio",
         new_callable=AsyncMock,
     ) as mock:
         yield mock
@@ -70,7 +70,7 @@ def client(mock_create_pipeline_run, mock_investigate, mock_generate_script, moc
     """Create FastAPI test client with mocked dependencies."""
     from fastapi.testclient import TestClient
 
-    from services.mystery_pipeline import app
+    from services.pipeline_server import app
 
     return TestClient(app)
 
@@ -114,7 +114,7 @@ class TestInvestigateEndpoint:
     ):
         from fastapi.testclient import TestClient
 
-        from services.mystery_pipeline import app
+        from services.pipeline_server import app
 
         client = TestClient(app)
         response = client.post(
@@ -167,7 +167,7 @@ class TestGenerateScriptEndpoint:
     ):
         from fastapi.testclient import TestClient
 
-        from services.mystery_pipeline import app
+        from services.pipeline_server import app
 
         client = TestClient(app)
         response = client.post(

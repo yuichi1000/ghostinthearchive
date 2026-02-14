@@ -15,14 +15,14 @@ services:
     volumes:
       - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/keys/adc.json:ro
 
-  # NOTE: Mystery Pipeline runs on port 8002 (Curator on 8001) because they are
+  # NOTE: Pipeline Server runs on port 8002 (Curator on 8001) because they are
   # separate services with different resource/timeout requirements.
-  # See services/mystery_pipeline.py docstring for details.
-  mystery-pipeline:
+  # See services/pipeline_server.py docstring for details.
+  pipeline-server:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["services/mystery_pipeline.py"]
+    command: ["services/pipeline_server.py"]
     ports:
       - "8002:8080"
     environment:

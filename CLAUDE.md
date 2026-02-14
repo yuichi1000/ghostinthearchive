@@ -433,7 +433,7 @@ podcast_agents/               # Podcast 作成パイプライン
 └── tools/                    # Podcast 用 Firestore ツール
 
 services/                     # Cloud Run サービスエントリポイント
-├── mystery_pipeline.py       # ブログパイプライン Cloud Run サービス
+├── pipeline_server.py        # パイプライン Cloud Run サービス（Blog/Podcast）
 └── curator.py                # Curator Cloud Run サービス
 
 packages/shared/              # web-admin / web-public 共有コード (@ghost/shared)
