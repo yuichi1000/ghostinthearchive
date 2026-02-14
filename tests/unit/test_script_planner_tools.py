@@ -366,11 +366,11 @@ class TestFinalizeScript:
 
         assert result_data["status"] == "error"
 
-    def test_warns_on_missing_intro(self):
-        """intro セグメントがない場合は warning を含む。"""
+    def test_warns_on_missing_overview(self):
+        """overview セグメントがない場合は warning を含む。"""
         segments = [
-            {"type": "body", "label": "Body", "text": "Content..."},
-            {"type": "outro", "label": "Closing", "text": "Bye..."},
+            {"type": "act_i", "label": "Act I", "text": "Content..."},
+            {"type": "act_iiii", "label": "Act IIII", "text": "Closing..."},
         ]
         ctx = self._make_tool_context(
             segments=segments, outline=self._make_outline()
@@ -380,23 +380,7 @@ class TestFinalizeScript:
         result_data = json.loads(result)
 
         assert result_data["status"] == "success"
-        assert any("intro" in w.lower() for w in result_data["warnings"])
-
-    def test_warns_on_missing_outro(self):
-        """outro セグメントがない場合は warning を含む。"""
-        segments = [
-            {"type": "intro", "label": "Intro", "text": "Welcome..."},
-            {"type": "body", "label": "Body", "text": "Content..."},
-        ]
-        ctx = self._make_tool_context(
-            segments=segments, outline=self._make_outline()
-        )
-
-        result = finalize_script(ctx)
-        result_data = json.loads(result)
-
-        assert result_data["status"] == "success"
-        assert any("outro" in w.lower() for w in result_data["warnings"])
+        assert any("overview" in w.lower() for w in result_data["warnings"])
 
     def test_writes_to_structured_script_key(self):
         """state["structured_script"] に保存する（cli.py 互換）。"""
