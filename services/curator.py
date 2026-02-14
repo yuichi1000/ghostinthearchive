@@ -34,7 +34,16 @@ from shared.pipeline_failure import get_recent_failures
 
 logger = logging.getLogger(__name__)
 
+# 認証エラーを示すキーワード
+_AUTH_ERROR_KEYWORDS = ("reauthentication", "default credentials", "invalid_grant")
+
 app = FastAPI()
+
+
+def _is_auth_error(error: Exception) -> bool:
+    """例外が Google Cloud 認証エラーかどうかを判定する。"""
+    msg = str(error).lower()
+    return any(kw in msg for kw in _AUTH_ERROR_KEYWORDS)
 
 
 async def run_curator() -> list[dict]:
@@ -200,6 +209,15 @@ async def suggest_theme():
             content={"error": "Failed to parse suggestions from agent", "detail": str(e)},
         )
     except Exception as e:
+        if _is_auth_error(e):
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "error": "Failed to generate theme suggestions",
+                    "error_type": "auth_error",
+                    "detail": "Google Cloud の認証が切れています。サーバーで gcloud auth application-default login を実行してください。",
+                },
+            )
         return JSONResponse(
             status_code=500,
             content={"error": "Failed to generate theme suggestions", "detail": str(e)},
