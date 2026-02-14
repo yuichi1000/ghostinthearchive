@@ -1,0 +1,10 @@
+# Cloud Build configuration for web-admin
+# Docker イメージをビルドして Artifact Registry にプッシュ
+
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-f', 'web-admin/Dockerfile', '-t',
+           'asia-northeast1-docker.pkg.dev/ghostinthearchive/ghostinthearchive/web-admin:latest', '.']
+
+images:
+  - 'asia-northeast1-docker.pkg.dev/ghostinthearchive/ghostinthearchive/web-admin:latest'
