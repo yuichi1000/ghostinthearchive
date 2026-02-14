@@ -68,8 +68,6 @@ const dict: Dictionary = {
       "KI-gestützte Ermittlungen zu historischen Mysterien und folkloristischen Anomalien aus öffentlichen digitalen Archiven.",
     primarySources: "Primärquellen",
     technical: "Technik",
-    technicalDescription:
-      "Erstellt mit Google Agent Development Kit (ADK) und Vertex AI.",
     classification: "Klassifikation:",
   },
 };

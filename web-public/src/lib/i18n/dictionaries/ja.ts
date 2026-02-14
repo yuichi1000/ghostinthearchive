@@ -67,8 +67,6 @@ const dict: Dictionary = {
       "公開デジタルアーカイブから歴史的ミステリーと民俗学的異常を調査するAIパワード調査。",
     primarySources: "一次資料",
     technical: "技術情報",
-    technicalDescription:
-      "Google Agent Development Kit (ADK) と Vertex AI で構築。",
     classification: "分類：",
   },
 };
