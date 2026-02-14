@@ -193,6 +193,9 @@ export default function AdminPage() {
       const res = await fetch("/api/themes/suggest", { method: "POST" })
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}))
+        if (errorData.error_type === "auth_error") {
+          throw new Error("Google Cloud の認証が切れています。サーバーで再認証を実行してください。")
+        }
         throw new Error(errorData.detail || errorData.error || `API error (${res.status})`)
       }
       const data = await res.json()

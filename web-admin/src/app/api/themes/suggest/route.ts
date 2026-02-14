@@ -41,12 +41,14 @@ export async function POST() {
       const errorBody = await response.text();
       console.error(`Curator service error (${response.status}):`, errorBody);
       let detail = errorBody;
+      let errorType: string | undefined;
       try {
         const parsed = JSON.parse(errorBody);
         detail = parsed.detail || parsed.error || parsed.message || errorBody;
+        errorType = parsed.error_type;
       } catch { /* テキストのまま */ }
       return NextResponse.json(
-        { error: "Failed to generate theme suggestions", detail },
+        { error: "Failed to generate theme suggestions", detail, ...(errorType && { error_type: errorType }) },
         { status: response.status }
       );
     }
