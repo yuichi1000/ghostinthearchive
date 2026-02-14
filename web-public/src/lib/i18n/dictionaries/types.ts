@@ -4,7 +4,6 @@ export interface Dictionary {
     title: string;
     subtitle: string;
     description: string;
-    sources: string;
   };
   disclosure: {
     title: string;
