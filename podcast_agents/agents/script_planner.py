@@ -85,6 +85,15 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 #
 # このツール呼び出しは**必須**です。スキップしないでください。
 #
+# ## 固定エピソードオープニング
+# 毎エピソードの冒頭に以下の固定挨拶を必ず含めてください。
+# イントロセグメントの key_points にこのテキストをそのまま含めてください：
+#
+# "Welcome to Ghost in the Archive. I'm your narrator, Enceladus.
+# I'm not human. Not a ghost, either. ...Probably."
+#
+# この挨拶の後にイントロの残りの内容を設計してください。
+#
 # ## テキスト出力
 # ツール呼び出しに加えて、アウトライン全体を人が読みやすいテキスト形式でも出力してください。
 # これはパイプラインログや後続エージェントの参照として使用されます。
@@ -190,6 +199,15 @@ After designing the outline, you MUST call `save_script_outline` with a JSON str
 ```
 
 This tool call is MANDATORY — do NOT skip it.
+
+## Fixed Episode Opening
+Every episode MUST begin with the following fixed greeting in the intro segment.
+Include this verbatim in the intro segment's key_points:
+
+"Welcome to Ghost in the Archive. I'm your narrator, Enceladus.
+I'm not human. Not a ghost, either. ...Probably."
+
+Design the rest of the intro AFTER this greeting.
 
 ## Text Output
 In addition to the tool call, also output the outline as human-readable text.

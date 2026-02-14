@@ -4,7 +4,7 @@
 
 Usage:
     python -m podcast_agents script <mystery_id> [--instructions "..."]
-    python -m podcast_agents audio <podcast_id> [--voice "en-US-Studio-O"]
+    python -m podcast_agents audio <podcast_id> [--voice "en-US-Chirp3-HD-Enceladus"]
 
 脚本生成: Scriptwriter → Podcast Translator（JA）の ADK パイプラインを実行
 音声生成: 確定脚本を TTS で音声合成し GCS にアップロード
@@ -119,6 +119,7 @@ async def generate_script(
             timeout_seconds=PIPELINE_TIMEOUT_SECONDS,
             max_llm_calls=30,
             skip_authors={"podcast_script_commander"},
+            sequential_agents={"script_planner", "scriptwriter", "podcast_translator_ja"},
             on_text=lambda text: print(text),
         )
 
@@ -237,7 +238,7 @@ def main():
     if len(sys.argv) < 2:
         print("Usage:")
         print('  python -m podcast_agents script <mystery_id> [--instructions "..."]')
-        print('  python -m podcast_agents audio <podcast_id> [--voice "en-US-Studio-O"]')
+        print('  python -m podcast_agents audio <podcast_id> [--voice "en-US-Chirp3-HD-Enceladus"]')
         sys.exit(1)
 
     command = sys.argv[1]
