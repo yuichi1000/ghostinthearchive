@@ -12,6 +12,7 @@ interface ResponsiveHeroImageProps {
   variants?: ImageVariants
   alt: string
   priority?: boolean
+  className?: string
 }
 
 export function ResponsiveHeroImage({
@@ -19,6 +20,7 @@ export function ResponsiveHeroImage({
   variants,
   alt,
   priority = false,
+  className,
 }: ResponsiveHeroImageProps) {
   const hasVariants = variants && Object.keys(variants).length > 0
 
@@ -29,7 +31,7 @@ export function ResponsiveHeroImage({
         alt={alt}
         width={1200}
         height={675}
-        className="w-full h-auto"
+        className={className ?? "w-full h-auto"}
         priority={priority}
         unoptimized={hero.includes("localhost")}
       />
@@ -75,7 +77,7 @@ export function ResponsiveHeroImage({
         alt={alt}
         width={1200}
         height={675}
-        className="w-full h-auto"
+        className={className ?? "w-full h-auto"}
         priority={priority}
         unoptimized={isLocal}
       />
