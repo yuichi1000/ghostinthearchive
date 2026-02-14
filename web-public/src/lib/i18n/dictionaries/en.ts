@@ -67,8 +67,6 @@ const dict: Dictionary = {
       "AI-powered investigation into historical mysteries and folkloric anomalies from public digital archives.",
     primarySources: "Primary Sources",
     technical: "Technical",
-    technicalDescription:
-      "Built with Google Agent Development Kit (ADK) and Vertex AI.",
     classification: "Classification:",
   },
 };

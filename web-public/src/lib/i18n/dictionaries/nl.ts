@@ -68,8 +68,6 @@ const dict: Dictionary = {
       "AI-aangedreven onderzoek naar historische mysteries en folkloristische anomalieën uit openbare digitale archieven.",
     primarySources: "Primaire bronnen",
     technical: "Technisch",
-    technicalDescription:
-      "Gebouwd met Google Agent Development Kit (ADK) en Vertex AI.",
     classification: "Classificatie:",
   },
 };

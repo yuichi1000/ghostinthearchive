@@ -58,7 +58,6 @@ export interface Dictionary {
     description: string;
     primarySources: string;
     technical: string;
-    technicalDescription: string;
     classification: string;
   };
 }

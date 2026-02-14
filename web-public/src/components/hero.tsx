@@ -86,7 +86,7 @@ export function Hero({ dict }: HeroProps) {
   const sources = dict?.hero.sources ?? "LOC • DPLA • NYPL • Internet Archive"
 
   return (
-    <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
+    <section className="relative z-20 min-h-[70vh] flex items-center justify-center overflow-hidden">
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
