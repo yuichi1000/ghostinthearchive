@@ -278,3 +278,79 @@ class TestFormatCategoryDistribution:
         dist = {cat: 2 for cat in ["HIS", "FLK", "ANT", "OCC", "URB", "CRM", "REL", "LOC"]}
         result = format_category_distribution(dist)
         assert "Underrepresented" not in result
+
+
+class TestTranslateSuggestionsMerge:
+    """translate_suggestions のマージロジックが Translator 出力のキー名を正しく参照するかテスト。"""
+
+    @pytest.mark.asyncio
+    async def test_merges_translator_output_with_correct_keys(self):
+        """Translator が返す {suggestions: [{theme, description}]} 形式を正しくマージする。"""
+        en_suggestions = [
+            {"theme": "Ghost Ships", "description": "Maritime mysteries"},
+            {"theme": "Voodoo Queen", "description": "New Orleans legends"},
+        ]
+        # Translator エージェントの出力形式: サフィックスなしの素のフィールド名
+        translator_output = json.dumps({
+            "suggestions": [
+                {"theme": "幽霊船", "description": "海の怪異"},
+                {"theme": "ヴードゥーの女王", "description": "ニューオーリンズの伝説"},
+            ]
+        })
+
+        # Runner.run_async をモックし、Translator の出力をシミュレート
+        mock_event = MagicMock()
+        mock_part = MagicMock()
+        mock_part.text = translator_output
+        mock_event.content.parts = [mock_part]
+
+        async def mock_run_async(**kwargs):
+            yield mock_event
+
+        with patch("services.curator.Runner") as MockRunner, \
+             patch("services.curator.InMemorySessionService") as MockSessionService:
+            mock_runner_instance = MagicMock()
+            mock_runner_instance.run_async = mock_run_async
+            MockRunner.return_value = mock_runner_instance
+            mock_session = AsyncMock()
+            MockSessionService.return_value = mock_session
+
+            from services.curator import translate_suggestions
+            result = await translate_suggestions(en_suggestions)
+
+        assert len(result) == 2
+        assert result[0]["theme"] == "Ghost Ships"
+        assert result[0]["theme_ja"] == "幽霊船"
+        assert result[0]["description_ja"] == "海の怪異"
+        assert result[1]["theme_ja"] == "ヴードゥーの女王"
+        assert result[1]["description_ja"] == "ニューオーリンズの伝説"
+
+    @pytest.mark.asyncio
+    async def test_returns_english_only_when_json_parse_fails(self):
+        """Translator が不正な JSON を返した場合、英語のみのリストをそのまま返す。"""
+        en_suggestions = [
+            {"theme": "Ghost Ships", "description": "Maritime mysteries"},
+        ]
+
+        mock_event = MagicMock()
+        mock_part = MagicMock()
+        mock_part.text = "not valid json"
+        mock_event.content.parts = [mock_part]
+
+        async def mock_run_async(**kwargs):
+            yield mock_event
+
+        with patch("services.curator.Runner") as MockRunner, \
+             patch("services.curator.InMemorySessionService") as MockSessionService:
+            mock_runner_instance = MagicMock()
+            mock_runner_instance.run_async = mock_run_async
+            MockRunner.return_value = mock_runner_instance
+            mock_session = AsyncMock()
+            MockSessionService.return_value = mock_session
+
+            from services.curator import translate_suggestions
+            result = await translate_suggestions(en_suggestions)
+
+        assert len(result) == 1
+        assert result[0]["theme"] == "Ghost Ships"
+        assert "theme_ja" not in result[0]
