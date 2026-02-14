@@ -3,7 +3,7 @@
 from unittest.mock import patch
 
 import responses
-from requests.exceptions import ConnectionError, Timeout
+from requests.exceptions import ConnectionError, InvalidURL, Timeout, TooManyRedirects
 
 from mystery_agents.schemas.document import (
     ArchiveDocument,
@@ -155,6 +155,30 @@ class TestVerifyLink:
 
         assert result.is_reachable is True
         assert result.is_domain_consistent is True
+
+    @responses.activate
+    def test_too_many_redirects_handling(self):
+        """TooManyRedirects 例外 → is_reachable=False + error 記録。"""
+        url = "https://www.loc.gov/item/loop/"
+        responses.add(responses.HEAD, url, body=TooManyRedirects("Exceeded redirects"))
+
+        result = verify_link(url, SourceType.LOC_DIGITAL)
+
+        assert result.is_reachable is False
+        assert result.status_code is None
+        assert result.error is not None
+
+    @responses.activate
+    def test_invalid_url_handling(self):
+        """InvalidURL 例外 → is_reachable=False + error 記録。"""
+        url = "https://www.loc.gov/item/bad\x00url/"
+        responses.add(responses.HEAD, url, body=InvalidURL("Invalid URL"))
+
+        result = verify_link(url, SourceType.LOC_DIGITAL)
+
+        assert result.is_reachable is False
+        assert result.status_code is None
+        assert result.error is not None
 
 
 class TestValidateDocuments:

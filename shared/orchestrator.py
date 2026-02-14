@@ -32,6 +32,20 @@ from shared.pipeline_run import (
 
 logger = logging.getLogger(__name__)
 
+
+def _format_exception_group(exc: BaseException) -> str:
+    """ExceptionGroup からサブ例外を再帰的に抽出し、可読文字列に整形する。"""
+    if not isinstance(exc, ExceptionGroup):
+        return str(exc)
+    parts = []
+    for sub in exc.exceptions:
+        if isinstance(sub, ExceptionGroup):
+            parts.append(_format_exception_group(sub))
+        else:
+            parts.append(f"{type(sub).__name__}: {sub}")
+    return " | ".join(parts)
+
+
 # スキップされたエージェント判定の閾値（秒）
 _SKIP_DURATION_THRESHOLD = 0.5
 
@@ -304,5 +318,7 @@ async def run_pipeline(
         error_pipeline_run(run_id, f"Pipeline timed out after {timeout_seconds}s")
         raise
     except Exception as e:
-        error_pipeline_run(run_id, str(e))
+        error_message = _format_exception_group(e)
+        logger.error("Pipeline failed: %s", error_message, exc_info=True)
+        error_pipeline_run(run_id, error_message)
         raise
