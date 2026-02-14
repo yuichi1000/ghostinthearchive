@@ -36,6 +36,9 @@ steps:
     args: ['deploy', '--only', 'hosting:public', '--project', '$PROJECT_ID']
     dir: 'web-public'
 
+substitutions:
+  _GTM_ID: ''
+
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: E2_HIGHCPU_8

@@ -29,7 +29,7 @@ export function FeaturedMysteryCard({ mystery, lang, label }: FeaturedMysteryCar
         {hasImage && (
           <div className="relative overflow-hidden max-h-56 sm:max-h-64 lg:max-h-none lg:h-full">
             <ResponsiveHeroImage
-              hero={mystery.images!.hero}
+              hero={mystery.images!.hero!}
               variants={mystery.images!.variants}
               alt={title}
               priority
