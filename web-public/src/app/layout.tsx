@@ -26,23 +26,6 @@ export const metadata: Metadata = {
   title: 'Ghost in the Archive',
   description: 'AI がアーカイブの闇から発掘する、歴史の亡霊たち — Unearthing historical mysteries and folkloric anomalies from public digital archives.',
   keywords: ["歴史", "ミステリー", "民俗学", "フォークロア", "デジタルアーカイブ", "AI"],
-  icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
-  },
 }
 
 const gtmId = process.env.NEXT_PUBLIC_GTM_ID
