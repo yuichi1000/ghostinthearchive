@@ -271,6 +271,62 @@ class TestRunPipeline:
 
         assert result.mystery_id is None
 
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.update_agent_completed")
+    @patch("shared.orchestrator.update_agent_started", return_value=0)
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-008")
+    async def test_mystery_id_from_published_mystery_id_state(
+        self, mock_create, mock_started, mock_completed, mock_complete
+    ):
+        """published_mystery_id が優先的に使用される。"""
+        fake_session = FakeInMemorySessionService(
+            post_run_state={
+                "published_mystery_id": "HIS-NY-212-20260215100000",
+                "published_episode": "The mystery has been published successfully!",
+            }
+        )
+
+        with patch("shared.orchestrator.Runner", return_value=_make_runner()), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            result = await run_pipeline(
+                agent=MagicMock(),
+                app_name="test_app",
+                user_message="test",
+                initial_state={},
+                run_type="blog",
+            )
+
+        assert result.mystery_id == "HIS-NY-212-20260215100000"
+        mock_complete.assert_called_once_with("run-008", mystery_id="HIS-NY-212-20260215100000")
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.update_agent_completed")
+    @patch("shared.orchestrator.update_agent_started", return_value=0)
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-009")
+    async def test_fallback_to_published_episode_with_leading_whitespace(
+        self, mock_create, mock_started, mock_completed, mock_complete
+    ):
+        """published_mystery_id がない場合、published_episode を strip してフォールバック。"""
+        fake_session = FakeInMemorySessionService(
+            post_run_state={
+                "published_episode": '\n{"mystery_id": "FLK-MA-978-20260215120000", "status": "success"}'
+            }
+        )
+
+        with patch("shared.orchestrator.Runner", return_value=_make_runner()), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            result = await run_pipeline(
+                agent=MagicMock(),
+                app_name="test_app",
+                user_message="test",
+                initial_state={},
+                run_type="blog",
+            )
+
+        assert result.mystery_id == "FLK-MA-978-20260215120000"
+
 
 class TestParallelAgentTracking:
     """並列エージェントのインターリーブイベント追跡テスト"""
