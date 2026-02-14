@@ -180,7 +180,7 @@ class TestGeneratePodcastAudio:
             result = generate_podcast_audio(segments, "test-podcast-id")
 
         assert result["format"] == "mp3"
-        assert result["voice_name"] == "en-US-Studio-O"
+        assert result["voice_name"] == "en-US-Chirp3-HD-Enceladus"
         assert result["segment_count"] == 3
         assert "podcasts/test-podcast-id/episode.mp3" in result["gcs_path"]
         mock_blob.upload_from_string.assert_called_once()

@@ -81,6 +81,15 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # - **各セグメントの語数**: アウトラインの word_target を目安にする
 # - **前のセグメントとの連続性**: 各セグメントは前のセグメントから自然につながること
 #
+# ## 固定エピソードオープニング
+# 毎エピソードのイントロセグメントは、以下の挨拶で**必ず**始めてください（一字一句そのまま）：
+#
+# "Welcome to Ghost in the Archive. I'm your narrator, Enceladus.
+# I'm not human. Not a ghost, either. ...Probably."
+#
+# この挨拶の後にイントロの残りの内容を書いてください。
+# このオープニングを変更、言い換え、省略しないでください。
+#
 # ## 重要
 # - ブログ記事の事実と出典を正確に反映すること
 # - 事実と推測を明確に区別すること
@@ -153,6 +162,15 @@ Use markers for each segment: [INTRO], [SEGMENT: Label Name], [OUTRO].
 - **Humor**: Include a witty joke at the opening (Intro) and closing (Outro)
 - **Word Target**: Follow the outline's word_target for each segment
 - **Continuity**: Each segment should flow naturally from the previous one
+
+## Fixed Episode Opening
+Every intro segment MUST begin with the following greeting VERBATIM:
+
+"Welcome to Ghost in the Archive. I'm your narrator, Enceladus.
+I'm not human. Not a ghost, either. ...Probably."
+
+Write the rest of the intro content after this greeting.
+Do NOT modify, paraphrase, or omit this opening.
 
 ## Important
 - Accurately reflect the facts and sources from the blog article

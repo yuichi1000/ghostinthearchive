@@ -373,3 +373,106 @@ class TestParallelAgentTracking:
         assert "librarian_en" in agent_names
         # librarian_de は空テキスト + 短時間で除去される
         assert "librarian_de" not in agent_names
+
+
+class TestSequentialAgentCompletion:
+    """sequential_agents による直列完了テスト"""
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.update_agent_completed")
+    @patch("shared.orchestrator.update_agent_started", return_value=0)
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-200")
+    async def test_sequential_agent_auto_completes_predecessor(
+        self, mock_create, mock_started, mock_completed, mock_complete
+    ):
+        """sequential_agents 内で新エージェント開始時に前のエージェントが自動完了される。"""
+        events = [
+            _make_event(author="script_planner", text="Outline done"),
+            _make_event(author="scriptwriter", text="Writing segment 1"),
+            _make_event(author="scriptwriter", text="Writing segment 2"),
+            _make_event(author="podcast_translator_ja", text="翻訳中"),
+        ]
+        fake_session = FakeInMemorySessionService()
+
+        with patch("shared.orchestrator.Runner", return_value=_make_runner(events)), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            result = await run_pipeline(
+                agent=MagicMock(),
+                app_name="test_app",
+                user_message="test",
+                initial_state={},
+                skip_authors={"podcast_script_commander"},
+                sequential_agents={"script_planner", "scriptwriter", "podcast_translator_ja"},
+            )
+
+        # 3エージェントすべてが記録される
+        assert len(result.logs) == 3
+        assert result.logs[0]["agent_name"] == "script_planner"
+        assert result.logs[1]["agent_name"] == "scriptwriter"
+        assert result.logs[2]["agent_name"] == "podcast_translator_ja"
+
+        # すべて completed
+        assert all(log["status"] == "completed" for log in result.logs)
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.update_agent_completed")
+    @patch("shared.orchestrator.update_agent_started", return_value=0)
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-201")
+    async def test_sequential_agents_does_not_affect_non_members(
+        self, mock_create, mock_started, mock_completed, mock_complete
+    ):
+        """sequential_agents に含まれないエージェントは直列完了の対象外。"""
+        events = [
+            _make_event(author="script_planner", text="Outline done"),
+            _make_event(author="other_agent", text="I'm not sequential"),
+            _make_event(author="scriptwriter", text="Writing"),
+        ]
+        fake_session = FakeInMemorySessionService()
+
+        with patch("shared.orchestrator.Runner", return_value=_make_runner(events)), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            result = await run_pipeline(
+                agent=MagicMock(),
+                app_name="test_app",
+                user_message="test",
+                initial_state={},
+                sequential_agents={"script_planner", "scriptwriter"},
+            )
+
+        # script_planner は scriptwriter 開始時に自動完了
+        # other_agent は sequential_agents 外なので影響を受けない
+        agent_names = [log["agent_name"] for log in result.logs]
+        assert "script_planner" in agent_names
+        assert "other_agent" in agent_names
+        assert "scriptwriter" in agent_names
+        assert len(result.logs) == 3
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.complete_pipeline_run")
+    @patch("shared.orchestrator.update_agent_completed")
+    @patch("shared.orchestrator.update_agent_started", return_value=0)
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-202")
+    async def test_no_sequential_agents_same_behavior(
+        self, mock_create, mock_started, mock_completed, mock_complete
+    ):
+        """sequential_agents 未指定時は従来と同じ挙動。"""
+        events = [
+            _make_event(author="script_planner", text="Outline done"),
+            _make_event(author="scriptwriter", text="Writing"),
+        ]
+        fake_session = FakeInMemorySessionService()
+
+        with patch("shared.orchestrator.Runner", return_value=_make_runner(events)), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            result = await run_pipeline(
+                agent=MagicMock(),
+                app_name="test_app",
+                user_message="test",
+                initial_state={},
+            )
+
+        assert len(result.logs) == 2
+        assert result.logs[0]["agent_name"] == "script_planner"
+        assert result.logs[1]["agent_name"] == "scriptwriter"
