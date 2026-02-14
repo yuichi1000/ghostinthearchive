@@ -476,13 +476,15 @@ function AdminMysteryCard({ mystery, lang, onApprove, onArchive }: AdminMysteryC
       <div className="flex items-center justify-between gap-4">
         {mystery.status === "published" ? (
           <div className="flex items-center gap-3">
-            <Link
-              href={`/mystery/${mystery.mystery_id}`}
+            <a
+              href={`${process.env.NEXT_PUBLIC_SITE_URL || ""}/en/mystery/${mystery.mystery_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm text-gold hover:text-parchment transition-colors no-underline"
             >
               <Eye className="w-4 h-4" />
               View Published
-            </Link>
+            </a>
           </div>
         ) : (
           <div className="flex items-center gap-3">
