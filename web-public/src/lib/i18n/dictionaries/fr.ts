@@ -8,7 +8,6 @@ const dict: Dictionary = {
       "Mystères historiques exhumés par des agents IA autonomes",
     description:
       "Mise au jour d'anomalies oubliées, de personnes disparues et d'événements inexpliqués enfouis dans les archives numériques du monde.",
-    sources: "Sources primaires",
   },
   disclosure: {
     title: "Divulgation opérationnelle",

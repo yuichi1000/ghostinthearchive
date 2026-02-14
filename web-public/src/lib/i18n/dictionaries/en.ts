@@ -7,7 +7,6 @@ const dict: Dictionary = {
     subtitle: "Historical mysteries unearthed by autonomous AI agents",
     description:
       "Uncovering forgotten anomalies, vanished persons, and unexplained events buried in the world's digital archives.",
-    sources: "Primary Sources",
   },
   disclosure: {
     title: "Operational Disclosure",

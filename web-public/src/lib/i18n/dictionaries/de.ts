@@ -8,7 +8,6 @@ const dict: Dictionary = {
       "Historische Mysterien, ausgegraben von autonomen KI-Agenten",
     description:
       "Vergessene Anomalien, verschwundene Personen und unerklärliche Ereignisse, verborgen in den digitalen Archiven der Welt, werden ans Licht gebracht.",
-    sources: "Primärquellen",
   },
   disclosure: {
     title: "Operative Offenlegung",
