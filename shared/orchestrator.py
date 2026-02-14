@@ -287,15 +287,22 @@ async def run_pipeline(
         # mystery_id 抽出（blog パイプラインのみ）
         mystery_id = None
         if run_type == "blog" and session_state:
-            published = session_state.get("published_episode", "")
-            if isinstance(published, str) and published.startswith("{"):
-                try:
-                    published_data = json.loads(published)
-                    mystery_id = published_data.get("mystery_id")
-                except (json.JSONDecodeError, AttributeError):
-                    pass
-            elif isinstance(published, dict):
-                mystery_id = published.get("mystery_id")
+            # 優先: ツールがセッション状態に直接書き込んだ mystery_id
+            mystery_id = session_state.get("published_mystery_id")
+
+            # フォールバック: published_episode テキストから抽出
+            if not mystery_id:
+                published = session_state.get("published_episode", "")
+                if isinstance(published, str):
+                    text = published.strip()
+                    if text.startswith("{"):
+                        try:
+                            published_data = json.loads(text)
+                            mystery_id = published_data.get("mystery_id")
+                        except (json.JSONDecodeError, AttributeError):
+                            pass
+                elif isinstance(published, dict):
+                    mystery_id = published.get("mystery_id")
 
         # blog パイプラインで記事未生成の場合、ゲート失敗を検出してエラーマーク
         if run_type == "blog" and mystery_id is None:
