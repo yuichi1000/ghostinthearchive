@@ -25,6 +25,22 @@ jobs:
       - run: pip install ruff
       - run: ruff check .
 
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: web-public typecheck
+        run: npx next typegen && npx tsc --noEmit
+        working-directory: web-public
+      - name: web-admin typecheck
+        run: npx next typegen && npx tsc --noEmit
+        working-directory: web-admin
+
   docker-build:
     runs-on: ubuntu-latest
     steps:
