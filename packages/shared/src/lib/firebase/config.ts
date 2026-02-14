@@ -35,6 +35,14 @@ const globalForFirebase = globalThis as unknown as {
  */
 export function getFirebaseApp(): FirebaseApp {
   if (!globalForFirebase._firebaseApp) {
+    // projectId が未設定なら環境変数の設定漏れ
+    if (!firebaseConfig.projectId) {
+      throw new Error(
+        "[Firebase] NEXT_PUBLIC_FIREBASE_PROJECT_ID が未設定です。" +
+        ".env.local（開発）または .env.production（ビルド）を確認してください。"
+      );
+    }
+
     // 既存のアプリがあれば再利用、なければ新規作成
     const existingApps = getApps();
     if (existingApps.length > 0) {

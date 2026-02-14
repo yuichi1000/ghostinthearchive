@@ -25,14 +25,11 @@ export const dynamicParams = false
 export const revalidate = 0
 
 export async function generateStaticParams() {
-  try {
-    const ids = await getPublishedMysteryIds()
-    return SUPPORTED_LANGS.flatMap((lang) =>
-      ids.map((id) => ({ lang, id }))
-    )
-  } catch {
-    return []
-  }
+  // Firestore 接続エラー時はビルドを失敗させる（空デプロイ防止）
+  const ids = await getPublishedMysteryIds()
+  return SUPPORTED_LANGS.flatMap((lang) =>
+    ids.map((id) => ({ lang, id }))
+  )
 }
 
 export async function generateMetadata({
