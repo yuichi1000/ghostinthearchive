@@ -23,6 +23,7 @@ export const PIPELINE_PHASES: PipelinePhase[] = [
   { id: "translation",        label: "翻訳",        match: (n) => n.startsWith("translator") },
   { id: "publish",            label: "公開処理",    match: (n) => n === "publisher" },
   // Podcast パイプライン
+  { id: "script_planning",    label: "アウトライン設計", match: (n) => n === "script_planner" },
   { id: "scriptwriting",      label: "脚本作成",    match: (n) => n === "scriptwriter" },
   { id: "script_translation", label: "脚本翻訳",    match: (n) => n === "podcast_translator_ja" },
 ]

@@ -32,12 +32,18 @@ def load_mystery(mystery_id: str) -> dict | None:
     return doc.to_dict()
 
 
-def create_podcast(mystery_id: str, custom_instructions: str = "") -> str:
+def create_podcast(
+    mystery_id: str,
+    custom_instructions: str = "",
+    *,
+    pipeline_run_id: str | None = None,
+) -> str:
     """podcasts コレクションに新規ドキュメントを作成する。
 
     Args:
         mystery_id: 元記事の mystery ID
         custom_instructions: 管理者からのカスタム指示
+        pipeline_run_id: 事前作成済みの pipeline_run ID（即座に紐付け）
 
     Returns:
         作成された podcast_id
@@ -57,7 +63,7 @@ def create_podcast(mystery_id: str, custom_instructions: str = "") -> str:
         "script": None,
         "script_ja": None,
         "audio": None,
-        "pipeline_run_id": None,
+        "pipeline_run_id": pipeline_run_id,
         "created_at": now,
         "updated_at": now,
         "error_message": None,
