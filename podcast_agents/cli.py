@@ -91,12 +91,14 @@ async def generate_script(
     if run_id is None:
         run_id = create_pipeline_run("podcast", mystery_id=mystery_id)
 
-    # pipeline_run_id を podcast に紐付け
+    # pipeline_run_id を podcast に紐付け（未設定の場合のみ: CLI 利用時）
     from shared.firestore import get_firestore_client
     db = get_firestore_client()
-    db.collection("podcasts").document(podcast_id).update({
-        "pipeline_run_id": run_id,
-    })
+    doc = db.collection("podcasts").document(podcast_id).get()
+    if doc.exists and not doc.to_dict().get("pipeline_run_id"):
+        db.collection("podcasts").document(podcast_id).update({
+            "pipeline_run_id": run_id,
+        })
 
     try:
         # Orchestrator 呼び出し
