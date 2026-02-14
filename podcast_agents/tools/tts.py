@@ -37,7 +37,16 @@ DEFAULT_SAMPLE_RATE = 24000
 
 
 def _get_tts_client() -> texttospeech.TextToSpeechClient:
-    """TTS クライアントを取得する。"""
+    """TTS クライアントを取得する。
+
+    GOOGLE_CLOUD_PROJECT が設定されている場合、クォータプロジェクトとして
+    明示的に指定する（ADC のデフォルトクォータプロジェクトに依存しない）。
+    """
+    project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+    if project:
+        from google.api_core.client_options import ClientOptions
+        client_options = ClientOptions(quota_project_id=project)
+        return texttospeech.TextToSpeechClient(client_options=client_options)
     return texttospeech.TextToSpeechClient()
 
 
