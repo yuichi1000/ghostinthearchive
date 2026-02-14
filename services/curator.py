@@ -111,9 +111,12 @@ async def translate_suggestions(suggestions: list[dict]) -> list[dict]:
     Returns:
         List of bilingual suggestion dicts with theme, description, theme_ja, description_ja.
     """
-    # Build translation input
+    # Translator が期待するのは theme + description のみ（category 等を除去）
     translation_input = {
-        "suggestions": suggestions,
+        "suggestions": [
+            {"theme": s.get("theme", ""), "description": s.get("description", "")}
+            for s in suggestions
+        ],
     }
 
     session_service = InMemorySessionService()
@@ -157,6 +160,10 @@ async def translate_suggestions(suggestions: list[dict]) -> list[dict]:
         translation = json.loads(cleaned)
     except json.JSONDecodeError:
         # 翻訳パース失敗時は英語のみで返す
+        logger.warning(
+            "翻訳結果の JSON パース失敗。英語のみで返却。Translator 出力: %.500s",
+            cleaned,
+        )
         return suggestions
 
     # Merge English and Japanese

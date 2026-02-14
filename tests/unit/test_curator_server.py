@@ -5,6 +5,7 @@ then Translator adds Japanese translations.
 """
 
 import json
+import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -17,10 +18,12 @@ def mock_run_curator():
         {
             "theme": "Ghost Ship Legends and Maritime Accident Records in 1850s Boston Harbor",
             "description": "Cross-referencing ghost ship sightings around Boston Harbor with actual maritime accident records reveals intriguing contradictions.",
+            "category": "OCC",
         },
         {
             "theme": "The Voodoo Queen of New Orleans and 1870s Epidemic Records",
             "description": "Exploring the connection between the legend of Marie Laveau and actual epidemic records.",
+            "category": "FLK",
         },
     ]
     with patch("services.curator.run_curator", new_callable=AsyncMock, return_value=sample_suggestions) as mock:
@@ -286,9 +289,10 @@ class TestTranslateSuggestionsMerge:
     @pytest.mark.asyncio
     async def test_merges_translator_output_with_correct_keys(self):
         """Translator が返す {suggestions: [{theme, description}]} 形式を正しくマージする。"""
+        # Curator の出力には category が含まれる（実フロー準拠）
         en_suggestions = [
-            {"theme": "Ghost Ships", "description": "Maritime mysteries"},
-            {"theme": "Voodoo Queen", "description": "New Orleans legends"},
+            {"theme": "Ghost Ships", "description": "Maritime mysteries", "category": "OCC"},
+            {"theme": "Voodoo Queen", "description": "New Orleans legends", "category": "FLK"},
         ]
         # Translator エージェントの出力形式: サフィックスなしの素のフィールド名
         translator_output = json.dumps({
@@ -307,8 +311,18 @@ class TestTranslateSuggestionsMerge:
         async def mock_run_async(**kwargs):
             yield mock_event
 
+        # json.dumps をスパイして translation_input をキャプチャ
+        captured_inputs = []
+        _original_dumps = json.dumps
+
+        def _spy_dumps(obj, *args, **kwargs):
+            if isinstance(obj, dict) and "suggestions" in obj:
+                captured_inputs.append(obj)
+            return _original_dumps(obj, *args, **kwargs)
+
         with patch("services.curator.Runner") as MockRunner, \
-             patch("services.curator.InMemorySessionService") as MockSessionService:
+             patch("services.curator.InMemorySessionService") as MockSessionService, \
+             patch.object(json, "dumps", side_effect=_spy_dumps):
             mock_runner_instance = MagicMock()
             mock_runner_instance.run_async = mock_run_async
             MockRunner.return_value = mock_runner_instance
@@ -318,6 +332,11 @@ class TestTranslateSuggestionsMerge:
             from services.curator import translate_suggestions
             result = await translate_suggestions(en_suggestions)
 
+        # Translator への入力に category が含まれないことを検証
+        assert len(captured_inputs) == 1
+        for s in captured_inputs[0]["suggestions"]:
+            assert "category" not in s, "Translator 入力に category が混入している"
+
         assert len(result) == 2
         assert result[0]["theme"] == "Ghost Ships"
         assert result[0]["theme_ja"] == "幽霊船"
@@ -326,8 +345,8 @@ class TestTranslateSuggestionsMerge:
         assert result[1]["description_ja"] == "ニューオーリンズの伝説"
 
     @pytest.mark.asyncio
-    async def test_returns_english_only_when_json_parse_fails(self):
-        """Translator が不正な JSON を返した場合、英語のみのリストをそのまま返す。"""
+    async def test_returns_english_only_when_json_parse_fails(self, caplog):
+        """Translator が不正な JSON を返した場合、警告ログを出力し英語のみのリストをそのまま返す。"""
         en_suggestions = [
             {"theme": "Ghost Ships", "description": "Maritime mysteries"},
         ]
@@ -349,8 +368,11 @@ class TestTranslateSuggestionsMerge:
             MockSessionService.return_value = mock_session
 
             from services.curator import translate_suggestions
-            result = await translate_suggestions(en_suggestions)
+            with caplog.at_level(logging.WARNING, logger="services.curator"):
+                result = await translate_suggestions(en_suggestions)
 
         assert len(result) == 1
         assert result[0]["theme"] == "Ghost Ships"
         assert "theme_ja" not in result[0]
+        # 警告ログが出力されていることを検証
+        assert any("JSON パース失敗" in record.message for record in caplog.records)
