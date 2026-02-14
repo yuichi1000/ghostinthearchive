@@ -4,7 +4,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from shared.orchestrator import PipelineResult, _detect_gate_failure, run_pipeline
+from shared.orchestrator import (
+    PipelineResult,
+    _detect_gate_failure,
+    _format_exception_group,
+    run_pipeline,
+)
 from tests.fakes import FakeInMemorySessionService
 
 
@@ -635,3 +640,78 @@ class TestGateFailureIntegration:
         assert result.mystery_id is None
         mock_complete.assert_called_once_with("run-303", mystery_id=None)
         mock_error.assert_not_called()
+
+
+class TestFormatExceptionGroup:
+    """_format_exception_group() の単体テスト"""
+
+    def test_plain_exception_returns_str(self):
+        """通常例外は str(exc) を返す。"""
+        exc = RuntimeError("something broke")
+        assert _format_exception_group(exc) == "something broke"
+
+    def test_single_sub_exception(self):
+        """サブ例外1個の ExceptionGroup を展開する。"""
+        inner = ValueError("bad value")
+        group = ExceptionGroup("group", [inner])
+        result = _format_exception_group(group)
+        assert "ValueError: bad value" in result
+
+    def test_multiple_sub_exceptions(self):
+        """サブ例外複数の ExceptionGroup を展開する。"""
+        group = ExceptionGroup("group", [
+            RuntimeError("err1"),
+            TypeError("err2"),
+        ])
+        result = _format_exception_group(group)
+        assert "RuntimeError: err1" in result
+        assert "TypeError: err2" in result
+        assert " | " in result
+
+    def test_nested_exception_group(self):
+        """ネストした ExceptionGroup を再帰的に展開する。"""
+        inner_group = ExceptionGroup("inner", [KeyError("missing")])
+        outer_group = ExceptionGroup("outer", [
+            inner_group,
+            IOError("disk full"),
+        ])
+        result = _format_exception_group(outer_group)
+        assert "KeyError" in result
+        assert "IOError" in result or "OSError" in result
+
+
+class TestExceptionGroupInPipeline:
+    """run_pipeline で ExceptionGroup 発生時のサブ例外展開テスト"""
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.error_pipeline_run")
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-400")
+    async def test_exception_group_unwrapped_in_error_message(
+        self, mock_create, mock_error
+    ):
+        """ExceptionGroup 発生時に error_pipeline_run にサブ例外詳細が渡される。"""
+        async def error_run_async(**kwargs):
+            raise ExceptionGroup("TaskGroup errors", [
+                RuntimeError("tool X failed"),
+                ValueError("invalid input"),
+            ])
+            yield
+
+        runner = MagicMock()
+        runner.run_async = error_run_async
+        fake_session = FakeInMemorySessionService()
+
+        with patch("shared.orchestrator.Runner", return_value=runner), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            with pytest.raises(ExceptionGroup):
+                await run_pipeline(
+                    agent=MagicMock(),
+                    app_name="test_app",
+                    user_message="test",
+                    initial_state={},
+                )
+
+        # サブ例外の詳細が error_pipeline_run に渡される
+        error_msg = mock_error.call_args[0][1]
+        assert "RuntimeError: tool X failed" in error_msg
+        assert "ValueError: invalid input" in error_msg

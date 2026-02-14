@@ -16,7 +16,7 @@ from .chronicling_america import search_chronicling_america
 from .ddb import search_ddb
 from .dpla import search_dpla
 from .internet_archive import search_internet_archive
-from .link_validator import validate_documents
+from .link_validator import ValidationSummary, validate_documents
 from .loc_digital import search_loc_digital
 from .nypl_digital import search_nypl
 
@@ -75,20 +75,23 @@ def search_newspapers(
         nonlocal total_hits, error
         if not kw_list:
             return
-        results = search_chronicling_america(
-            keywords=kw_list,
-            date_start=start,
-            date_end=end,
-            states=search_states,
-            rows=max_results,
-        )
-        total_hits += results["total_hits"]
-        if results.get("error"):
-            error = results["error"]
-        for doc in results.get("documents", []):
-            if doc.source_url not in seen_urls:
-                seen_urls.add(doc.source_url)
-                all_docs.append(doc)
+        try:
+            results = search_chronicling_america(
+                keywords=kw_list,
+                date_start=start,
+                date_end=end,
+                states=search_states,
+                rows=max_results,
+            )
+            total_hits += results["total_hits"]
+            if results.get("error"):
+                error = results["error"]
+            for doc in results.get("documents", []):
+                if doc.source_url not in seen_urls:
+                    seen_urls.add(doc.source_url)
+                    all_docs.append(doc)
+        except Exception as e:
+            error = str(e)
 
     # Level 1: All keywords together (bilingual)
     levels_used.append("L1_bilingual_combined")
@@ -127,9 +130,16 @@ def search_newspapers(
                 if len(all_docs) >= min_results:
                     break
 
-    # リンク品質検証
-    validation = validate_documents(all_docs)
-    all_docs = validation.verified_documents
+    # リンク品質検証（失敗時は検証スキップで全ドキュメント保持）
+    try:
+        validation = validate_documents(all_docs)
+        all_docs = validation.verified_documents
+    except Exception:
+        validation = ValidationSummary(
+            total_checked=0, reachable=0, unreachable=0,
+            domain_mismatch=0, removed_urls=[], duration_ms=0,
+            verified_documents=list(all_docs),
+        )
     docs = [doc.model_dump() for doc in all_docs]
 
     result = {
@@ -357,9 +367,16 @@ def search_archives(
     for kw_group in keyword_groups:
         all_keywords_used.extend(kw_group)
 
-    # リンク品質検証
-    validation = validate_documents(all_docs)
-    all_docs = validation.verified_documents
+    # リンク品質検証（失敗時は検証スキップで全ドキュメント保持）
+    try:
+        validation = validate_documents(all_docs)
+        all_docs = validation.verified_documents
+    except Exception:
+        validation = ValidationSummary(
+            total_checked=0, reachable=0, unreachable=0,
+            domain_mismatch=0, removed_urls=[], duration_ms=0,
+            verified_documents=list(all_docs),
+        )
     all_docs_dicts = [doc.model_dump() for doc in all_docs]
 
     # Build warnings for missing API keys
