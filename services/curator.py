@@ -142,7 +142,14 @@ async def translate_suggestions(suggestions: list[dict]) -> list[dict]:
         app_name="ghost_in_the_archive_curator_translator",
         user_id=user_id,
         session_id=session_id,
-        state={},
+        # Translator のインストラクションが {creative_content}, {mystery_report},
+        # {structured_report} を参照するため、空文字で初期化する。
+        # Curator 経由の場合はユーザーメッセージの JSON が翻訳ソースとなる。
+        state={
+            "creative_content": "",
+            "mystery_report": "",
+            "structured_report": "",
+        },
     )
 
     result_text = ""
