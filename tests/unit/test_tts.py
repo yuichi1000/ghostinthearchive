@@ -7,7 +7,6 @@ import pytest
 from podcast_agents.tools.tts import (
     _split_text,
     _split_by_sentences,
-    _create_outro_section,
     synthesize_segment,
     generate_podcast_audio,
 )
@@ -154,6 +153,7 @@ class TestGeneratePodcastAudio:
     音楽アセットは無効化してナレーションのみの動作を検証する。
     """
 
+    @patch("podcast_agents.tools.tts.ACT_AUDIO_PATHS", {})
     @patch("podcast_agents.tools.tts.OUTRO_MUSIC_PATH")
     @patch("podcast_agents.tools.tts.INTRO_MUSIC_PATH")
     @patch("podcast_agents.tools.tts.get_storage_bucket")
@@ -178,13 +178,14 @@ class TestGeneratePodcastAudio:
         mock_bucket.return_value = mock_bucket_obj
 
         segments = [
-            {"type": "intro", "label": "Intro", "text": "Welcome"},
-            {"type": "body", "label": "Main", "text": "The story begins..."},
-            {"type": "outro", "label": "Closing", "text": "Goodbye"},
+            {"type": "overview", "label": "Overview", "text": "Welcome"},
+            {"type": "act_i", "label": "Act I", "text": "The story begins..."},
+            {"type": "act_iiii", "label": "Act IIII", "text": "In conclusion..."},
         ]
 
         with patch("podcast_agents.tools.tts.AudioSegment") as mock_as:
             mock_as.silent.return_value = MagicMock()
+            mock_as.empty.return_value = mock_audio
 
             result = generate_podcast_audio(segments, "test-podcast-id")
 
@@ -194,6 +195,7 @@ class TestGeneratePodcastAudio:
         assert "podcasts/test-podcast-id/episode.mp3" in result["gcs_path"]
         mock_blob.upload_from_string.assert_called_once()
 
+    @patch("podcast_agents.tools.tts.ACT_AUDIO_PATHS", {})
     @patch("podcast_agents.tools.tts.OUTRO_MUSIC_PATH")
     @patch("podcast_agents.tools.tts.INTRO_MUSIC_PATH")
     @patch("podcast_agents.tools.tts.get_storage_bucket")
@@ -205,6 +207,7 @@ class TestGeneratePodcastAudio:
 
         mock_audio = MagicMock()
         mock_audio.__len__ = MagicMock(return_value=30000)
+        mock_audio.__add__ = MagicMock(return_value=mock_audio)
         mock_audio.export = MagicMock()
         mock_synth.return_value = mock_audio
 
@@ -214,27 +217,32 @@ class TestGeneratePodcastAudio:
         mock_bucket.return_value = mock_bucket_obj
 
         segments = [
-            {"type": "intro", "label": "Intro", "text": "Welcome"},
-            {"type": "body", "label": "Empty", "text": ""},
-            {"type": "body", "label": "Also Empty", "text": "   "},
+            {"type": "overview", "label": "Overview", "text": "Welcome"},
+            {"type": "act_i", "label": "Empty", "text": ""},
+            {"type": "act_ii", "label": "Also Empty", "text": "   "},
         ]
 
-        with patch("podcast_agents.tools.tts.AudioSegment"):
+        with patch("podcast_agents.tools.tts.AudioSegment") as mock_as:
+            mock_as.silent.return_value = MagicMock()
+            mock_as.empty.return_value = mock_audio
+
             result = generate_podcast_audio(segments, "test-id")
 
         assert result["segment_count"] == 1
-        assert mock_synth.call_count == 1
+        # 1 ナレーションセグメント + 1 AI 開示 = 2
+        assert mock_synth.call_count == 2
 
     def test_raises_when_no_synthesizable_segments(self):
         """全セグメントが空の場合は RuntimeError を送出する。"""
         segments = [
-            {"type": "intro", "label": "Empty", "text": ""},
-            {"type": "body", "label": "Also Empty", "text": "  "},
+            {"type": "overview", "label": "Empty", "text": ""},
+            {"type": "act_i", "label": "Also Empty", "text": "  "},
         ]
 
         with pytest.raises(RuntimeError, match="合成可能なセグメントがありません"):
             generate_podcast_audio(segments, "test-id")
 
+    @patch("podcast_agents.tools.tts.ACT_AUDIO_PATHS", {})
     @patch("podcast_agents.tools.tts.OUTRO_MUSIC_PATH")
     @patch("podcast_agents.tools.tts.INTRO_MUSIC_PATH")
     @patch("podcast_agents.tools.tts.get_storage_bucket")
@@ -248,6 +256,7 @@ class TestGeneratePodcastAudio:
 
         mock_audio = MagicMock()
         mock_audio.__len__ = MagicMock(return_value=10000)
+        mock_audio.__add__ = MagicMock(return_value=mock_audio)
         mock_audio.export = MagicMock()
         mock_synth.return_value = mock_audio
 
@@ -256,36 +265,22 @@ class TestGeneratePodcastAudio:
         mock_bucket_obj.blob.return_value = MagicMock()
         mock_bucket.return_value = mock_bucket_obj
 
-        segments = [{"type": "intro", "label": "Intro", "text": "Hello"}]
+        segments = [{"type": "overview", "label": "Overview", "text": "Hello"}]
 
-        with patch("podcast_agents.tools.tts.AudioSegment"), \
+        with patch("podcast_agents.tools.tts.AudioSegment") as mock_as, \
              patch.dict(os.environ, {"STORAGE_EMULATOR_HOST": "http://localhost:9199"}):
+            mock_as.silent.return_value = MagicMock()
+            mock_as.empty.return_value = mock_audio
+
             result = generate_podcast_audio(segments, "test-id")
 
         assert "localhost:9199" in result["public_url"]
 
 
-class TestCreateOutroSection:
-    """Tests for _create_outro_section()."""
-
-    def test_overlay_disclosure_on_music(self):
-        """TTS がアウトロ音楽にオーバーレイされること。"""
-        mock_disclosure = MagicMock()
-        mock_music = MagicMock()
-        mock_result = MagicMock()
-        mock_music.overlay.return_value = mock_result
-
-        with patch("podcast_agents.tools.tts.AudioSegment") as mock_as:
-            mock_as.from_mp3.return_value = mock_music
-            result = _create_outro_section(mock_disclosure)
-
-        mock_music.overlay.assert_called_once_with(mock_disclosure, position=0)
-        assert result == mock_result
-
-
 class TestGeneratePodcastAudioWithMusic:
-    """Tests for intro/outro music in generate_podcast_audio()."""
+    """Tests for intro/outro/act music in generate_podcast_audio()."""
 
+    @patch("podcast_agents.tools.tts.ACT_AUDIO_PATHS", {})
     @patch("podcast_agents.tools.tts.OUTRO_MUSIC_PATH")
     @patch("podcast_agents.tools.tts.INTRO_MUSIC_PATH")
     @patch("podcast_agents.tools.tts.get_storage_bucket")
@@ -307,14 +302,15 @@ class TestGeneratePodcastAudioWithMusic:
         mock_bucket_obj.blob.return_value = MagicMock()
         mock_bucket.return_value = mock_bucket_obj
 
-        segments = [{"type": "intro", "label": "Intro", "text": "Welcome"}]
+        segments = [{"type": "overview", "label": "Overview", "text": "Welcome"}]
 
         with patch("podcast_agents.tools.tts.AudioSegment") as mock_as:
             mock_intro_music = MagicMock()
             mock_intro_music.__len__ = MagicMock(return_value=7000)
             mock_as.from_mp3.return_value = mock_intro_music
             mock_as.silent.return_value = MagicMock()
-            # イントロ音楽 + pause + episode → episode
+            mock_as.empty.return_value = mock_audio
+            # イントロ音楽 + pause → episode
             mock_intro_music.__add__ = MagicMock(return_value=mock_audio)
 
             generate_podcast_audio(segments, "test-id")
@@ -322,48 +318,57 @@ class TestGeneratePodcastAudioWithMusic:
         # from_mp3 がイントロアセットで呼ばれた
         mock_as.from_mp3.assert_called_once_with("/fake/intro.mp3")
 
-    @patch("podcast_agents.tools.tts._create_outro_section")
+    @patch("podcast_agents.tools.tts.ACT_AUDIO_PATHS", {})
     @patch("podcast_agents.tools.tts.OUTRO_MUSIC_PATH")
     @patch("podcast_agents.tools.tts.INTRO_MUSIC_PATH")
     @patch("podcast_agents.tools.tts.get_storage_bucket")
     @patch("podcast_agents.tools.tts.synthesize_segment")
-    def test_includes_outro_when_asset_exists(self, mock_synth, mock_bucket, mock_intro_path, mock_outro_path, mock_create_outro):
-        """アウトロ音楽アセットが存在する場合、末尾に追加されること。"""
+    def test_outro_crossfade_when_asset_exists(self, mock_synth, mock_bucket, mock_intro_path, mock_outro_path):
+        """OUTRO 音楽が末尾5秒前からクロスフェードで重ねられること。"""
         mock_intro_path.exists.return_value = False
         mock_outro_path.exists.return_value = True
+        mock_outro_path.__str__ = MagicMock(return_value="/fake/outro.mp3")
 
         mock_audio = MagicMock()
-        mock_audio.__len__ = MagicMock(return_value=60000)
+        mock_audio.__len__ = MagicMock(return_value=60000)  # 60秒
         mock_audio.__add__ = MagicMock(return_value=mock_audio)
+        mock_audio.__iadd__ = MagicMock(return_value=mock_audio)
         mock_audio.export = MagicMock()
+        mock_audio.overlay = MagicMock(return_value=mock_audio)
         mock_synth.return_value = mock_audio
-
-        mock_outro_section = MagicMock()
-        mock_outro_section.__len__ = MagicMock(return_value=15000)
-        mock_create_outro.return_value = mock_outro_section
 
         mock_bucket_obj = MagicMock()
         mock_bucket_obj.name = "test.appspot.com"
         mock_bucket_obj.blob.return_value = MagicMock()
         mock_bucket.return_value = mock_bucket_obj
 
-        segments = [{"type": "intro", "label": "Intro", "text": "Welcome"}]
+        segments = [{"type": "overview", "label": "Overview", "text": "Welcome"}]
 
         with patch("podcast_agents.tools.tts.AudioSegment") as mock_as:
+            mock_outro_music = MagicMock()
+            mock_outro_music.__len__ = MagicMock(return_value=15000)
+            mock_as.from_mp3.return_value = mock_outro_music
             mock_as.silent.return_value = MagicMock()
+            mock_as.empty.return_value = mock_audio
 
             generate_podcast_audio(segments, "test-id")
 
         # synthesize_segment が AI 開示テキストでも呼ばれた（セグメント + 開示 = 2回）
         assert mock_synth.call_count == 2
-        mock_create_outro.assert_called_once()
+        # overlay が OUTRO クロスフェードで呼ばれた
+        mock_audio.overlay.assert_called_once()
+        # overlay の position 引数が末尾5秒前（60000 - 5000 = 55000）
+        call_args = mock_audio.overlay.call_args
+        assert call_args[1].get("position") == 55000 or call_args[0][1] == 55000 \
+            if len(call_args[0]) > 1 else call_args[1].get("position") == 55000
 
+    @patch("podcast_agents.tools.tts.ACT_AUDIO_PATHS", {})
     @patch("podcast_agents.tools.tts.OUTRO_MUSIC_PATH")
     @patch("podcast_agents.tools.tts.INTRO_MUSIC_PATH")
     @patch("podcast_agents.tools.tts.get_storage_bucket")
     @patch("podcast_agents.tools.tts.synthesize_segment")
     def test_works_without_music_assets(self, mock_synth, mock_bucket, mock_intro_path, mock_outro_path):
-        """音楽アセットがない場合、従来通り TTS のみで動作すること。"""
+        """音楽アセットがない場合でも TTS + AI 開示で動作すること。"""
         mock_intro_path.exists.return_value = False
         mock_outro_path.exists.return_value = False
 
@@ -378,13 +383,141 @@ class TestGeneratePodcastAudioWithMusic:
         mock_bucket_obj.blob.return_value = MagicMock()
         mock_bucket.return_value = mock_bucket_obj
 
-        segments = [{"type": "body", "label": "Main", "text": "Hello"}]
+        segments = [{"type": "overview", "label": "Overview", "text": "Hello"}]
 
         with patch("podcast_agents.tools.tts.AudioSegment") as mock_as:
             mock_as.silent.return_value = MagicMock()
+            mock_as.empty.return_value = mock_audio
 
             result = generate_podcast_audio(segments, "test-id")
 
-        # TTS はセグメント分のみ（開示なし）
-        assert mock_synth.call_count == 1
+        # 1 ナレーションセグメント + 1 AI 開示 = 2
+        assert mock_synth.call_count == 2
         assert result["segment_count"] == 1
+
+
+class TestActTransitionAudio:
+    """Tests for Act transition audio insertion."""
+
+    @patch("podcast_agents.tools.tts.OUTRO_MUSIC_PATH")
+    @patch("podcast_agents.tools.tts.INTRO_MUSIC_PATH")
+    @patch("podcast_agents.tools.tts.get_storage_bucket")
+    @patch("podcast_agents.tools.tts.synthesize_segment")
+    def test_inserts_act_audio_when_files_exist(self, mock_synth, mock_bucket, mock_intro_path, mock_outro_path):
+        """Act 音声ファイルが存在する場合、各 Act セグメント前に挿入されること。"""
+        mock_intro_path.exists.return_value = False
+        mock_outro_path.exists.return_value = False
+
+        mock_audio = MagicMock()
+        mock_audio.__len__ = MagicMock(return_value=60000)
+        mock_audio.__add__ = MagicMock(return_value=mock_audio)
+        mock_audio.export = MagicMock()
+        mock_synth.return_value = mock_audio
+
+        mock_bucket_obj = MagicMock()
+        mock_bucket_obj.name = "test.appspot.com"
+        mock_bucket_obj.blob.return_value = MagicMock()
+        mock_bucket.return_value = mock_bucket_obj
+
+        segments = [
+            {"type": "overview", "label": "Overview", "text": "Welcome"},
+            {"type": "act_i", "label": "Act I", "text": "Background..."},
+            {"type": "act_ii", "label": "Act II", "text": "Evidence..."},
+        ]
+
+        # Act 音声ファイルのモック
+        mock_act_i_path = MagicMock()
+        mock_act_i_path.exists.return_value = True
+        mock_act_i_path.__str__ = MagicMock(return_value="/fake/Act I.wav")
+        mock_act_ii_path = MagicMock()
+        mock_act_ii_path.exists.return_value = True
+        mock_act_ii_path.__str__ = MagicMock(return_value="/fake/Act II.wav")
+
+        act_paths = {"act_i": mock_act_i_path, "act_ii": mock_act_ii_path}
+
+        mock_act_audio = MagicMock()
+        mock_act_audio.__len__ = MagicMock(return_value=3000)
+
+        with patch("podcast_agents.tools.tts.ACT_AUDIO_PATHS", act_paths), \
+             patch("podcast_agents.tools.tts.AudioSegment") as mock_as:
+            mock_as.silent.return_value = MagicMock()
+            mock_as.empty.return_value = mock_audio
+            mock_as.from_file.return_value = mock_act_audio
+
+            generate_podcast_audio(segments, "test-id")
+
+        # from_file が各 Act 音声ファイルで呼ばれた
+        assert mock_as.from_file.call_count == 2
+
+    @patch("podcast_agents.tools.tts.OUTRO_MUSIC_PATH")
+    @patch("podcast_agents.tools.tts.INTRO_MUSIC_PATH")
+    @patch("podcast_agents.tools.tts.get_storage_bucket")
+    @patch("podcast_agents.tools.tts.synthesize_segment")
+    def test_skips_act_audio_when_files_missing(self, mock_synth, mock_bucket, mock_intro_path, mock_outro_path):
+        """Act 音声ファイルが存在しない場合、スキップしてナレーションのみ。"""
+        mock_intro_path.exists.return_value = False
+        mock_outro_path.exists.return_value = False
+
+        mock_audio = MagicMock()
+        mock_audio.__len__ = MagicMock(return_value=60000)
+        mock_audio.__add__ = MagicMock(return_value=mock_audio)
+        mock_audio.export = MagicMock()
+        mock_synth.return_value = mock_audio
+
+        mock_bucket_obj = MagicMock()
+        mock_bucket_obj.name = "test.appspot.com"
+        mock_bucket_obj.blob.return_value = MagicMock()
+        mock_bucket.return_value = mock_bucket_obj
+
+        segments = [
+            {"type": "act_i", "label": "Act I", "text": "Background..."},
+        ]
+
+        # Act 音声ファイルが存在しない
+        mock_act_i_path = MagicMock()
+        mock_act_i_path.exists.return_value = False
+
+        act_paths = {"act_i": mock_act_i_path}
+
+        with patch("podcast_agents.tools.tts.ACT_AUDIO_PATHS", act_paths), \
+             patch("podcast_agents.tools.tts.AudioSegment") as mock_as:
+            mock_as.silent.return_value = MagicMock()
+            mock_as.empty.return_value = mock_audio
+
+            result = generate_podcast_audio(segments, "test-id")
+
+        # from_file は呼ばれない（ファイルが存在しないため）
+        mock_as.from_file.assert_not_called()
+        assert result["segment_count"] == 1
+
+    @patch("podcast_agents.tools.tts.ACT_AUDIO_PATHS", {})
+    @patch("podcast_agents.tools.tts.OUTRO_MUSIC_PATH")
+    @patch("podcast_agents.tools.tts.INTRO_MUSIC_PATH")
+    @patch("podcast_agents.tools.tts.get_storage_bucket")
+    @patch("podcast_agents.tools.tts.synthesize_segment")
+    def test_overview_has_no_act_audio(self, mock_synth, mock_bucket, mock_intro_path, mock_outro_path):
+        """overview セグメントには Act トランジション音声を挿入しない。"""
+        mock_intro_path.exists.return_value = False
+        mock_outro_path.exists.return_value = False
+
+        mock_audio = MagicMock()
+        mock_audio.__len__ = MagicMock(return_value=30000)
+        mock_audio.__add__ = MagicMock(return_value=mock_audio)
+        mock_audio.export = MagicMock()
+        mock_synth.return_value = mock_audio
+
+        mock_bucket_obj = MagicMock()
+        mock_bucket_obj.name = "test.appspot.com"
+        mock_bucket_obj.blob.return_value = MagicMock()
+        mock_bucket.return_value = mock_bucket_obj
+
+        segments = [{"type": "overview", "label": "Overview", "text": "Welcome"}]
+
+        with patch("podcast_agents.tools.tts.AudioSegment") as mock_as:
+            mock_as.silent.return_value = MagicMock()
+            mock_as.empty.return_value = mock_audio
+
+            generate_podcast_audio(segments, "test-id")
+
+        # from_file は呼ばれない（overview は ACT_AUDIO_PATHS に含まれない）
+        mock_as.from_file.assert_not_called()
