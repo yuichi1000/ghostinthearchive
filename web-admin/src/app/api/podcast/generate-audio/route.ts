@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           podcast_id,
           script: script || null,
-          voice_name: voice_name || "en-US-Studio-O",
+          ...(voice_name ? { voice_name } : {}),
         }),
         signal: AbortSignal.timeout(30000),
       }
