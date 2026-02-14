@@ -54,7 +54,7 @@ class GenerateScriptRequest(BaseModel):
 class GenerateAudioRequest(BaseModel):
     podcast_id: str
     script: dict | None = None  # 管理者が編集した脚本
-    voice_name: str = "en-US-Studio-O"
+    voice_name: str = "en-US-Chirp3-HD-Enceladus"
 
 
 async def _run_investigate(query: str, run_id: str) -> None:

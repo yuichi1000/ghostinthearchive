@@ -96,6 +96,7 @@ async def run_pipeline(
     timeout_seconds: int = 1800,
     max_llm_calls: int = 120,
     skip_authors: set[str] | None = None,
+    sequential_agents: set[str] | None = None,
     on_text: OnText | None = None,
 ) -> PipelineResult:
     """ADK パイプラインを実行する。
@@ -112,6 +113,10 @@ async def run_pipeline(
     - agent_log_indices: エージェントごとの Firestore ログインデックス
     - 新規 author 検出時にエントリ作成、既存 author は蓄積のみ
 
+    直列実行対応（sequential_agents）:
+    - SequentialAgent 内のサブエージェントは遷移イベントを発行しないため、
+      新しいメンバーが開始されたとき、同セット内の既存 active エージェントを自動完了する
+
     Args:
         agent: ADK Agent（ghost_commander / podcast_commander）
         app_name: ADK アプリケーション名
@@ -122,6 +127,7 @@ async def run_pipeline(
         timeout_seconds: タイムアウト秒数
         max_llm_calls: LLM 呼び出し上限
         skip_authors: ログ対象外のエージェント名セット
+        sequential_agents: 直列実行エージェント名セット（新メンバー開始時に既存を自動完了）
         on_text: テキスト出力コールバック（CLI の print 等）
 
     Returns:
@@ -192,6 +198,19 @@ async def run_pipeline(
                                 agent_log_indices.pop(name, None),
                             )
                     continue
+
+                # 順次実行エージェントの直列完了:
+                # 同セット内の既存 active エージェントを自動完了する
+                if sequential_agents and author in sequential_agents:
+                    for name in list(agent_texts.keys()):
+                        if name in sequential_agents and name != author:
+                            _complete_agent(
+                                pipeline_logger,
+                                run_id,
+                                name,
+                                agent_texts.pop(name),
+                                agent_log_indices.pop(name, None),
+                            )
 
                 # 新規エージェントの場合のみエントリ作成
                 if author not in agent_texts:
