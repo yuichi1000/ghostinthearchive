@@ -6,6 +6,27 @@ import type { PodcastScript, PodcastSegment } from "@ghost/shared/src/types/myst
 import { FileText, Music } from "lucide-react"
 
 const segmentTypeConfig: Record<PodcastSegment["type"], { label: string; className: string }> = {
+  overview: {
+    label: "OVERVIEW",
+    className: "bg-teal/20 text-[#5fb3a1] border-teal/30",
+  },
+  act_i: {
+    label: "ACT I",
+    className: "bg-gold/20 text-[#d4af37] border-gold/30",
+  },
+  act_ii: {
+    label: "ACT II",
+    className: "bg-gold/20 text-[#d4af37] border-gold/30",
+  },
+  act_iii: {
+    label: "ACT III",
+    className: "bg-gold/20 text-[#d4af37] border-gold/30",
+  },
+  act_iiii: {
+    label: "ACT IIII",
+    className: "bg-blood-red/20 text-[#ff6b6b] border-blood-red/30",
+  },
+  // レガシー（後方互換）
   intro: {
     label: "INTRO",
     className: "bg-teal/20 text-[#5fb3a1] border-teal/30",
