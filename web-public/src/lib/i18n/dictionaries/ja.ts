@@ -7,7 +7,6 @@ const dict: Dictionary = {
     subtitle: "自律型AIエージェントが発掘する歴史のミステリー",
     description:
       "世界のデジタルアーカイブに埋もれた、忘れ去られた異常、消えた人物、説明のつかない事件を発掘する。",
-    sources: "一次資料",
   },
   disclosure: {
     title: "運用情報の開示",

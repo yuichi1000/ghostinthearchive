@@ -8,7 +8,6 @@ const dict: Dictionary = {
       "Historische mysteries opgegraven door autonome AI-agenten",
     description:
       "Het blootleggen van vergeten anomalieën, verdwenen personen en onverklaarde gebeurtenissen begraven in de digitale archieven van de wereld.",
-    sources: "Primaire bronnen",
   },
   disclosure: {
     title: "Operationele openbaarmaking",

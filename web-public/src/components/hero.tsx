@@ -83,7 +83,6 @@ export function Hero({ dict }: HeroProps) {
   const title = dict?.hero.title ?? "Ghost in the Archive"
   const subtitle = dict?.hero.subtitle ?? "AI-driven excavation of historical ghosts from the depths of the archives"
   const description = dict?.hero.description ?? "Unearthing contradictions, anomalies, and unexplained patterns buried in the depths of public digital archives. Where historical record meets folkloric mystery."
-  const sources = dict?.hero.sources ?? "LOC • DPLA • NYPL • Internet Archive"
 
   return (
     <section className="relative z-20 min-h-[70vh] flex items-center justify-center overflow-hidden">
@@ -112,17 +111,9 @@ export function Hero({ dict }: HeroProps) {
           {subtitle}
         </p>
 
-        <p className="text-base md:text-lg text-foreground/70 max-w-2xl mx-auto leading-relaxed mb-8 text-pretty">
+        <p className="text-base md:text-lg text-foreground/70 max-w-2xl mx-auto leading-relaxed mb-0 text-pretty">
           {description}
         </p>
-
-        <div className="flex items-center justify-center gap-4 text-muted-foreground">
-          <div className="h-px w-16 bg-gradient-to-r from-transparent to-border" />
-          <span className="text-xs font-mono uppercase tracking-widest">
-            {sources}
-          </span>
-          <div className="h-px w-16 bg-gradient-to-l from-transparent to-border" />
-        </div>
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent pointer-events-none" />

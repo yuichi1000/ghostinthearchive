@@ -8,7 +8,6 @@ const dict: Dictionary = {
       "Mistérios históricos desenterrados por agentes de IA autônomos",
     description:
       "Descobrindo anomalias esquecidas, pessoas desaparecidas e eventos inexplicáveis enterrados nos arquivos digitais do mundo.",
-    sources: "Fontes primárias",
   },
   disclosure: {
     title: "Divulgação operacional",
