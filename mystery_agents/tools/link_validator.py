@@ -123,7 +123,7 @@ def verify_link(
             check_duration_ms=elapsed_ms,
         )
 
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as exc:
+    except requests.exceptions.RequestException as exc:
         elapsed_ms = int((time.monotonic() - start) * 1000)
         logger.warning("Link check failed: %s (%s)", url, exc)
         return LinkCheckResult(
