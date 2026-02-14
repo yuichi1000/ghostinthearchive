@@ -2,9 +2,34 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ローカル開発用: 全読み書き許可
+
+    // mysteries: web-admin（Cloud IAP 保護下）からの読み書き許可
+    // web-public は SSG ビルド時に Admin SDK でアクセスするためルール不要
+    match /mysteries/{mysteryId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // podcasts: web-admin からの読み書き許可
+    match /podcasts/{podcastId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // pipeline_runs: web-admin から読み取りのみ（進捗表示用）
+    match /pipeline_runs/{runId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // pipeline_failures: クライアントからはアクセス不可（Admin SDK のみ）
+    match /pipeline_failures/{doc} {
+      allow read, write: if false;
+    }
+
+    // その他すべて: デフォルト拒否
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

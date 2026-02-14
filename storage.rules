@@ -2,9 +2,11 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // ローカル開発用: 全読み書き許可
+    // 画像・音声: 読み取りのみ許可（公開コンテンツ）
+    // 書き込みは Admin SDK（パイプライン）のみ
     match /{allPaths=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if false;
     }
   }
 }

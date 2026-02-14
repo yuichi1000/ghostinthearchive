@@ -1,6 +1,7 @@
 # Cloud Build configuration for web-public (SSG)
 # Triggered when a mystery is published
 # 7言語 × N記事 の静的ページを生成
+# Firebase 設定値は deploy.sh が .env.production から置換変数として注入
 
 steps:
   # ルートで依存インストール（workspaces で @ghost/shared をローカル解決）
@@ -15,7 +16,13 @@ steps:
     dir: 'web-public'
     env:
       - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
-      - 'NEXT_PUBLIC_GTM_ID=$_GTM_ID'
+      - 'NEXT_PUBLIC_GTM_ID=$_NEXT_PUBLIC_GTM_ID'
+      - 'NEXT_PUBLIC_FIREBASE_API_KEY=$_NEXT_PUBLIC_FIREBASE_API_KEY'
+      - 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN'
+      - 'NEXT_PUBLIC_FIREBASE_PROJECT_ID=$_NEXT_PUBLIC_FIREBASE_PROJECT_ID'
+      - 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET'
+      - 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'
+      - 'NEXT_PUBLIC_FIREBASE_APP_ID=$_NEXT_PUBLIC_FIREBASE_APP_ID'
 
   # SSG 出力に記事ページが含まれることを検証（空デプロイ防止）
   - name: 'node:20'
@@ -37,7 +44,13 @@ steps:
     dir: 'web-public'
 
 substitutions:
-  _GTM_ID: ''
+  _NEXT_PUBLIC_GTM_ID: ''
+  _NEXT_PUBLIC_FIREBASE_API_KEY: ''
+  _NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ''
+  _NEXT_PUBLIC_FIREBASE_PROJECT_ID: ''
+  _NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ''
+  _NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ''
+  _NEXT_PUBLIC_FIREBASE_APP_ID: ''
 
 options:
   logging: CLOUD_LOGGING_ONLY
