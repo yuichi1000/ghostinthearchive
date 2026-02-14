@@ -8,8 +8,6 @@ import { Button } from "@ghost/shared/src/components/ui/button"
 import { getAllMysteries, approveMystery, archiveMystery } from "@/lib/firestore/mysteries"
 import type { FirestoreMystery, MysteryStatus, PipelineRun } from "@ghost/shared/src/types/mystery"
 import { localizeMystery } from "@ghost/shared/src/lib/localize"
-import { PipelineSummary } from "@/components/pipeline-summary"
-import { PipelineTimeline } from "@/components/pipeline-timeline"
 import { ActivePipelinePanel } from "@/components/active-pipeline-panel"
 import { usePipelineRuns } from "@/hooks/use-pipeline-runs"
 import { usePipelineRun } from "@/hooks/use-pipeline-run"
@@ -26,8 +24,6 @@ import {
   Filter,
   RefreshCw,
   Inbox,
-  ChevronDown,
-  ChevronUp,
   Loader2,
   Search,
   Sparkles,
@@ -433,12 +429,10 @@ interface AdminMysteryCardProps {
 }
 
 function AdminMysteryCard({ mystery, lang, onApprove, onArchive }: AdminMysteryCardProps) {
-  const [showPipeline, setShowPipeline] = useState(false)
   const isPending = mystery.status === "pending"
   const isTranslating = mystery.status === "translating"
   const location = mystery.historical_context?.geographic_scope?.[0] || ""
   const timePeriod = mystery.historical_context?.time_period || ""
-  const hasPipelineLog = mystery.pipeline_log && mystery.pipeline_log.length > 0
   const { title, summary } = localizeMystery(mystery, lang)
 
   return (
@@ -477,29 +471,6 @@ function AdminMysteryCard({ mystery, lang, onApprove, onArchive }: AdminMysteryC
           </span>
         )}
       </div>
-
-      {/* Pipeline log */}
-      {hasPipelineLog && (
-        <div className="mb-4 pb-4 border-b border-border/50">
-          <button
-            onClick={() => setShowPipeline(!showPipeline)}
-            className="w-full flex items-center justify-between hover:bg-muted/50 transition-colors p-1 -mx-1 rounded-sm"
-          >
-            <PipelineSummary logs={mystery.pipeline_log!} />
-            {showPipeline ? (
-              <ChevronUp className="w-4 h-4 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            )}
-          </button>
-
-          {showPipeline && (
-            <div className="mt-4 pt-4 border-t border-border/50">
-              <PipelineTimeline logs={mystery.pipeline_log!} />
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Actions */}
       <div className="flex items-center justify-between gap-4">

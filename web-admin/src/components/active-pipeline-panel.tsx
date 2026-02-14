@@ -5,14 +5,10 @@ import Link from "next/link"
 import { cn } from "@ghost/shared/src/lib/utils"
 import type { PipelineRun } from "@ghost/shared/src/types/mystery"
 import { resolvePhaseLabel } from "@/lib/pipeline-phases"
-import { PipelineSummary } from "@/components/pipeline-summary"
-import { PipelineTimeline } from "@/components/pipeline-timeline"
 import {
   Loader2,
   CheckCircle,
   XCircle,
-  ChevronDown,
-  ChevronUp,
   X,
   Eye,
   Clock,
@@ -34,7 +30,6 @@ interface ActivePipelinePanelProps {
 }
 
 export function ActivePipelinePanel({ run, onDismiss }: ActivePipelinePanelProps) {
-  const [expanded, setExpanded] = useState(false)
   const [elapsed, setElapsed] = useState(0)
 
   // running 中のみ毎秒経過時間を更新
@@ -134,29 +129,6 @@ export function ActivePipelinePanel({ run, onDismiss }: ActivePipelinePanelProps
           <p className="text-xs text-[#ff6b6b] font-mono">
             {run.error_message}
           </p>
-        </div>
-      )}
-
-      {/* Pipeline Summary + Timeline (展開/折りたたみ) */}
-      {run.pipeline_log.length > 0 && (
-        <div className="pt-2 border-t border-border/50">
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="w-full flex items-center justify-between hover:bg-muted/50 transition-colors p-1 -mx-1 rounded-sm"
-          >
-            <PipelineSummary logs={run.pipeline_log} />
-            {expanded ? (
-              <ChevronUp className="w-4 h-4 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            )}
-          </button>
-
-          {expanded && (
-            <div className="mt-3 pt-3 border-t border-border/50">
-              <PipelineTimeline logs={run.pipeline_log} />
-            </div>
-          )}
         </div>
       )}
     </div>
