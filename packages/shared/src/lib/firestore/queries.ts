@@ -9,7 +9,19 @@ import type {
   MysteryStatus,
   MysteryCardData,
 } from "../../types/mystery";
-import { Timestamp, DocumentData } from "firebase/firestore";
+import {
+  Timestamp,
+  DocumentData,
+  collection,
+  getDocs,
+  getDoc,
+  doc,
+  query,
+  where,
+  orderBy,
+  limit,
+} from "firebase/firestore";
+import { getFirestoreDb, COLLECTIONS } from "../firebase/config";
 
 /**
  * 公開済みミステリー一覧を取得
@@ -18,9 +30,6 @@ import { Timestamp, DocumentData } from "firebase/firestore";
 export async function getPublishedMysteries(
   maxCount: number = 50
 ): Promise<FirestoreMystery[]> {
-  const { collection, getDocs, query, where, orderBy, limit } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("../firebase/config");
-
   const db = getFirestoreDb();
   const mysteriesRef = collection(db, COLLECTIONS.MYSTERIES);
 
@@ -32,7 +41,7 @@ export async function getPublishedMysteries(
   );
 
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => docToMystery(doc.data()));
+  return snapshot.docs.map((d) => docToMystery(d.data()));
 }
 
 /**
@@ -41,9 +50,6 @@ export async function getPublishedMysteries(
 export async function getMysteryById(
   mysteryId: string
 ): Promise<FirestoreMystery | null> {
-  const { doc, getDoc } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("../firebase/config");
-
   const db = getFirestoreDb();
   const docRef = doc(db, COLLECTIONS.MYSTERIES, mysteryId);
   const docSnap = await getDoc(docRef);
@@ -60,9 +66,6 @@ export async function getMysteryById(
  * generateStaticParams用
  */
 export async function getPublishedMysteryIds(): Promise<string[]> {
-  const { collection, getDocs, query, where } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("../firebase/config");
-
   const db = getFirestoreDb();
   const mysteriesRef = collection(db, COLLECTIONS.MYSTERIES);
 
@@ -72,7 +75,7 @@ export async function getPublishedMysteryIds(): Promise<string[]> {
   );
 
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => doc.id);
+  return snapshot.docs.map((d) => d.id);
 }
 
 /**
