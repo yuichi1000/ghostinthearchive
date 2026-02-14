@@ -29,7 +29,7 @@ import {
   Sparkles,
 } from "lucide-react"
 
-type FilterStatus = "all" | MysteryStatus | "translating"
+type FilterStatus = "all" | "pending" | "published" | "archived"
 
 export default function AdminPage() {
   const { lang } = useLanguage()
@@ -106,10 +106,8 @@ export default function AdminPage() {
   const counts = {
     all: mysteries.length,
     pending: mysteries.filter((m) => m.status === "pending").length,
-    translating: mysteries.filter((m) => m.status === "translating").length,
     published: mysteries.filter((m) => m.status === "published").length,
     archived: mysteries.filter((m) => m.status === "archived").length,
-    error: mysteries.filter((m) => m.status === "error").length,
   }
 
   // リビルド失敗は approve/archive の成否に影響しない（fire-and-forget）
@@ -349,7 +347,7 @@ export default function AdminPage() {
         {/* Filter tabs */}
         <div className="flex flex-wrap items-center gap-2 mb-8 pb-4 border-b border-border">
           <Filter className="w-4 h-4 text-muted-foreground mr-2" />
-          {(["all", "pending", "translating", "published", "archived", "error"] as FilterStatus[]).map((status) => (
+          {(["all", "pending", "published", "archived"] as FilterStatus[]).map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
@@ -430,7 +428,6 @@ interface AdminMysteryCardProps {
 
 function AdminMysteryCard({ mystery, lang, onApprove, onArchive }: AdminMysteryCardProps) {
   const isPending = mystery.status === "pending"
-  const isTranslating = mystery.status === "translating"
   const location = mystery.historical_context?.geographic_scope?.[0] || ""
   const timePeriod = mystery.historical_context?.time_period || ""
   const { title, summary } = localizeMystery(mystery, lang)
@@ -523,13 +520,6 @@ function AdminMysteryCard({ mystery, lang, onApprove, onArchive }: AdminMysteryC
           </div>
         )}
 
-        {isTranslating && (
-          <span className="inline-flex items-center gap-1.5 text-xs text-gold font-mono">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            Translating...
-          </span>
-        )}
-
         {mystery.status === "archived" && (
           <Button
             variant="ghost"
@@ -541,27 +531,6 @@ function AdminMysteryCard({ mystery, lang, onApprove, onArchive }: AdminMysteryC
           </Button>
         )}
 
-        {mystery.status === "error" && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onArchive}
-              className="border-blood-red/30 text-[#ff6b6b] hover:bg-blood-red/20 hover:text-[#ff6b6b] bg-transparent"
-            >
-              <XCircle className="w-4 h-4 mr-1" />
-              Archive
-            </Button>
-            <Button
-              size="sm"
-              onClick={onApprove}
-              className="bg-teal/20 border border-teal/30 text-[#5fb3a1] hover:bg-teal/30"
-            >
-              <RefreshCw className="w-4 h-4 mr-1" />
-              Retry Translation
-            </Button>
-          </div>
-        )}
       </div>
     </article>
   )
