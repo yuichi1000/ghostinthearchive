@@ -55,9 +55,7 @@ export default async function AboutPage({
         <Hero dict={dict} />
 
         {/* ヒーロー画像バナー */}
-        <section className="relative overflow-hidden -mt-32">
-          <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
-
+        <section className="relative overflow-hidden">
           <picture>
             <source media="(max-width: 640px)" srcSet="/images/hero-bg_sm.webp" type="image/webp" />
             <source media="(max-width: 828px)" srcSet="/images/hero-bg_md.webp" type="image/webp" />
