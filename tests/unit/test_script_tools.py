@@ -17,23 +17,23 @@ class TestSavePodcastScript:
     def _make_valid_script(self) -> dict:
         return {
             "episode_title": "The Vanishing Ship of Boston Harbor",
-            "estimated_duration_minutes": 20,
+            "estimated_duration_minutes": 5,
             "segments": [
                 {
-                    "type": "intro",
-                    "label": "Introduction",
+                    "type": "overview",
+                    "label": "Overview",
                     "text": "Welcome to Ghost in the Archive...",
                     "notes": "SFX: archive door",
                 },
                 {
-                    "type": "body",
-                    "label": "Historical Background",
+                    "type": "act_i",
+                    "label": "Act I",
                     "text": "In the spring of 1842...",
                     "notes": "",
                 },
                 {
-                    "type": "outro",
-                    "label": "Closing",
+                    "type": "act_iiii",
+                    "label": "Act IIII",
                     "text": "Until next time, keep digging...",
                     "notes": "SFX: lingering sound",
                 },
@@ -80,7 +80,7 @@ class TestSavePodcastScript:
         result = save_podcast_script(json.dumps(script), ctx)
         result_data = json.loads(result)
 
-        assert result_data["estimated_duration_minutes"] == 20
+        assert result_data["estimated_duration_minutes"] == 5
 
     def test_invalid_json_returns_error(self):
         """不正な JSON はエラーを返す。"""
@@ -123,7 +123,7 @@ class TestSavePodcastScript:
         ctx = self._make_tool_context()
         script = {
             "segments": [
-                {"type": "intro", "label": "Intro", "text": "Hello"},
+                {"type": "overview", "label": "Overview", "text": "Hello"},
             ],
         }
 

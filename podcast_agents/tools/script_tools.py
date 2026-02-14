@@ -32,7 +32,7 @@ def save_podcast_script(
             - episode_title: エピソードタイトル
             - estimated_duration_minutes: 想定再生時間（分）
             - segments: セグメント配列
-              各セグメント: type ("intro"/"body"/"outro"), label, text
+              各セグメント: type ("overview"/"act_i"/"act_ii"/"act_iii"/"act_iiii"), label, text
               オプション: notes (SFX/BGM 指示)
         tool_context: ADK ToolContext（セッション状態アクセス用）
 
@@ -60,7 +60,8 @@ def save_podcast_script(
             ensure_ascii=False,
         )
 
-    valid_types = {"intro", "body", "outro"}
+    valid_types = {"overview", "act_i", "act_ii", "act_iii", "act_iiii",
+                    "intro", "body", "outro"}  # 後方互換含む
     for i, seg in enumerate(segments):
         if not isinstance(seg, dict):
             warnings.append(f"segments[{i}]: not a dict, skipping")
@@ -181,7 +182,7 @@ def save_segment(
 
     Args:
         segment_json: JSON 文字列。必須フィールド:
-            - type: "intro" / "body" / "outro"
+            - type: "overview" / "act_i" / "act_ii" / "act_iii" / "act_iiii"
             - label: セグメント名
             - text: ナレーションテキスト（空不可）
             オプション: notes (SFX/BGM 指示)
@@ -266,12 +267,10 @@ def finalize_script(
 
     warnings: list[str] = []
 
-    # intro/outro 存在チェック
+    # overview 存在チェック
     types_present = {seg.get("type") for seg in buffer if isinstance(seg, dict)}
-    if "intro" not in types_present:
-        warnings.append("No intro segment found")
-    if "outro" not in types_present:
-        warnings.append("No outro segment found")
+    if "overview" not in types_present:
+        warnings.append("No overview segment found")
 
     # structured_outline からメタデータ取得
     outline = tool_context.state.get("structured_outline", {})

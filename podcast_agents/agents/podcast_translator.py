@@ -33,7 +33,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # ```
 #
 # ## 翻訳方針
-# - **セグメント構造を維持する**: [INTRO], [SEGMENT], [OUTRO] などの構造を日本語でも保持
+# - **セグメント構造を維持する**: [OVERVIEW], [ACT I], [ACT II], [ACT III], [ACT IIII] の構造を日本語でも保持
 # - **SFX/BGM 指示はそのまま保持**: 効果音やBGMの指示は翻訳しない（英語のまま残す）
 # - **ナレーション部分を自然な日本語に翻訳**: 「歴史探偵 + 怪異蒐集家」のトーンを維持
 # - 歴史用語は学術的に正確な日本語表現を使用する
@@ -65,7 +65,7 @@ NO_TRANSLATION: No script available. Aborting translation.
 ```
 
 ## Translation Guidelines
-- **Preserve segment structure**: Keep [INTRO], [SEGMENT], [OUTRO] markers as-is
+- **Preserve segment structure**: Keep [OVERVIEW], [ACT I], [ACT II], [ACT III], [ACT IIII] markers as-is
 - **Keep SFX/BGM instructions in English**: Do not translate sound effect or music cues
 - **Translate narration into natural Japanese**: Maintain the "historical detective + uncanny collector" tone
 - Use academically accurate Japanese for historical terms

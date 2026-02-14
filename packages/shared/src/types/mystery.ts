@@ -161,7 +161,8 @@ export type PodcastStatus = "script_generating" | "script_ready" | "audio_genera
 /** Podcast 脚本セグメント */
 export interface PodcastSegment {
   /** セグメント種別 */
-  type: "intro" | "body" | "outro";
+  type: "overview" | "act_i" | "act_ii" | "act_iii" | "act_iiii"
+    | "intro" | "body" | "outro";  // 後方互換（レガシー）
   /** セグメントラベル（例: "Historical Background"） */
   label: string;
   /** ナレーションテキスト（TTS に渡す） */
