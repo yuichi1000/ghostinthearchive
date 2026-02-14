@@ -93,6 +93,9 @@ async def _run_generate_script(
     except Exception as e:
         logger.exception("Podcast script generation failed: %s", e)
         error_pipeline_run(run_id, str(e))
+        # podcast ドキュメントもエラーに更新（script_generating でスタック防止）
+        from podcast_agents.tools.firestore_tools import set_podcast_status
+        set_podcast_status(podcast_id, "error", str(e))
 
 
 async def _run_generate_audio(
@@ -107,6 +110,9 @@ async def _run_generate_audio(
         await generate_audio(podcast_id, script_override=script, voice_name=voice_name)
     except Exception as e:
         logger.exception("Podcast audio generation failed: %s", e)
+        # podcast ドキュメントもエラーに更新（audio_generating でスタック防止）
+        from podcast_agents.tools.firestore_tools import set_podcast_status
+        set_podcast_status(podcast_id, "error", str(e))
 
 
 @app.get("/health")
@@ -139,7 +145,9 @@ async def generate_script_endpoint(body: GenerateScriptRequest):
         from podcast_agents.tools.firestore_tools import create_podcast
 
         run_id = create_pipeline_run("podcast", mystery_id=body.mystery_id)
-        podcast_id = create_podcast(body.mystery_id, body.custom_instructions)
+        podcast_id = create_podcast(
+            body.mystery_id, body.custom_instructions, pipeline_run_id=run_id
+        )
         asyncio.create_task(
             _run_generate_script(
                 body.mystery_id, body.custom_instructions, run_id, podcast_id

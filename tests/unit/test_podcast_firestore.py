@@ -75,6 +75,26 @@ class TestCreatePodcast:
         assert call_args["custom_instructions"] == "ジョーク多めで"
         assert call_args["script"] is None
         assert call_args["audio"] is None
+        assert call_args["pipeline_run_id"] is None
+
+    def test_creates_document_with_pipeline_run_id(self, mock_db):
+        """pipeline_run_id を指定した場合、即座に紐付けされる。"""
+        mock_mystery_doc = MagicMock()
+        mock_mystery_doc.exists = True
+        mock_mystery_doc.to_dict.return_value = {"title": "The Vanishing Ship"}
+
+        mock_doc_ref = MagicMock()
+        mock_doc_ref.id = "generated-podcast-id"
+        mock_db.collection.return_value.document.return_value.get.return_value = mock_mystery_doc
+        mock_db.collection.return_value.add.return_value = (None, mock_doc_ref)
+
+        result = create_podcast(
+            "OCC-MA-617-20260207143025", pipeline_run_id="run-123"
+        )
+
+        assert result == "generated-podcast-id"
+        call_args = mock_db.collection.return_value.add.call_args[0][0]
+        assert call_args["pipeline_run_id"] == "run-123"
 
     def test_uses_mystery_id_as_title_when_mystery_not_found(self, mock_db):
         """mystery が見つからない場合は ID をタイトルとして使用する。"""
