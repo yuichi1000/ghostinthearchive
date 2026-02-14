@@ -188,7 +188,7 @@ resource "google_cloud_run_v2_service" "pipeline" {
     containers {
       image   = "${var.region}-docker.pkg.dev/${var.project_id}/ghostinthearchive/pipelines:latest"
       command = ["python"]
-      args    = ["services/mystery_pipeline.py"]
+      args    = ["services/pipeline_server.py"]
 
       ports {
         container_port = 8080
