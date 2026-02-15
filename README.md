@@ -1,23 +1,23 @@
 # Ghost in the Archive
 
-> Autonomous AI agents that excavate historical mysteries and folklore from public digital archives — and transform them into multilingual narratives, illustrations, and podcasts.
+> 公開デジタルアーカイブから歴史的ミステリーと民俗学的怪異を発掘し、多言語ナラティブ・イラスト・ポッドキャストへと変換する自律型 AI エージェントシステム。
 
-## Overview
+## 概要
 
-Public digital archives hold millions of digitized documents spanning centuries of human history. Hidden within them are **unresolved contradictions**, **vanished persons**, and **unexplained phenomena** that no one has connected — until now.
+公開デジタルアーカイブには、数世紀にわたる人類の歴史を記録した数百万の文書が眠っている。その中には、誰も結びつけたことのない **未解決の矛盾**、**消えた人物**、**説明不能な現象** が隠されている。
 
-**Ghost in the Archive** deploys a coordinated team of AI agents that autonomously:
+**Ghost in the Archive** は、以下を自律的に実行する AI エージェントチームを展開する:
 
-1. **Excavate** primary sources from archives (Library of Congress, DPLA, NYPL, Internet Archive, Deutsche Digitale Bibliothek)
-2. **Analyze** them through interdisciplinary scholarly debate (history, folklore, anthropology)
-3. **Synthesize** findings into long-form narratives, AI-generated illustrations, and podcast episodes
-4. **Publish** across a multilingual web platform (7 languages) and podcast distribution
+1. **発掘** — アーカイブ（Library of Congress, DPLA, NYPL, Internet Archive, Deutsche Digitale Bibliothek）から一次資料を収集
+2. **分析** — 学際的な討論（歴史学・民俗学・文化人類学）による多角的分析
+3. **統合** — 長文ナラティブ、AI 生成イラスト、ポッドキャストエピソードへの変換
+4. **公開** — 多言語 Web プラットフォーム（7言語）とポッドキャスト配信
 
-### Design Philosophy: Fact × Folklore
+### 設計思想: Fact × Folklore
 
-The system targets both **verifiable historical anomalies** (date discrepancies, missing persons, document gaps) and **cultural memory** (local beliefs, taboos, urban legends, unexplained phenomena). The fusion of these two approaches produces narratives that are neither dry academic research nor sensational fiction.
+本システムは **検証可能な歴史的アノマリー**（日付の不一致、人物の消失、文書の欠落）と **文化的記憶**（地元の信仰、禁忌、都市伝説、説明不能な現象）の両方をターゲットにする。この二つのアプローチの融合により、無味乾燥な学術研究でもセンセーショナルなフィクションでもない、独自のナラティブを生み出す。
 
-## Architecture
+## アーキテクチャ
 
 ```mermaid
 graph TB
@@ -66,11 +66,11 @@ graph TB
     Admin -->|Approve / Archive| CB
 ```
 
-## Agent Pipelines
+## エージェントパイプライン
 
 ### Blog Pipeline (`mystery_agents/`)
 
-Fully autonomous content generation — from archival research to published multilingual article.
+アーカイブ調査から多言語記事の公開まで、完全自律型のコンテンツ生成パイプライン。
 
 ```mermaid
 graph LR
@@ -90,33 +90,33 @@ graph LR
     PB --> FS[(Firestore)]
 ```
 
-**Agents:**
+**エージェント一覧:**
 
-| Agent | Role | Model |
-|-------|------|-------|
-| **ThemeAnalyzer** | Theme analysis and language selection | Gemini 2.5 Flash |
-| **Librarian** ×N | Archival research across 6 digital archives + folklore sources | Gemini 2.5 Flash |
-| **Scholar** ×N | Interdisciplinary analysis (analysis mode) + cross-language debate (debate mode) | Gemini 3 Pro |
-| **Armchair Polymath** | Cross-language synthesis — integrates all analyses with scholarly authority | Gemini 3 Pro |
-| **Storyteller** | Long-form English narrative balancing historical rigor and eerie atmosphere | Gemini 3 Pro |
-| **Illustrator** | Hero image generation with LLM-based safety rewriting | Gemini 3 Pro + Imagen 3 |
-| **Translator** ×6 | Parallel translation to ja/es/de/fr/nl/pt with per-language tone guidelines | Gemini 2.5 Flash |
-| **Publisher** | Firestore persistence and Cloud Storage asset upload | Gemini 2.5 Flash |
+| エージェント | 役割 | モデル |
+|------------|------|--------|
+| **ThemeAnalyzer** | テーマ分析・調査言語の選択 | Gemini 2.5 Flash |
+| **Librarian** ×N | 6つのデジタルアーカイブ + 民俗資料からの資料調査 | Gemini 2.5 Flash |
+| **Scholar** ×N | 学際的分析（分析モード）+ 言語横断討論（討論モード） | Gemini 3 Pro |
+| **Armchair Polymath** | 言語横断統合 — 全分析結果を学術的権威をもって統合 | Gemini 3 Pro |
+| **Storyteller** | 歴史的厳密さと怪異的情緒を両立した英語長文ナラティブ | Gemini 3 Pro |
+| **Illustrator** | LLM ベースの安全書き換えによるトップ画像生成 | Gemini 3 Pro + Imagen 3 |
+| **Translator** ×6 | ja/es/de/fr/nl/pt への並列翻訳（言語別トーンガイドライン付き） | Gemini 2.5 Flash |
+| **Publisher** | Firestore 永続化 + Cloud Storage アセットアップロード | Gemini 2.5 Flash |
 
-**Pipeline Gates (Cascade Failure Protection):**
+**パイプラインゲート（カスケード障害防止）:**
 
-Each gate is a `before_agent_callback` that halts the pipeline early when upstream agents produce no usable output, preventing wasted API calls and nonsensical content.
+各ゲートは `before_agent_callback` として実装され、上流エージェントが有効な出力を生成しなかった場合にパイプラインを早期停止する。これにより不要な API コストと意味のないコンテンツ生成を防ぐ。
 
-| Gate | Checks | Skips when |
-|------|--------|-----------|
-| ScholarGate | `collected_documents_{lang}` | All Librarians returned NO_DOCUMENTS_FOUND |
-| PolymathGate | `scholar_analysis_{lang}` | All Scholars returned INSUFFICIENT_DATA |
-| StorytellerGate | `mystery_report` | Empty or failure marker |
-| PostStoryGate | `creative_content` | Empty or NO_CONTENT |
+| ゲート | チェック対象 | スキップ条件 |
+|-------|------------|------------|
+| ScholarGate | `collected_documents_{lang}` | 全 Librarian が NO_DOCUMENTS_FOUND を返した場合 |
+| PolymathGate | `scholar_analysis_{lang}` | 全 Scholar が INSUFFICIENT_DATA を返した場合 |
+| StorytellerGate | `mystery_report` | 空または失敗マーカー |
+| PostStoryGate | `creative_content` | 空または NO_CONTENT |
 
 ### Podcast Pipeline (`podcast_agents/`)
 
-On-demand podcast episode generation from published articles, triggered via the admin console.
+管理画面からオンデマンドで起動する、公開済み記事のポッドキャストエピソード生成パイプライン。
 
 ```mermaid
 graph LR
@@ -126,120 +126,120 @@ graph LR
     TR --> FS2[(Firestore)]
 ```
 
-| Agent | Role | Model |
-|-------|------|-------|
-| **ScriptPlanner** | Designs 5–7 segment outlines with word-count budgets and tone directions | Gemini 2.5 Flash |
-| **Scriptwriter** | Segment-by-segment sequential script generation for quality stability | Gemini 3 Pro |
-| **Translator** | Japanese translation of podcast script | Gemini 2.5 Flash |
+| エージェント | 役割 | モデル |
+|------------|------|--------|
+| **ScriptPlanner** | 5〜7セグメントのアウトライン設計（語数配分・トーン指示付き） | Gemini 2.5 Flash |
+| **Scriptwriter** | 品質安定化のためのセグメント逐次脚本生成 | Gemini 3 Pro |
+| **Translator** | ポッドキャスト脚本の日本語翻訳 | Gemini 2.5 Flash |
 
 ### Curator Service (`curator_agents/`)
 
-Theme suggestion agent invoked by Cloud Scheduler. Proposes new investigation topics while consulting `pipeline_failures` to avoid themes that previously failed.
+Cloud Scheduler から呼び出されるテーマ提案エージェント。過去のパイプライン失敗履歴（`pipeline_failures`）を参照し、失敗済みテーマの再提案を回避しつつ新しい調査テーマを提案する。
 
 ## Web
 
-| App | Tech | Description |
-|-----|------|-------------|
-| **web-public** | Next.js SSG | Static site in 7 languages (en/ja/es/de/fr/nl/pt). `React.cache` optimizes Firestore queries from 7N to 1. Rebuilt via Cloud Build on article approval. |
-| **web-admin** | Next.js CSR | Management console — article review (approve/archive), podcast production, theme suggestions. |
-| **@ghost/shared** | TypeScript | Shared types, Firebase config, Firestore queries, localization (`localizeMystery()`), and UI components. |
+| アプリ | 技術 | 説明 |
+|-------|------|------|
+| **web-public** | Next.js SSG | 7言語（en/ja/es/de/fr/nl/pt）の静的サイト。`React.cache` で Firestore クエリを 7N→1 回に最適化。記事承認時に Cloud Build で再ビルド。 |
+| **web-admin** | Next.js CSR | 管理コンソール — 記事レビュー（承認/アーカイブ）、ポッドキャスト制作、テーマ提案。 |
+| **@ghost/shared** | TypeScript | 共有型定義、Firebase 設定、Firestore クエリ、ローカライゼーション（`localizeMystery()`）、UI コンポーネント。 |
 
-## Project Structure
+## プロジェクト構成
 
 ```
-shared/                       # Python shared infrastructure
-├── firestore.py              # Firebase Admin init, Firestore/Storage clients
-├── model_config.py           # LLM model config (retry-enabled Gemini factory)
-├── constants.py              # Language / schema / status constants
-├── orchestrator.py           # Pipeline orchestration logic
-├── state_registry.py         # State dependency registry + Mermaid generation
-├── http_retry.py             # External API retry strategy
-└── pipeline_failure.py       # Failure logging (Firestore + Curator integration)
+shared/                       # Python 共有インフラ層
+├── firestore.py              # Firebase Admin 初期化、Firestore/Storage クライアント
+├── model_config.py           # LLM モデル設定（リトライ付き Gemini ファクトリ）
+├── constants.py              # 言語・スキーマ・ステータス定数
+├── orchestrator.py           # パイプラインオーケストレーション
+├── state_registry.py         # ステート依存レジストリ + Mermaid 生成
+├── http_retry.py             # 外部 API リトライ戦略
+└── pipeline_failure.py       # 失敗ログ記録（Firestore + Curator 連携）
 
-mystery_agents/               # Blog pipeline
+mystery_agents/               # ブログパイプライン
 ├── agent.py                  # root_agent = ghost_commander
 ├── agents/                   # ThemeAnalyzer, Librarian, Scholar, Polymath,
 │                             # Storyteller, Illustrator, Translator, Publisher
-├── tools/                    # Archive APIs, debate tools, image gen, publishing
-├── schemas/                  # Mystery ID schema (FBI-inspired classification)
+├── tools/                    # アーカイブ API、討論ツール、画像生成、公開ツール
+├── schemas/                  # Mystery ID スキーマ（FBI 分類体系準拠）
 └── utils/                    # PipelineLogger
 
-curator_agents/               # Theme suggestion service
-├── agents/                   # Curator agent definition
-└── queries.py                # Firestore queries for theme history
+curator_agents/               # テーマ提案サービス
+├── agents/                   # Curator エージェント定義
+└── queries.py                # テーマ履歴の Firestore クエリ
 
-podcast_agents/               # Podcast pipeline
+podcast_agents/               # Podcast パイプライン
 ├── agent.py                  # root_agent = podcast_commander
 ├── agents/                   # ScriptPlanner, Scriptwriter
-└── tools/                    # TTS, podcast Firestore tools
+└── tools/                    # TTS、Podcast 用 Firestore ツール
 
-services/                     # Cloud Run service entrypoints
-├── pipeline_server.py        # Blog + Podcast pipeline API
-└── curator.py                # Curator service API
+services/                     # Cloud Run サービスエントリポイント
+├── pipeline_server.py        # Blog + Podcast パイプライン API
+└── curator.py                # Curator サービス API
 
-packages/shared/              # TypeScript shared code (@ghost/shared)
-├── src/types/                # Type definitions (Mystery, TranslatedContent)
-├── src/lib/                  # Firebase config, Firestore queries, localization, utils
-└── src/components/           # Shared UI components
+packages/shared/              # TypeScript 共有コード (@ghost/shared)
+├── src/types/                # 型定義（Mystery, TranslatedContent）
+├── src/lib/                  # Firebase 設定、Firestore クエリ、ローカライゼーション、ユーティリティ
+└── src/components/           # 共有 UI コンポーネント
 
-web-admin/                    # Next.js management console
-web-public/                   # Next.js public site (7 languages)
+web-admin/                    # Next.js 管理コンソール
+web-public/                   # Next.js 公開サイト（7言語対応）
 
 tests/
-├── unit/                     # Unit tests (fully mocked)
-├── integration/              # Integration tests (Firebase Emulator)
-├── eval/                     # ADK evaluation (Golden Dataset)
-└── fixtures/                 # Test data
+├── unit/                     # ユニットテスト（全モック）
+├── integration/              # 統合テスト（Firebase Emulator）
+├── eval/                     # ADK 評価（Golden Dataset）
+└── fixtures/                 # テストデータ
 ```
 
-## Getting Started
+## はじめに
 
-### Prerequisites
+### 前提条件
 
 - Python 3.12+
-- [uv](https://docs.astral.sh/uv/) (Python package manager)
+- [uv](https://docs.astral.sh/uv/)（Python パッケージマネージャ）
 - Node.js 20+
-- Google Cloud project with Vertex AI enabled
-- Firebase project (Firestore + Cloud Storage)
+- Vertex AI が有効化された Google Cloud プロジェクト
+- Firebase プロジェクト（Firestore + Cloud Storage）
 
-### Setup
+### セットアップ
 
 ```bash
-# Clone and install Python dependencies
+# リポジトリのクローンと Python 依存関係のインストール
 git clone https://github.com/tyuichi/ghostinthearchive.git
 cd ghostinthearchive
 uv venv && source .venv/bin/activate
 uv sync
 
-# Configure environment
+# 環境変数の設定
 cp .env.example .env
-# Edit .env with your API keys and project settings
+# .env を編集し、API キーとプロジェクト設定を記入
 
-# Install web dependencies
+# Web 依存関係のインストール
 cd web-admin && npm install && cd ..
 cd web-public && npm install && cd ..
 
-# (Optional) Start Firebase Emulator for local development
+# （任意）ローカル開発用 Firebase Emulator の起動
 firebase emulators:start --only firestore,storage
 ```
 
-### Usage
+### 使い方
 
 ```bash
-# Run blog pipeline with a research query
+# 調査クエリを指定してブログパイプラインを実行
 python -m mystery_agents "Investigate the 1872 disappearance of the Mary Celeste crew"
 
-# Run podcast pipeline for a published article
+# 公開済み記事に対して Podcast パイプラインを実行
 python -m podcast_agents --mystery-id OCC-MA-617-20260207143025
 
-# Run curator to suggest new themes
+# Curator を実行して新テーマを提案
 python -m curator_agents
 
-# Run tests
+# テストの実行
 python -m pytest tests/unit/ -v
 ```
 
-## Tech Stack
+## 技術スタック
 
 | Layer | Technology |
 |-------|-----------|
