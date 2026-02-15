@@ -74,6 +74,12 @@ resource "google_project_iam_member" "pipelines_cloudbuild" {
   member  = "serviceAccount:${google_service_account.pipelines.email}"
 }
 
+resource "google_project_iam_member" "pipelines_service_usage" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageConsumer"
+  member  = "serviceAccount:${google_service_account.pipelines.email}"
+}
+
 # IAM roles for Cloud Build
 resource "google_project_iam_member" "cloud_build_firebase" {
   project = var.project_id
