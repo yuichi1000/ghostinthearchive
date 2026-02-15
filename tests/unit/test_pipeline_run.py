@@ -367,6 +367,53 @@ class TestErrorPipelineRun:
         # Should not raise
         error_pipeline_run(None, "some error")
 
+    def test_error_pipeline_run_with_detail(self, mock_firestore_client):
+        """error_detail が Firestore に保存される。"""
+        mock_doc_ref = MagicMock()
+        mock_firestore_client.collection.return_value.document.return_value = (
+            mock_doc_ref
+        )
+
+        detail = {
+            "error_type": "gate_failure",
+            "failed_stage": "publisher",
+            "session_state_summary": {"mystery_report": "present (500 chars)"},
+        }
+
+        with patch(
+            "shared.pipeline_run.get_firestore_client",
+            return_value=mock_firestore_client,
+        ):
+            from shared.pipeline_run import error_pipeline_run
+
+            error_pipeline_run("run-123", "公開処理で問題が発生", error_detail=detail)
+
+        call_args = mock_doc_ref.update.call_args
+        update_data = call_args[0][0]
+        assert update_data["status"] == "error"
+        assert update_data["error_detail"] == detail
+        assert update_data["error_detail"]["error_type"] == "gate_failure"
+
+    def test_error_pipeline_run_without_detail(self, mock_firestore_client):
+        """error_detail なしでも従来通り動作する。"""
+        mock_doc_ref = MagicMock()
+        mock_firestore_client.collection.return_value.document.return_value = (
+            mock_doc_ref
+        )
+
+        with patch(
+            "shared.pipeline_run.get_firestore_client",
+            return_value=mock_firestore_client,
+        ):
+            from shared.pipeline_run import error_pipeline_run
+
+            error_pipeline_run("run-123", "some error")
+
+        call_args = mock_doc_ref.update.call_args
+        update_data = call_args[0][0]
+        assert update_data["status"] == "error"
+        assert "error_detail" not in update_data
+
     def test_error_pipeline_run_firestore_error(self, mock_firestore_client):
         """Should not raise when Firestore write fails."""
         mock_doc_ref = MagicMock()
