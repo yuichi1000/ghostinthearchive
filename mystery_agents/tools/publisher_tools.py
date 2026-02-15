@@ -217,20 +217,20 @@ def publish_mystery(
 
     When tool_context is available, reads structured data from session state:
     - structured_report: Accurate evidence, hypothesis, classification data from Scholar
+    - creative_content: Blog narrative (narrative_content) — LLM にコピーさせず state から直接取得
+    - collected_documents_en: Raw search metadata (raw_data) — LLM にコピーさせず state から直接取得
     - image_metadata: Accurate file paths and variant info from Illustrator
-    - translation_ja: Japanese translation fields from Translator
+    - translation_result_{lang}: 6-language translations
 
     Args:
-        mystery_json: JSON string containing the full mystery data.
+        mystery_json: JSON string containing the mystery data.
             Required fields for ID generation:
             - classification: 3-letter code (HIS, FLK, ANT, OCC, URB, CRM, REL, LOC)
             - state_code: 2-letter US state code (MA, NY, CA, etc.)
             - area_code: 3-digit telephone area code (617, 212, etc.)
 
-            Other required fields: title, summary, discrepancy_detected,
-            discrepancy_type, evidence_a, evidence_b, hypothesis,
-            alternative_hypotheses, confidence_level, historical_context,
-            research_questions, story_hooks.
+            narrative_content と raw_data は mystery_json に含める必要なし
+            （tool_context から自動取得される）。
 
         visual_assets_json: Optional JSON string from generate_image tool output.
             When provided, images are uploaded to Cloud Storage and the resulting
@@ -262,6 +262,17 @@ def publish_mystery(
                 ):
                     if key in structured_report:
                         data[key] = structured_report[key]
+
+            # narrative_content: creative_content セッション状態から直接読み取り
+            creative_content = tool_context.state.get("creative_content")
+            if creative_content and isinstance(creative_content, str):
+                if not any(marker in creative_content for marker in ("NO_CONTENT", "NO_DOCUMENTS_FOUND")):
+                    data["narrative_content"] = creative_content
+
+            # raw_data: collected_documents_en セッション状態から直接読み取り
+            collected_docs = tool_context.state.get("collected_documents_en")
+            if collected_docs:
+                data["raw_data"] = collected_docs if isinstance(collected_docs, str) else str(collected_docs)
 
             # 各言語の Scholar 分析を multilingual_analysis として保存
             multilingual = {}

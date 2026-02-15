@@ -785,3 +785,165 @@ class TestPublishMysteryStateWriteback:
 
         assert result_data["status"] == "success"
 
+
+class TestPublishMysteryStateDirectRead:
+    """publish_mystery が creative_content / collected_documents_en を state から直接読み取るテスト"""
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_narrative_content_from_state(self, mock_get_db, mock_get_bucket):
+        """state の creative_content が narrative_content として保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {"creative_content": "# The Haunting of Salem\n\nA long blog article..."}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["narrative_content"] == "# The Haunting of Salem\n\nA long blog article..."
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_raw_data_from_state(self, mock_get_db, mock_get_bucket):
+        """state の collected_documents_en が raw_data として保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {"collected_documents_en": "Search results from LOC and DPLA..."}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["raw_data"] == "Search results from LOC and DPLA..."
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_state_overrides_llm_json(self, mock_get_db, mock_get_bucket):
+        """state 値が mystery_json の値より優先される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "creative_content": "Full article from state",
+            "collected_documents_en": "Full raw data from state",
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        # mystery_json にも narrative_content と raw_data を含める
+        mystery_json = _make_mystery_json(
+            narrative_content="Truncated by LLM",
+            raw_data="Truncated raw data",
+        )
+        result = publish_mystery(mystery_json, "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["narrative_content"] == "Full article from state"
+        assert saved["raw_data"] == "Full raw data from state"
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_skips_failure_marker(self, mock_get_db, mock_get_bucket):
+        """NO_CONTENT の creative_content は state から注入しない。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {"creative_content": "NO_CONTENT: Pipeline failed at Storyteller"}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        # mystery_json の narrative_content がフォールバックとして残る
+        mystery_json = _make_mystery_json(narrative_content="LLM fallback content")
+        result = publish_mystery(mystery_json, "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["narrative_content"] == "LLM fallback content"
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_empty_json_with_full_state(self, mock_get_db, mock_get_bucket):
+        """空 JSON + structured_report + state で全フィールドが揃う。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "FLK",
+                "state_code": "LA",
+                "area_code": "504",
+                "title": "Voodoo Queen",
+                "summary": "A mystery about voodoo.",
+                "discrepancy_detected": "Date mismatch",
+                "discrepancy_type": "date_mismatch",
+                "evidence_a": {"source_type": "newspaper", "source_language": "en",
+                               "source_title": "Times", "source_date": "1850-01-01",
+                               "source_url": "https://example.com", "relevant_excerpt": "...",
+                               "location_context": "New Orleans"},
+                "evidence_b": {"source_type": "newspaper", "source_language": "fr",
+                               "source_title": "Le Monde", "source_date": "1850-06-01",
+                               "source_url": "https://example.fr", "relevant_excerpt": "...",
+                               "location_context": "Paris"},
+                "hypothesis": "Test hypothesis",
+                "alternative_hypotheses": [],
+                "confidence_level": "medium",
+                "historical_context": {"time_period": "19th Century",
+                                       "geographic_scope": ["New Orleans"],
+                                       "relevant_events": [], "key_figures": [],
+                                       "political_climate": "Antebellum"},
+                "research_questions": [],
+                "story_hooks": [],
+            },
+            "creative_content": "# Voodoo Queen\n\nThe full blog article...",
+            "collected_documents_en": "LOC search results...",
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        # 最小限の JSON（classification/state_code/area_code のみ）
+        minimal_json = json.dumps({
+            "classification": "FLK", "state_code": "LA", "area_code": "504",
+        })
+        result = publish_mystery(minimal_json, "", tool_context)
+        result_data = json.loads(result)
+        assert result_data["status"] == "success"
+        assert result_data["mystery_id"].startswith("FLK-LA-504-")
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["title"] == "Voodoo Queen"
+        assert saved["narrative_content"] == "# Voodoo Queen\n\nThe full blog article..."
+        assert saved["raw_data"] == "LOC search results..."
+        assert saved["hypothesis"] == "Test hypothesis"
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_no_tool_context_fallback(self, mock_get_db, mock_get_bucket):
+        """tool_context=None では LLM の mystery_json がそのまま使われる。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        mystery_json = _make_mystery_json(
+            narrative_content="LLM provided content",
+            raw_data="LLM provided raw data",
+        )
+        result = publish_mystery(mystery_json, "", None)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["narrative_content"] == "LLM provided content"
+        assert saved["raw_data"] == "LLM provided raw data"
+
