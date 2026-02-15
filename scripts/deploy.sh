@@ -242,6 +242,7 @@ deploy_web_public() {
         --config web-public/cloudbuild.yaml \
         --substitutions "$subs" \
         --service-account "projects/${PROJECT_ID}/serviceAccounts/cloud-build-sa@${PROJECT_ID}.iam.gserviceaccount.com" \
+        --default-buckets-behavior=REGIONAL_USER_OWNED_BUCKET \
         --project "$PROJECT_ID" \
         "$PROJECT_ROOT"
 
