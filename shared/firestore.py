@@ -23,7 +23,7 @@ def get_firestore_client():
         firebase_admin.initialize_app(
             options={
                 "projectId": project_id,
-                "storageBucket": f"{project_id}.appspot.com",
+                "storageBucket": f"{project_id}.firebasestorage.app",
             }
         )
     return firestore.client()
@@ -50,7 +50,7 @@ def get_storage_bucket():
             credentials=AnonymousCredentials(),
             client_options={"api_endpoint": api_endpoint},
         )
-        return client.bucket(f"{project_id}.appspot.com")
+        return client.bucket(f"{project_id}.firebasestorage.app")
     else:
         # 本番モード: firebase_admin 経由
         if not firebase_admin._apps:
