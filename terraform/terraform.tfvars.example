@@ -1,0 +1,17 @@
+# terraform/terraform.tfvars.example
+# このファイルを terraform.tfvars にコピーして、実際の値を入力してください。
+
+project_id      = "your-project-id"
+domain          = "example.com"
+github_repo     = "owner/repo"
+
+# Firebase Hosting 用の環境変数 (Firebase Console > プロジェクト設定 から取得)
+next_public_firebase_api_key             = ""
+next_public_firebase_auth_domain          = ""
+next_public_firebase_project_id           = ""
+next_public_firebase_storage_bucket       = ""
+next_public_firebase_messaging_sender_id = ""
+next_public_firebase_app_id               = ""
+
+# オプション: Google Tag Manager ID
+# next_public_gtm_id                     = "GTM-XXXXXXX"
