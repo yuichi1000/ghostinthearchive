@@ -92,27 +92,27 @@ graph LR
 
 **エージェント一覧:**
 
-| エージェント | 役割 | モデル |
-|------------|------|--------|
-| **ThemeAnalyzer** | テーマ分析・調査言語の選択 | Gemini 2.5 Flash |
-| **Librarian** ×N | 6つのデジタルアーカイブ + 民俗資料からの資料調査 | Gemini 2.5 Flash |
-| **Scholar** ×N | 学際的分析（分析モード）+ 言語横断討論（討論モード） | Gemini 3 Pro |
-| **Armchair Polymath** | 言語横断統合 — 全分析結果を学術的権威をもって統合 | Gemini 3 Pro |
-| **Storyteller** | 歴史的厳密さと怪異的情緒を両立した英語長文ナラティブ | Gemini 3 Pro |
-| **Illustrator** | LLM ベースの安全書き換えによるトップ画像生成 | Gemini 3 Pro + Imagen 3 |
-| **Translator** ×6 | ja/es/de/fr/nl/pt への並列翻訳（言語別トーンガイドライン付き） | Gemini 2.5 Flash |
-| **Publisher** | Firestore 永続化 + Cloud Storage アセットアップロード | Gemini 2.5 Flash |
+| エージェント          | 役割                                                           | モデル                  |
+| --------------------- | -------------------------------------------------------------- | ----------------------- |
+| **ThemeAnalyzer**     | テーマ分析・調査言語の選択                                     | Gemini 2.5 Flash        |
+| **Librarian** ×N      | 6つのデジタルアーカイブ + 民俗資料からの資料調査               | Gemini 2.5 Flash        |
+| **Scholar** ×N        | 学際的分析（分析モード）+ 言語横断討論（討論モード）           | Gemini 3 Pro            |
+| **Armchair Polymath** | 言語横断統合 — 全分析結果を学術的権威をもって統合              | Gemini 3 Pro            |
+| **Storyteller**       | 歴史的厳密さと怪異的情緒を両立した英語長文ナラティブ           | Gemini 3 Pro            |
+| **Illustrator**       | LLM ベースの安全書き換えによるトップ画像生成                   | Gemini 3 Pro + Imagen 3 |
+| **Translator** ×6     | ja/es/de/fr/nl/pt への並列翻訳（言語別トーンガイドライン付き） | Gemini 2.5 Flash        |
+| **Publisher**         | Firestore 永続化 + Cloud Storage アセットアップロード          | Gemini 2.5 Flash        |
 
 **パイプラインゲート（カスケード障害防止）:**
 
 各ゲートは `before_agent_callback` として実装され、上流エージェントが有効な出力を生成しなかった場合にパイプラインを早期停止する。これにより不要な API コストと意味のないコンテンツ生成を防ぐ。
 
-| ゲート | チェック対象 | スキップ条件 |
-|-------|------------|------------|
-| ScholarGate | `collected_documents_{lang}` | 全 Librarian が NO_DOCUMENTS_FOUND を返した場合 |
-| PolymathGate | `scholar_analysis_{lang}` | 全 Scholar が INSUFFICIENT_DATA を返した場合 |
-| StorytellerGate | `mystery_report` | 空または失敗マーカー |
-| PostStoryGate | `creative_content` | 空または NO_CONTENT |
+| ゲート          | チェック対象                 | スキップ条件                                    |
+| --------------- | ---------------------------- | ----------------------------------------------- |
+| ScholarGate     | `collected_documents_{lang}` | 全 Librarian が NO_DOCUMENTS_FOUND を返した場合 |
+| PolymathGate    | `scholar_analysis_{lang}`    | 全 Scholar が INSUFFICIENT_DATA を返した場合    |
+| StorytellerGate | `mystery_report`             | 空または失敗マーカー                            |
+| PostStoryGate   | `creative_content`           | 空または NO_CONTENT                             |
 
 ### Podcast Pipeline (`podcast_agents/`)
 
@@ -126,23 +126,23 @@ graph LR
     TR --> FS2[(Firestore)]
 ```
 
-| エージェント | 役割 | モデル |
-|------------|------|--------|
+| エージェント      | 役割                                                         | モデル           |
+| ----------------- | ------------------------------------------------------------ | ---------------- |
 | **ScriptPlanner** | 5〜7セグメントのアウトライン設計（語数配分・トーン指示付き） | Gemini 2.5 Flash |
-| **Scriptwriter** | 品質安定化のためのセグメント逐次脚本生成 | Gemini 3 Pro |
-| **Translator** | ポッドキャスト脚本の日本語翻訳 | Gemini 2.5 Flash |
+| **Scriptwriter**  | 品質安定化のためのセグメント逐次脚本生成                     | Gemini 3 Pro     |
+| **Translator**    | ポッドキャスト脚本の日本語翻訳                               | Gemini 2.5 Flash |
 
 ### Curator Service (`curator_agents/`)
 
-Cloud Scheduler から呼び出されるテーマ提案エージェント。過去のパイプライン失敗履歴（`pipeline_failures`）を参照し、失敗済みテーマの再提案を回避しつつ新しい調査テーマを提案する。
+テーマ提案エージェント。過去のパイプライン失敗履歴（`pipeline_failures`）を参照し、失敗済みテーマの再提案を回避しつつ新しい調査テーマを提案する。
 
 ## Web
 
-| アプリ | 技術 | 説明 |
-|-------|------|------|
-| **web-public** | Next.js SSG | 7言語（en/ja/es/de/fr/nl/pt）の静的サイト。`React.cache` で Firestore クエリを 7N→1 回に最適化。記事承認時に Cloud Build で再ビルド。 |
-| **web-admin** | Next.js CSR | 管理コンソール — 記事レビュー（承認/アーカイブ）、ポッドキャスト制作、テーマ提案。 |
-| **@ghost/shared** | TypeScript | 共有型定義、Firebase 設定、Firestore クエリ、ローカライゼーション（`localizeMystery()`）、UI コンポーネント。 |
+| アプリ            | 技術        | 説明                                                                                                                                  |
+| ----------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **web-public**    | Next.js SSG | 7言語（en/ja/es/de/fr/nl/pt）の静的サイト。`React.cache` で Firestore クエリを 7N→1 回に最適化。記事承認時に Cloud Build で再ビルド。 |
+| **web-admin**     | Next.js CSR | 管理コンソール — 記事レビュー（承認/アーカイブ）、ポッドキャスト制作、テーマ提案。                                                    |
+| **@ghost/shared** | TypeScript  | 共有型定義、Firebase 設定、Firestore クエリ、ローカライゼーション（`localizeMystery()`）、UI コンポーネント。                         |
 
 ## プロジェクト構成
 
@@ -241,16 +241,15 @@ python -m pytest tests/unit/ -v
 
 ## 技術スタック
 
-| Layer | Technology |
-|-------|-----------|
-| **Agent Framework** | Google Agent Development Kit (ADK) |
-| **LLM** | Gemini 3 Pro / 2.5 Flash (via Vertex AI) |
-| **Image Generation** | Imagen 3 (via Vertex AI) |
-| **Text-to-Speech** | Google Cloud TTS / Chirp 3 |
-| **Compute** | Cloud Run |
-| **Database** | Firestore |
-| **Storage** | Cloud Storage |
-| **Scheduling** | Cloud Scheduler |
-| **CI/CD** | Cloud Build (SSG rebuild on article approval) |
-| **Web Framework** | Next.js 15 |
-| **Language** | Python 3.12 / TypeScript |
+| Layer                | Technology                                    |
+| -------------------- | --------------------------------------------- |
+| **Agent Framework**  | Google Agent Development Kit (ADK)            |
+| **LLM**              | Gemini 3 Pro / 2.5 Flash (via Vertex AI)      |
+| **Image Generation** | Imagen 3 (via Vertex AI)                      |
+| **Text-to-Speech**   | Google Cloud TTS / Chirp 3                    |
+| **Compute**          | Cloud Run                                     |
+| **Database**         | Firestore                                     |
+| **Storage**          | Cloud Storage                                 |
+| **CI/CD**            | Cloud Build (SSG rebuild on article approval) |
+| **Web Framework**    | Next.js 15                                    |
+| **Language**         | Python 3.12 / TypeScript                      |
