@@ -369,7 +369,7 @@ def _get_client() -> genai.Client:
         return genai.Client(
             vertexai=True,
             project=os.environ.get("GOOGLE_CLOUD_PROJECT"),
-            location=os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1"),
+            location=os.environ.get("GOOGLE_CLOUD_LOCATION", "asia-northeast1"),
         )
     return genai.Client()
 
