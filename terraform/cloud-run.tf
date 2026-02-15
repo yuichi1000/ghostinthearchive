@@ -111,7 +111,7 @@ resource "google_cloud_run_v2_service" "web_admin" {
 resource "google_cloud_run_v2_service" "curator" {
   name     = "curator"
   location = var.region
-  ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
     service_account = google_service_account.pipelines.email
@@ -180,7 +180,7 @@ resource "google_cloud_run_v2_service" "curator" {
 resource "google_cloud_run_v2_service" "pipeline" {
   name     = "pipeline"
   location = var.region
-  ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
     service_account = google_service_account.pipelines.email
