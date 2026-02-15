@@ -34,7 +34,32 @@ export async function POST() {
     const client = await auth.getClient();
     const { token } = await client.getAccessToken();
 
-    const url = `https://cloudbuild.googleapis.com/v1/projects/${projectId}/triggers/${triggerId}:run`;
+    // ID または 名前 から ID を解決する
+    let resolvedTriggerId = triggerId;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(triggerId);
+    
+    if (!isUuid) {
+      console.log(`Resolving trigger ID for name: ${triggerId}`);
+      const listUrl = `https://cloudbuild.googleapis.com/v1/projects/${projectId}/triggers`;
+      const listResponse = await fetch(listUrl, {
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+      
+      if (listResponse.ok) {
+        const data = await listResponse.json();
+        const trigger = data.triggers?.find((t: any) => t.name === triggerId || t.id === triggerId);
+        if (trigger) {
+          resolvedTriggerId = trigger.id;
+          console.log(`Resolved ${triggerId} to ${resolvedTriggerId}`);
+        } else {
+          console.error(`Trigger not found by name: ${triggerId}`);
+        }
+      } else {
+        console.error("Failed to list triggers for name resolution");
+      }
+    }
+
+    const url = `https://cloudbuild.googleapis.com/v1/projects/${projectId}/triggers/${resolvedTriggerId}:run`;
     const response = await fetch(url, {
       method: "POST",
       headers: {
