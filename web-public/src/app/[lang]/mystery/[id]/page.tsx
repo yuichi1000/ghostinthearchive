@@ -20,13 +20,15 @@ import { getDictionary } from "@/lib/i18n/dictionaries"
 // SSG: ビルド時に生成されたページ以外は 404
 export const dynamicParams = false
 
-// output: "export" では generateStaticParams が空配列だとビルドエラーになる
-// revalidate = 0 でこのチェックをバイパス（静的出力では実行時に影響なし）
-export const revalidate = 0
-
 export async function generateStaticParams() {
-  // Firestore 接続エラー時はビルドを失敗させる（空デプロイ防止）
-  const ids = await getPublishedMysteryIds()
+  let ids: string[]
+  try {
+    ids = await getPublishedMysteryIds()
+  } catch (error) {
+    console.error("[SSG] Firestore クエリ失敗:", error)
+    throw new Error(`[SSG] Firestore から記事IDを取得できませんでした: ${error}`)
+  }
+  console.log(`[SSG] 公開済み記事: ${ids.length} 件 (${ids.join(", ")})`)
   return SUPPORTED_LANGS.flatMap((lang) =>
     ids.map((id) => ({ lang, id }))
   )

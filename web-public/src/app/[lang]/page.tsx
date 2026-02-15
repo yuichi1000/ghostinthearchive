@@ -19,7 +19,11 @@ async function MysteryList({ lang, dict }: { lang: SupportedLang; dict: Dictiona
   try {
     mysteries = await getPublishedMysteries(HOMEPAGE_MYSTERY_LIMIT)
   } catch (error) {
-    console.error("[MysteryList] Failed to fetch mysteries:", error)
+    console.error("[MysteryList] Firestore クエリ失敗:", error)
+    // SSG ビルドエラーの診断用に詳細を出力
+    if (error instanceof Error) {
+      console.error("[MysteryList] Stack:", error.stack)
+    }
   }
 
   if (mysteries.length === 0) {
