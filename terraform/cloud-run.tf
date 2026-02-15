@@ -78,7 +78,7 @@ resource "google_cloud_run_v2_service" "web_admin" {
 
       env {
         name  = "CLOUD_BUILD_TRIGGER_ID"
-        value = google_cloudbuild_trigger.web_public.trigger_id
+        value = google_cloudbuild_trigger.web_public.name
       }
 
       resources {
@@ -226,7 +226,7 @@ resource "google_cloud_run_v2_service" "pipeline" {
 
       env {
         name  = "CLOUD_BUILD_TRIGGER_ID"
-        value = google_cloudbuild_trigger.web_public.trigger_id
+        value = google_cloudbuild_trigger.web_public.name
       }
 
       resources {
