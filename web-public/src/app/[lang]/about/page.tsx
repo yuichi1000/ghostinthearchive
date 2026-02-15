@@ -10,9 +10,6 @@ import { getDictionary } from "@/lib/i18n/dictionaries"
 // SSG: ビルド時に生成されたページ以外は 404
 export const dynamicParams = false
 
-// output: "export" では generateStaticParams が空配列だとビルドエラーになる
-export const revalidate = 0
-
 export async function generateStaticParams() {
   return SUPPORTED_LANGS.map((lang) => ({ lang }))
 }
