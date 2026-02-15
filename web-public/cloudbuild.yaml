@@ -40,7 +40,7 @@ steps:
 
   # Deploy to Firebase Hosting
   - name: 'us-docker.pkg.dev/firebase-cli/us/firebase'
-    args: ['deploy', '--only', 'hosting:public', '--project', '$PROJECT_ID']
+    args: ['deploy', '--only', 'hosting', '--project', '$PROJECT_ID']
     dir: 'web-public'
 
 substitutions:
