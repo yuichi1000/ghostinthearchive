@@ -43,6 +43,13 @@ resource "google_project_iam_member" "web_admin_cloudbuild" {
   member  = "serviceAccount:${google_service_account.web_admin.email}"
 }
 
+# Allow web-admin to impersonate cloud-build-sa when triggering builds
+resource "google_service_account_iam_member" "web_admin_impersonate_cloud_build" {
+  service_account_id = google_service_account.cloud_build.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.web_admin.email}"
+}
+
 # IAM roles for pipelines
 resource "google_project_iam_member" "pipelines_firestore" {
   project = var.project_id
