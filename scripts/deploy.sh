@@ -241,6 +241,7 @@ deploy_web_public() {
     gcloud builds submit \
         --config web-public/cloudbuild.yaml \
         --substitutions "$subs" \
+        --service-account "projects/${PROJECT_ID}/serviceAccounts/cloud-build-sa@${PROJECT_ID}.iam.gserviceaccount.com" \
         --project "$PROJECT_ID" \
         "$PROJECT_ROOT"
 

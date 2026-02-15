@@ -38,10 +38,6 @@ resource "google_cloudbuild_trigger" "web_public" {
       dir  = "web-public"
     }
 
-    options {
-      logging = "CLOUD_LOGGING_ONLY"
-    }
-
     timeout = "600s"
   }
 
