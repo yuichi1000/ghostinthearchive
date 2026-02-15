@@ -14,47 +14,21 @@ resource "google_cloudbuild_trigger" "web_public" {
     repo_type = "GITHUB"
   }
 
-  build {
-    step {
-      name       = "node:20"
-      entrypoint = "npm"
-      args       = ["ci"]
-      dir        = "web-public"
-    }
+  filename = "web-public/cloudbuild.yaml"
 
-    step {
-      name       = "node:20"
-      entrypoint = "npm"
-      args       = ["run", "build"]
-      dir        = "web-public"
-      env = [
-        "GOOGLE_CLOUD_PROJECT=${var.project_id}"
-      ]
-    }
-
-    step {
-      name = "us-docker.pkg.dev/firebase-cli/us/firebase"
-      args = ["deploy", "--only", "hosting", "--project", var.project_id]
-      dir  = "web-public"
-    }
-
-    options {
-      logging = "CLOUD_LOGGING_ONLY"
-    }
-
-    timeout = "600s"
+  substitutions = {
+    _NEXT_PUBLIC_GTM_ID                       = var.next_public_gtm_id
+    _NEXT_PUBLIC_FIREBASE_API_KEY             = var.next_public_firebase_api_key
+    _NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN          = var.next_public_firebase_auth_domain
+    _NEXT_PUBLIC_FIREBASE_PROJECT_ID           = var.next_public_firebase_project_id
+    _NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET       = var.next_public_firebase_storage_bucket
+    _NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = var.next_public_firebase_messaging_sender_id
+    _NEXT_PUBLIC_FIREBASE_APP_ID               = var.next_public_firebase_app_id
   }
 
   service_account = google_service_account.cloud_build.id
 
   depends_on = [google_project_service.apis]
-}
-
-# Variable for GitHub repository
-variable "github_repo" {
-  description = "GitHub repository in format 'owner/repo'"
-  type        = string
-  default     = "yuichi1000/ghostinthearchive"
 }
 
 output "cloud_build_trigger_id" {
@@ -82,6 +56,16 @@ resource "google_cloudbuild_trigger" "web_public_on_push" {
   ]
 
   filename = "web-public/cloudbuild.yaml"
+
+  substitutions = {
+    _NEXT_PUBLIC_GTM_ID                       = var.next_public_gtm_id
+    _NEXT_PUBLIC_FIREBASE_API_KEY             = var.next_public_firebase_api_key
+    _NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN          = var.next_public_firebase_auth_domain
+    _NEXT_PUBLIC_FIREBASE_PROJECT_ID           = var.next_public_firebase_project_id
+    _NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET       = var.next_public_firebase_storage_bucket
+    _NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = var.next_public_firebase_messaging_sender_id
+    _NEXT_PUBLIC_FIREBASE_APP_ID               = var.next_public_firebase_app_id
+  }
 
   service_account = google_service_account.cloud_build.id
 

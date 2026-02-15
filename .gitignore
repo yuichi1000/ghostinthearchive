@@ -74,6 +74,8 @@ storage-debug.log
 
 # Terraform
 .terraform/
+*.tfvars
+*.tfvars.json
 
 # Firebase cache
 .firebase/
