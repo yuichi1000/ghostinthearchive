@@ -75,6 +75,27 @@ confirm() {
     esac
 }
 
+# .env.production から Cloud Build 置換変数を構築
+# KEY=value → _KEY=value 形式に変換し、カンマ区切りで結合
+build_substitutions() {
+    local env_file="${PROJECT_ROOT}/$1"
+    if [ ! -f "$env_file" ]; then
+        log_error "$env_file が見つかりません。.env.example を参考に作成してください。"
+        exit 1
+    fi
+    local subs=""
+    while IFS='=' read -r key value; do
+        # 空行・コメント行をスキップ
+        [[ -z "$key" || "$key" =~ ^# ]] && continue
+        if [ -z "$subs" ]; then
+            subs="_${key}=${value}"
+        else
+            subs="${subs},_${key}=${value}"
+        fi
+    done < "$env_file"
+    echo "$subs"
+}
+
 # 前提条件チェック
 check_prerequisites() {
     local target="$1"
@@ -190,9 +211,13 @@ deploy_pipelines() {
 deploy_web_admin() {
     log_step "=== web-admin デプロイ開始 ==="
 
+    local subs
+    subs=$(build_substitutions "web-admin/.env.production")
+
     log_info "Cloud Build でイメージをビルド中..."
     gcloud builds submit \
         --config web-admin/cloudbuild.yaml \
+        --substitutions "$subs" \
         --project "$PROJECT_ID" \
         "$PROJECT_ROOT"
 
@@ -209,9 +234,13 @@ deploy_web_admin() {
 deploy_web_public() {
     log_step "=== web-public デプロイ開始 ==="
 
+    local subs
+    subs=$(build_substitutions "web-public/.env.production")
+
     log_info "Cloud Build で SSG ビルド + Firebase Hosting デプロイ中..."
     gcloud builds submit \
         --config web-public/cloudbuild.yaml \
+        --substitutions "$subs" \
         --project "$PROJECT_ID" \
         "$PROJECT_ROOT"
 
