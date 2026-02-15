@@ -3,7 +3,9 @@
 # Firebase 設定値は deploy.sh が .env.production から置換変数として注入
 
 steps:
-  # .env.production を置換変数から生成
+  # .env.production 生成 + .dockerignore を web-admin 用に差し替え
+  # Cloud Build の Docker は BuildKit が無効のため Dockerfile.dockerignore を読まない
+  # ルートの .dockerignore は pipelines 用で web-admin/ を除外しているためコピーが必要
   - name: 'node:20'
     entrypoint: 'bash'
     args:
@@ -17,10 +19,10 @@ steps:
         NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
         NEXT_PUBLIC_FIREBASE_APP_ID=$_NEXT_PUBLIC_FIREBASE_APP_ID
         ENVEOF
+        cp web-admin/Dockerfile.dockerignore .dockerignore
 
   # Docker build
   - name: 'gcr.io/cloud-builders/docker'
-    env: ['DOCKER_BUILDKIT=1']
     args: ['build', '-f', 'web-admin/Dockerfile', '-t',
            'asia-northeast1-docker.pkg.dev/ghostinthearchive/ghostinthearchive/web-admin:latest', '.']
 
