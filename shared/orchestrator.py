@@ -53,23 +53,57 @@ _SKIP_DURATION_THRESHOLD = 0.5
 OnText = Callable[[str], None]
 
 
-def _detect_gate_failure(session_state: dict) -> str | None:
-    """セッション状態からゲート失敗を検出し、日本語のエラーメッセージを返す。
+def _build_state_summary(session_state: dict) -> dict:
+    """デバッグ用にセッション状態キーの存在と長さをサマリ化する。"""
+    keys = [
+        "mystery_report", "creative_content", "structured_report",
+        "image_metadata", "published_mystery_id", "published_episode",
+    ]
+    summary = {}
+    for k in keys:
+        v = session_state.get(k)
+        if v is None:
+            summary[k] = "missing"
+        elif isinstance(v, str):
+            summary[k] = f"present ({len(v)} chars)"
+        elif isinstance(v, dict):
+            summary[k] = f"present (dict, {len(v)} keys)"
+        else:
+            summary[k] = f"present ({type(v).__name__})"
+    return {"session_state_summary": summary}
+
+
+def _detect_gate_failure(session_state: dict) -> tuple[str, dict]:
+    """セッション状態からゲート失敗を検出し、エラーメッセージと詳細情報を返す。
 
     blog パイプラインで mystery_id が None の場合に呼ばれる。
     セッション状態の mystery_report → creative_content を順にチェックし、
-    失敗マーカーを検出した段階で対応するメッセージを返す。
+    失敗マーカーを検出した段階で対応するメッセージと error_detail を返す。
     """
+    detail = _build_state_summary(session_state)
+
     mystery_report = session_state.get("mystery_report", "")
     if not _is_meaningful(mystery_report):
-        return "十分な資料が見つからなかったため、記事を生成できませんでした"
+        return "十分な資料が見つからなかったため、記事を生成できませんでした", {
+            "error_type": "gate_failure",
+            "failed_stage": "scholar/polymath",
+            **detail,
+        }
 
     creative_content = session_state.get("creative_content", "")
     if not _is_meaningful(creative_content):
-        return "記事の生成に失敗しました"
+        return "記事の生成に失敗しました", {
+            "error_type": "gate_failure",
+            "failed_stage": "storyteller",
+            **detail,
+        }
 
     # mystery_id なし + 失敗マーカーなし → 公開処理で問題発生
-    return "記事の公開処理で問題が発生しました"
+    return "記事の公開処理で問題が発生しました", {
+        "error_type": "publish_failed",
+        "failed_stage": "publisher",
+        **detail,
+    }
 
 
 @dataclass
@@ -306,11 +340,8 @@ async def run_pipeline(
 
         # blog パイプラインで記事未生成の場合、ゲート失敗を検出してエラーマーク
         if run_type == "blog" and mystery_id is None:
-            failure_reason = _detect_gate_failure(session_state)
-            if failure_reason:
-                error_pipeline_run(run_id, failure_reason)
-            else:
-                complete_pipeline_run(run_id)
+            failure_reason, detail = _detect_gate_failure(session_state)
+            error_pipeline_run(run_id, failure_reason, error_detail=detail)
         else:
             complete_pipeline_run(run_id, mystery_id=mystery_id)
 
@@ -322,10 +353,16 @@ async def run_pipeline(
         )
 
     except TimeoutError:
-        error_pipeline_run(run_id, f"Pipeline timed out after {timeout_seconds}s")
+        error_pipeline_run(run_id, f"Pipeline timed out after {timeout_seconds}s", error_detail={
+            "error_type": "timeout",
+            "timeout_seconds": timeout_seconds,
+        })
         raise
     except Exception as e:
         error_message = _format_exception_group(e)
         logger.error("Pipeline failed: %s", error_message, exc_info=True)
-        error_pipeline_run(run_id, error_message)
+        error_pipeline_run(run_id, error_message, error_detail={
+            "error_type": "exception",
+            "exception_class": type(e).__name__,
+        })
         raise

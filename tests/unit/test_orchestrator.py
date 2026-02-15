@@ -6,6 +6,7 @@ import pytest
 
 from shared.orchestrator import (
     PipelineResult,
+    _build_state_summary,
     _detect_gate_failure,
     _format_exception_group,
     run_pipeline,
@@ -219,7 +220,10 @@ class TestRunPipeline:
                     initial_state={},
                 )
 
-        mock_error.assert_called_once_with("run-005", "Something went wrong")
+        mock_error.assert_called_once_with(
+            "run-005", "Something went wrong",
+            error_detail={"error_type": "exception", "exception_class": "RuntimeError"},
+        )
 
     @pytest.mark.asyncio
     @patch("shared.orchestrator.complete_pipeline_run")
@@ -544,14 +548,17 @@ class TestDetectGateFailure:
 
     def test_empty_state_returns_insufficient_data_message(self):
         """空セッション → 資料不足メッセージを返す。"""
-        result = _detect_gate_failure({})
-        assert "資料が見つからなかった" in result
+        message, detail = _detect_gate_failure({})
+        assert "資料が見つからなかった" in message
+        assert detail["error_type"] == "gate_failure"
+        assert detail["failed_stage"] == "scholar/polymath"
 
     def test_insufficient_mystery_report_returns_message(self):
         """mystery_report が INSUFFICIENT_DATA → 資料不足メッセージ。"""
         state = {"mystery_report": "INSUFFICIENT_DATA: No data available"}
-        result = _detect_gate_failure(state)
-        assert "資料が見つからなかった" in result
+        message, detail = _detect_gate_failure(state)
+        assert "資料が見つからなかった" in message
+        assert detail["error_type"] == "gate_failure"
 
     def test_no_creative_content_returns_message(self):
         """mystery_report あり + creative_content が NO_CONTENT → 記事生成失敗メッセージ。"""
@@ -559,8 +566,9 @@ class TestDetectGateFailure:
             "mystery_report": "A valid report about historical mysteries...",
             "creative_content": "NO_CONTENT: Story generation failed",
         }
-        result = _detect_gate_failure(state)
-        assert "記事の生成に失敗" in result
+        message, detail = _detect_gate_failure(state)
+        assert "記事の生成に失敗" in message
+        assert detail["failed_stage"] == "storyteller"
 
     def test_both_present_returns_publish_error(self):
         """全フィールド有意 + mystery_id なし → 公開処理失敗メッセージ。"""
@@ -568,8 +576,10 @@ class TestDetectGateFailure:
             "mystery_report": "A valid detailed analysis...",
             "creative_content": "A compelling blog post about...",
         }
-        result = _detect_gate_failure(state)
-        assert "公開処理で問題" in result
+        message, detail = _detect_gate_failure(state)
+        assert "公開処理で問題" in message
+        assert detail["error_type"] == "publish_failed"
+        assert detail["failed_stage"] == "publisher"
 
     def test_empty_creative_content_returns_message(self):
         """mystery_report あり + creative_content が空文字 → 記事生成失敗メッセージ。"""
@@ -577,8 +587,23 @@ class TestDetectGateFailure:
             "mystery_report": "A valid analysis result...",
             "creative_content": "",
         }
-        result = _detect_gate_failure(state)
-        assert "記事の生成に失敗" in result
+        message, detail = _detect_gate_failure(state)
+        assert "記事の生成に失敗" in message
+
+    def test_includes_state_summary(self):
+        """error_detail に session_state_summary が含まれる。"""
+        state = {
+            "mystery_report": "A valid detailed analysis...",
+            "creative_content": "A compelling blog post about...",
+            "structured_report": {"title": "test"},
+        }
+        _, detail = _detect_gate_failure(state)
+        summary = detail["session_state_summary"]
+        assert "present" in summary["mystery_report"]
+        assert "present" in summary["creative_content"]
+        assert "present (dict, 1 keys)" == summary["structured_report"]
+        assert summary["image_metadata"] == "missing"
+        assert summary["published_mystery_id"] == "missing"
 
 
 class TestGateFailureIntegration:
@@ -611,6 +636,10 @@ class TestGateFailureIntegration:
         assert result.mystery_id is None
         mock_error.assert_called_once()
         assert "資料が見つからなかった" in mock_error.call_args[0][1]
+        # error_detail が渡される
+        error_detail = mock_error.call_args[1]["error_detail"]
+        assert error_detail["error_type"] == "gate_failure"
+        assert "session_state_summary" in error_detail
         mock_complete.assert_not_called()
 
     @pytest.mark.asyncio
@@ -641,6 +670,9 @@ class TestGateFailureIntegration:
         assert result.mystery_id is None
         mock_error.assert_called_once()
         assert "記事の生成に失敗" in mock_error.call_args[0][1]
+        # error_detail が渡される
+        error_detail = mock_error.call_args[1]["error_detail"]
+        assert error_detail["failed_stage"] == "storyteller"
         mock_complete.assert_not_called()
 
     @pytest.mark.asyncio
@@ -771,3 +803,56 @@ class TestExceptionGroupInPipeline:
         error_msg = mock_error.call_args[0][1]
         assert "RuntimeError: tool X failed" in error_msg
         assert "ValueError: invalid input" in error_msg
+        # error_detail に exception_class が含まれる
+        error_detail = mock_error.call_args[1]["error_detail"]
+        assert error_detail["error_type"] == "exception"
+        assert error_detail["exception_class"] == "ExceptionGroup"
+
+
+class TestBuildStateSummary:
+    """_build_state_summary() の単体テスト"""
+
+    def test_missing_keys(self):
+        """存在しないキーは 'missing' と表示される。"""
+        summary = _build_state_summary({})["session_state_summary"]
+        assert summary["mystery_report"] == "missing"
+        assert summary["creative_content"] == "missing"
+        assert summary["structured_report"] == "missing"
+        assert summary["image_metadata"] == "missing"
+        assert summary["published_mystery_id"] == "missing"
+        assert summary["published_episode"] == "missing"
+
+    def test_string_values(self):
+        """文字列値は文字数付きで表示される。"""
+        state = {"mystery_report": "x" * 100, "creative_content": "hello"}
+        summary = _build_state_summary(state)["session_state_summary"]
+        assert summary["mystery_report"] == "present (100 chars)"
+        assert summary["creative_content"] == "present (5 chars)"
+
+    def test_dict_values(self):
+        """dict 値はキー数付きで表示される。"""
+        state = {"structured_report": {"a": 1, "b": 2, "c": 3}}
+        summary = _build_state_summary(state)["session_state_summary"]
+        assert summary["structured_report"] == "present (dict, 3 keys)"
+
+    def test_other_types(self):
+        """その他の型は型名付きで表示される。"""
+        state = {"image_metadata": 42}
+        summary = _build_state_summary(state)["session_state_summary"]
+        assert summary["image_metadata"] == "present (int)"
+
+    def test_mixed_state(self):
+        """複合状態が正しくサマリ化される。"""
+        state = {
+            "mystery_report": "A valid analysis...",
+            "creative_content": "A blog post...",
+            "structured_report": {"title": "test", "classification": "HIS"},
+            "image_metadata": {"url": "https://..."},
+        }
+        summary = _build_state_summary(state)["session_state_summary"]
+        assert "present" in summary["mystery_report"]
+        assert "present" in summary["creative_content"]
+        assert "present (dict, 2 keys)" == summary["structured_report"]
+        assert "present (dict, 1 keys)" == summary["image_metadata"]
+        assert summary["published_mystery_id"] == "missing"
+        assert summary["published_episode"] == "missing"

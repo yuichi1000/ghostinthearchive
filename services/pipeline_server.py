@@ -77,7 +77,10 @@ async def _run_investigate(query: str, run_id: str) -> None:
         )
     except Exception as e:
         logger.exception("Blog pipeline failed: %s", e)
-        error_pipeline_run(run_id, str(e))
+        error_pipeline_run(run_id, str(e), error_detail={
+            "error_type": "exception",
+            "exception_class": type(e).__name__,
+        })
 
 
 async def _run_generate_script(

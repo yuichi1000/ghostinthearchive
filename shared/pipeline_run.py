@@ -162,25 +162,30 @@ def complete_pipeline_run(
 def error_pipeline_run(
     run_id: str | None,
     error_message: str,
+    error_detail: dict | None = None,
 ) -> None:
     """パイプライン実行をエラーとしてマークする。
 
     Args:
         run_id: パイプライン実行ドキュメントの ID
         error_message: エラーメッセージ
+        error_detail: デバッグ用の詳細情報（セッション状態サマリ等）
     """
     if not run_id:
         return
     try:
         db = get_firestore_client()
         now = datetime.now(timezone.utc)
-        db.collection(COLLECTION).document(run_id).update({
+        update_data: dict = {
             "status": "error",
             "current_agent": None,
             "updated_at": now,
             "completed_at": now,
             "error_message": error_message[:500],
-        })
+        }
+        if error_detail:
+            update_data["error_detail"] = error_detail
+        db.collection(COLLECTION).document(run_id).update(update_data)
         logger.info("Pipeline run errored: %s", run_id)
     except Exception:
         logger.exception("Failed to mark pipeline run as error: %s", run_id)
