@@ -31,6 +31,24 @@ Ghost in the Archive - 公開デジタルアーカイブから歴史的ミステ
   - `chore/` - その他（設定変更、依存関係更新等）
 - プランモードで計画を立てる際は、実装時に使用するブランチ名を計画内に必ず明記する
 
+### リリースブランチ運用（v2.0: 2026/2/19 〜 2026/3/3）
+
+この期間中は `release/v2.0` をベースブランチとして開発を進める。
+
+- トピックブランチは **`release/v2.0` から作成**する（`main` からではない）
+- PR のマージ先は **`release/v2.0`**（`main` ではない）
+- 2026/3/3 に `release/v2.0` を `main` にマージしてリリースする
+
+```bash
+# worktree 作成時は release/v2.0 を起点にする
+git worktree add ../ghostinthearchive-<branch-name> -b <prefix>/<branch-name> release/v2.0
+
+# PR 作成時は release/v2.0 をベースに指定する
+gh pr create --base release/v2.0 --title "タイトル" --body "説明"
+```
+
+> **注意**: この期間が終了したら、このセクションを削除し、通常の `main` ベース運用に戻すこと。
+
 ### git worktree 運用
 
 ```bash
