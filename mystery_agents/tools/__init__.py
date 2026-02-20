@@ -10,6 +10,7 @@ from .internet_archive import search_internet_archive
 from .loc_digital import search_loc_digital
 from .nypl_digital import search_nypl
 from .ddb import search_ddb
+from .europeana import search_europeana
 
 # Librarian Agent LLM-facing tools
 from .librarian_tools import (
@@ -49,6 +50,7 @@ __all__ = [
     "search_nypl",
     "search_internet_archive",
     "search_ddb",
+    "search_europeana",
     # Librarian LLM tools
     "search_newspapers",
     "search_archives",

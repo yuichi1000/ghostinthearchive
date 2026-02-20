@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
 from .ddb import search_ddb
+from .europeana import search_europeana
 from .dpla import search_dpla
 from .internet_archive import search_internet_archive
 from .link_validator import ValidationSummary, validate_documents
@@ -256,7 +257,7 @@ def save_search_results(
 
 
 # 言語フィルタをサポートするソース
-_LANGUAGE_FILTER_SOURCES = {"dpla", "internet_archive"}
+_LANGUAGE_FILTER_SOURCES = {"dpla", "internet_archive", "europeana"}
 
 _ARCHIVE_SOURCES = {
     "loc": ("LOC Digital Collections", search_loc_digital),
@@ -264,6 +265,7 @@ _ARCHIVE_SOURCES = {
     "nypl": ("NYPL Digital Collections", search_nypl),
     "internet_archive": ("Internet Archive", search_internet_archive),
     "ddb": ("Deutsche Digitale Bibliothek", search_ddb),
+    "europeana": ("Europeana", search_europeana),
 }
 
 
@@ -292,7 +294,7 @@ def search_archives(
         date_start: Start year (default: 1800)
         date_end: End year (default: 1899)
         sources: Comma-separated source names to search (default: all US sources).
-                 Options: loc, dpla, nypl, internet_archive, ddb
+                 Options: loc, dpla, nypl, internet_archive, ddb, europeana
         max_results: Max results per source (default: 10)
         language: Optional ISO 639-1 language code (en, de, fr, es, nl, pt).
                   When specified, applies language filter to supported APIs

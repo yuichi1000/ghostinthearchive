@@ -33,6 +33,7 @@ EXPECTED_DOMAINS: dict[SourceType, list[str]] = {
     SourceType.NYPL: ["digitalcollections.nypl.org", "nypl.org"],
     SourceType.INTERNET_ARCHIVE: ["archive.org"],
     SourceType.DDB: ["deutsche-digitale-bibliothek.de"],
+    SourceType.EUROPEANA: ["europeana.eu"],
 }
 
 
