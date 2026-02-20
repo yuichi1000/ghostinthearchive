@@ -12,6 +12,7 @@ CLI と Cloud Run Service の両方から呼ばれるビジネスロジック層
 import asyncio
 import json
 import logging
+import time
 from dataclasses import dataclass, field
 from typing import Callable
 
@@ -22,6 +23,7 @@ from google.genai import types
 
 from mystery_agents.agents.pipeline_gate import _is_meaningful
 from mystery_agents.utils.pipeline_logger import PipelineLogger
+from shared.logging_config import PipelineContext, set_pipeline_context
 from shared.pipeline_run import (
     create_pipeline_run,
     update_agent_started,
@@ -147,6 +149,14 @@ def _complete_agent(
             pipeline_logger.remove_last_log(agent_name)
             return
 
+    # 完了ログ出力
+    if completed_log:
+        duration = completed_log.get("duration_seconds") or 0
+        logger.info(
+            "エージェント完了: %s (%.1fs)", agent_name, duration,
+            extra={"agent_name": agent_name, "status": "completed", "duration_seconds": duration},
+        )
+
     # Firestore に完了を通知
     completed_logs = pipeline_logger.get_logs()
     if completed_logs:
@@ -208,6 +218,12 @@ async def run_pipeline(
     if run_id is None:
         create_kwargs = {"query": user_message} if run_type == "blog" else {}
         run_id = create_pipeline_run(run_type, **create_kwargs)
+
+    # 構造化ログコンテキスト設定
+    set_pipeline_context(PipelineContext(run_id=run_id, pipeline_type=run_type))
+
+    pipeline_start_time = time.monotonic()
+    logger.info("パイプライン開始: %s", run_type, extra={"status": "started"})
 
     # Runner + Session セットアップ
     session_service = InMemorySessionService()
@@ -284,6 +300,10 @@ async def run_pipeline(
                 if author not in agent_texts:
                     agent_texts[author] = []
                     pipeline_logger.start_agent(author)
+                    logger.info(
+                        "エージェント開始: %s", author,
+                        extra={"agent_name": author, "status": "started"},
+                    )
                     agent_log_indices[author] = update_agent_started(
                         run_id, author, pipeline_logger.get_logs()[-1]
                     )
@@ -338,11 +358,31 @@ async def run_pipeline(
                 elif isinstance(published, dict):
                     mystery_id = published.get("mystery_id")
 
+        # mystery_id をコンテキストに追加
+        if mystery_id:
+            set_pipeline_context(PipelineContext(
+                run_id=run_id, pipeline_type=run_type, mystery_id=mystery_id,
+            ))
+
         # blog パイプラインで記事未生成の場合、ゲート失敗を検出してエラーマーク
         if run_type == "blog" and mystery_id is None:
             failure_reason, detail = _detect_gate_failure(session_state)
             error_pipeline_run(run_id, failure_reason, error_detail=detail)
         else:
+            # パイプライン正常完了サマリ
+            completed_logs = pipeline_logger.get_logs()
+            total_agents = len(completed_logs)
+            total_duration = round(time.monotonic() - pipeline_start_time, 1)
+            logger.info(
+                "パイプライン完了: %s (エージェント数=%d, 合計%.1fs)",
+                run_type, total_agents, total_duration,
+                extra={
+                    "status": "completed",
+                    "agent_count": total_agents,
+                    "total_duration_seconds": total_duration,
+                    "mystery_id": mystery_id or "",
+                },
+            )
             complete_pipeline_run(run_id, mystery_id=mystery_id)
 
         return PipelineResult(
@@ -360,7 +400,10 @@ async def run_pipeline(
         raise
     except Exception as e:
         error_message = _format_exception_group(e)
-        logger.error("Pipeline failed: %s", error_message, exc_info=True)
+        logger.error(
+            "Pipeline failed: %s", error_message, exc_info=True,
+            extra={"status": "error", "exception_class": type(e).__name__},
+        )
         error_pipeline_run(run_id, error_message, error_detail={
             "error_type": "exception",
             "exception_class": type(e).__name__,

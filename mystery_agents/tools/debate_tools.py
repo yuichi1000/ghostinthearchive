@@ -114,6 +114,7 @@ def check_debate_convergence(tool_context: ToolContext) -> str:
     new_words = curr_words - prev_words
     new_word_ratio = len(new_words) / len(curr_words)
 
+    converged = new_word_ratio < _CONVERGENCE_THRESHOLD
     logger.info(
         "Convergence check: round %d→%d, prev_words=%d, curr_words=%d, "
         "new_words=%d, ratio=%.1f%%",
@@ -123,9 +124,14 @@ def check_debate_convergence(tool_context: ToolContext) -> str:
         len(curr_words),
         len(new_words),
         new_word_ratio * 100,
+        extra={
+            "convergence_round": sorted_round_nums[-1],
+            "convergence_score": round(new_word_ratio, 3),
+            "converged": converged,
+        },
     )
 
-    if new_word_ratio < _CONVERGENCE_THRESHOLD:
+    if converged:
         tool_context.actions.escalate = True
         return (
             f"Debate has CONVERGED. New word ratio: {new_word_ratio:.1%} "

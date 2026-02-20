@@ -30,7 +30,11 @@ from curator_agents.queries import (
 )
 from curator_agents.schemas import strip_markdown_codeblock, validate_suggestions
 from mystery_agents.agents.translator import translator_agent
+from shared.logging_config import PipelineContext, set_pipeline_context, setup_logging
 from shared.pipeline_failure import get_recent_failures
+
+# プロジェクト全体のログを有効化（Cloud Run: JSON / ローカル: プレーンテキスト）
+setup_logging()
 
 logger = logging.getLogger(__name__)
 
@@ -205,6 +209,7 @@ async def health():
 
 @app.post("/suggest-theme")
 async def suggest_theme():
+    set_pipeline_context(PipelineContext(pipeline_type="curator"))
     try:
         # Step 1: Generate English suggestions
         suggestions = await run_curator()
