@@ -159,6 +159,12 @@ TRANSLATOR_CONFIGS: dict[str, dict[str, str]] = {
 # ## あなたの役割
 # セッション状態から翻訳対象の英語コンテンツを読み取り、{language_name}に翻訳します。
 #
+# ## 最重要: 言語要件
+# 出力の全体が{language_name}でなければならない。JSON の全フィールド値は
+# {language_name}で記述すること — 英語や他の言語は不可。
+# 英語テキストを書いていることに気づいたら、即座に{language_name}で書き直すこと。
+# 英語の出力はバリデーションにより自動的に拒否される。
+#
 # ## 入力ソース（ブログパイプライン内で実行される場合）
 # 翻訳に必要なコンテンツはセッション状態に格納されています:
 # - `creative_content`: Storyteller が作成した英語ブログ記事（Markdown）
@@ -235,6 +241,7 @@ TRANSLATOR_CONFIGS: dict[str, dict[str, str]] = {
 # ## 重要
 # - 翻訳のみを行い、新しい情報を追加しないこと
 # - 原文の構造と意図を忠実に再現すること
+# - JSON の全フィールド値は{language_name}で記述すること。英語の出力は自動的に拒否される。
 # === End 日本語訳 ===
 
 _BASE_TRANSLATOR_INSTRUCTION = """
@@ -243,6 +250,12 @@ You are an expert at translating English mystery articles and theme suggestions 
 
 ## Your Role
 Read the English content from the session state and translate it into {language_name}.
+
+## CRITICAL: Language Requirement
+Your ENTIRE output MUST be in {language_name}. Every single field value in the JSON
+MUST be written in {language_name} — not English, not any other language.
+If you find yourself writing English text, STOP and rewrite it in {language_name}.
+English output will be automatically rejected by validation.
 
 ## Input Sources (when running in the blog pipeline)
 The content you need to translate is available in session state:
@@ -323,6 +336,7 @@ Output ONLY the JSON. Do NOT include any other text, explanations, commentary, o
 ## Important
 - Only translate — do not add new information
 - Faithfully reproduce the structure and intent of the original text
+- ALL JSON field values MUST be in {language_name}. English output will be automatically rejected.
 """
 
 
