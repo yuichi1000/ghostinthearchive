@@ -1,0 +1,193 @@
+"""Unit tests for Europeana API tool."""
+
+from unittest.mock import patch
+
+import responses
+
+from mystery_agents.tools.europeana import (
+    BASE_URL,
+    _detect_language,
+    _extract_location,
+    _parse_year,
+    search_europeana,
+)
+from mystery_agents.schemas.document import SourceLanguage, SourceType
+
+
+class TestSearchEuropeana:
+    """Tests for search_europeana function."""
+
+    def test_missing_api_key(self):
+        """API Key 未設定時はエラーを返す。"""
+        with patch.dict("os.environ", {}, clear=True):
+            result = search_europeana(keywords=["test"])
+        assert result["error"] == "EUROPEANA_API_KEY not set"
+        assert result["documents"] == []
+
+    def test_empty_keywords(self):
+        """空のキーワードリストでエラーを返す。"""
+        with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
+            result = search_europeana(keywords=[])
+        assert result["error"] == "No keywords provided"
+
+    @responses.activate
+    def test_successful_search(self):
+        """正常なレスポンスでドキュメントを返す。"""
+        mock_response = {
+            "success": True,
+            "totalResults": 1,
+            "items": [
+                {
+                    "title": ["Medieval Manuscript from Paris"],
+                    "year": ["1450"],
+                    "guid": "https://www.europeana.eu/item/123/abc",
+                    "dcDescription": ["A rare medieval manuscript found in Paris archives"],
+                    "language": ["fr"],
+                    "country": ["France"],
+                }
+            ],
+        }
+        responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
+
+        with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
+            result = search_europeana(keywords=["medieval", "manuscript"])
+
+        assert result["total_hits"] == 1
+        assert len(result["documents"]) == 1
+        doc = result["documents"][0]
+        assert doc.title == "Medieval Manuscript from Paris"
+        assert doc.language == SourceLanguage.FR
+        assert doc.source_type == SourceType.EUROPEANA
+        assert "europeana.eu" in doc.source_url
+
+    @responses.activate
+    def test_language_filter(self):
+        """language パラメータで qf=LANGUAGE:xx が送信される。"""
+        mock_response = {"success": True, "totalResults": 0, "items": []}
+        responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
+
+        with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
+            search_europeana(keywords=["test"], language="de")
+
+        request = responses.calls[0].request
+        assert "LANGUAGE%3Ade" in request.url or "LANGUAGE:de" in request.url
+
+    @responses.activate
+    def test_date_filter(self):
+        """日付フィルタが qf パラメータで送信される。"""
+        mock_response = {"success": True, "totalResults": 0, "items": []}
+        responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
+
+        with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
+            search_europeana(keywords=["test"], date_start="1800", date_end="1899")
+
+        request = responses.calls[0].request
+        # URL エンコードされた形式でもチェック
+        assert "1800" in request.url
+        assert "1899" in request.url
+
+    @responses.activate
+    def test_api_error_handling(self):
+        """API エラー時はエラーメッセージを返す。"""
+        responses.add(responses.GET, BASE_URL, json={"error": "forbidden"}, status=403)
+
+        with patch.dict("os.environ", {"EUROPEANA_API_KEY": "bad_key"}):
+            result = search_europeana(keywords=["test"])
+
+        assert result["error"] is not None
+        assert "Europeana API error" in result["error"]
+        assert result["documents"] == []
+
+    @responses.activate
+    def test_empty_results(self):
+        """結果が0件の場合。"""
+        mock_response = {"success": True, "totalResults": 0, "items": []}
+        responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
+
+        with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
+            result = search_europeana(keywords=["nonexistent"])
+
+        assert result["total_hits"] == 0
+        assert result["documents"] == []
+        assert result["error"] is None
+
+    @responses.activate
+    def test_wskey_parameter(self):
+        """wskey パラメータがリクエストに含まれることを確認。"""
+        mock_response = {"success": True, "totalResults": 0, "items": []}
+        responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
+
+        with patch.dict("os.environ", {"EUROPEANA_API_KEY": "my_secret_key"}):
+            search_europeana(keywords=["test"])
+
+        request = responses.calls[0].request
+        assert "wskey=my_secret_key" in request.url
+
+    @responses.activate
+    def test_edmIsShownAt_fallback(self):
+        """guid がない場合は edmIsShownAt にフォールバックする。"""
+        mock_response = {
+            "success": True,
+            "totalResults": 1,
+            "items": [
+                {
+                    "title": ["Test Document"],
+                    "edmIsShownAt": ["https://example.europeana.eu/item/456"],
+                    "language": ["en"],
+                    "country": ["United Kingdom"],
+                }
+            ],
+        }
+        responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
+
+        with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
+            result = search_europeana(keywords=["test"])
+
+        assert len(result["documents"]) == 1
+        assert result["documents"][0].source_url == "https://example.europeana.eu/item/456"
+
+
+class TestDetectLanguage:
+    """Tests for _detect_language helper."""
+
+    def test_detect_french(self):
+        assert _detect_language({"language": ["fr"]}) == SourceLanguage.FR
+
+    def test_detect_german(self):
+        assert _detect_language({"language": ["de"]}) == SourceLanguage.DE
+
+    def test_default_to_english(self):
+        assert _detect_language({"language": []}) == SourceLanguage.EN
+
+    def test_unknown_language(self):
+        assert _detect_language({"language": ["zz"]}) == SourceLanguage.EN
+
+    def test_string_language(self):
+        assert _detect_language({"language": "nl"}) == SourceLanguage.NL
+
+
+class TestExtractLocation:
+    """Tests for _extract_location helper."""
+
+    def test_from_country(self):
+        assert _extract_location({"country": ["France"]}) == "France"
+
+    def test_from_place_label(self):
+        result = _extract_location({"edmPlaceLabelLangAware": {"en": ["Paris"]}})
+        assert result == "Paris"
+
+    def test_default_europe(self):
+        assert _extract_location({}) == "Europe"
+
+
+class TestParseYear:
+    """Tests for _parse_year helper."""
+
+    def test_parse_year(self):
+        assert _parse_year("1850") == "1850-01-01"
+
+    def test_parse_empty(self):
+        assert _parse_year("") is None
+
+    def test_parse_full_date(self):
+        assert _parse_year("1850-03-15") == "1850-01-01"

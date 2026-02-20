@@ -119,10 +119,11 @@ LANGUAGE_CONFIGS = {
             "Focus on German-language sources relevant to American history:\n"
             "- German immigrant communities (Pennsylvania Dutch, Texas Germans)\n"
             "- Deutsche Digitale Bibliothek (DDB) for German institutional records\n"
+            "- Europeana for pan-European cultural heritage materials in German\n"
             "- Internet Archive for digitized German-language books and periodicals\n"
             "- Protestant church records, immigration documents, German-language American newspapers"
         ),
-        "sources_hint": "ddb, internet_archive",
+        "sources_hint": "ddb, europeana, internet_archive",
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
         "tools": "archives_only",  # search_archives のみ
     },
@@ -147,10 +148,11 @@ LANGUAGE_CONFIGS = {
             "Focus on French-language sources relevant to American history:\n"
             "- French colonial records (Louisiana, Quebec, Nouvelle-France)\n"
             "- Acadian/Cajun history and culture\n"
+            "- Europeana for pan-European cultural heritage materials in French\n"
             "- Internet Archive for digitized French-language materials\n"
             "- Huguenot immigration, fur trade, French-Indian alliances"
         ),
-        "sources_hint": "internet_archive",
+        "sources_hint": "europeana, internet_archive",
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
         "tools": "archives_only",
     },
@@ -160,10 +162,11 @@ LANGUAGE_CONFIGS = {
         "cultural_context": (
             "Focus on Dutch-language sources relevant to American history:\n"
             "- Dutch colonial records (New Amsterdam/New York, Dutch West India Company)\n"
+            "- Europeana for pan-European cultural heritage materials in Dutch\n"
             "- Internet Archive for digitized Dutch-language materials\n"
             "- VOC/WIC trade records, colonial administration, patroon system"
         ),
-        "sources_hint": "internet_archive",
+        "sources_hint": "europeana, internet_archive",
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
         "tools": "archives_only",
     },
@@ -173,10 +176,11 @@ LANGUAGE_CONFIGS = {
         "cultural_context": (
             "Focus on Portuguese-language sources relevant to American/Atlantic history:\n"
             "- Atlantic trade networks, Brazil-Africa-Americas triangle\n"
+            "- Europeana for pan-European cultural heritage materials in Portuguese\n"
             "- Internet Archive for digitized Portuguese-language materials\n"
             "- Maritime exploration, slave trade documentation, colonial correspondence"
         ),
-        "sources_hint": "internet_archive",
+        "sources_hint": "europeana, internet_archive",
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
         "tools": "archives_only",
     },

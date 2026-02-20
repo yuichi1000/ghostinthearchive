@@ -28,6 +28,7 @@ class SourceType(str, Enum):
     PARES = "pares"
     INTERNET_ARCHIVE = "internet_archive"
     DDB = "ddb"
+    EUROPEANA = "europeana"
 
 
 class ArchiveDocument(BaseModel):
