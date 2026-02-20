@@ -5,12 +5,15 @@ Uses the loc.gov JSON API to search across all LOC digital collections
 """
 
 import json
+import logging
 import time
 from typing import Any, Dict, List, Optional
 
 import requests
 
 from shared.http_retry import create_retry_session
+
+logger = logging.getLogger(__name__)
 
 from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
 from .search_utils import build_search_query
@@ -64,6 +67,7 @@ def search_loc_digital(
     }
 
     _rate_limit()
+    start = time.monotonic()
 
     try:
         response = _session.get(
@@ -113,9 +117,21 @@ def search_loc_digital(
         pagination = data.get("pagination", {})
         total_hits = pagination.get("total", pagination.get("of", 0))
 
+        latency_ms = round((time.monotonic() - start) * 1000)
+        logger.info(
+            "LOC 検索完了: %d 件 (%dms)", len(documents), latency_ms,
+            extra={"api_name": "loc", "result_count": len(documents),
+                   "total_hits": total_hits, "latency_ms": latency_ms},
+        )
+
         return {"documents": documents, "total_hits": total_hits, "error": None}
 
     except (requests.RequestException, json.JSONDecodeError) as e:
+        latency_ms = round((time.monotonic() - start) * 1000)
+        logger.warning(
+            "LOC API エラー: %s (%dms)", e, latency_ms,
+            extra={"api_name": "loc", "latency_ms": latency_ms, "error": str(e)},
+        )
         return {"documents": [], "total_hits": 0, "error": f"LOC API error: {e}"}
 
 

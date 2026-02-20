@@ -5,11 +5,14 @@ string-based interface for the LLM to use.
 """
 
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 from google.adk.tools.tool_context import ToolContext
+
+logger = logging.getLogger(__name__)
 
 from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
@@ -100,6 +103,11 @@ def search_newspapers(
 
     # Level 2: Individual keywords (if not enough results)
     if len(all_docs) < min_results and len(en_keywords) > 1:
+        logger.info(
+            "Chronicling America フォールバック L2 発動: L1結果=%d件 < min=%d",
+            len(all_docs), min_results,
+            extra={"search_level": "L2", "l1_count": len(all_docs)},
+        )
         levels_used.append("L2_individual_keywords")
         for kw in en_keywords:
             _search_and_collect([kw])
@@ -113,6 +121,11 @@ def search_newspapers(
 
     # Level 3: Remove geographic restriction (search all states)
     if len(all_docs) < min_results and state_list is not None:
+        logger.info(
+            "Chronicling America フォールバック L3 発動: 結果=%d件, 地理制限解除",
+            len(all_docs),
+            extra={"search_level": "L3", "current_count": len(all_docs)},
+        )
         levels_used.append("L3_all_states")
         for kw_list in [en_keywords, es_keywords]:
             _search_and_collect(kw_list, search_states=None)
@@ -124,6 +137,11 @@ def search_newspapers(
         expanded_start = str(max(1700, int(date_start) - 10))
         expanded_end = str(min(1920, int(date_end) + 10))
         if expanded_start != date_start or expanded_end != date_end:
+            logger.info(
+                "Chronicling America フォールバック L4 発動: 日付範囲拡大 %s-%s",
+                expanded_start, expanded_end,
+                extra={"search_level": "L4", "current_count": len(all_docs)},
+            )
             levels_used.append(f"L4_date_expanded_{expanded_start}_{expanded_end}")
             for kw_list in [en_keywords, es_keywords]:
                 _search_and_collect(kw_list, search_states=None, start=expanded_start, end=expanded_end)
@@ -140,6 +158,17 @@ def search_newspapers(
             domain_mismatch=0, removed_urls=[], duration_ms=0,
             verified_documents=list(all_docs),
         )
+    logger.info(
+        "Chronicling America 検索完了: %d 件 (検証後), levels=%s, リンク検証=%d/%d",
+        len(all_docs), levels_used, validation.reachable, validation.total_checked,
+        extra={
+            "api_name": "chronicling_america", "result_count": len(all_docs),
+            "search_levels": levels_used,
+            "links_verified": validation.reachable,
+            "links_checked": validation.total_checked,
+        },
+    )
+
     docs = [doc.model_dump() for doc in all_docs]
 
     result = {
@@ -377,6 +406,19 @@ def search_archives(
             domain_mismatch=0, removed_urls=[], duration_ms=0,
             verified_documents=list(all_docs),
         )
+    logger.info(
+        "アーカイブ検索完了: %d 件 (検証後), sources=%s, リンク検証=%d/%d",
+        len(all_docs), list(source_results.keys()),
+        validation.reachable, validation.total_checked,
+        extra={
+            "api_name": "archives_combined", "result_count": len(all_docs),
+            "sources_searched": list(source_results.keys()),
+            "fallback_used": fallback_used,
+            "links_verified": validation.reachable,
+            "links_checked": validation.total_checked,
+        },
+    )
+
     all_docs_dicts = [doc.model_dump() for doc in all_docs]
 
     # Build warnings for missing API keys

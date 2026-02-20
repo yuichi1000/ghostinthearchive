@@ -5,12 +5,15 @@ web pages, and other digitized materials.
 """
 
 import json
+import logging
 import time
 from typing import Any, Dict, List, Optional
 
 import requests
 
 from shared.http_retry import create_retry_session
+
+logger = logging.getLogger(__name__)
 
 from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
 from .search_utils import build_search_query
@@ -84,6 +87,7 @@ def search_internet_archive(
     }
 
     _rate_limit()
+    start = time.monotonic()
 
     try:
         response = _session.get(
@@ -138,9 +142,22 @@ def search_internet_archive(
             documents.append(doc)
 
         total_hits = resp.get("numFound", 0)
+
+        latency_ms = round((time.monotonic() - start) * 1000)
+        logger.info(
+            "Internet Archive 検索完了: %d 件 (%dms)", len(documents), latency_ms,
+            extra={"api_name": "internet_archive", "result_count": len(documents),
+                   "total_hits": total_hits, "latency_ms": latency_ms},
+        )
+
         return {"documents": documents, "total_hits": total_hits, "error": None}
 
     except (requests.RequestException, json.JSONDecodeError) as e:
+        latency_ms = round((time.monotonic() - start) * 1000)
+        logger.warning(
+            "Internet Archive API エラー: %s (%dms)", e, latency_ms,
+            extra={"api_name": "internet_archive", "latency_ms": latency_ms, "error": str(e)},
+        )
         return {"documents": [], "total_hits": 0, "error": f"Internet Archive API error: {e}"}
 
 

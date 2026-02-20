@@ -38,6 +38,21 @@ setup_logging()
 
 logger = logging.getLogger(__name__)
 
+
+class _HealthCheckFilter(logging.Filter):
+    """ヘルスチェック（/health）の INFO ログを抑制する。"""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno >= logging.WARNING:
+            return True
+        msg = record.getMessage()
+        if "/health" in msg:
+            return False
+        return True
+
+
+logging.getLogger("uvicorn.access").addFilter(_HealthCheckFilter())
+
 # 認証エラーを示すキーワード
 _AUTH_ERROR_KEYWORDS = ("reauthentication", "default credentials", "invalid_grant")
 
