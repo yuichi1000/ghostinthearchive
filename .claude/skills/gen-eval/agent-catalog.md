@@ -164,21 +164,18 @@ Curator はスタンドアロンエージェント（シーケンシャルパイ
 |----------|-------|
 | モジュール | `mystery_agents/agents/publisher.py` |
 | 変数名 | `publisher_agent` |
-| モデル | `gemini-2.5-flash` |
-| 出力キー | `published_episode` |
-| ツール | `publish_mystery` |
+| エージェント種別 | Custom Agent (`BaseAgent` 継承) |
+| モデル | N/A（LLM 不使用） |
+| 出力キー | N/A（`EventActions.state_delta` で `published_episode` を直接書き込み） |
+| ツール | N/A（`publish_mystery` を Python 関数として直接呼び出し） |
 | 前段 | Illustrator（`visual_assets`）+ Translator（`translation_result`）+ 全上流キー |
-| チェックするマーカー | 全上流マーカー（`NO_DOCUMENTS_FOUND`, `INSUFFICIENT_DATA`, `NO_CONTENT`, `NO_TRANSLATION`） |
+| チェックするマーカー | （なし — 決定的実行のため upstream gate に委任） |
 | 出力するマーカー | （なし） |
-| プレースホルダー | `{collected_documents_en}`, `{mystery_report}`, `{creative_content}`, `{visual_assets}`, `{translation_result}` |
+| プレースホルダー | N/A（instruction なし） |
 
-**Eval シナリオ:**
+**備考:** LlmAgent 時代に publish_mystery ツールを呼び出さずに終了する障害が発生したため、BaseAgent 継承の決定的実行に移行。`_run_async_impl` 内で `publish_mystery()` を直接呼び出し、`EventActions.state_delta` でセッション状態を更新する。
 
-| eval_id | 説明 | tool_uses | final_response キーワード |
-|---------|------|-----------|------------------------|
-| `publisher_full_workflow` | 画像アップロード付きフル公開ワークフロー | `upload_images`, `publish_mystery` | `published_episode Firestore mystery_id` |
-| `publisher_document_structure` | Firestore 必須フィールドの検証 | `publish_mystery` | `mystery_id status Firestore` |
-| `publisher_failure_handling` | 上流失敗検出時の公開スキップ | `[]` | `INSUFFICIENT_DATA NO_CONTENT` |
+**Eval シナリオ:** Custom Agent は LLM を介さないため ADK eval（Golden Dataset）の対象外。`publish_mystery` 関数自体は `tests/unit/test_publisher_tools.py` でカバー。
 
 ---
 

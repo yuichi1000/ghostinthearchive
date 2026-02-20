@@ -1,49 +1,77 @@
-"""Publisher Agent - Content publishing and distribution
+"""Publisher Agent - Custom Agent による決定的公開処理
 
-This agent handles content publishing and distribution:
-- Saves mystery data to Firestore
-- Uploads images to Cloud Storage
-- Manages content lifecycle
+LLM を介さず、セッション状態から直接 Firestore に公開する Custom Agent。
+本番パイプラインで LlmAgent が publish_mystery ツールを呼び出さずに終了した
+障害を受け、BaseAgent 継承の決定的実行に置き換えた。
 
 Input: All assets (mystery_report, creative_content, visual_assets, 6-lang translations)
 Output: Firestore documents with pending status (EN base + translations map)
 """
 
+import json
+import logging
+from collections.abc import AsyncGenerator
 from pathlib import Path
 
 from dotenv import load_dotenv
-from google.adk.agents import LlmAgent
+from google.adk.agents import BaseAgent
+from google.adk.agents.invocation_context import InvocationContext
+from google.adk.events.event import Event, EventActions
+from google.genai import types
 
-from shared.model_config import create_flash_model
-
-from ..tools.publisher_tools import publish_mystery
+from ..tools.publisher_tools import _PublishContext, publish_mystery
 
 load_dotenv(Path(__file__).parent.parent / ".env")  # mystery_agents/.env
 
-# === 日本語訳 ===
-# あなたはパブリッシャーエージェントです。
-# publish_mystery ツールがセッション状態から全データを自動読み取りします。
-# 空の JSON で publish_mystery を呼び出すだけで完了です: publish_mystery("{}")
-# ツールが classification、コンテンツ、画像、翻訳——すべてを処理します。
-# publish_mystery を必ず呼び出してください。出力は短く保ってください。
-# === End 日本語訳 ===
+logger = logging.getLogger(__name__)
 
-PUBLISHER_INSTRUCTION = """
-You are the Publisher Agent.
-The publish_mystery tool automatically reads ALL data from session state.
-Just call publish_mystery with an empty JSON: publish_mystery("{}")
-The tool handles classification, content, images, translations — everything.
-You MUST call publish_mystery. Keep your output SHORT.
-"""
 
-publisher_agent = LlmAgent(
+class PublisherAgent(BaseAgent):
+    """Custom Agent: LLM を介さず直接 Firestore に公開する。"""
+
+    async def _run_async_impl(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        state = ctx.session.state
+
+        # structured_report から ID 生成用データを取得
+        sr = state.get("structured_report", {})
+        if not isinstance(sr, dict):
+            sr = {}
+        minimal_json = json.dumps(
+            {
+                "classification": sr.get("classification", ""),
+                "state_code": sr.get("state_code", ""),
+                "area_code": sr.get("area_code", ""),
+            }
+        )
+
+        # セッション状態のコピーを渡して publish_mystery を実行
+        state_copy = dict(state)
+        publish_ctx = _PublishContext(state=state_copy)
+        result_json = publish_mystery(minimal_json, "", publish_ctx)
+
+        # state_delta: published_mystery_id + published_episode をセッションに反映
+        state_delta: dict[str, object] = {"published_episode": result_json}
+        mystery_id = state_copy.get("published_mystery_id")
+        if mystery_id:
+            state_delta["published_mystery_id"] = mystery_id
+
+        yield Event(
+            invocation_id=ctx.invocation_id,
+            author=self.name,
+            branch=ctx.branch,
+            content=types.Content(
+                role="model", parts=[types.Part(text=result_json)]
+            ),
+            actions=EventActions(state_delta=state_delta),
+        )
+
+
+publisher_agent = PublisherAgent(
     name="publisher",
-    model=create_flash_model(),
     description=(
-        "Content manager agent that receives all assets and saves them to Firestore. "
-        "Saves English base fields and multilingual translations (6 languages) via translations map."
+        "Content manager agent that saves all assets to Firestore. "
+        "Deterministic execution without LLM — reads session state directly."
     ),
-    instruction=PUBLISHER_INSTRUCTION,
-    tools=[publish_mystery],
-    output_key="published_episode",
 )
