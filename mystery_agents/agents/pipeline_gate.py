@@ -42,7 +42,10 @@ def _is_meaningful(value: str) -> bool:
 
 def _log_and_record_failure(callback_context: CallbackContext, stage: str, message: str) -> None:
     """パイプライン失敗をログに記録し、Firestore にも書き込む。"""
-    logger.warning("Pipeline gate [%s]: %s", stage, message)
+    logger.warning(
+        "Pipeline gate [%s]: %s", stage, message,
+        extra={"gate_name": stage, "decision": "skip", "reason": message},
+    )
     try:
         from shared.pipeline_failure import log_pipeline_failure
 
@@ -70,6 +73,10 @@ def make_scholar_gate():
         for lang in selected:
             docs = callback_context.state.get(f"collected_documents_{lang}", "")
             if _is_meaningful(docs):
+                logger.info(
+                    "Pipeline gate [scholar]: 通過（%s に有意なデータあり）", lang,
+                    extra={"gate_name": "scholar", "decision": "pass"},
+                )
                 return None  # 有意なデータあり → 実行
 
         message = (
@@ -96,6 +103,10 @@ def make_polymath_gate():
         for lang in selected:
             analysis = callback_context.state.get(f"scholar_analysis_{lang}", "")
             if _is_meaningful(analysis):
+                logger.info(
+                    "Pipeline gate [polymath]: 通過（%s に有意な分析あり）", lang,
+                    extra={"gate_name": "polymath", "decision": "pass"},
+                )
                 return None
 
         message = (
@@ -117,6 +128,10 @@ def make_storyteller_gate():
     def gate(callback_context: CallbackContext) -> Optional[types.Content]:
         report = callback_context.state.get("mystery_report", "")
         if _is_meaningful(report):
+            logger.info(
+                "Pipeline gate [storyteller]: 通過",
+                extra={"gate_name": "storyteller", "decision": "pass"},
+            )
             return None
 
         message = "NO_CONTENT: No mystery report available. Pipeline terminated."
@@ -135,6 +150,10 @@ def make_post_story_gate():
     def gate(callback_context: CallbackContext) -> Optional[types.Content]:
         content = callback_context.state.get("creative_content", "")
         if _is_meaningful(content):
+            logger.info(
+                "Pipeline gate [post_story]: 通過",
+                extra={"gate_name": "post_story", "decision": "pass"},
+            )
             return None
 
         message = "NO_CONTENT: No story content available. Skipped."

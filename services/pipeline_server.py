@@ -29,13 +29,11 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import uvicorn
 
+from shared.logging_config import setup_logging
 from shared.pipeline_run import create_pipeline_run, error_pipeline_run
 
-# プロジェクト全体のログを有効化（Publisher, Illustrator 等の既存ログが出力される）
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(name)s [%(levelname)s] %(message)s",
-)
+# プロジェクト全体のログを有効化（Cloud Run: JSON / ローカル: プレーンテキスト）
+setup_logging()
 
 logger = logging.getLogger(__name__)
 
