@@ -41,9 +41,6 @@ export function EvidenceBlock({ evidence, label, translatedExcerpt, labels, clas
         {/* Top edge wear effect */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-b from-parchment/10 to-transparent" />
 
-        {/* Corner fold effect */}
-        <div className="absolute top-0 right-0 w-6 h-6 corner-fold" />
-
         {/* Date badge + Quote marks row */}
         <div className="flex items-start justify-between mb-1">
           {(hasExcerpt || hasTranslatedExcerpt) && (
