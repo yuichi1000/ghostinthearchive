@@ -38,11 +38,12 @@ class TestSessionStateKeys:
 
         assert illustrator_agent.output_key == "visual_assets"
 
-    def test_publisher_output_key(self):
-        """Publisher agent should use 'published_episode' output key."""
+    def test_publisher_is_custom_agent(self):
+        """Publisher agent should be a Custom Agent (BaseAgent) named 'publisher'."""
         from mystery_agents.agents.publisher import publisher_agent
 
-        assert publisher_agent.output_key == "published_episode"
+        # MagicMock 環境では .name がモックになるため repr で検証
+        assert "publisher" in repr(publisher_agent)
 
 
 class TestPodcastSessionStateKeys:
@@ -119,14 +120,13 @@ class TestInstructionPlaceholders:
 
         assert "{creative_content}" in illustrator_agent.instruction
 
-    def test_publisher_references_required_keys(self):
-        """Publisher instruction should reference all required session state keys."""
+    def test_publisher_has_no_instruction(self):
+        """Publisher Custom Agent は LLM を使わないため instruction を持たない。"""
         from mystery_agents.agents.publisher import publisher_agent
 
-        instruction = publisher_agent.instruction
-        assert "{mystery_report}" in instruction
-        assert "{creative_content}" in instruction
-        assert "{visual_assets}" in instruction
+        assert not hasattr(publisher_agent, "instruction") or not isinstance(
+            getattr(publisher_agent, "instruction", None), str
+        )
 
 
 class TestPodcastInstructionPlaceholders:

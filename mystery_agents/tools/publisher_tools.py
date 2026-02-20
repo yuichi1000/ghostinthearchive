@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import re
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -27,6 +28,16 @@ from shared.constants import (
 from shared.firestore import get_firestore_client, get_storage_bucket
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class _PublishContext:
+    """publish_mystery の tool_context.state インターフェースをエミュレートするプロキシ。
+
+    Custom Agent から publish_mystery を LLM 非経由で呼び出す際に使用する。
+    """
+
+    state: dict
 
 
 def _extract_json_from_text(text: str) -> Optional[dict]:
