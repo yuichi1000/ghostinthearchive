@@ -315,3 +315,116 @@ class TestPublisherCodeblockTranslation:
 
         assert any("Translations collected" in msg for msg in caplog.messages)
         assert any("['ja']" in msg for msg in caplog.messages)
+
+
+class TestPublisherLanguageValidation:
+    """翻訳言語バリデーションによる拒否テスト。"""
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_rejects_english_text_as_french(
+        self, mock_get_db, mock_get_bucket
+    ):
+        """英語テキストをフランス語翻訳として拒否すること。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        # 英語テキストがそのままフランス語翻訳として返された場合
+        english_as_french = {
+            "title": "The Ghost Ship of Boston Harbor",
+            "summary": "The mystery of a ship that vanished in 1842",
+            "narrative_content": (
+                "A cargo ship docked at Boston Harbor vanished overnight. "
+                "All crew members went missing, and the hull was never found again. "
+                "Local fishermen claimed to have witnessed a ghost ship on foggy nights, "
+                "but the authorities did not include their testimony in official records. "
+                "The investigation was conducted by the maritime authorities of the time."
+            ),
+        }
+
+        state = {
+            "translation_result_ja": json.dumps({
+                "title": "ボストン港の幽霊船",
+                "summary": "1842年に消えた船の謎",
+                "narrative_content": (
+                    "ボストン港に停泊していた貨物船が一夜にして姿を消した。"
+                    "乗組員は全員行方不明となり、船体は二度と発見されなかった。"
+                ),
+            }),
+            "translation_result_fr": json.dumps(english_as_french),
+        }
+
+        tool_context = _make_tool_context(state)
+        with patch("shared.pipeline_failure.log_pipeline_failure"):
+            result = publish_mystery(_make_mystery_json(), "", tool_context)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+
+        # 日本語は通過、フランス語は拒否されること
+        assert "ja" in saved_data["translations"]
+        assert "fr" not in saved_data["translations"]
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_accepts_valid_french_translation(
+        self, mock_get_db, mock_get_bucket
+    ):
+        """正常なフランス語翻訳は通過すること。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "translation_result_fr": json.dumps({
+                "title": "Le navire fantôme du port de Boston",
+                "summary": "Le mystère d'un navire disparu en 1842",
+                "narrative_content": (
+                    "Un cargo amarré au port de Boston a disparu du jour au lendemain. "
+                    "Tous les membres d'équipage ont disparu et la coque n'a jamais été retrouvée. "
+                    "Des pêcheurs locaux affirment avoir aperçu un navire fantôme les nuits de brouillard, "
+                    "mais les autorités n'ont pas inclus leur témoignage dans les registres officiels."
+                ),
+            }),
+        }
+
+        tool_context = _make_tool_context(state)
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "fr" in saved_data["translations"]
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_logs_warning_on_rejection(
+        self, mock_get_db, mock_get_bucket, caplog
+    ):
+        """拒否時に warning ログが出力されること。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "translation_result_fr": json.dumps({
+                "title": "The Ghost Ship",
+                "summary": "A mystery of vanished ship",
+                "narrative_content": (
+                    "A cargo ship docked at Boston Harbor vanished overnight. "
+                    "All crew members went missing, and the hull was never found again. "
+                    "Local fishermen claimed to have witnessed a ghost ship on foggy nights, "
+                    "but the authorities did not include their testimony in official records."
+                ),
+            }),
+        }
+
+        tool_context = _make_tool_context(state)
+        with caplog.at_level(logging.WARNING, logger="mystery_agents.tools.publisher_tools"):
+            with patch("shared.pipeline_failure.log_pipeline_failure"):
+                publish_mystery(_make_mystery_json(), "", tool_context)
+
+        assert any("Translation rejected" in msg for msg in caplog.messages)
+        assert any("'fr'" in msg for msg in caplog.messages)

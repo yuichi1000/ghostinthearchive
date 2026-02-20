@@ -26,6 +26,7 @@ from shared.constants import (
     TRANSLATION_LANGUAGES,
 )
 from shared.firestore import get_firestore_client, get_storage_bucket
+from shared.language_validator import validate_translation_language
 
 logger = logging.getLogger(__name__)
 
@@ -297,6 +298,7 @@ def publish_mystery(
 
             # 全言語の翻訳結果を translations map に収集
             translations: dict[str, dict] = {}
+            rejected_languages: list[str] = []
             for lang in TRANSLATION_LANGUAGES:
                 translation_result = tool_context.state.get(f"translation_result_{lang}")
                 if not translation_result:
@@ -307,6 +309,16 @@ def publish_mystery(
                         continue
                     parsed = _extract_json_from_text(translation_result)
                     if parsed:
+                        # 言語バリデーション: 翻訳が正しい言語で書かれているか検証
+                        vr = validate_translation_language(lang, parsed)
+                        if not vr.is_valid:
+                            text_preview = (parsed.get("narrative_content") or parsed.get("summary") or "")[:100]
+                            logger.warning(
+                                "Translation rejected for '%s': %s (preview: %s)",
+                                lang, vr.reason, text_preview,
+                            )
+                            rejected_languages.append(lang)
+                            continue
                         translations[lang] = parsed
                     else:
                         logger.warning(
@@ -314,14 +326,31 @@ def publish_mystery(
                             lang, translation_result[:200],
                         )
                 elif isinstance(translation_result, dict):
+                    # 言語バリデーション: 翻訳が正しい言語で書かれているか検証
+                    vr = validate_translation_language(lang, translation_result)
+                    if not vr.is_valid:
+                        text_preview = (translation_result.get("narrative_content") or translation_result.get("summary") or "")[:100]
+                        logger.warning(
+                            "Translation rejected for '%s': %s (preview: %s)",
+                            lang, vr.reason, text_preview,
+                        )
+                        rejected_languages.append(lang)
+                        continue
                     translations[lang] = translation_result
 
             # 翻訳収集のサマリログ
-            skipped = [lang for lang in TRANSLATION_LANGUAGES if lang not in translations]
+            skipped = [lang for lang in TRANSLATION_LANGUAGES if lang not in translations and lang not in rejected_languages]
             logger.info(
-                "Translations collected: %s, skipped: %s",
-                list(translations.keys()), skipped,
+                "Translations collected: %s, skipped: %s, rejected (wrong language): %s",
+                list(translations.keys()), skipped, rejected_languages,
             )
+            if rejected_languages:
+                from shared.pipeline_failure import log_pipeline_failure
+                log_pipeline_failure(
+                    theme=data.get("title", "unknown"),
+                    stage="publisher",
+                    reason=f"Translation language validation failed for: {rejected_languages}",
+                )
             if translations:
                 data["translations"] = translations
 
