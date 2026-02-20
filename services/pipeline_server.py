@@ -37,6 +37,27 @@ setup_logging()
 
 logger = logging.getLogger(__name__)
 
+
+class _HealthCheckFilter(logging.Filter):
+    """ヘルスチェック（/health）の INFO ログを抑制する。
+
+    Cloud Run のヘルスチェックは数秒ごとに発火し、ログが大量に生成されるため
+    INFO 以下を除外する。WARNING 以上は通す。
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno >= logging.WARNING:
+            return True
+        msg = record.getMessage()
+        # uvicorn のアクセスログ: "GET /health HTTP/1.1"
+        if "/health" in msg:
+            return False
+        return True
+
+
+# uvicorn のアクセスログにフィルタ適用
+logging.getLogger("uvicorn.access").addFilter(_HealthCheckFilter())
+
 app = FastAPI()
 
 

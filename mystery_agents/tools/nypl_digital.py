@@ -5,6 +5,7 @@ including manuscripts, maps, photographs, and rare materials.
 """
 
 import json
+import logging
 import os
 import time
 from typing import Any, Dict, List, Optional
@@ -12,6 +13,8 @@ from typing import Any, Dict, List, Optional
 import requests
 
 from shared.http_retry import create_retry_session
+
+logger = logging.getLogger(__name__)
 
 from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
 from .search_utils import build_search_query
@@ -69,6 +72,7 @@ def search_nypl(
     }
 
     _rate_limit()
+    start = time.monotonic()
 
     try:
         response = _session.get(
@@ -115,9 +119,22 @@ def search_nypl(
             documents.append(doc)
 
         total_hits = int(nypl_response.get("numResults", 0))
+
+        latency_ms = round((time.monotonic() - start) * 1000)
+        logger.info(
+            "NYPL 検索完了: %d 件 (%dms)", len(documents), latency_ms,
+            extra={"api_name": "nypl", "result_count": len(documents),
+                   "total_hits": total_hits, "latency_ms": latency_ms},
+        )
+
         return {"documents": documents, "total_hits": total_hits, "error": None}
 
     except (requests.RequestException, json.JSONDecodeError, ValueError) as e:
+        latency_ms = round((time.monotonic() - start) * 1000)
+        logger.warning(
+            "NYPL API エラー: %s (%dms)", e, latency_ms,
+            extra={"api_name": "nypl", "latency_ms": latency_ms, "error": str(e)},
+        )
         return {"documents": [], "total_hits": 0, "error": f"NYPL API error: {e}"}
 
 

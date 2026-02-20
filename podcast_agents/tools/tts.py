@@ -278,6 +278,8 @@ def generate_podcast_audio(
     logger.info(
         "Podcast 音声生成開始: podcast_id=%s, segments=%d, voice=%s",
         podcast_id, len(segments), voice_name,
+        extra={"api_name": "tts", "podcast_id": podcast_id,
+               "segment_count": len(segments), "voice_name": voice_name},
     )
 
     pause = AudioSegment.silent(duration=PAUSE_BETWEEN_SEGMENTS_MS)
@@ -348,6 +350,10 @@ def generate_podcast_audio(
     logger.info(
         "音声合成完了: %d セグメント, %.1f秒, %.1f MB",
         synthesized_count, duration_seconds, len(mp3_bytes) / (1024 * 1024),
+        extra={"api_name": "tts", "podcast_id": podcast_id,
+               "segment_count": synthesized_count,
+               "duration_seconds": round(duration_seconds, 1),
+               "file_size_bytes": len(mp3_bytes)},
     )
 
     # 6. GCS アップロード
@@ -372,7 +378,10 @@ def generate_podcast_audio(
 
     gcs_path = f"gs://{bucket.name}/{blob_name}"
 
-    logger.info("GCS アップロード完了: %s", gcs_path)
+    logger.info(
+        "GCS アップロード完了: %s", gcs_path,
+        extra={"api_name": "tts", "podcast_id": podcast_id, "gcs_path": gcs_path},
+    )
 
     return {
         "gcs_path": gcs_path,

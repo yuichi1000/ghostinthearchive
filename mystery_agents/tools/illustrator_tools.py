@@ -458,6 +458,7 @@ def generate_image(
     client = _get_client()
     last_error = None
     prompt_sanitized = False
+    _imagen_start = time.monotonic()
 
     for attempt in range(MAX_RETRIES):
         try:
@@ -479,8 +480,19 @@ def generate_image(
 
             if response.generated_images:
                 # Success - save image
+                latency_ms = round((time.monotonic() - _imagen_start) * 1000)
                 image = response.generated_images[0].image
                 image.save(str(filepath))
+                logger.info(
+                    "画像生成成功: attempt=%d, %dms, prompt_len=%d",
+                    attempt + 1, latency_ms, len(current_prompt),
+                    extra={
+                        "api_name": "imagen", "status": "success",
+                        "attempt": attempt + 1, "latency_ms": latency_ms,
+                        "prompt_length": len(current_prompt),
+                        "prompt_sanitized": prompt_sanitized,
+                    },
+                )
 
                 # Generate responsive variants
                 variants, variant_error = _get_variants(str(filepath))
@@ -510,6 +522,7 @@ def generate_image(
             logger.warning(
                 "Safety filter blocked image generation (attempt %d/%d). prompt=%s",
                 attempt + 1, MAX_RETRIES, current_prompt[:100],
+                extra={"api_name": "imagen", "attempt": attempt + 1, "reason": "safety_filter"},
             )
 
             # LLM ベースのプログレッシブ・リトライ戦略:
@@ -532,6 +545,7 @@ def generate_image(
                 logger.warning(
                     "Rate limit hit (attempt %d/%d): %s",
                     attempt + 1, MAX_RETRIES, last_error,
+                    extra={"api_name": "imagen", "attempt": attempt + 1, "reason": "rate_limit"},
                 )
                 time.sleep(RETRY_DELAY_SECONDS * (attempt + 1) * 2)
                 continue

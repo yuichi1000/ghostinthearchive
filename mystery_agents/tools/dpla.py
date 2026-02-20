@@ -5,6 +5,7 @@ and museums across the United States.
 """
 
 import json
+import logging
 import os
 import time
 from typing import Any, Dict, List, Optional
@@ -12,6 +13,8 @@ from typing import Any, Dict, List, Optional
 import requests
 
 from shared.http_retry import create_retry_session
+
+logger = logging.getLogger(__name__)
 
 from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
 from .search_utils import build_search_query
@@ -85,6 +88,7 @@ def search_dpla(
         params["sourceResource.language.name"] = _DPLA_LANG_NAMES[language][0]
 
     _rate_limit()
+    start = time.monotonic()
 
     try:
         response = _session.get(
@@ -150,9 +154,22 @@ def search_dpla(
             documents.append(doc)
 
         total_hits = data.get("count", 0)
+
+        latency_ms = round((time.monotonic() - start) * 1000)
+        logger.info(
+            "DPLA 検索完了: %d 件 (%dms)", len(documents), latency_ms,
+            extra={"api_name": "dpla", "result_count": len(documents),
+                   "total_hits": total_hits, "latency_ms": latency_ms},
+        )
+
         return {"documents": documents, "total_hits": total_hits, "error": None}
 
     except (requests.RequestException, json.JSONDecodeError) as e:
+        latency_ms = round((time.monotonic() - start) * 1000)
+        logger.warning(
+            "DPLA API エラー: %s (%dms)", e, latency_ms,
+            extra={"api_name": "dpla", "latency_ms": latency_ms, "error": str(e)},
+        )
         return {"documents": [], "total_hits": 0, "error": f"DPLA API error: {e}"}
 
 
