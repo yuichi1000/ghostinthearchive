@@ -44,6 +44,11 @@ from ..tools.scholar_tools import save_structured_report
 # 5. 統合 Mystery Report を英語で作成
 # 6. save_structured_report を必ず呼び出す
 #
+# ## 構造化レポートの地理情報
+# - country_code: ISO 3166-1 alpha-2（2文字）の国コード（例: "US", "GB", "JP"）
+# - region_code: IATA 空港コードまたは略称（3-5文字）（例: "BOS", "LHR", "NRT"）
+# 調査テーマの主要な地理的焦点に基づいて判定すること。
+#
 # ## 重要: evidence の relevant_excerpt は必須
 # すべての evidence オブジェクト（evidence_a, evidence_b, additional_evidence 各項目）には
 # 空でない relevant_excerpt を必ず含めること。具体的な抜粋が見つからない場合は、
@@ -172,8 +177,8 @@ After completing your analysis, you MUST call `save_structured_report` with a JS
 ```json
 {{
   "classification": "HIS/FLK/ANT/OCC/URB/CRM/REL/LOC",
-  "state_code": "MA/NY/CA/etc.",
-  "area_code": "617/212/etc.",
+  "country_code": "US/GB/JP/DE/FR/etc. (ISO 3166-1 alpha-2)",
+  "region_code": "BOS/LHR/NRT/etc. (IATA code, 3-5 uppercase letters)",
   "title": "Mystery title in English",
   "summary": "2-3 sentence summary in English",
   "discrepancy_detected": "Description of the key discrepancy",

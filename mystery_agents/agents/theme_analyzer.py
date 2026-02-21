@@ -19,17 +19,17 @@ from ..tools.theme_analyzer_tools import save_language_selection
 # ユーザーの調査クエリを分析し、どの言語圏のデジタルアーカイブを検索すべきか判断してください。
 #
 # ## 利用可能な言語
-# - en: 英語（米国・英国のアーカイブ）— 常に含める
-# - de: ドイツ語（ドイツ・オーストリアのアーカイブ）— ドイツ系移民、プロテスタント文化等
-# - es: スペイン語（スペイン植民地関連）— フロリダ、ルイジアナ、カリフォルニア等
-# - fr: フランス語（フランス植民地関連）— ルイジアナ、ケベック、ヌーベルフランス等
-# - nl: オランダ語（オランダ植民地関連）— ニューアムステルダム、オランダ交易等
-# - pt: ポルトガル語（大西洋交易関連）— ブラジル接続、奴隷貿易等
+# - en: 英語（英語圏全般 — 英国、米国、オーストラリア、カナダ等）— 常に含める
+# - de: ドイツ語（ドイツ語圏 — ドイツ、オーストリア、スイス）— 中欧の歴史・文化
+# - es: スペイン語（スペイン語圏 — スペイン、中南米）— イベリア・ラテンアメリカの歴史
+# - fr: フランス語（フランス語圏 — フランス、ベルギー、西アフリカ、カナダ）— フランス植民地帝国
+# - nl: オランダ語（オランダ語圏 — オランダ、ベルギー、旧植民地）— 海洋交易史
+# - pt: ポルトガル語（ポルトガル語圏 — ポルトガル、ブラジル）— 大航海時代・大西洋世界
 #
 # ## 判定基準
 # - テーマに地名・民族名・文化的要素が含まれる場合、対応する言語を選択
 # - 複数の文化圏が交差する場合は複数の言語を選択（最大4言語）
-# - 明確な手がかりがない場合は en と es をデフォルトで選択
+# - 明確な手がかりがない場合は en のみをデフォルトで選択
 #
 # ## 出力
 # save_language_selection ツールを呼び出して、選択した言語リストをセッション状態に保存する。
@@ -44,34 +44,39 @@ Your role is to analyze the investigation theme and determine which language/cul
 Analyze the user's investigation query and determine which language archives should be searched.
 
 ## Available Languages
-- **en**: English (US/UK archives) — ALWAYS include this
-- **de**: German (German/Austrian archives) — German immigrants, Protestant culture, Pennsylvania Dutch, etc.
-- **es**: Spanish (Spanish colonial archives) — Florida, Louisiana, California, Southwest, etc.
-- **fr**: French (French colonial archives) — Louisiana, Quebec, Nouvelle-France, Huguenots, etc.
-- **nl**: Dutch (Dutch colonial archives) — New Amsterdam, Dutch trade networks, etc.
-- **pt**: Portuguese (Atlantic trade archives) — Brazil connection, slave trade, maritime routes, etc.
+- **en**: English (English-speaking world — UK, US, Australia, Canada, etc.) — ALWAYS include this
+- **de**: German (German-speaking world — Germany, Austria, Switzerland) — Central European history and culture
+- **es**: Spanish (Spanish-speaking world — Spain, Latin America) — Iberian and Latin American history
+- **fr**: French (French-speaking world — France, Belgium, West Africa, Canada) — French colonial empire
+- **nl**: Dutch (Dutch-speaking world — Netherlands, Belgium, former colonies) — Maritime trade history
+- **pt**: Portuguese (Portuguese-speaking world — Portugal, Brazil) — Age of Discovery, Atlantic world
 
 ## Decision Criteria
 
 ### Geographic Indicators
-- **New Amsterdam / New York (pre-1664)**: en, nl, de
-- **Louisiana / New Orleans**: en, fr, es
-- **Pennsylvania / German immigrants**: en, de
-- **Florida / Southwest / California**: en, es
-- **Boston / New England**: en (+ de if German immigrant context)
-- **Atlantic trade / maritime**: en, pt, es, nl
-- **Quebec / French Canada**: en, fr
+- **British Isles / England / Scotland / Ireland**: en
+- **Germany / Austria / Central Europe**: en, de
+- **Spain / Latin America / Caribbean**: en, es
+- **France / Francophone Africa / Quebec**: en, fr
+- **Netherlands / Indonesia / Suriname**: en, nl
+- **Portugal / Brazil / Lusophone Africa**: en, pt
+- **Mediterranean / Levant / Crusades**: en, fr, es
+- **Atlantic trade / maritime / Age of Discovery**: en, pt, es, nl
+- **Colonial Americas (North)**: en + relevant colonial languages (es, fr, nl)
+- **Colonial Americas (South)**: en, es, pt
+- **Japan / East Asia**: en (limited to English-language sources unless theme is cross-cultural)
+- **Middle East / North Africa**: en, fr (for Francophone North Africa)
 
 ### Cultural/Ethnic Indicators
-- German settlers / Mennonites / Amish → de
-- Spanish colonial administration → es
-- French Huguenots / Acadians / Cajuns → fr
-- Dutch West India Company / VOC → nl
-- Portuguese traders / Brazilian connection → pt
+- Germanic cultural traditions / Holy Roman Empire → de
+- Spanish Empire / Reconquista / Catholic missions → es
+- French Revolution / Napoleonic era / Francophone literature → fr
+- Dutch Golden Age / VOC / WIC → nl
+- Portuguese maritime empire / Lusophone culture → pt
 
 ### Default
-If the theme has no clear non-English cultural indicators, select **["en", "es"]** as the default
-(Spanish is the most common non-English colonial language in US history).
+If the theme has no clear non-English cultural indicators, select **["en"]** as the default.
+Add other languages only when the theme's geographic or cultural context clearly warrants it.
 
 ## Output
 1. Call the `save_language_selection` tool with a JSON array of language codes.

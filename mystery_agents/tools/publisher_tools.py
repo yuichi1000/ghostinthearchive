@@ -74,21 +74,21 @@ def _extract_json_from_text(text: str) -> Optional[dict]:
     return None
 
 
-def _generate_mystery_id(classification: str, state_code: str, area_code: str) -> str:
+def _generate_mystery_id(classification: str, country_code: str, region_code: str) -> str:
     """Generate a unique mystery_id with timestamp.
 
     Args:
         classification: 3-letter classification code (e.g., "OCC", "HIS", "FLK").
-        state_code: 2-letter US state code (e.g., "MA", "NY").
-        area_code: 3-digit telephone area code (e.g., "617", "212").
+        country_code: 2-letter ISO 3166-1 alpha-2 country code (e.g., "US", "GB", "JP").
+        region_code: 3-5 letter IATA region code (e.g., "BOS", "LHR", "NRT").
 
     Returns:
-        Mystery ID in format: {CLS}-{ST}-{AREA}-{YYYYMMDDHHMMSS}
-        Example: OCC-MA-617-20260207143025
+        Mystery ID in format: {CLS}-{CC}-{REGION}-{YYYYMMDDHHMMSS}
+        Example: OCC-US-BOS-20260207143025
     """
     now = datetime.now(timezone.utc)
     timestamp = now.strftime("%Y%m%d%H%M%S")
-    return f"{classification.upper()}-{state_code.upper()}-{area_code}-{timestamp}"
+    return f"{classification.upper()}-{country_code.upper()}-{region_code.upper()}-{timestamp}"
 
 
 def _cleanup_temp_images(file_paths: list[Path]) -> None:
@@ -223,7 +223,7 @@ def publish_mystery(
     """Save a mystery document to Firestore with integrated image upload.
 
     Writes the complete mystery data to the 'mysteries' collection in Firestore.
-    Automatically generates mystery_id from classification, state_code, and area_code.
+    Automatically generates mystery_id from classification, country_code, and region_code.
     When visual_assets_json is provided, uploads images to Cloud Storage using the
     generated mystery_id, ensuring ID consistency between images and Firestore.
 
@@ -238,8 +238,8 @@ def publish_mystery(
         mystery_json: JSON string containing the mystery data.
             Required fields for ID generation:
             - classification: 3-letter code (HIS, FLK, ANT, OCC, URB, CRM, REL, LOC)
-            - state_code: 2-letter US state code (MA, NY, CA, etc.)
-            - area_code: 3-digit telephone area code (617, 212, etc.)
+            - country_code: 2-letter ISO 3166-1 alpha-2 country code (US, GB, JP, etc.)
+            - region_code: 3-5 letter IATA region code (BOS, LHR, NRT, etc.)
 
             narrative_content と raw_data は mystery_json に含める必要なし
             （tool_context から自動取得される）。
@@ -265,7 +265,7 @@ def publish_mystery(
             if structured_report and isinstance(structured_report, dict):
                 # Use structured data for critical fields, preferring state over LLM text
                 for key in (
-                    "classification", "state_code", "area_code",
+                    "classification", "country_code", "region_code",
                     "evidence_a", "evidence_b", "additional_evidence",
                     "hypothesis", "alternative_hypotheses",
                     "confidence_level", "discrepancy_detected", "discrepancy_type",
@@ -354,19 +354,19 @@ def publish_mystery(
             if translations:
                 data["translations"] = translations
 
-        # Auto-generate mystery_id from classification, state_code, and area_code
+        # Auto-generate mystery_id from classification, country_code, and region_code
         classification = data.get("classification")
-        state_code = data.get("state_code")
-        area_code = data.get("area_code")
+        country_code = data.get("country_code")
+        region_code = data.get("region_code")
 
-        if classification and state_code and area_code:
+        if classification and country_code and region_code:
             # Generate mystery_id automatically
-            mystery_id = _generate_mystery_id(classification, state_code, str(area_code))
+            mystery_id = _generate_mystery_id(classification, country_code, str(region_code))
             data["mystery_id"] = mystery_id
         else:
             return json.dumps({
                 "status": "error",
-                "error": "classification, state_code, and area_code are required for mystery_id generation",
+                "error": "classification, country_code, and region_code are required for mystery_id generation",
             }, ensure_ascii=False)
 
         # Upload images: prefer image_metadata from session state, fall back to LLM text

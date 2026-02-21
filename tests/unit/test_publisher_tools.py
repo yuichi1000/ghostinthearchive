@@ -77,7 +77,7 @@ class TestUploadImagesRenaming:
         png_file = tmp_path / "header_20260208_120530.png"
         png_file.write_bytes(b"fake png data")
 
-        mystery_id = "OCC-MA-617-20260208143025"
+        mystery_id = "OCC-US-BOS-20260208143025"
         result = upload_images(mystery_id, json.dumps([str(png_file)]))
         result_data = json.loads(result)
 
@@ -97,7 +97,7 @@ class TestUploadImagesRenaming:
         webp_file = tmp_path / "header_20260208_120530_sm.webp"
         webp_file.write_bytes(b"fake webp data")
 
-        mystery_id = "OCC-MA-617-20260208143025"
+        mystery_id = "OCC-US-BOS-20260208143025"
         result = upload_images(mystery_id, json.dumps([str(webp_file)]))
         result_data = json.loads(result)
 
@@ -117,7 +117,7 @@ class TestUploadImagesRenaming:
         jpg_file = tmp_path / "photo_20260208.jpg"
         jpg_file.write_bytes(b"fake jpg data")
 
-        mystery_id = "HIS-NY-212-20260208143025"
+        mystery_id = "HIS-US-JFK-20260208143025"
         result = upload_images(mystery_id, json.dumps([str(jpg_file)]))
         result_data = json.loads(result)
 
@@ -189,7 +189,7 @@ class TestUploadImagesStructured:
         for f in files:
             f.write_bytes(b"fake data")
 
-        mystery_id = "OCC-MA-617-20260208143025"
+        mystery_id = "OCC-US-BOS-20260208143025"
         result = upload_images(mystery_id, json.dumps([str(f) for f in files]))
         result_data = json.loads(result)
 
@@ -217,7 +217,7 @@ class TestUploadImagesStructured:
         lg_variant = tmp_path / "header_lg.webp"
         lg_variant.write_bytes(b"fake lg webp")
 
-        mystery_id = "OCC-MA-617-20260208143025"
+        mystery_id = "OCC-US-BOS-20260208143025"
         result = upload_images(mystery_id, json.dumps([str(original), str(lg_variant)]))
         result_data = json.loads(result)
 
@@ -238,8 +238,8 @@ def _make_mystery_json(**overrides):
     """Build a minimal valid mystery JSON string for testing."""
     data = {
         "classification": "OCC",
-        "state_code": "MA",
-        "area_code": "617",
+        "country_code": "US",
+        "region_code": "BOS",
         "title": "Test Mystery",
         "summary": "A test mystery summary.",
         "discrepancy_detected": "Test discrepancy",
@@ -427,7 +427,7 @@ class TestLocalFileCleanup:
         png_file = tmp_path / "header_20260208_145745.png"
         png_file.write_bytes(b"fake png data")
 
-        mystery_id = "OCC-MA-617-20260208143025"
+        mystery_id = "OCC-US-BOS-20260208143025"
         upload_images(mystery_id, json.dumps([str(png_file)]))
 
         # Both original and renamed file should no longer exist
@@ -447,7 +447,7 @@ class TestLocalFileCleanup:
         webp_file = tmp_path / "header_20260208_145745_sm.webp"
         webp_file.write_bytes(b"fake webp data")
 
-        mystery_id = "OCC-MA-617-20260208143025"
+        mystery_id = "OCC-US-BOS-20260208143025"
         upload_images(mystery_id, json.dumps([str(webp_file)]))
 
         # Both original and renamed file should no longer exist
@@ -771,7 +771,7 @@ class TestPublishMysteryStateWriteback:
         assert "published_mystery_id" in state
         assert state["published_mystery_id"] == result_data["mystery_id"]
         # mystery_id 形式チェック
-        assert state["published_mystery_id"].startswith("OCC-MA-617-")
+        assert state["published_mystery_id"].startswith("OCC-US-BOS-")
 
     @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
@@ -883,8 +883,8 @@ class TestPublishMysteryStateDirectRead:
         state = {
             "structured_report": {
                 "classification": "FLK",
-                "state_code": "LA",
-                "area_code": "504",
+                "country_code": "US",
+                "region_code": "MSY",
                 "title": "Voodoo Queen",
                 "summary": "A mystery about voodoo.",
                 "discrepancy_detected": "Date mismatch",
@@ -913,14 +913,14 @@ class TestPublishMysteryStateDirectRead:
         tool_context = MagicMock()
         tool_context.state = state
 
-        # 最小限の JSON（classification/state_code/area_code のみ）
+        # 最小限の JSON（classification/country_code/region_code のみ）
         minimal_json = json.dumps({
-            "classification": "FLK", "state_code": "LA", "area_code": "504",
+            "classification": "FLK", "country_code": "US", "region_code": "MSY",
         })
         result = publish_mystery(minimal_json, "", tool_context)
         result_data = json.loads(result)
         assert result_data["status"] == "success"
-        assert result_data["mystery_id"].startswith("FLK-LA-504-")
+        assert result_data["mystery_id"].startswith("FLK-US-MSY-")
 
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert saved["title"] == "Voodoo Queen"

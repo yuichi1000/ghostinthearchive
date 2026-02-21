@@ -2,9 +2,9 @@
 
 from .document import ArchiveDocument, SearchResults, SourceLanguage, SourceType
 from .mystery_id import (
-    AREA_CODES,
     CLASSIFICATION_DESCRIPTIONS,
     CLASSIFICATION_DESCRIPTIONS_EN,
+    REGION_CODES,
     ClassificationCode,
     parse_mystery_id,
     validate_mystery_id,
@@ -28,7 +28,7 @@ __all__ = [
     "ClassificationCode",
     "CLASSIFICATION_DESCRIPTIONS",
     "CLASSIFICATION_DESCRIPTIONS_EN",
-    "AREA_CODES",
+    "REGION_CODES",
     "validate_mystery_id",
     "parse_mystery_id",
     # Mystery Report schemas (Scholar output)

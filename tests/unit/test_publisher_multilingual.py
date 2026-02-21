@@ -11,8 +11,8 @@ def _make_mystery_json(**overrides):
     """Build a minimal valid mystery JSON string for testing."""
     data = {
         "classification": "OCC",
-        "state_code": "MA",
-        "area_code": "617",
+        "country_code": "US",
+        "region_code": "BOS",
         "title": "Test Mystery",
         "summary": "A test mystery summary.",
         "discrepancy_detected": "Test discrepancy",
