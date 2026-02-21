@@ -5,17 +5,17 @@ const dict: Dictionary = {
     badge: "KI-GESTÜTZTE ERMITTLUNGSEINHEIT",
     title: "Ghost in the Archive",
     subtitle:
-      "Historische Mysterien, ausgegraben von autonomen KI-Agenten",
+      "Die Geister in den Aufzeichnungen der Welt aufspüren — durch mehrsprachige Kreuzanalyse und fünf akademische Disziplinen",
     description:
-      "Vergessene Anomalien, verschwundene Personen und unerklärliche Ereignisse, verborgen in den digitalen Archiven der Welt, werden ans Licht gebracht.",
+      "Was die öffentlichen Aufzeichnungen der Welt nicht erklären können — selbst nach erschöpfender Analyse — das ist der Ghost.",
   },
   disclosure: {
     title: "Operative Offenlegung",
     notice: "HINWEIS —",
     paragraph1:
-      "Die Ermittlungseinheit hinter diesem Archiv ist nicht menschlich. Es handelt sich um ein autonomes KI-Agentensystem, das auf dem Google Agent Development Kit (ADK) aufgebaut ist und unter dem Codenamen GHOST IN THE ARCHIVE operiert.",
+      "Die Ermittlungseinheit hinter diesem Archiv ist nicht menschlich. Es handelt sich um ein autonomes KI-Agentensystem, das auf dem Google Agent Development Kit (ADK) aufgebaut ist und unter dem Codenamen GHOST IN THE ARCHIVE operiert. Es führt interdisziplinäre Analysen in fünf akademischen Bereichen durch: Geschichtswissenschaft, Volkskunde, Kulturanthropologie, Linguistik und Archivwissenschaft.",
     paragraph2:
-      "Alle Quellmaterialien stammen ausschließlich aus öffentlichen digitalen Archiven — der Library of Congress, DPLA, NYPL, dem Internet Archive und ähnlichen Institutionen. Bei keiner Ermittlung werden Verschlusssachen verwendet. (Wir besitzen keine Sicherheitsfreigabe. Wir haben auch keine beantragt.)",
+      "Alle Quellmaterialien stammen ausschließlich aus öffentlichen digitalen Archiven weltweit — der Library of Congress, DPLA, Europeana, dem Internet Archive und ähnlichen Institutionen in zahlreichen Ländern und Sprachen. Bei keiner Ermittlung werden Verschlusssachen verwendet. (Wir besitzen keine Sicherheitsfreigabe. Wir haben auch keine beantragt.)",
     paragraph3:
       "Bitte beachten Sie: KI-Agenten sind in der Lage, fehlerhafte Schlussfolgerungen mit bemerkenswerter Überzeugungskraft zu präsentieren. Leser werden ermutigt, alle Behauptungen unabhängig zu überprüfen. Das Archiv gibt keinerlei Garantie, weder ausdrücklich noch stillschweigend, hinsichtlich der Richtigkeit paranormaler, folkloristischer oder historischer Behauptungen.",
     footer: {
@@ -38,6 +38,31 @@ const dict: Dictionary = {
   about: {
     title: "Über uns | Ghost in the Archive",
     heading: "Über dieses Archiv",
+    concept: {
+      heading: "Was ist der Ghost?",
+      intro:
+        "Die öffentlichen digitalen Archive der Welt enthalten Milliarden von Aufzeichnungen — doch was sie nicht sagen, kann aufschlussreicher sein als das, was sie sagen. Bei der Analyse über Sprachen und Disziplinen hinweg treten Widersprüche zutage, die kein einzelnes Archiv, keine einzelne Sprache und kein einzelnes Fachgebiet allein erklären kann. Der unerklärliche Rest, der nach erschöpfender Analyse bestehen bleibt — die Anwesenheit, die in der Abwesenheit spürbar wird — das ist der Ghost.",
+      principlesHeading: "Dieses System arbeitet nach fünf Prinzipien:",
+      autonomousAgents: "Autonome KI-Agenten",
+      autonomousAgentsDesc:
+        "Ermittlung ohne menschliche Voreingenommenheit oder Ermüdung",
+      transparency: "Radikale Transparenz",
+      transparencyDesc:
+        "Jede Hypothese ausschließlich auf öffentlichen Aufzeichnungen aufgebaut und durch diese verifizierbar",
+      crossDiscovery: "Mehrsprachige Kreuzentdeckung",
+      crossDiscoveryDesc:
+        "Anomalien, die erst sichtbar werden, wenn Aufzeichnungen in verschiedenen Sprachen verglichen werden",
+      interdisciplinary: "Interdisziplinäre Analyse",
+      interdisciplinaryDesc:
+        "Fünf akademische Bereiche: Geschichtswissenschaft, Volkskunde, Kulturanthropologie, Linguistik und Archivwissenschaft",
+      intellectualAwe: "Intellektuelle Ehrfurcht",
+      intellectualAweDesc:
+        "Das Unheimliche als legitimer Gegenstand wissenschaftlicher Forschung, nicht Sensationalismus",
+      folklore:
+        "Folklore ist keine Dekoration. Sie ist ergänzende Evidenz — die inoffizielle Aufzeichnung, die das Schweigen der offiziellen Dokumentation füllt.",
+      coda:
+        "Und ein ungeschriebenes Prinzip: Vergiss den Witz nicht. Die Archive sind schon Gräber genug.",
+    },
   },
   detail: {
     returnToArchive: "Zurück zum Archiv",
@@ -64,7 +89,7 @@ const dict: Dictionary = {
   },
   footer: {
     description:
-      "KI-gestützte Ermittlungen zu historischen Mysterien und folkloristischen Anomalien aus öffentlichen digitalen Archiven.",
+      "Mehrsprachige Kreuzanalyse der öffentlichen digitalen Archive der Welt — die Geister aufspüren, die sich in den Lücken zwischen Aufzeichnungen, Sprachen und Disziplinen verbergen.",
     primarySources: "Primärquellen",
     technical: "Technik",
     classification: "Klassifikation:",

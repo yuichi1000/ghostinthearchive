@@ -27,7 +27,7 @@ interface FooterProps {
 }
 
 export function Footer({ labels }: FooterProps) {
-  const description = labels?.description ?? "AI-powered excavation of historical mysteries and folkloric anomalies from public digital archives."
+  const description = labels?.description ?? "Multi-lingual cross-analysis of the world's public digital archives — unearthing the Ghosts hiding in the gaps between records, languages, and disciplines."
   const primarySources = labels?.primarySources ?? "Primary Sources"
   const technical = labels?.technical ?? "Technical"
   const classification = labels?.classification ?? "Document Classification: PUBLIC RELEASE"
@@ -75,12 +75,12 @@ export function Footer({ labels }: FooterProps) {
               </li>
               <li>
                 <a
-                  href="https://digitalcollections.nypl.org/"
+                  href="https://www.europeana.eu/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-muted-foreground hover:text-gold transition-colors inline-flex items-center gap-1.5 no-underline"
                 >
-                  New York Public Library
+                  Europeana
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </li>

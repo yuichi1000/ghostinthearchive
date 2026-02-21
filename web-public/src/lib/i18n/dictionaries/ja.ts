@@ -4,17 +4,17 @@ const dict: Dictionary = {
   hero: {
     badge: "AI 自律調査ユニット",
     title: "Ghost in the Archive",
-    subtitle: "自律型AIエージェントが発掘する歴史のミステリー",
+    subtitle: "多言語横断分析と5つの学術領域で、世界の記録に潜むGhostを発掘する",
     description:
-      "世界のデジタルアーカイブに埋もれた、忘れ去られた異常、消えた人物、説明のつかない事件を発掘する。",
+      "世界の公開記録が、徹底的な分析の果てにもなお説明できないもの——それがGhostである。",
   },
   disclosure: {
     title: "運用情報の開示",
     notice: "告知 —",
     paragraph1:
-      "このアーカイブの調査ユニットは人間ではありません。Google Agent Development Kit (ADK) 上に構築された自律型AIエージェントシステムであり、コードネーム「GHOST IN THE ARCHIVE」として運用されています。",
+      "このアーカイブの調査ユニットは人間ではありません。Google Agent Development Kit (ADK) 上に構築された自律型AIエージェントシステムであり、コードネーム「GHOST IN THE ARCHIVE」として運用されています。歴史学、民俗学、文化人類学、言語学、文書館学の5つの学術領域にまたがる学際的分析を行います。",
     paragraph2:
-      "すべての資料は、米国議会図書館、DPLA、NYPL、Internet Archive 等の公開デジタルアーカイブから取得しています。いかなる調査においても機密情報は使用していません。（機密取扱許可を持っていません。申請もしていません。）",
+      "すべての資料は、米国議会図書館、DPLA、Europeana、Internet Archive 等、世界各国・各言語の公開デジタルアーカイブから取得しています。いかなる調査においても機密情報は使用していません。（機密取扱許可を持っていません。申請もしていません。）",
     paragraph3:
       "ご注意：AIエージェントは誤った結論を驚くべき自信を持って提示する能力があります。読者は全ての主張を独自に検証することを推奨します。本アーカイブは、ここに含まれる超常現象、民俗学的、歴史的主張の正確性について、明示的にも暗示的にも一切保証しません。",
     footer: {
@@ -37,6 +37,31 @@ const dict: Dictionary = {
   about: {
     title: "このサイトについて | Ghost in the Archive",
     heading: "このアーカイブについて",
+    concept: {
+      heading: "Ghost とは何か",
+      intro:
+        "世界の公開デジタルアーカイブには数十億の記録が収められている——しかし、記録されていないことの方が、記録されていることよりも多くを語る場合がある。多言語・多分野にまたがる分析を行うと、単一のアーカイブ、単一の言語、単一の学問分野では説明できない矛盾が浮かび上がる。徹底的な分析の果てになお残る説明不能な残余——不在の中の存在感——それがGhostである。",
+      principlesHeading: "本システムは5つの原則に基づいて運用される：",
+      autonomousAgents: "自律型AIエージェント",
+      autonomousAgentsDesc:
+        "人間のバイアスや疲労なき調査",
+      transparency: "徹底した透明性",
+      transparencyDesc:
+        "すべての仮説は公開情報のみで構築され、公開情報のみで検証可能",
+      crossDiscovery: "多言語横断発見",
+      crossDiscoveryDesc:
+        "異なる言語の記録を突き合わせて初めて見えるアノマリー",
+      interdisciplinary: "学際的分析",
+      interdisciplinaryDesc:
+        "歴史学・民俗学・文化人類学・言語学・文書館学の5領域",
+      intellectualAwe: "知的畏怖としての怪異",
+      intellectualAweDesc:
+        "センセーショナリズムではなく、学術的探究の正当な対象としての不可解",
+      folklore:
+        "民俗資料は装飾ではない。公式記録が沈黙する部分を埋める、補完的証拠である。",
+      coda:
+        "そして書かれざる原則がひとつ——ジョークを忘れないこと。アーカイブはすでに十分、墓場じみている。",
+    },
   },
   detail: {
     returnToArchive: "アーカイブに戻る",
@@ -63,7 +88,7 @@ const dict: Dictionary = {
   },
   footer: {
     description:
-      "公開デジタルアーカイブから歴史的ミステリーと民俗学的異常を調査するAIパワード調査。",
+      "世界の公開デジタルアーカイブの多言語横断分析——記録と言語と学問の隙間に潜むGhostを発掘する。",
     primarySources: "一次資料",
     technical: "技術情報",
     classification: "分類：",

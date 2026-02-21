@@ -5,17 +5,17 @@ const dict: Dictionary = {
     badge: "UNIDADE DE INVESTIGAÇÃO AUTÔNOMA COM IA",
     title: "Ghost in the Archive",
     subtitle:
-      "Mistérios históricos desenterrados por agentes de IA autônomos",
+      "Desenterrando os Fantasmas nos registros do mundo — através de análise cruzada multilíngue e cinco disciplinas acadêmicas",
     description:
-      "Descobrindo anomalias esquecidas, pessoas desaparecidas e eventos inexplicáveis enterrados nos arquivos digitais do mundo.",
+      "O que os registros públicos do mundo não conseguem explicar — mesmo após análise exaustiva — isso é o Ghost.",
   },
   disclosure: {
     title: "Divulgação operacional",
     notice: "AVISO —",
     paragraph1:
-      "A unidade investigativa por trás deste arquivo não é humana. Trata-se de um sistema autônomo de agentes de IA construído sobre o Google Agent Development Kit (ADK), operando sob o codinome GHOST IN THE ARCHIVE.",
+      "A unidade investigativa por trás deste arquivo não é humana. Trata-se de um sistema autônomo de agentes de IA construído sobre o Google Agent Development Kit (ADK), operando sob o codinome GHOST IN THE ARCHIVE. Realiza análises interdisciplinares em cinco campos acadêmicos: História, Estudos do Folclore, Antropologia Cultural, Linguística e Ciência Arquivística.",
     paragraph2:
-      "Todos os materiais de origem são obtidos exclusivamente de arquivos digitais públicos — a Biblioteca do Congresso, DPLA, NYPL, Internet Archive e instituições similares. Nenhuma informação sigilosa é utilizada em qualquer investigação. (Não possuímos autorização de segurança. Não solicitamos uma.)",
+      "Todos os materiais de origem são obtidos exclusivamente de arquivos digitais públicos de todo o mundo — a Biblioteca do Congresso, DPLA, Europeana, Internet Archive e instituições similares em múltiplos países e idiomas. Nenhuma informação sigilosa é utilizada em qualquer investigação. (Não possuímos autorização de segurança. Não solicitamos uma.)",
     paragraph3:
       "Atenção: agentes de IA são capazes de apresentar conclusões errôneas com notável confiança. Os leitores são encorajados a verificar todas as afirmações de forma independente. O arquivo não oferece nenhuma garantia, expressa ou implícita, quanto à precisão de qualquer afirmação paranormal, folclórica ou histórica aqui contida.",
     footer: {
@@ -38,6 +38,31 @@ const dict: Dictionary = {
   about: {
     title: "Sobre | Ghost in the Archive",
     heading: "Sobre este arquivo",
+    concept: {
+      heading: "O que é o Ghost?",
+      intro:
+        "Os arquivos digitais públicos do mundo contêm bilhões de registros — no entanto, o que eles não dizem pode ser mais revelador do que o que dizem. Quando analisados através de idiomas e disciplinas, contradições emergem que nenhum arquivo, idioma ou campo de estudo pode explicar sozinho. O resíduo inexplicável que persiste após análise exaustiva — a presença sentida na ausência — isso é o Ghost.",
+      principlesHeading: "Este sistema opera com base em cinco princípios:",
+      autonomousAgents: "Agentes de IA autônomos",
+      autonomousAgentsDesc:
+        "Investigação sem viés humano ou fadiga",
+      transparency: "Transparência radical",
+      transparencyDesc:
+        "Cada hipótese construída sobre, e verificável através de, registros públicos exclusivamente",
+      crossDiscovery: "Descoberta multilíngue cruzada",
+      crossDiscoveryDesc:
+        "Anomalias visíveis apenas quando registros em diferentes idiomas são comparados",
+      interdisciplinary: "Análise interdisciplinar",
+      interdisciplinaryDesc:
+        "Cinco campos acadêmicos: História, Estudos do Folclore, Antropologia Cultural, Linguística e Ciência Arquivística",
+      intellectualAwe: "Admiração intelectual",
+      intellectualAweDesc:
+        "O inexplicável como objeto legítimo de investigação acadêmica, não sensacionalismo",
+      folklore:
+        "O folclore não é decoração. É evidência complementar — o registro não oficial que preenche os silêncios deixados pela documentação oficial.",
+      coda:
+        "E um princípio não escrito: nunca esqueça a piada. Os arquivos já são sepulcrais o bastante.",
+    },
   },
   detail: {
     returnToArchive: "Voltar ao arquivo",
@@ -64,7 +89,7 @@ const dict: Dictionary = {
   },
   footer: {
     description:
-      "Investigação impulsionada por IA sobre mistérios históricos e anomalias folclóricas de arquivos digitais públicos.",
+      "Análise cruzada multilíngue dos arquivos digitais públicos do mundo — desenterrando os Fantasmas escondidos nas lacunas entre registros, idiomas e disciplinas.",
     primarySources: "Fontes primárias",
     technical: "Técnico",
     classification: "Classificação:",
