@@ -10,8 +10,14 @@ export default function MysteryDetailLoading() {
 
       <main className="flex-1 py-8 md:py-12">
         <div className="container mx-auto px-4">
-          {/* Back link skeleton */}
-          <div className="h-5 w-40 bg-muted/20 rounded-sm mb-8 animate-pulse" />
+          {/* パンくずリスト skeleton */}
+          <div className="flex items-center gap-2 mb-8">
+            <div className="h-4 w-12 bg-muted/20 rounded-sm animate-pulse" />
+            <div className="h-3 w-3 bg-muted/20 rounded-sm animate-pulse" />
+            <div className="h-4 w-16 bg-muted/20 rounded-sm animate-pulse" />
+            <div className="h-3 w-3 bg-muted/20 rounded-sm animate-pulse" />
+            <div className="h-4 w-32 bg-muted/20 rounded-sm animate-pulse" />
+          </div>
 
           {/* Case file header skeleton */}
           <div className="mb-12">

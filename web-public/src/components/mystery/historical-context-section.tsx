@@ -23,7 +23,7 @@ export function HistoricalContextSection({
   const figuresLabel = labels?.keyFigures ?? "Key Figures:"
 
   return (
-    <section>
+    <section id="section-historical-context" className="scroll-mt-24">
       <div className="flex items-center gap-3 mb-4">
         <BookOpen className="w-5 h-5 text-parchment-dark" />
         <h2 className="font-serif text-xl text-parchment">{title}</h2>

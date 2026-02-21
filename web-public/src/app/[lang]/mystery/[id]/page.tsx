@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation"
-import Link from "next/link"
 import { ResponsiveHeroImage } from "@/components/responsive-hero-image"
 import { Header } from "@/components/header"
 import { Footer } from "@ghost/shared/src/components/footer"
@@ -10,12 +9,17 @@ import { DiscrepancySection } from "@/components/mystery/discrepancy-section"
 import { HypothesisSection } from "@/components/mystery/hypothesis-section"
 import { HistoricalContextSection } from "@/components/mystery/historical-context-section"
 import { DetailSidebar } from "@/components/mystery/detail-sidebar"
+import { Breadcrumb } from "@/components/breadcrumb"
+import { TableOfContents, SECTION_IDS } from "@/components/table-of-contents"
+import { RelatedArticles } from "@/components/related-articles"
 import { getMysteryById, getPublishedMysteryIds, getAllPublishedMysteriesMap } from "@ghost/shared/src/lib/firestore/queries"
-import { ArrowLeft, FileText } from "lucide-react"
+import { FileText } from "lucide-react"
 import { localizeMystery, getTranslatedExcerpt } from "@ghost/shared/src/lib/localize"
 import { SUPPORTED_LANGS, isValidLang } from "@/lib/i18n/config"
 import type { SupportedLang } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/dictionaries"
+import { findRelatedArticles } from "@/lib/related-articles"
+import type { TocSection } from "@/components/table-of-contents"
 
 // SSG: ビルド時に生成されたページ以外は 404
 export const dynamicParams = false
@@ -93,20 +97,42 @@ export default async function MysteryDetailPage({
   const evidenceAExcerpt = getTranslatedExcerpt(mystery, "a", lang)
   const evidenceBExcerpt = getTranslatedExcerpt(mystery, "b", lang)
 
+  // 目次セクションの動的構築（存在するセクションのみ含める）
+  const tocSections: TocSection[] = [
+    { id: SECTION_IDS.narrative, label: dict.detail.tocNarrative },
+  ]
+  if (discrepancyDetected) {
+    tocSections.push({ id: SECTION_IDS.discrepancy, label: dict.detail.tocDiscrepancy })
+  }
+  tocSections.push({ id: SECTION_IDS.evidence, label: dict.detail.tocEvidence })
+  if (hypothesis) {
+    tocSections.push({ id: SECTION_IDS.hypothesis, label: dict.detail.tocHypothesis })
+  }
+  if (mystery.historical_context) {
+    tocSections.push({ id: SECTION_IDS.historicalContext, label: dict.detail.tocHistoricalContext })
+  }
+
+  // 関連記事の取得（SSG ビルド時は React.cache で共有済み）
+  const relatedArticles = findRelatedArticles(
+    mystery,
+    Array.from(mysteriesMap.values())
+  )
+
   return (
     <div className="min-h-screen flex flex-col film-grain">
       <Header lang={lang} nav={dict.nav} />
 
       <main className="flex-1 py-8 md:py-12">
         <div className="container mx-auto px-4">
-          {/* Back link */}
-          <Link
-            href={`/${lang}`}
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-parchment transition-colors mb-8 no-underline"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {dict.detail.returnToArchive}
-          </Link>
+          {/* パンくずリスト */}
+          <Breadcrumb
+            lang={lang}
+            title={title}
+            labels={{
+              home: dict.detail.breadcrumbHome,
+              archive: dict.nav.archive,
+            }}
+          />
 
           <CaseFileHeader
             mysteryId={mystery.mystery_id}
@@ -129,6 +155,9 @@ export default async function MysteryDetailPage({
             </div>
           )}
 
+          {/* モバイル目次（Hero 画像下、Grid の前） */}
+          <TableOfContents sections={tocSections} heading={dict.detail.tableOfContents} />
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Main content */}
             <div className="lg:col-span-2 space-y-12">
@@ -149,7 +178,7 @@ export default async function MysteryDetailPage({
               )}
 
               {/* Evidence */}
-              <section>
+              <section id="section-evidence" className="scroll-mt-24">
                 <div className="flex items-center gap-3 mb-6">
                   <FileText className="w-5 h-5 text-gold" />
                   <h2 className="font-serif text-xl text-parchment">{dict.detail.archivalEvidence}</h2>
@@ -209,8 +238,19 @@ export default async function MysteryDetailPage({
                 storyAngles: dict.detail.storyAngles,
                 classificationNotice: dict.detail.classificationNotice,
               }}
-            />
+            >
+              {/* デスクトップ目次（サイドバー内） */}
+              <TableOfContents sections={tocSections} heading={dict.detail.tableOfContents} />
+            </DetailSidebar>
           </div>
+
+          {/* 関連記事 */}
+          <RelatedArticles
+            articles={relatedArticles}
+            lang={lang as SupportedLang}
+            heading={dict.detail.relatedArticles}
+            classificationLabels={dict.classification}
+          />
         </div>
       </main>
 

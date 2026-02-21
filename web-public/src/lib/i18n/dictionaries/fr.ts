@@ -92,6 +92,14 @@ const dict: Dictionary = {
     storyAngles: "Angles narratifs",
     classificationNotice:
       "Ce dossier représente une analyse générée par IA de documents d'archives. Toutes les sources doivent être vérifiées de manière indépendante.",
+    breadcrumbHome: "Accueil",
+    tableOfContents: "Sommaire",
+    tocNarrative: "Récit",
+    tocDiscrepancy: "Divergence",
+    tocEvidence: "Preuves",
+    tocHypothesis: "Hypothèse",
+    tocHistoricalContext: "Contexte historique",
+    relatedArticles: "Dossiers connexes",
   },
   evidence: {
     source: "Source",

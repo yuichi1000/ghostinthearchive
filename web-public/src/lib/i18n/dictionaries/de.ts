@@ -92,6 +92,14 @@ const dict: Dictionary = {
     storyAngles: "Erzählperspektiven",
     classificationNotice:
       "Diese Fallakte stellt eine KI-generierte Analyse von Archivunterlagen dar. Alle Quellen sollten unabhängig überprüft werden.",
+    breadcrumbHome: "Startseite",
+    tableOfContents: "Inhaltsverzeichnis",
+    tocNarrative: "Bericht",
+    tocDiscrepancy: "Diskrepanz",
+    tocEvidence: "Beweislage",
+    tocHypothesis: "Hypothese",
+    tocHistoricalContext: "Historischer Kontext",
+    relatedArticles: "Verwandte Fallakten",
   },
   evidence: {
     source: "Quelle",

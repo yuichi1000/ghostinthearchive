@@ -75,6 +75,14 @@ export interface Dictionary {
     keyFigures: string;
     storyAngles: string;
     classificationNotice: string;
+    breadcrumbHome: string;
+    tableOfContents: string;
+    tocNarrative: string;
+    tocDiscrepancy: string;
+    tocEvidence: string;
+    tocHypothesis: string;
+    tocHistoricalContext: string;
+    relatedArticles: string;
   };
   evidence: {
     source: string;

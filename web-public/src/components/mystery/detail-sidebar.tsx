@@ -6,15 +6,19 @@ interface DetailSidebarLabels {
 interface DetailSidebarProps {
   storyHooks: string[]
   labels?: DetailSidebarLabels
+  children?: React.ReactNode
 }
 
-export function DetailSidebar({ storyHooks, labels }: DetailSidebarProps) {
+export function DetailSidebar({ storyHooks, labels, children }: DetailSidebarProps) {
   const storyAnglesLabel = labels?.storyAngles ?? "Story Angles"
   const noticeText = labels?.classificationNotice ?? "This case file represents AI-generated analysis of archival records. All sources should be independently verified."
 
   return (
     <aside className="lg:col-span-1">
       <div className="sticky top-24 space-y-6">
+        {/* 目次（デスクトップ版、children から受け取る） */}
+        {children}
+
         {/* Story hooks */}
         {storyHooks.length > 0 && (
           <div className="aged-card letterpress-border rounded-sm p-5">
