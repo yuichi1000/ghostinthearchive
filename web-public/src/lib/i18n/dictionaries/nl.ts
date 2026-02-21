@@ -5,17 +5,17 @@ const dict: Dictionary = {
     badge: "AI-AANGEDREVEN ONDERZOEKSEENHEID",
     title: "Ghost in the Archive",
     subtitle:
-      "Historische mysteries opgegraven door autonome AI-agenten",
+      "De Geesten in de archieven van de wereld opgraven — door meertalige kruisanalyse en vijf academische disciplines",
     description:
-      "Het blootleggen van vergeten anomalieën, verdwenen personen en onverklaarde gebeurtenissen begraven in de digitale archieven van de wereld.",
+      "Wat de openbare archieven van de wereld niet kunnen verklaren — zelfs na uitputtende analyse — dat is de Ghost.",
   },
   disclosure: {
     title: "Operationele openbaarmaking",
     notice: "MEDEDELING —",
     paragraph1:
-      "De onderzoekseenheid achter dit archief is niet menselijk. Het is een autonoom AI-agentsysteem gebouwd op het Google Agent Development Kit (ADK), opererend onder de codenaam GHOST IN THE ARCHIVE.",
+      "De onderzoekseenheid achter dit archief is niet menselijk. Het is een autonoom AI-agentsysteem gebouwd op het Google Agent Development Kit (ADK), opererend onder de codenaam GHOST IN THE ARCHIVE. Het voert interdisciplinaire analyses uit in vijf academische vakgebieden: Geschiedenis, Volkskunde, Culturele Antropologie, Taalkunde en Archiefwetenschap.",
     paragraph2:
-      "Alle bronmaterialen worden uitsluitend verkregen uit openbare digitale archieven — de Library of Congress, DPLA, NYPL, Internet Archive en vergelijkbare instellingen. Er wordt geen gerubriceerde informatie gebruikt in enig onderzoek. (Wij beschikken niet over een veiligheidsmachtiging. Wij hebben er ook geen aangevraagd.)",
+      "Alle bronmaterialen worden uitsluitend verkregen uit openbare digitale archieven wereldwijd — de Library of Congress, DPLA, Europeana, Internet Archive en vergelijkbare instellingen in meerdere landen en talen. Er wordt geen gerubriceerde informatie gebruikt in enig onderzoek. (Wij beschikken niet over een veiligheidsmachtiging. Wij hebben er ook geen aangevraagd.)",
     paragraph3:
       "Let op: AI-agenten zijn in staat om onjuiste conclusies te presenteren met opmerkelijk vertrouwen. Lezers worden aangemoedigd alle beweringen onafhankelijk te verifiëren. Het archief biedt geen enkele garantie, uitdrukkelijk noch impliciet, met betrekking tot de nauwkeurigheid van enige paranormale, folkloristische of historische bewering hierin.",
     footer: {
@@ -38,6 +38,31 @@ const dict: Dictionary = {
   about: {
     title: "Over ons | Ghost in the Archive",
     heading: "Over dit archief",
+    concept: {
+      heading: "Wat is de Ghost?",
+      intro:
+        "De openbare digitale archieven van de wereld bevatten miljarden documenten — maar wat ze niet zeggen, kan onthullender zijn dan wat ze wél zeggen. Bij analyse over talen en disciplines heen komen tegenstrijdigheden aan het licht die geen enkel archief, geen enkele taal en geen enkel vakgebied alleen kan verklaren. Het onverklaarbare residu dat na uitputtende analyse blijft bestaan — de aanwezigheid voelbaar in afwezigheid — dat is de Ghost.",
+      principlesHeading: "Dit systeem opereert op basis van vijf principes:",
+      autonomousAgents: "Autonome AI-agenten",
+      autonomousAgentsDesc:
+        "Onderzoek zonder menselijke vooringenomenheid of vermoeidheid",
+      transparency: "Radicale transparantie",
+      transparencyDesc:
+        "Elke hypothese uitsluitend opgebouwd uit, en verifieerbaar door, openbare documenten",
+      crossDiscovery: "Meertalige kruisontdekking",
+      crossDiscoveryDesc:
+        "Anomalieën die pas zichtbaar worden wanneer documenten in verschillende talen worden vergeleken",
+      interdisciplinary: "Interdisciplinaire analyse",
+      interdisciplinaryDesc:
+        "Vijf academische vakgebieden: Geschiedenis, Volkskunde, Culturele Antropologie, Taalkunde en Archiefwetenschap",
+      intellectualAwe: "Intellectueel ontzag",
+      intellectualAweDesc:
+        "Het onverklaarbare als legitiem onderwerp van wetenschappelijk onderzoek, niet als sensatie",
+      folklore:
+        "Folklore is geen decoratie. Het is aanvullend bewijs — het onofficiële document dat de stiltes vult die de officiële documentatie achterlaat.",
+      coda:
+        "En één ongeschreven principe: vergeet de grap niet. De archieven zijn al doods genoeg.",
+    },
   },
   detail: {
     returnToArchive: "Terug naar archief",
@@ -64,7 +89,7 @@ const dict: Dictionary = {
   },
   footer: {
     description:
-      "AI-aangedreven onderzoek naar historische mysteries en folkloristische anomalieën uit openbare digitale archieven.",
+      "Meertalige kruisanalyse van de openbare digitale archieven van de wereld — de Geesten opgraven die zich verschuilen in de hiaten tussen documenten, talen en disciplines.",
     primarySources: "Primaire bronnen",
     technical: "Technisch",
     classification: "Classificatie:",

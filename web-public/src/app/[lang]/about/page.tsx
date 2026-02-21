@@ -2,7 +2,7 @@ import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@ghost/shared/src/components/footer"
 import { Hero } from "@/components/hero"
-import { ShieldAlert } from "lucide-react"
+import { BookOpen, ShieldAlert } from "lucide-react"
 import { isValidLang } from "@/lib/i18n/config"
 import { SUPPORTED_LANGS } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/dictionaries"
@@ -67,6 +67,54 @@ export default async function AboutPage({
           </picture>
 
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
+        </section>
+
+        {/* Concept */}
+        <section className="py-16 border-t border-border/50">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-center gap-3 mb-8 justify-center">
+                <BookOpen className="w-5 h-5 text-gold" aria-hidden="true" />
+                <h2 className="font-serif text-2xl text-parchment">
+                  {dict.about.concept.heading}
+                </h2>
+              </div>
+
+              <p className="text-base text-muted-foreground leading-relaxed mb-8">
+                {dict.about.concept.intro}
+              </p>
+
+              <h3 className="text-sm font-mono uppercase tracking-wider text-parchment mb-4">
+                {dict.about.concept.principlesHeading}
+              </h3>
+
+              <ul className="space-y-4 mb-8">
+                {([
+                  ["autonomousAgents", "autonomousAgentsDesc"],
+                  ["transparency", "transparencyDesc"],
+                  ["crossDiscovery", "crossDiscoveryDesc"],
+                  ["interdisciplinary", "interdisciplinaryDesc"],
+                  ["intellectualAwe", "intellectualAweDesc"],
+                ] as const).map(([key, descKey]) => (
+                  <li key={key} className="flex gap-3">
+                    <span className="text-gold mt-1 shrink-0">&#x2022;</span>
+                    <div>
+                      <span className="font-semibold text-parchment">{dict.about.concept[key]}</span>
+                      <span className="text-muted-foreground"> — {dict.about.concept[descKey]}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              <p className="text-base text-muted-foreground leading-relaxed italic border-l-2 border-gold/30 pl-4 mb-6">
+                {dict.about.concept.folklore}
+              </p>
+
+              <p className="text-sm text-muted-foreground/70 leading-relaxed">
+                {dict.about.concept.coda}
+              </p>
+            </div>
+          </div>
         </section>
 
         {/* Operational Disclosure */}

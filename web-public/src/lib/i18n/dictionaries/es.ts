@@ -5,17 +5,17 @@ const dict: Dictionary = {
     badge: "UNIDAD DE INVESTIGACIÓN AUTÓNOMA CON IA",
     title: "Ghost in the Archive",
     subtitle:
-      "Misterios históricos desenterrados por agentes de IA autónomos",
+      "Desenterrando los Fantasmas en los registros del mundo — mediante análisis multilingüe cruzado y cinco disciplinas académicas",
     description:
-      "Descubriendo anomalías olvidadas, personas desaparecidas y eventos inexplicables enterrados en los archivos digitales del mundo.",
+      "Lo que los registros públicos del mundo no pueden explicar — ni siquiera tras un análisis exhaustivo — eso es el Ghost.",
   },
   disclosure: {
     title: "Divulgación operativa",
     notice: "AVISO —",
     paragraph1:
-      "La unidad de investigación detrás de este archivo no es humana. Es un sistema autónomo de agentes de IA construido sobre Google Agent Development Kit (ADK), operando bajo el nombre en clave GHOST IN THE ARCHIVE.",
+      "La unidad de investigación detrás de este archivo no es humana. Es un sistema autónomo de agentes de IA construido sobre Google Agent Development Kit (ADK), operando bajo el nombre en clave GHOST IN THE ARCHIVE. Realiza análisis interdisciplinario en cinco campos académicos: Historia, Estudios del Folclore, Antropología Cultural, Lingüística y Ciencia Archivística.",
     paragraph2:
-      "Todos los materiales de origen se obtienen exclusivamente de archivos digitales públicos: la Biblioteca del Congreso, DPLA, NYPL, Internet Archive e instituciones similares. No se utiliza información clasificada en ninguna investigación. (No tenemos autorización de seguridad. No la hemos solicitado.)",
+      "Todos los materiales de origen se obtienen exclusivamente de archivos digitales públicos de todo el mundo: la Biblioteca del Congreso, DPLA, Europeana, Internet Archive e instituciones similares en múltiples países e idiomas. No se utiliza información clasificada en ninguna investigación. (No tenemos autorización de seguridad. No la hemos solicitado.)",
     paragraph3:
       "Advertencia: los agentes de IA son capaces de presentar conclusiones erróneas con notable confianza. Se recomienda a los lectores verificar todas las afirmaciones de forma independiente. El archivo no ofrece garantía alguna, expresa ni implícita, sobre la precisión de cualquier afirmación paranormal, folclórica o histórica contenida en el mismo.",
     footer: {
@@ -38,6 +38,31 @@ const dict: Dictionary = {
   about: {
     title: "Acerca de | Ghost in the Archive",
     heading: "Acerca de este archivo",
+    concept: {
+      heading: "¿Qué es el Ghost?",
+      intro:
+        "Los archivos digitales públicos del mundo contienen miles de millones de registros — sin embargo, lo que no dicen puede ser más revelador que lo que dicen. Cuando se analizan a través de idiomas y disciplinas, emergen contradicciones que ningún archivo, idioma o campo de estudio puede explicar por sí solo. El residuo inexplicable que persiste tras un análisis exhaustivo — la presencia sentida en la ausencia — eso es el Ghost.",
+      principlesHeading: "Este sistema opera bajo cinco principios:",
+      autonomousAgents: "Agentes de IA autónomos",
+      autonomousAgentsDesc:
+        "Investigación sin sesgo humano ni fatiga",
+      transparency: "Transparencia radical",
+      transparencyDesc:
+        "Cada hipótesis construida sobre, y verificable a través de, registros públicos exclusivamente",
+      crossDiscovery: "Descubrimiento multilingüe cruzado",
+      crossDiscoveryDesc:
+        "Anomalías visibles solo cuando se comparan registros en diferentes idiomas",
+      interdisciplinary: "Análisis interdisciplinario",
+      interdisciplinaryDesc:
+        "Cinco campos académicos: Historia, Estudios del Folclore, Antropología Cultural, Lingüística y Ciencia Archivística",
+      intellectualAwe: "Asombro intelectual",
+      intellectualAweDesc:
+        "Lo inexplicable como objeto legítimo de investigación académica, no sensacionalismo",
+      folklore:
+        "El folclore no es decoración. Es evidencia complementaria — el registro no oficial que llena los silencios dejados por la documentación oficial.",
+      coda:
+        "Y un principio no escrito: nunca olvides el chiste. Los archivos ya son bastante sepulcrales.",
+    },
   },
   detail: {
     returnToArchive: "Volver al archivo",
@@ -64,7 +89,7 @@ const dict: Dictionary = {
   },
   footer: {
     description:
-      "Investigación impulsada por IA sobre misterios históricos y anomalías folclóricas de archivos digitales públicos.",
+      "Análisis multilingüe cruzado de los archivos digitales públicos del mundo — desenterrando los Fantasmas ocultos en las brechas entre registros, idiomas y disciplinas.",
     primarySources: "Fuentes primarias",
     technical: "Técnico",
     classification: "Clasificación:",

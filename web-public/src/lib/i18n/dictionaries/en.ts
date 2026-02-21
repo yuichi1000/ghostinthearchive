@@ -4,17 +4,17 @@ const dict: Dictionary = {
   hero: {
     badge: "AI-POWERED INVESTIGATION UNIT",
     title: "Ghost in the Archive",
-    subtitle: "Historical mysteries unearthed by autonomous AI agents",
+    subtitle: "Unearthing the Ghosts in the world's records — through multi-lingual cross-analysis and five academic disciplines",
     description:
-      "Uncovering forgotten anomalies, vanished persons, and unexplained events buried in the world's digital archives.",
+      "What the world's public records cannot explain — even after exhaustive analysis — that is the Ghost.",
   },
   disclosure: {
     title: "Operational Disclosure",
     notice: "NOTICE —",
     paragraph1:
-      "The investigative unit behind this archive is not human. It is an autonomous AI agent system built on Google Agent Development Kit (ADK), operating under codename GHOST IN THE ARCHIVE.",
+      "The investigative unit behind this archive is not human. It is an autonomous AI agent system built on Google Agent Development Kit (ADK), operating under codename GHOST IN THE ARCHIVE. It conducts interdisciplinary analysis across five academic fields: History, Folklore Studies, Cultural Anthropology, Linguistics, and Archival Science.",
     paragraph2:
-      "All source materials are retrieved exclusively from public digital archives — the Library of Congress, DPLA, NYPL, Internet Archive, and similar institutions. No classified information is used in any investigation. (We do not have clearance. We have not applied for clearance.)",
+      "All source materials are retrieved exclusively from public digital archives worldwide — the Library of Congress, DPLA, Europeana, Internet Archive, and similar institutions across multiple countries and languages. No classified information is used in any investigation. (We do not have clearance. We have not applied for clearance.)",
     paragraph3:
       "Be advised: AI agents are capable of presenting erroneous conclusions with remarkable confidence. Readers are encouraged to verify all claims independently. The archive makes no warranty, express or implied, regarding the accuracy of any paranormal, folkloric, or historical assertion contained herein.",
     footer: {
@@ -37,6 +37,31 @@ const dict: Dictionary = {
   about: {
     title: "About | Ghost in the Archive",
     heading: "About This Archive",
+    concept: {
+      heading: "What is the Ghost?",
+      intro:
+        "The world's public digital archives hold billions of records — yet what they do not say may be more revealing than what they do. When analyzed across languages and disciplines, contradictions emerge that no single archive, language, or field of study can explain alone. The inexplicable remainder that persists after exhaustive analysis — the presence felt in absence — that is the Ghost.",
+      principlesHeading: "This system operates on five principles:",
+      autonomousAgents: "Autonomous AI Agents",
+      autonomousAgentsDesc:
+        "Investigation without human bias or fatigue",
+      transparency: "Radical Transparency",
+      transparencyDesc:
+        "Every hypothesis built on, and verifiable through, public records alone",
+      crossDiscovery: "Multi-lingual Cross-discovery",
+      crossDiscoveryDesc:
+        "Anomalies visible only when records in different languages are compared",
+      interdisciplinary: "Interdisciplinary Analysis",
+      interdisciplinaryDesc:
+        "Five academic fields: History, Folklore Studies, Cultural Anthropology, Linguistics, and Archival Science",
+      intellectualAwe: "Intellectual Awe",
+      intellectualAweDesc:
+        "The uncanny as a legitimate subject of scholarly inquiry, not sensationalism",
+      folklore:
+        "Folklore is not decoration. It is complementary evidence — the unofficial record that fills the silences left by official documentation.",
+      coda:
+        "And one unwritten principle: never forget the joke. The archives are grave enough as they are.",
+    },
   },
   detail: {
     returnToArchive: "Return to Archive",
@@ -63,7 +88,7 @@ const dict: Dictionary = {
   },
   footer: {
     description:
-      "AI-powered investigation into historical mysteries and folkloric anomalies from public digital archives.",
+      "Multi-lingual cross-analysis of the world's public digital archives — unearthing the Ghosts hiding in the gaps between records, languages, and disciplines.",
     primarySources: "Primary Sources",
     technical: "Technical",
     classification: "Classification:",

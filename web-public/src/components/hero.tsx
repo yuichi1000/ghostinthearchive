@@ -79,10 +79,10 @@ export function Hero({ dict }: HeroProps) {
   }, [])
 
   // デフォルト英語テキスト
-  const badge = dict?.hero.badge ?? "Active Research Protocol"
+  const badge = dict?.hero.badge ?? "AI-POWERED INVESTIGATION UNIT"
   const title = dict?.hero.title ?? "Ghost in the Archive"
-  const subtitle = dict?.hero.subtitle ?? "AI-driven excavation of historical ghosts from the depths of the archives"
-  const description = dict?.hero.description ?? "Unearthing contradictions, anomalies, and unexplained patterns buried in the depths of public digital archives. Where historical record meets folkloric mystery."
+  const subtitle = dict?.hero.subtitle ?? "Unearthing the Ghosts in the world's records — through multi-lingual cross-analysis and five academic disciplines"
+  const description = dict?.hero.description ?? "What the world's public records cannot explain — even after exhaustive analysis — that is the Ghost."
 
   return (
     <section className="relative z-20 min-h-[70vh] flex items-center justify-center overflow-hidden">

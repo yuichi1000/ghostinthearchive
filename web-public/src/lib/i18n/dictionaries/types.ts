@@ -30,6 +30,23 @@ export interface Dictionary {
   about: {
     title: string;
     heading: string;
+    concept: {
+      heading: string;
+      intro: string;
+      principlesHeading: string;
+      autonomousAgents: string;
+      autonomousAgentsDesc: string;
+      transparency: string;
+      transparencyDesc: string;
+      crossDiscovery: string;
+      crossDiscoveryDesc: string;
+      interdisciplinary: string;
+      interdisciplinaryDesc: string;
+      intellectualAwe: string;
+      intellectualAweDesc: string;
+      folklore: string;
+      coda: string;
+    };
   };
   detail: {
     returnToArchive: string;
