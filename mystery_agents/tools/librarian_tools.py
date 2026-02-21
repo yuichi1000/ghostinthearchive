@@ -359,6 +359,44 @@ def _search_single_source(
             if docs:
                 break
 
+    # 日付範囲拡大フォールバック: 結果なし & 年代指定あり → ±25年拡大して再検索（1回のみ）
+    if not docs and date_start and date_end:
+        try:
+            start_year = int(date_start[:4])
+            end_year = int(date_end[:4])
+            exp_start = str(max(1400, start_year - 25))
+            exp_end = str(min(2025, end_year + 25))
+            if exp_start != str(start_year) or exp_end != str(end_year):
+                fallback_used = True
+                logger.info(
+                    "%s 日付範囲拡大フォールバック: %s-%s → %s-%s",
+                    key, date_start, date_end, exp_start, exp_end,
+                    extra={"api_name": key, "fallback_type": "date_expansion"},
+                )
+                lang_arg = language if (language and source_obj.supports_language_filter) else None
+                for kw_list in keyword_groups:
+                    try:
+                        result = source_obj.search(
+                            keywords=kw_list,
+                            date_start=exp_start,
+                            date_end=exp_end,
+                            max_results=per_source_limit,
+                            language=lang_arg,
+                        )
+                        for doc in result.documents:
+                            if doc.source_url not in seen_urls:
+                                seen_urls.add(doc.source_url)
+                                docs.append(doc)
+                        total_hits += result.total_hits
+                        if result.error:
+                            error = result.error
+                    except Exception as e:
+                        error = str(e)
+                    if docs:
+                        break
+        except (ValueError, IndexError):
+            pass
+
     return key, docs, total_hits, error, fallback_used
 
 

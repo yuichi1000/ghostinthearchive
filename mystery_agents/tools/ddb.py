@@ -47,6 +47,11 @@ class DDBSource(ArchiveSource):
 
         # DDB は Lucene クエリ構文をサポート
         query = f"({search_text})"
+        # 年代フィルタ: temporal フィールドへの Lucene 範囲クエリ
+        if date_start and date_end:
+            start_year = date_start[:4] if len(date_start) >= 4 else date_start
+            end_year = date_end[:4] if len(date_end) >= 4 else date_end
+            query += f" AND temporal:[{start_year} TO {end_year}]"
 
         params = {
             "query": query,

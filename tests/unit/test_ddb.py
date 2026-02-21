@@ -99,6 +99,50 @@ class TestSearchDDB:
         assert result.error is None
 
 
+class TestDDBDateFilter:
+    """DDB 年代フィルタのテスト。"""
+
+    @responses.activate
+    def test_date_filter_in_query(self):
+        """日付パラメータが Lucene temporal 範囲クエリとしてリクエストに含まれる。"""
+        responses.add(
+            responses.GET, BASE_URL,
+            json={"numberOfResults": 0, "results": []}, status=200,
+        )
+
+        source = DDBSource()
+        with patch.dict("os.environ", {"DDB_API_KEY": "test_key"}):
+            source.search(
+                keywords=["Geist"],
+                date_start="1800",
+                date_end="1899",
+            )
+
+        request = responses.calls[0].request
+        from urllib.parse import unquote_plus
+        query_str = unquote_plus(request.url)
+        assert "temporal:[1800 TO 1899]" in query_str
+
+    @responses.activate
+    def test_no_date_filter_when_dates_empty(self):
+        """date_start/date_end が空文字の場合、temporal クエリが含まれない。"""
+        responses.add(
+            responses.GET, BASE_URL,
+            json={"numberOfResults": 0, "results": []}, status=200,
+        )
+
+        source = DDBSource()
+        with patch.dict("os.environ", {"DDB_API_KEY": "test_key"}):
+            source.search(
+                keywords=["Geist"],
+                date_start="",
+                date_end="",
+            )
+
+        request = responses.calls[0].request
+        assert "temporal" not in request.url
+
+
 class TestParseYear:
     """Tests for ArchiveSource.parse_year() (旧 _parse_year)。"""
 

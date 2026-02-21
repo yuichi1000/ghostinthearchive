@@ -461,6 +461,121 @@ class TestSearchSingleSource:
         assert fallback is True
         assert len(docs) == 1
 
+    def test_date_expansion_when_no_results(self):
+        """結果0件 & 年代指定あり → ±25年拡大で再検索される。"""
+        doc = _make_doc(url="https://expanded.example.com/doc")
+        call_log = []
+
+        class DateExpandSource:
+            source_key = "de_src"
+            source_name = "Date Expand Source"
+            supports_language_filter = False
+
+            def search(self, **kwargs):
+                call_log.append(kwargs)
+                # 元の日付範囲では0件、拡大範囲では結果あり
+                if kwargs["date_start"] == "1800" and kwargs["date_end"] == "1850":
+                    return ArchiveSearchResult(documents=[], total_hits=0)
+                return ArchiveSearchResult(documents=[doc], total_hits=1)
+
+        key, docs, hits, err, fallback = _search_single_source(
+            DateExpandSource(),
+            [["ghost"]],
+            date_start="1800",
+            date_end="1850",
+            per_source_limit=10,
+            language=None,
+        )
+
+        assert fallback is True
+        assert len(docs) == 1
+        assert docs[0].source_url == "https://expanded.example.com/doc"
+        # 拡大後の日付: 1800-25=1775, 1850+25=1875
+        expanded_call = call_log[-1]
+        assert expanded_call["date_start"] == "1775"
+        assert expanded_call["date_end"] == "1875"
+
+    def test_no_date_expansion_when_results_exist(self):
+        """結果がある場合は日付拡大しない。"""
+        doc = _make_doc()
+        call_log = []
+
+        class NoExpandSource:
+            source_key = "ne_src"
+            source_name = "No Expand Source"
+            supports_language_filter = False
+
+            def search(self, **kwargs):
+                call_log.append(kwargs)
+                return ArchiveSearchResult(documents=[doc], total_hits=1)
+
+        key, docs, hits, err, fallback = _search_single_source(
+            NoExpandSource(),
+            [["ghost"]],
+            date_start="1800",
+            date_end="1850",
+            per_source_limit=10,
+            language=None,
+        )
+
+        assert len(docs) == 1
+        assert fallback is False
+        # 元の日付範囲のみで検索（拡大なし）
+        assert all(c["date_start"] == "1800" for c in call_log)
+
+    def test_date_expansion_bounds_clamped(self):
+        """拡大後の日付が 1400-2025 の範囲内に収まる。"""
+        call_log = []
+
+        class ClampSource:
+            source_key = "clamp"
+            source_name = "Clamp Source"
+            supports_language_filter = False
+
+            def search(self, **kwargs):
+                call_log.append(kwargs)
+                return ArchiveSearchResult(documents=[], total_hits=0)
+
+        _search_single_source(
+            ClampSource(),
+            [["ghost"]],
+            date_start="1410",
+            date_end="2020",
+            per_source_limit=10,
+            language=None,
+        )
+
+        # 拡大後: max(1400, 1410-25)=1400, min(2025, 2020+25)=2025
+        expanded_calls = [c for c in call_log if c["date_start"] != "1410"]
+        assert len(expanded_calls) == 1
+        assert expanded_calls[0]["date_start"] == "1400"
+        assert expanded_calls[0]["date_end"] == "2025"
+
+    def test_date_expansion_skipped_when_no_dates(self):
+        """date_start/date_end が空の場合、拡大をスキップ。"""
+        call_log = []
+
+        class NoDatesSource:
+            source_key = "nd"
+            source_name = "No Dates Source"
+            supports_language_filter = False
+
+            def search(self, **kwargs):
+                call_log.append(kwargs)
+                return ArchiveSearchResult(documents=[], total_hits=0)
+
+        _search_single_source(
+            NoDatesSource(),
+            [["ghost"]],
+            date_start="",
+            date_end="",
+            per_source_limit=10,
+            language=None,
+        )
+
+        # 元の検索のみ（日付拡大なし）
+        assert len(call_log) == 1
+
     def test_deduplicates_within_source(self):
         """同一ソース内の URL 重複が除去される。"""
         doc1 = _make_doc(url="https://same.com/doc")
@@ -537,7 +652,8 @@ class TestDefaultDates:
         # date_start / date_end を明示しない → デフォルト値が使われる
         search_archives(keywords="test", sources="loc", language="en")
 
-        assert len(call_log) == 1
+        # 最初の検索はデフォルト日付範囲で実行される
+        # （結果0件の場合、日付拡大フォールバックで追加の検索が発生しうる）
         assert call_log[0]["date_start"] == "1500"
         assert call_log[0]["date_end"] == "1899"
 

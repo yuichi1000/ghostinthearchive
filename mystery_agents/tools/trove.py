@@ -54,12 +54,14 @@ class TroveSource(ArchiveSource):
         }
 
         # decade フィルタ（年代絞り込み）
+        # Trove API v3 は l-decade パラメータで単一 decade のみフィルタ可能。
+        # 複数 decade にまたがる範囲は API がサポートしないためフィルタなし。
+        # 結果が0件の場合は _search_single_source() の日付拡大フォールバックが発動する。
         if date_start and date_end:
             start_decade = int(date_start[:4]) // 10
             end_decade = int(date_end[:4]) // 10
             if start_decade == end_decade:
                 params["l-decade"] = start_decade * 10
-            # 複数 decade にまたがる場合はフィルタなし（API は単一 decade のみ）
 
         headers = {
             "Accept": "application/json",
