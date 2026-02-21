@@ -19,6 +19,7 @@ export interface Dictionary {
   };
   nav: {
     about: string;
+    archive: string;
   };
   home: {
     latestDiscoveries: string;
@@ -26,6 +27,16 @@ export interface Dictionary {
     noMysteries: string;
     noMysteriesDesc: string;
     classifiedRedacted: string;
+    viewAllArticles: string;
+  };
+  archive: {
+    title: string;
+    heading: string;
+    description: string;
+    noArticles: string;
+    page: string;
+    previous: string;
+    next: string;
   };
   about: {
     title: string;

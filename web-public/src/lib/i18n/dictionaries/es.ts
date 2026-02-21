@@ -26,6 +26,7 @@ const dict: Dictionary = {
   },
   nav: {
     about: "Acerca de",
+    archive: "Archivo",
   },
   home: {
     latestDiscoveries: "Últimos descubrimientos",
@@ -34,6 +35,16 @@ const dict: Dictionary = {
     noMysteriesDesc:
       "No hay misterios publicados en este momento. Vuelva para nuevos descubrimientos.",
     classifiedRedacted: "Casos adicionales permanecen clasificados",
+    viewAllArticles: "Ver todos los expedientes",
+  },
+  archive: {
+    title: "Archivo de casos | Ghost in the Archive",
+    heading: "Archivo de casos",
+    description: "Índice completo de todas las anomalías, discrepancias y fenómenos inexplicables desenterrados de los registros públicos del mundo.",
+    noArticles: "Aún no se han publicado expedientes.",
+    page: "Página",
+    previous: "Anterior",
+    next: "Siguiente",
   },
   about: {
     title: "Acerca de | Ghost in the Archive",

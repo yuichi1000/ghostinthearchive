@@ -8,6 +8,7 @@ import { MysteryCard } from "@/components/mystery-card"
 import { MysteryCardSkeleton } from "@/components/mystery-card-skeleton"
 import { getPublishedMysteries } from "@ghost/shared/src/lib/firestore/queries"
 import { HOMEPAGE_MYSTERY_LIMIT } from "@/lib/constants"
+import Link from "next/link"
 import { FileStack, Search } from "lucide-react"
 import { isValidLang } from "@/lib/i18n/config"
 import type { SupportedLang } from "@/lib/i18n/config"
@@ -118,11 +119,14 @@ export default async function HomePage({
               <MysteryList lang={lang} dict={dict} />
             </Suspense>
 
-            {/* View all link */}
+            {/* アーカイブ導線 */}
             <div className="mt-12 text-center">
-              <p className="text-sm text-muted-foreground font-mono">
-                <span className="redacted">████████</span> {dict.home.classifiedRedacted} <span className="redacted">████████</span>
-              </p>
+              <Link
+                href={`/${lang}/archive`}
+                className="inline-block text-sm font-mono text-muted-foreground hover:text-gold transition-colors no-underline"
+              >
+                <span className="redacted">████</span> {dict.home.viewAllArticles} → <span className="redacted">████</span>
+              </Link>
             </div>
           </div>
         </section>
