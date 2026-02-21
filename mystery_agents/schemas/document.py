@@ -33,6 +33,7 @@ class SourceType(str, Enum):
     TROVE = "trove"
     DELPHER = "delpher"
     NDL = "ndl"
+    WELLCOME = "wellcome"
 
 
 class ArchiveDocument(BaseModel):
