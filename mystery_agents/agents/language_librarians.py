@@ -128,7 +128,8 @@ LANGUAGE_CONFIGS = {
             "- English-language newspapers (Chronicling America, British Newspaper Archive)\n"
             "- Library of Congress, DPLA, NYPL, British Library, Internet Archive collections\n"
             "- Europeana for English-language materials in European collections\n"
-            "- English-speaking regions globally: British Isles, North America, Australia, India, etc."
+            "- DigitalNZ / Papers Past for New Zealand cultural heritage and historical newspapers\n"
+            "- English-speaking regions globally: British Isles, North America, Australia, New Zealand, India, etc."
         ),
         "newspaper_instruction": _NEWSPAPER_INSTRUCTION,
     },
