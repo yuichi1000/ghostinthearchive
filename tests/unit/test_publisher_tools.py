@@ -947,3 +947,65 @@ class TestPublishMysteryStateDirectRead:
         assert saved["narrative_content"] == "LLM provided content"
         assert saved["raw_data"] == "LLM provided raw data"
 
+
+class TestThumbnailUpload:
+    """サムネイルアップロードのテスト。"""
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    def test_thumb_suffix_stored_as_thumbnail(self, mock_get_bucket, tmp_path):
+        """_thumb サフィックスが images["thumbnail"] に格納される。"""
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        thumb_file = tmp_path / "header_thumb.webp"
+        thumb_file.write_bytes(b"fake thumb data")
+
+        result = upload_images("TEST-001", json.dumps([str(thumb_file)]))
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert "thumbnail" in result_data["images"]
+        assert result_data["images"]["thumbnail"].endswith("alt=media")
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    def test_thumb_and_variants_together(self, mock_get_bucket, tmp_path):
+        """サムネイルとバリアントが同時にアップロードされる。"""
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        # メイン画像 + サムネイル + sm バリアント
+        for name in ("header.png", "header_thumb.webp", "header_sm.webp"):
+            f = tmp_path / name
+            f.write_bytes(b"fake data")
+
+        paths = [str(tmp_path / n) for n in ("header.png", "header_thumb.webp", "header_sm.webp")]
+        result = upload_images("TEST-001", json.dumps(paths))
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert "thumbnail" in result_data["images"]
+        assert "hero" in result_data["images"]
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    def test_internal_upload_thumb_suffix(self, mock_get_bucket, tmp_path):
+        """_upload_images_internal が _thumb を images["thumbnail"] に格納する。"""
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        thumb_file = tmp_path / "header_thumb.webp"
+        thumb_file.write_bytes(b"fake thumb data")
+
+        images = _upload_images_internal("TEST-001", [str(thumb_file)])
+
+        assert "thumbnail" in images
+        assert "hero" not in images  # サムネイルだけなら hero は設定されない
+

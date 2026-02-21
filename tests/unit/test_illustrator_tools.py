@@ -264,7 +264,7 @@ class TestGenerateImageStyles:
 
     @patch("mystery_agents.tools.illustrator_tools._get_client")
     def test_fact_style_prefix(self, mock_get_client):
-        """Should add monochrome prefix for fact style."""
+        """Should add style prefix from registry for fact style."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
 
@@ -273,15 +273,16 @@ class TestGenerateImageStyles:
         mock_response.generated_images = [MagicMock(image=mock_image)]
         mock_client.models.generate_images.return_value = mock_response
 
+        # EU(デフォルト) の fact スタイル → carte de visite
         result = generate_image("A ship's log", style="fact")
         result_data = json.loads(result)
 
-        assert "Black and white" in result_data["prompt_used"]
+        assert "Carte de visite" in result_data["prompt_used"]
         assert result_data["style"] == "fact"
 
     @patch("mystery_agents.tools.illustrator_tools._get_client")
     def test_folklore_style_prefix(self, mock_get_client):
-        """Should add woodcut prefix for folklore style."""
+        """Should add style prefix from registry for folklore style."""
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
 
@@ -290,10 +291,11 @@ class TestGenerateImageStyles:
         mock_response.generated_images = [MagicMock(image=mock_image)]
         mock_client.models.generate_images.return_value = mock_response
 
+        # EU(デフォルト) の folklore スタイル → Renaissance copperplate
         result = generate_image("A mysterious ship", style="folklore")
         result_data = json.loads(result)
 
-        assert "woodcut" in result_data["prompt_used"]
+        assert "Renaissance" in result_data["prompt_used"] or "copperplate" in result_data["prompt_used"]
         assert result_data["style"] == "folklore"
 
     @patch("mystery_agents.tools.illustrator_tools._get_client")
@@ -582,14 +584,22 @@ class TestBuildSafeFallbackPrompt:
     """Tests for _build_safe_fallback_prompt function."""
 
     def test_fact_style_returns_archival_prompt(self):
-        """Should return a monochrome archival-style prompt for fact style."""
-        result = _build_safe_fallback_prompt("fact")
-        assert "black and white" in result.lower() or "monochrome" in result.lower()
+        """Should return a region-appropriate archival-style prompt for fact style."""
+        # US の fact → B&W 銀塩写真
+        result = _build_safe_fallback_prompt("fact", "US")
+        assert "silver gelatin" in result.lower() or "monochrome" in result.lower()
+        # EU（デフォルト）の fact → Carte de visite
+        result_eu = _build_safe_fallback_prompt("fact")
+        assert "carte de visite" in result_eu.lower() or "albumen" in result_eu.lower()
 
     def test_folklore_style_returns_woodcut_prompt(self):
-        """Should return a woodcut/engraving-style prompt for folklore style."""
-        result = _build_safe_fallback_prompt("folklore")
-        assert "woodcut" in result.lower() or "engraving" in result.lower()
+        """Should return a region-appropriate art-style prompt for folklore style."""
+        # US の folklore → woodcut
+        result = _build_safe_fallback_prompt("folklore", "US")
+        assert "woodcut" in result.lower()
+        # EU（デフォルト）の folklore → Renaissance copperplate
+        result_eu = _build_safe_fallback_prompt("folklore")
+        assert "renaissance" in result_eu.lower() or "copperplate" in result_eu.lower()
 
     def test_auto_style_returns_prompt(self):
         """Should return a valid prompt for auto style."""
@@ -914,7 +924,7 @@ class TestBuildContextualSafePrompt:
         mock_ctx = MagicMock()
         mock_ctx.state = {"creative_content": "The Bell Witch legend of Tennessee..."}
 
-        result = _build_contextual_safe_prompt("folklore", mock_ctx)
+        result = _build_contextual_safe_prompt("folklore", "US", mock_ctx)
 
         assert result == "A weathered farmhouse in 1817 Tennessee at twilight"
         mock_client.models.generate_content.assert_called_once()
@@ -929,24 +939,24 @@ class TestBuildContextualSafePrompt:
         mock_ctx = MagicMock()
         mock_ctx.state = {"creative_content": "Some article content..."}
 
-        result = _build_contextual_safe_prompt("fact", mock_ctx)
+        result = _build_contextual_safe_prompt("fact", "US", mock_ctx)
 
-        # _build_safe_fallback_prompt("fact") の結果が返る
-        assert "black and white" in result.lower() or "monochrome" in result.lower()
+        # _build_safe_fallback_prompt("fact", "US") の結果が返る
+        assert "silver gelatin" in result.lower() or "monochrome" in result.lower()
 
     def test_contextual_no_creative_content(self):
         """creative_content なしで汎用フォールバック。"""
         mock_ctx = MagicMock()
         mock_ctx.state = {}
 
-        result = _build_contextual_safe_prompt("folklore", mock_ctx)
+        result = _build_contextual_safe_prompt("folklore", "US", mock_ctx)
 
-        # _build_safe_fallback_prompt("folklore") の結果が返る
-        assert "woodcut" in result.lower() or "engraving" in result.lower()
+        # _build_safe_fallback_prompt("folklore", "US") の結果が返る
+        assert "woodcut" in result.lower()
 
     def test_contextual_no_tool_context(self):
         """tool_context が None で汎用フォールバック。"""
-        result = _build_contextual_safe_prompt("auto", None)
+        result = _build_contextual_safe_prompt("auto", "EU", None)
 
         # _build_safe_fallback_prompt("auto") の結果が返る
         assert len(result) > 20
@@ -956,9 +966,9 @@ class TestBuildContextualSafePrompt:
         mock_ctx = MagicMock()
         mock_ctx.state = {"creative_content": "NO_CONTENT"}
 
-        result = _build_contextual_safe_prompt("fact", mock_ctx)
+        result = _build_contextual_safe_prompt("fact", "US", mock_ctx)
 
-        assert "black and white" in result.lower() or "monochrome" in result.lower()
+        assert "silver gelatin" in result.lower() or "monochrome" in result.lower()
 
 
 class TestValidateImage:
@@ -1147,3 +1157,122 @@ class TestValidateImage:
 
         assert result["status"] == "error"
         assert "load" in result["error"].lower() or "image" in result["error"].lower()
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_validate_with_region_param(self, mock_get_client, tmp_path):
+        """region パラメータがバリデーションプロンプトに反映される。"""
+        from PIL import Image as PILImage
+
+        img_path = tmp_path / "test.png"
+        PILImage.new("RGB", (100, 100), "red").save(str(img_path))
+
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_response = MagicMock()
+        mock_response.text = json.dumps({
+            "verdict": "pass", "confidence": 0.9,
+            "feedback": "Good", "suggested_focus": "",
+        })
+        mock_client.models.generate_content.return_value = mock_response
+
+        result = json.loads(validate_image(str(img_path), "test theme", style="fact", region="JP"))
+
+        assert result["verdict"] == "pass"
+        # バリデーションプロンプトに Region: JP が含まれることを確認
+        call_args = mock_client.models.generate_content.call_args
+        prompt_text = call_args[1]["contents"][1]
+        assert "JP" in prompt_text
+
+
+class TestGenerateImageRegion:
+    """generate_image の region パラメータテスト。"""
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_jp_fact_uses_meiji_style(self, mock_get_client):
+        """JP + fact → 明治スタイルプレフィックスが使われる。"""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_image = MagicMock()
+        mock_response = MagicMock()
+        mock_response.generated_images = [MagicMock(image=mock_image)]
+        mock_client.models.generate_images.return_value = mock_response
+
+        result = generate_image("A temple scene", style="fact", region="JP")
+        result_data = json.loads(result)
+
+        assert result_data["region"] == "JP"
+        prompt = result_data["prompt_used"].lower()
+        assert "meiji" in prompt or "albumen" in prompt
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_jp_folklore_uses_ukiyoe_style(self, mock_get_client):
+        """JP + folklore → 浮世絵スタイルプレフィックスが使われる。"""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_image = MagicMock()
+        mock_response = MagicMock()
+        mock_response.generated_images = [MagicMock(image=mock_image)]
+        mock_client.models.generate_images.return_value = mock_response
+
+        result = generate_image("A mysterious scene", style="folklore", region="JP")
+        result_data = json.loads(result)
+
+        assert result_data["region"] == "JP"
+        assert "Ukiyo-e" in result_data["prompt_used"]
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_gb_fact_uses_victorian_style(self, mock_get_client):
+        """GB + fact → ヴィクトリアスタイルプレフィックスが使われる。"""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_image = MagicMock()
+        mock_response = MagicMock()
+        mock_response.generated_images = [MagicMock(image=mock_image)]
+        mock_client.models.generate_images.return_value = mock_response
+
+        result = generate_image("A London scene", style="fact", region="GB")
+        result_data = json.loads(result)
+
+        assert result_data["region"] == "GB"
+        prompt = result_data["prompt_used"].lower()
+        assert "victorian" in prompt or "wet plate" in prompt
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_unknown_region_falls_back_to_eu(self, mock_get_client):
+        """不明リージョンは EU にフォールバック。"""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_image = MagicMock()
+        mock_response = MagicMock()
+        mock_response.generated_images = [MagicMock(image=mock_image)]
+        mock_client.models.generate_images.return_value = mock_response
+
+        result = generate_image("A scene", style="fact", region="XX")
+        result_data = json.loads(result)
+
+        assert result_data["region"] == "XX"
+        # EU フォールバックの carte de visite スタイル
+        assert "Carte de visite" in result_data["prompt_used"]
+
+    @patch("mystery_agents.tools.illustrator_tools._get_client")
+    def test_result_includes_thumbnail(self, mock_get_client):
+        """成功時のレスポンスに thumbnail が含まれる。"""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_image = MagicMock()
+        mock_response = MagicMock()
+        mock_response.generated_images = [MagicMock(image=mock_image)]
+        mock_client.models.generate_images.return_value = mock_response
+
+        result = generate_image("A test", style="auto")
+        result_data = json.loads(result)
+
+        # thumbnail は None (PILImage.open がモック画像ファイルを開けないため)
+        # または dict (実際の画像ファイルがある場合)
+        assert "thumbnail" in result_data

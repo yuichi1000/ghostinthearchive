@@ -206,7 +206,7 @@ def _sanitize_prompt(prompt: str) -> str:
     return result
 
 
-def _build_safe_fallback_prompt(style: str) -> str:
+def _build_safe_fallback_prompt(style: str, region: str = "EU") -> str:
     """Build an ultra-safe fallback prompt with no thematic content.
 
     Used as the last resort (attempt 2) when both the original and
@@ -216,28 +216,31 @@ def _build_safe_fallback_prompt(style: str) -> str:
 
     Args:
         style: Image style - "fact", "folklore", or "auto".
+        region: ISO 3166-1 alpha-2 国コード。
 
     Returns:
         A safe prompt string guaranteed to pass safety filters.
     """
-    if style == "fact":
-        return (
-            "Black and white archival photograph style, monochrome, "
-            "high contrast, vintage silver gelatin print texture. "
-            "An old weathered leather-bound book lying open on a dark oak desk, "
-            "candlelight casting long shadows, dust motes in the air, "
-            "antique brass inkwell nearby, aged parchment pages, "
-            "dramatic chiaroscuro lighting, overhead shot at 45 degrees"
-        )
-    elif style == "folklore":
-        return (
-            "19th century woodcut engraving illustration style, "
-            "cross-hatching technique, sepia toned, aged paper texture. "
-            "A misty coastal landscape at twilight, rocky cliffs overlooking "
-            "a calm sea, a lone ancient lighthouse in the distance, "
-            "gnarled oak trees silhouetted against a cloudy sky, "
-            "dramatic linework, vintage newspaper illustration aesthetic"
-        )
+    if style in ("fact", "folklore"):
+        from .style_registry import get_art_style
+
+        art_style = get_art_style(region, style)
+        # レジストリのスタイルプレフィックス + 汎用の安全な情景
+        if style == "fact":
+            scene = (
+                "An old weathered leather-bound book lying open on a dark oak desk, "
+                "candlelight casting long shadows, dust motes in the air, "
+                "antique brass inkwell nearby, aged parchment pages, "
+                "dramatic chiaroscuro lighting, overhead shot at 45 degrees"
+            )
+        else:
+            scene = (
+                "A misty coastal landscape at twilight, rocky cliffs overlooking "
+                "a calm sea, a lone ancient lighthouse in the distance, "
+                "gnarled oak trees silhouetted against a cloudy sky, "
+                "dramatic linework"
+            )
+        return f"{art_style.style_prefix}{scene}"
     else:
         return (
             "A dimly lit archival room with tall wooden shelves filled "
@@ -248,16 +251,16 @@ def _build_safe_fallback_prompt(style: str) -> str:
         )
 
 
-def _get_style_description(style: str) -> str:
+def _get_style_description(style: str, region: str = "EU") -> str:
     """スタイルの説明文を返す。"""
-    if style == "fact":
-        return "Black and white archival photograph, monochrome, silver gelatin print"
-    elif style == "folklore":
-        return "19th century woodcut engraving, cross-hatching, sepia toned"
+    if style in ("fact", "folklore"):
+        from .style_registry import get_style_description as _registry_desc
+
+        return _registry_desc(region, style)
     return "Atmospheric, cinematic composition"
 
 
-def _rewrite_safe_prompt(prompt: str, style: str) -> str:
+def _rewrite_safe_prompt(prompt: str, style: str, region: str = "EU") -> str:
     """Gemini Flash で元プロンプトを安全に書き換える。
 
     単語置換ではなく、LLM が文脈を理解して:
@@ -307,7 +310,7 @@ Original prompt: {prompt}"""
 
 
 def _build_contextual_safe_prompt(
-    style: str, tool_context: Optional[ToolContext],
+    style: str, region: str, tool_context: Optional[ToolContext],
 ) -> str:
     """記事内容から安全な新コンセプトを生成。
 
@@ -322,9 +325,9 @@ def _build_contextual_safe_prompt(
         creative_content = tool_context.state.get("creative_content")
 
     if not creative_content or "NO_CONTENT" in str(creative_content):
-        return _build_safe_fallback_prompt(style)
+        return _build_safe_fallback_prompt(style, region)
 
-    style_desc = _get_style_description(style)
+    style_desc = _get_style_description(style, region)
     contextual_instruction = f"""Create a safe image generation prompt for an AI image generator based on this article.
 
 The prompt must be COMPLETELY SAFE:
@@ -360,7 +363,7 @@ Safe image prompt:"""
         )
 
     # フォールバック: 既存の汎用プロンプト
-    return _build_safe_fallback_prompt(style)
+    return _build_safe_fallback_prompt(style, region)
 
 
 def _get_client() -> genai.Client:
@@ -391,9 +394,54 @@ def _get_variants(filepath: str) -> tuple[list, str | None]:
     return [], error_msg
 
 
+def _generate_thumbnail(source_path: str) -> dict | None:
+    """16:9 画像から 400×400 の中央クロップサムネイルを生成する。
+
+    Args:
+        source_path: ソース画像のパス。
+
+    Returns:
+        サムネイルの情報 dict、または生成失敗時は None。
+    """
+    src = Path(source_path)
+    if not src.exists():
+        logger.warning("_generate_thumbnail: ソースが見つからない: %s", source_path)
+        return None
+
+    try:
+        from PIL import Image as PILImage
+
+        with PILImage.open(src) as img:
+            w, h = img.size
+
+            # 中央正方形クロップ
+            side = min(w, h)
+            left = (w - side) // 2
+            top = (h - side) // 2
+            cropped = img.crop((left, top, left + side, top + side))
+
+            # 400×400 にリサイズ
+            thumb = cropped.resize((400, 400), PILImage.LANCZOS)
+
+            out_name = f"{src.stem}_thumb.webp"
+            out_path = src.parent / out_name
+            thumb.save(str(out_path), "WEBP", quality=WEBP_QUALITY)
+
+            return {
+                "filepath": str(out_path),
+                "filename": out_name,
+                "width": 400,
+                "height": 400,
+            }
+    except Exception as e:
+        logger.warning("_generate_thumbnail: サムネイル生成失敗: %s", e)
+        return None
+
+
 def generate_image(
     prompt: str,
     style: str = "auto",
+    region: str = "EU",
     aspect_ratio: str = "16:9",
     negative_prompt: Optional[str] = None,
     filename_hint: Optional[str] = None,
@@ -406,13 +454,17 @@ def generate_image(
     after uploading to Cloud Storage.
 
     The style parameter controls the visual approach:
-    - "fact": Monochrome archival photograph style (for Fact-based articles)
-    - "folklore": 19th century woodcut/engraving illustration style (for Folklore-based articles)
+    - "fact": Region-specific archival style (for Fact-based articles)
+    - "folklore": Region-specific artistic style (for Folklore-based articles)
     - "auto": Let the prompt determine the style
+
+    The region parameter selects a culture-specific art style from the style registry.
+    Supported regions: US, JP, GB, NL, AU, NZ, DE, FR, ES, PT. Unknown regions fall back to EU.
 
     Args:
         prompt: Detailed English prompt describing the image to generate.
-        style: Image style - "fact" (monochrome photo), "folklore" (woodcut illustration), or "auto".
+        style: Image style - "fact", "folklore", or "auto".
+        region: ISO 3166-1 alpha-2 country code for region-specific art style (default: "EU").
         aspect_ratio: Aspect ratio - "16:9" (blog header), "1:1" (square), "9:16" (vertical).
         negative_prompt: Elements to exclude from the image.
         filename_hint: Optional hint for the filename (e.g., "boston_harbor").
@@ -420,23 +472,14 @@ def generate_image(
     Returns:
         JSON string with the file path and generation details.
     """
-    # Apply style-specific prompt modifications
-    if style == "fact":
-        style_prefix = (
-            "Black and white archival photograph style, monochrome, "
-            "high contrast, vintage silver gelatin print texture, "
-            "documentary photography aesthetic. "
-        )
+    # Apply style-specific prompt modifications via style registry
+    if style in ("fact", "folklore"):
+        from .style_registry import get_art_style
+
+        art_style = get_art_style(region, style)
+        style_prefix = art_style.style_prefix
         if not negative_prompt:
-            negative_prompt = "color, modern elements, digital artifacts, cartoon, illustration"
-    elif style == "folklore":
-        style_prefix = (
-            "19th century woodcut engraving illustration style, "
-            "cross-hatching technique, sepia toned, aged paper texture, "
-            "vintage newspaper illustration aesthetic. "
-        )
-        if not negative_prompt:
-            negative_prompt = "photograph, modern elements, digital art, 3D render, color photography"
+            negative_prompt = art_style.negative_prompt
     else:
         style_prefix = ""
 
@@ -497,6 +540,9 @@ def generate_image(
                 # Generate responsive variants
                 variants, variant_error = _get_variants(str(filepath))
 
+                # Generate thumbnail (400×400 center crop)
+                thumbnail = _generate_thumbnail(str(filepath))
+
                 result = {
                     "status": "success",
                     "filepath": str(filepath),
@@ -504,11 +550,13 @@ def generate_image(
                     "prompt_used": current_prompt,
                     "original_prompt": full_prompt,
                     "style": style,
+                    "region": region,
                     "aspect_ratio": aspect_ratio,
                     "attempt": attempt + 1,
                     "prompt_sanitized": prompt_sanitized,
                     "variants": variants,
                     "variant_error": variant_error,
+                    "thumbnail": thumbnail,
                 }
 
                 # Save image metadata to session state for Publisher
@@ -529,10 +577,10 @@ def generate_image(
             # attempt 0 失敗 → LLM で知的書き換え（attempt 1 用）
             # attempt 1 失敗 → 記事から安全な新コンセプト生成（attempt 2 用）
             if attempt == 0:
-                current_prompt = _rewrite_safe_prompt(current_prompt, style)
+                current_prompt = _rewrite_safe_prompt(current_prompt, style, region)
                 prompt_sanitized = True
             elif attempt == 1:
-                current_prompt = _build_contextual_safe_prompt(style, tool_context)
+                current_prompt = _build_contextual_safe_prompt(style, region, tool_context)
                 prompt_sanitized = True
             continue
 
@@ -567,11 +615,11 @@ def generate_image(
 
             # LLM ベースのプログレッシブ・リトライ（その他エラー時も同様）
             if attempt == 0:
-                current_prompt = _rewrite_safe_prompt(current_prompt, style)
+                current_prompt = _rewrite_safe_prompt(current_prompt, style, region)
                 prompt_sanitized = True
                 continue
             elif attempt == 1:
-                current_prompt = _build_contextual_safe_prompt(style, tool_context)
+                current_prompt = _build_contextual_safe_prompt(style, region, tool_context)
                 prompt_sanitized = True
                 continue
 
@@ -602,6 +650,9 @@ def generate_image(
             else:
                 logger.warning("Fallback variant not found: %s", src)
 
+        # サムネイル生成（フォールバック画像から）
+        fallback_thumbnail = _generate_thumbnail(str(fallback_copy))
+
         fallback_result = {
             "status": "fallback",
             "filepath": str(fallback_copy),
@@ -611,6 +662,7 @@ def generate_image(
             "last_error": last_error,
             "attempts": MAX_RETRIES,
             "variants": variant_copies,
+            "thumbnail": fallback_thumbnail,
             "retry_suggestion": (
                 "Try generating with a completely different visual concept. "
                 "Focus on locations, architecture, or symbolic objects instead of the original subject. "
@@ -642,6 +694,7 @@ def validate_image(
     image_filepath: str,
     expected_theme: str,
     style: str = "auto",
+    region: str = "EU",
     tool_context: Optional[ToolContext] = None,
 ) -> str:
     """生成画像と記事内容の整合性を Gemini Flash で検証する。
@@ -654,6 +707,7 @@ def validate_image(
         image_filepath: 生成画像のファイルパス。
         expected_theme: 記事テーマの要約（2-5文、Illustrator LLM が作成）。
         style: 使用したスタイル — "fact" / "folklore" / "auto"。
+        region: ISO 3166-1 alpha-2 国コード（地域スタイル検証用）。
         tool_context: ADK ToolContext（セッション状態への保存用）。
 
     Returns:
@@ -681,18 +735,20 @@ def validate_image(
             "error": f"Failed to load image: {e}",
         }, ensure_ascii=False)
 
-    style_desc = _get_style_description(style)
+    style_desc = _get_style_description(style, region)
 
     validation_prompt = f"""Evaluate whether this image is appropriate as a hero image for the following article.
 
 Article summary: {expected_theme}
 Intended style: {style_desc}
+Region: {region}
 
 Criteria:
 1. THEME MATCH: Does the image relate to the article's subject (location, era, objects, atmosphere)?
 2. ERA CONSISTENCY: No anachronisms (modern elements in historical setting)?
-3. STYLE ADHERENCE: fact=B&W archival photo / folklore=woodcut/engraving?
+3. STYLE ADHERENCE: Does the image match the intended regional art style described above?
 4. QUALITY: No obvious AI artifacts or distorted objects?
+5. CULTURAL APPROPRIATENESS: Is the image culturally appropriate for the region?
 
 Respond in JSON only: {{"verdict":"pass" or "fail", "confidence":0.0 to 1.0, "feedback":"one sentence", "suggested_focus":"if fail, what to focus on instead"}}"""
 
