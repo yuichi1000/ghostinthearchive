@@ -480,3 +480,142 @@ class TestSearchSingleSource:
         )
 
         assert len(docs) == 1
+
+
+# === PR 3: バイリンガル展開除去・デフォルト日付・新聞ディスパッチャのテスト ===
+
+
+class TestNoBilingualExpansion:
+    """search_archives がバイリンガル展開を行わないことを確認"""
+
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    @patch("mystery_agents.tools.librarian_tools.expand_keywords_bilingual")
+    def test_search_archives_no_bilingual_expansion(
+        self, mock_expand, mock_get_all, mock_validate
+    ):
+        """search_archives は expand_keywords_bilingual を呼ばない。"""
+        mock_get_all.return_value = {
+            "loc": _make_mock_source(source_key="loc", docs=[], total_hits=0),
+        }
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 0, "reachable": 0, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 0, "verified_documents": [],
+        })()
+
+        search_archives(keywords="ghost, ship", sources="loc", language="en")
+
+        mock_expand.assert_not_called()
+
+
+class TestDefaultDates:
+    """デフォルト日付が 1500-1899 であることを確認"""
+
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    def test_search_archives_default_dates_1500_1899(
+        self, mock_get_all, mock_validate
+    ):
+        """search_archives のデフォルト日付が 1500-1899 でソースに渡される。"""
+        call_log = []
+
+        class LogSource:
+            source_key = "loc"
+            source_name = "LOC"
+            supports_language_filter = False
+
+            def search(self, **kwargs):
+                call_log.append(kwargs)
+                return ArchiveSearchResult(documents=[], total_hits=0)
+
+        mock_get_all.return_value = {"loc": LogSource()}
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 0, "reachable": 0, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 0, "verified_documents": [],
+        })()
+
+        # date_start / date_end を明示しない → デフォルト値が使われる
+        search_archives(keywords="test", sources="loc", language="en")
+
+        assert len(call_log) == 1
+        assert call_log[0]["date_start"] == "1500"
+        assert call_log[0]["date_end"] == "1899"
+
+
+class TestNewspaperDispatcher:
+    """search_newspapers のディスパッチャ動作テスト"""
+
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.search_chronicling_america")
+    @patch("mystery_agents.tools.librarian_tools.resolve_newspaper_sources")
+    def test_newspaper_dispatcher_en_uses_chronicling_america(
+        self, mock_resolve, mock_search_ca, mock_validate
+    ):
+        """EN → Chronicling America にルーティングされる。"""
+        mock_ca = type("CA", (), {
+            "source_key": "chronicling_america",
+            "is_newspaper_source": True,
+        })()
+        mock_resolve.return_value = [mock_ca]
+
+        doc = _make_doc()
+        mock_search_ca.return_value = {
+            "total_hits": 1,
+            "documents": [doc],
+            "error": None,
+        }
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 1, "reachable": 1, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 50,
+            "verified_documents": [doc],
+        })()
+
+        result_json = search_newspapers(keywords="ghost", language="en")
+        result = json.loads(result_json)
+
+        assert result["source"] == "chronicling_america"
+        assert result["documents_returned"] == 1
+        mock_search_ca.assert_called()
+
+    @patch("mystery_agents.tools.librarian_tools.resolve_newspaper_sources")
+    def test_newspaper_dispatcher_unsupported_lang_returns_empty(
+        self, mock_resolve
+    ):
+        """新聞ソースが存在しない言語 → 空結果を返す（エラーではない）。"""
+        mock_resolve.return_value = []
+
+        result_json = search_newspapers(keywords="Geist", language="de")
+        result = json.loads(result_json)
+
+        assert result["source"] == "none"
+        assert result["documents_returned"] == 0
+        assert result["error"] is None
+        assert result["total_hits"] == 0
+
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.search_chronicling_america")
+    @patch("mystery_agents.tools.librarian_tools.resolve_newspaper_sources")
+    def test_newspaper_dispatcher_default_language_is_en(
+        self, mock_resolve, mock_search_ca, mock_validate
+    ):
+        """language 未指定 → "en" として処理される。"""
+        mock_ca = type("CA", (), {
+            "source_key": "chronicling_america",
+            "is_newspaper_source": True,
+        })()
+        mock_resolve.return_value = [mock_ca]
+
+        mock_search_ca.return_value = {
+            "total_hits": 0,
+            "documents": [],
+            "error": None,
+        }
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 0, "reachable": 0, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 0, "verified_documents": [],
+        })()
+
+        search_newspapers(keywords="test")
+
+        # language 未指定でも resolve_newspaper_sources("en") が呼ばれる
+        mock_resolve.assert_called_once_with("en")

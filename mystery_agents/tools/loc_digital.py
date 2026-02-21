@@ -42,17 +42,19 @@ class LOCDigitalSource(ArchiveSource):
         if not search_text:
             return ArchiveSearchResult(error="No keywords provided")
 
-        start_year = date_start[:4] if len(date_start) >= 4 else date_start
-        end_year = date_end[:4] if len(date_end) >= 4 else date_end
-
         params = {
             "q": search_text,
             "fa": "not:partof:chronicling america",
             "fo": "json",
             "c": min(max_results, 50),
             "sp": 1,
-            "dates": f"{start_year}/{end_year}",
         }
+
+        # 空文字日付対応: 日付フィルタを条件付きに
+        if date_start and date_end:
+            start_year = date_start[:4] if len(date_start) >= 4 else date_start
+            end_year = date_end[:4] if len(date_end) >= 4 else date_end
+            params["dates"] = f"{start_year}/{end_year}"
 
         response = self._session.get(
             BASE_URL,

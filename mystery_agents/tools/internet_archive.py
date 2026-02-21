@@ -50,10 +50,12 @@ class InternetArchiveSource(ArchiveSource):
         if not search_text:
             return ArchiveSearchResult(error="No keywords provided")
 
-        start_year = date_start[:4] if len(date_start) >= 4 else date_start
-        end_year = date_end[:4] if len(date_end) >= 4 else date_end
-
-        query = f"({search_text}) AND date:[{start_year}-01-01 TO {end_year}-12-31]"
+        # 空文字日付対応: 日付フィルタを条件付きに
+        query = f"({search_text})"
+        if date_start and date_end:
+            start_year = date_start[:4] if len(date_start) >= 4 else date_start
+            end_year = date_end[:4] if len(date_end) >= 4 else date_end
+            query += f" AND date:[{start_year}-01-01 TO {end_year}-12-31]"
 
         # 言語フィルタ
         if language and language in _LANG_CODE_MAP:
