@@ -8,7 +8,6 @@ from requests.exceptions import ConnectionError, InvalidURL, Timeout, TooManyRed
 from mystery_agents.schemas.document import (
     ArchiveDocument,
     SourceLanguage,
-    SourceType,
 )
 from mystery_agents.tools.link_validator import (
     validate_documents,
@@ -18,7 +17,7 @@ from mystery_agents.tools.link_validator import (
 
 def _make_doc(
     url: str = "https://www.loc.gov/item/test123/",
-    source_type: SourceType = SourceType.LOC_DIGITAL,
+    source_type: str = "loc_digital",
     title: str = "Test Document",
 ) -> ArchiveDocument:
     """テスト用 ArchiveDocument を生成するヘルパー。"""
@@ -41,7 +40,7 @@ class TestVerifyLink:
         url = "https://www.loc.gov/item/test123/"
         responses.add(responses.HEAD, url, status=200, content_type="text/html")
 
-        result = verify_link(url, SourceType.LOC_DIGITAL)
+        result = verify_link(url, "loc_digital")
 
         assert result.is_reachable is True
         assert result.status_code == 200
@@ -54,7 +53,7 @@ class TestVerifyLink:
         url = "https://www.loc.gov/item/missing/"
         responses.add(responses.HEAD, url, status=404)
 
-        result = verify_link(url, SourceType.LOC_DIGITAL)
+        result = verify_link(url, "loc_digital")
 
         assert result.is_reachable is False
         assert result.status_code == 404
@@ -65,7 +64,7 @@ class TestVerifyLink:
         url = "https://www.loc.gov/item/forbidden/"
         responses.add(responses.HEAD, url, status=403)
 
-        result = verify_link(url, SourceType.LOC_DIGITAL)
+        result = verify_link(url, "loc_digital")
 
         assert result.is_reachable is False
         assert result.status_code == 403
@@ -77,7 +76,7 @@ class TestVerifyLink:
         responses.add(responses.HEAD, url, status=405)
         responses.add(responses.GET, url, status=200, body=b"OK")
 
-        result = verify_link(url, SourceType.LOC_DIGITAL)
+        result = verify_link(url, "loc_digital")
 
         assert result.is_reachable is True
         assert result.status_code == 200
@@ -88,7 +87,7 @@ class TestVerifyLink:
         url = "https://www.loc.gov/item/slow/"
         responses.add(responses.HEAD, url, body=Timeout("Connection timed out"))
 
-        result = verify_link(url, SourceType.LOC_DIGITAL)
+        result = verify_link(url, "loc_digital")
 
         assert result.is_reachable is False
         assert result.status_code is None
@@ -101,7 +100,7 @@ class TestVerifyLink:
         url = "https://www.loc.gov/item/down/"
         responses.add(responses.HEAD, url, body=ConnectionError("DNS resolution failed"))
 
-        result = verify_link(url, SourceType.LOC_DIGITAL)
+        result = verify_link(url, "loc_digital")
 
         assert result.is_reachable is False
         assert result.status_code is None
@@ -120,7 +119,7 @@ class TestVerifyLink:
         )
         responses.add(responses.HEAD, final_url, status=200)
 
-        result = verify_link(url, SourceType.LOC_DIGITAL)
+        result = verify_link(url, "loc_digital")
 
         assert result.is_reachable is True
         assert result.is_domain_consistent is True
@@ -139,7 +138,7 @@ class TestVerifyLink:
         )
         responses.add(responses.HEAD, final_url, status=200)
 
-        result = verify_link(url, SourceType.LOC_DIGITAL)
+        result = verify_link(url, "loc_digital")
 
         assert result.is_reachable is True
         assert result.is_domain_consistent is False
@@ -151,7 +150,7 @@ class TestVerifyLink:
         url = "https://partner-museum.org/item/123"
         responses.add(responses.HEAD, url, status=200)
 
-        result = verify_link(url, SourceType.DPLA)
+        result = verify_link(url, "dpla")
 
         assert result.is_reachable is True
         assert result.is_domain_consistent is True
@@ -162,7 +161,7 @@ class TestVerifyLink:
         url = "https://www.loc.gov/item/loop/"
         responses.add(responses.HEAD, url, body=TooManyRedirects("Exceeded redirects"))
 
-        result = verify_link(url, SourceType.LOC_DIGITAL)
+        result = verify_link(url, "loc_digital")
 
         assert result.is_reachable is False
         assert result.status_code is None
@@ -174,7 +173,7 @@ class TestVerifyLink:
         url = "https://www.loc.gov/item/bad\x00url/"
         responses.add(responses.HEAD, url, body=InvalidURL("Invalid URL"))
 
-        result = verify_link(url, SourceType.LOC_DIGITAL)
+        result = verify_link(url, "loc_digital")
 
         assert result.is_reachable is False
         assert result.status_code is None
@@ -278,7 +277,6 @@ class TestValidateDocuments:
     def test_validation_disabled(self):
         """ENABLE_LINK_VALIDATION=false で全通過。"""
         url = "https://www.loc.gov/item/unchecked/"
-        # HEAD リクエストは登録しない — 呼ばれないことを確認
 
         docs = [_make_doc(url=url)]
         with patch.dict("os.environ", {"ENABLE_LINK_VALIDATION": "false"}):

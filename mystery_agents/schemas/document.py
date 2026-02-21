@@ -43,7 +43,7 @@ class ArchiveDocument(BaseModel):
     summary: str = Field(..., description="Brief summary of the document content")
     language: SourceLanguage = Field(..., description="Primary language: en, es, de, fr, nl, or pt")
     location: str = Field(..., description="Physical location or origin")
-    source_type: SourceType = Field(..., description="Source API type")
+    source_type: str = Field(..., description="Source API type (e.g. 'loc_digital', 'dpla')")
     raw_text: Optional[str] = Field(None, description="Full OCR or text content")
     record_group: Optional[str] = Field(None, description="Record Group ID")
     keywords_matched: List[str] = Field(

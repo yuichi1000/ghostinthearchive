@@ -18,6 +18,15 @@ from ..tools.librarian_tools import (
     search_archives,
     search_newspapers,
 )
+from ..tools.source_registry import resolve_sources
+
+
+def _resolve_sources_hint(lang_code: str) -> str:
+    """Registry から言語に対応するソースキーを動的に解決し、カンマ区切りで返す。"""
+    sources = resolve_sources(lang_code)
+    keys = [s.source_key for s in sources if not s.is_newspaper_source]
+    return ", ".join(keys) if keys else "internet_archive"
+
 
 # === 日本語訳 ===
 # 言語別 Librarian の共通指示テンプレート:
@@ -105,12 +114,11 @@ LANGUAGE_CONFIGS = {
             "- Library of Congress, DPLA, NYPL, Internet Archive collections\n"
             "- New England, Mid-Atlantic, and Southern port cities"
         ),
-        "sources_hint": "loc, dpla, nypl, internet_archive",
         "newspaper_instruction": (
             "Also call **search_newspapers** for Chronicling America newspaper articles.\n"
             "   - The tool handles bilingual expansion (English/Spanish) automatically"
         ),
-        "tools": "full",  # search_newspapers + search_archives + get_available_keywords
+        "has_newspaper_tool": True,
     },
     "de": {
         "language_name": "German",
@@ -123,9 +131,8 @@ LANGUAGE_CONFIGS = {
             "- Internet Archive for digitized German-language books and periodicals\n"
             "- Protestant church records, immigration documents, German-language American newspapers"
         ),
-        "sources_hint": "ddb, europeana, internet_archive",
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
-        "tools": "archives_only",  # search_archives のみ
+        "has_newspaper_tool": False,
     },
     "es": {
         "language_name": "Spanish",
@@ -137,9 +144,8 @@ LANGUAGE_CONFIGS = {
             "- DPLA for Spanish-language materials in US collections\n"
             "- Colonial correspondence, mission records, trade documents"
         ),
-        "sources_hint": "dpla, internet_archive",
         "newspaper_instruction": "Do NOT call search_newspapers (the EN Librarian already handles bilingual newspaper search).",
-        "tools": "archives_only",
+        "has_newspaper_tool": False,
     },
     "fr": {
         "language_name": "French",
@@ -152,9 +158,8 @@ LANGUAGE_CONFIGS = {
             "- Internet Archive for digitized French-language materials\n"
             "- Huguenot immigration, fur trade, French-Indian alliances"
         ),
-        "sources_hint": "europeana, internet_archive",
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
-        "tools": "archives_only",
+        "has_newspaper_tool": False,
     },
     "nl": {
         "language_name": "Dutch",
@@ -166,9 +171,8 @@ LANGUAGE_CONFIGS = {
             "- Internet Archive for digitized Dutch-language materials\n"
             "- VOC/WIC trade records, colonial administration, patroon system"
         ),
-        "sources_hint": "europeana, internet_archive",
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
-        "tools": "archives_only",
+        "has_newspaper_tool": False,
     },
     "pt": {
         "language_name": "Portuguese",
@@ -180,9 +184,8 @@ LANGUAGE_CONFIGS = {
             "- Internet Archive for digitized Portuguese-language materials\n"
             "- Maritime exploration, slave trade documentation, colonial correspondence"
         ),
-        "sources_hint": "europeana, internet_archive",
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
-        "tools": "archives_only",
+        "has_newspaper_tool": False,
     },
 }
 
@@ -191,9 +194,11 @@ def create_librarian(lang_code: str) -> LlmAgent:
     """指定された言語の Librarian エージェントを生成する。"""
     config = LANGUAGE_CONFIGS[lang_code]
 
-    instruction = _BASE_INSTRUCTION.format(**config)
+    # Registry から動的にソースヒントを解決
+    sources_hint = _resolve_sources_hint(lang_code)
+    instruction = _BASE_INSTRUCTION.format(sources_hint=sources_hint, **config)
 
-    if config["tools"] == "full":
+    if config.get("has_newspaper_tool"):
         tools = [search_newspapers, search_archives, get_available_keywords]
     else:
         tools = [search_archives]
@@ -203,7 +208,7 @@ def create_librarian(lang_code: str) -> LlmAgent:
         model=create_flash_model(),
         description=(
             f"{config['language_name']}-language archive specialist. "
-            f"Searches {config['sources_hint']} for {config['language_name']} primary sources."
+            f"Searches {sources_hint} for {config['language_name']} primary sources."
         ),
         instruction=instruction,
         tools=tools,

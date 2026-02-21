@@ -1,16 +1,18 @@
 """Tools for Ghost in the Archive agents."""
 
+# アーカイブソース基盤
+from .archive_source_base import ArchiveSearchResult, ArchiveSource
+from .source_registry import (
+    get_all_sources,
+    get_source,
+    register_source,
+    resolve_newspaper_sources,
+    resolve_sources,
+)
+
 # Low-level API tools
 from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
-
-# Low-level archive API tools
-from .dpla import search_dpla
-from .internet_archive import search_internet_archive
-from .loc_digital import search_loc_digital
-from .nypl_digital import search_nypl
-from .ddb import search_ddb
-from .europeana import search_europeana
 
 # Librarian Agent LLM-facing tools
 from .librarian_tools import (
@@ -40,17 +42,18 @@ from .debate_tools import append_to_whiteboard
 from .theme_analyzer_tools import save_language_selection
 
 __all__ = [
+    # アーカイブソース基盤
+    "ArchiveSource",
+    "ArchiveSearchResult",
+    "register_source",
+    "get_source",
+    "get_all_sources",
+    "resolve_sources",
+    "resolve_newspaper_sources",
     # Low-level
     "KEYWORD_PAIRS",
     "expand_keywords_bilingual",
     "search_chronicling_america",
-    # Low-level archive APIs
-    "search_loc_digital",
-    "search_dpla",
-    "search_nypl",
-    "search_internet_archive",
-    "search_ddb",
-    "search_europeana",
     # Librarian LLM tools
     "search_newspapers",
     "search_archives",

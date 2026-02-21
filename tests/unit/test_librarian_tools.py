@@ -3,7 +3,7 @@
 import json
 from unittest.mock import patch
 
-from mystery_agents.schemas.document import ArchiveDocument, SourceLanguage, SourceType
+from mystery_agents.schemas.document import ArchiveDocument, SourceLanguage
 
 
 def _make_doc(url="https://www.loc.gov/item/test/", title="Test Doc"):
@@ -13,7 +13,7 @@ def _make_doc(url="https://www.loc.gov/item/test/", title="Test Doc"):
         summary="A test document",
         language=SourceLanguage.EN,
         location="Test",
-        source_type=SourceType.LOC_DIGITAL,
+        source_type="loc_digital",
     )
 
 
@@ -49,30 +49,30 @@ class TestSearchArchivesValidationFallback:
     """search_archives の validate_documents 例外時フォールバック"""
 
     @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
     def test_validate_documents_exception_preserves_all_docs(
-        self, mock_validate
+        self, mock_get_all, mock_validate
     ):
         """validate_documents が例外を投げても全ドキュメントが保持される。"""
+        from mystery_agents.tools.archive_source_base import ArchiveSearchResult
+
         doc = _make_doc()
 
-        def fake_search_fn(**kwargs):
-            return {
-                "total_hits": 1,
-                "documents": [doc],
-                "error": None,
-            }
+        # ArchiveSource のモックを作成
+        mock_source = type("MockSource", (), {
+            "source_name": "LOC Digital Collections",
+            "supports_language_filter": False,
+            "search": lambda self, **kwargs: ArchiveSearchResult(
+                documents=[doc], total_hits=1
+            ),
+        })()
 
+        mock_get_all.return_value = {"loc": mock_source}
         mock_validate.side_effect = RuntimeError("unexpected error in validation")
 
-        from mystery_agents.tools.librarian_tools import _ARCHIVE_SOURCES, search_archives
+        from mystery_agents.tools.librarian_tools import search_archives
 
-        original = _ARCHIVE_SOURCES["loc"]
-        _ARCHIVE_SOURCES["loc"] = ("LOC Digital Collections", fake_search_fn)
-        try:
-            result_json = search_archives(keywords="test keyword", sources="loc")
-        finally:
-            _ARCHIVE_SOURCES["loc"] = original
-
+        result_json = search_archives(keywords="test keyword", sources="loc")
         result = json.loads(result_json)
 
         assert result["total_documents"] == 1

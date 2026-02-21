@@ -1,7 +1,7 @@
-"""LLM-facing tool functions for the Librarian Agent.
+"""Librarian エージェント向け LLM ツール関数。
 
-These functions wrap the low-level API tools and provide a simple
-string-based interface for the LLM to use.
+低レベル API ツールをラップし、LLM が使用する文字列ベースの
+インターフェースを提供する。
 """
 
 import json
@@ -16,13 +16,8 @@ logger = logging.getLogger(__name__)
 
 from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
-from .ddb import search_ddb
-from .europeana import search_europeana
-from .dpla import search_dpla
-from .internet_archive import search_internet_archive
 from .link_validator import ValidationSummary, validate_documents
-from .loc_digital import search_loc_digital
-from .nypl_digital import search_nypl
+from .source_registry import get_all_sources, get_source
 
 
 def search_newspapers(
@@ -42,7 +37,7 @@ def search_newspapers(
 
     If fewer than min_results documents are found, automatically applies
     progressive fallback strategies: individual keyword search, geographic
-    expansion (all US states), and date range expansion (±10 years).
+    expansion (all US states), and date range expansion (+/-10 years).
 
     Args:
         keywords: Comma-separated list of search keywords related to historical mysteries
@@ -55,15 +50,15 @@ def search_newspapers(
     Returns:
         JSON string containing search results with documents matching the query
     """
-    # Parse keywords
+    # キーワードパース
     keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
-    # Expand keywords to bilingual
+    # バイリンガル展開
     expanded = expand_keywords_bilingual(keyword_list)
     en_keywords = expanded["en"]
     es_keywords = expanded["es"]
 
-    # Parse states if provided
+    # 州パース
     state_list = None
     if states:
         state_list = [s.strip() for s in states.split(",") if s.strip()]
@@ -97,12 +92,12 @@ def search_newspapers(
         except Exception as e:
             error = str(e)
 
-    # Level 1: All keywords together (bilingual)
+    # Level 1: バイリンガルキーワード一括検索
     levels_used.append("L1_bilingual_combined")
     for kw_list in [en_keywords, es_keywords]:
         _search_and_collect(kw_list)
 
-    # Level 2: Individual keywords (if not enough results)
+    # Level 2: 個別キーワード検索（結果不足時）
     if len(all_docs) < min_results and len(en_keywords) > 1:
         logger.info(
             "Chronicling America フォールバック L2 発動: L1結果=%d件 < min=%d",
@@ -120,7 +115,7 @@ def search_newspapers(
                 if len(all_docs) >= min_results:
                     break
 
-    # Level 3: Remove geographic restriction (search all states)
+    # Level 3: 地理制限解除（全州検索）
     if len(all_docs) < min_results and state_list is not None:
         logger.info(
             "Chronicling America フォールバック L3 発動: 結果=%d件, 地理制限解除",
@@ -133,7 +128,7 @@ def search_newspapers(
             if len(all_docs) >= min_results:
                 break
 
-    # Level 4: Expand date range ±10 years
+    # Level 4: 日付範囲拡大（±10年）
     if len(all_docs) < min_results:
         expanded_start = str(max(1700, int(date_start) - 10))
         expanded_end = str(min(1920, int(date_end) + 10))
@@ -190,7 +185,7 @@ def search_newspapers(
         },
     }
 
-    # Save raw search results to session state for downstream agents
+    # セッション状態に保存
     if tool_context is not None:
         existing = tool_context.state.get("raw_search_results", [])
         existing.append(result)
@@ -217,20 +212,17 @@ def save_search_results(
     Returns:
         Path to the saved file
     """
-    # Find project root (where data/ directory should be)
     data_dir = Path(__file__).parent.parent / "data"
     data_dir.mkdir(exist_ok=True)
 
     if filename is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        # Create safe filename from theme
         safe_theme = "".join(c if c.isalnum() or c in " _-" else "_" for c in theme[:30])
         safe_theme = safe_theme.replace(" ", "_")
         filename = f"search_{safe_theme}_{timestamp}.json"
 
     filepath = data_dir / filename
 
-    # Parse and re-structure the results
     try:
         results_data = json.loads(results_json)
     except json.JSONDecodeError:
@@ -254,19 +246,6 @@ def save_search_results(
         },
         ensure_ascii=False,
     )
-
-
-# 言語フィルタをサポートするソース
-_LANGUAGE_FILTER_SOURCES = {"dpla", "internet_archive", "europeana"}
-
-_ARCHIVE_SOURCES = {
-    "loc": ("LOC Digital Collections", search_loc_digital),
-    "dpla": ("DPLA", search_dpla),
-    "nypl": ("NYPL Digital Collections", search_nypl),
-    "internet_archive": ("Internet Archive", search_internet_archive),
-    "ddb": ("Deutsche Digitale Bibliothek", search_ddb),
-    "europeana": ("Europeana", search_europeana),
-}
 
 
 def search_archives(
@@ -312,39 +291,39 @@ def search_archives(
         expanded = expand_keywords_bilingual(keyword_list)
         keyword_groups = [expanded["en"], expanded["es"]]
 
+    all_sources = get_all_sources()
+
     if sources:
         source_keys = [s.strip().lower() for s in sources.split(",") if s.strip()]
     else:
-        # デフォルトは既存の US ソースのみ（後方互換性維持）
+        # デフォルトは US ソース
         source_keys = ["loc", "dpla", "nypl", "internet_archive"]
 
     all_docs = []
     source_results = {}
     errors = {}
-    seen_urls = set()
+    seen_urls: set[str] = set()
     fallback_used = False
 
-    def _search_source(search_fn, kw_list, source_key):
-        """Search a single source with given keywords, collecting results."""
+    def _search_source(source_obj, kw_list, source_key):
+        """単一ソースを検索して結果を収集する。"""
         docs = []
         hits = 0
         err = None
         if not kw_list:
             return docs, hits, err
         try:
-            kwargs = {
-                "keywords": kw_list,
-                "date_start": date_start,
-                "date_end": date_end,
-                "max_results": max_results,
-            }
-            # 言語フィルタをサポートする API にのみ language を渡す
-            if language and source_key in _LANGUAGE_FILTER_SOURCES:
-                kwargs["language"] = language
-            result = search_fn(**kwargs)
-            hits = result.get("total_hits", 0)
-            err = result.get("error")
-            for doc in result.get("documents", []):
+            lang_arg = language if (language and source_obj.supports_language_filter) else None
+            result = source_obj.search(
+                keywords=kw_list,
+                date_start=date_start,
+                date_end=date_end,
+                max_results=max_results,
+                language=lang_arg,
+            )
+            hits = result.total_hits
+            err = result.error
+            for doc in result.documents:
                 url = doc.source_url
                 if url not in seen_urls:
                     seen_urls.add(url)
@@ -354,30 +333,29 @@ def search_archives(
         return docs, hits, err
 
     for key in source_keys:
-        if key not in _ARCHIVE_SOURCES:
+        source_obj = all_sources.get(key)
+        if source_obj is None:
             errors[key] = f"Unknown source: {key}"
             continue
 
-        name, search_fn = _ARCHIVE_SOURCES[key]
         source_hits = 0
         source_docs = []
 
         # 各キーワードグループで検索してマージ
         for kw_list in keyword_groups:
-            docs, hits, err = _search_source(search_fn, kw_list, key)
+            docs, hits, err = _search_source(source_obj, kw_list, key)
             source_docs.extend(docs)
             source_hits += hits
             if err:
                 errors[key] = err
 
         # フォールバック: 結果なし & 複数キーワードの場合、個別に検索
-        # 結果が見つかり次第、早期終了する
         first_group = keyword_groups[0] if keyword_groups else []
         if not source_docs and len(first_group) > 1:
             fallback_used = True
             for kw_group in keyword_groups:
                 for kw in kw_group:
-                    docs, hits, err = _search_source(search_fn, [kw], key)
+                    docs, hits, err = _search_source(source_obj, [kw], key)
                     source_docs.extend(docs)
                     source_hits += hits
                     if err:
@@ -389,7 +367,7 @@ def search_archives(
 
         all_docs.extend(source_docs)
         source_results[key] = {
-            "name": name,
+            "name": source_obj.source_name,
             "total_hits": source_hits,
             "documents_returned": len(source_docs),
         }
@@ -423,13 +401,13 @@ def search_archives(
 
     all_docs_dicts = [doc.model_dump() for doc in all_docs]
 
-    # Build warnings for missing API keys
+    # API キー未設定の警告
     warnings = []
     api_key_errors = {k: v for k, v in errors.items() if "not set" in str(v)}
     if api_key_errors:
         skipped = ", ".join(api_key_errors.keys())
         warnings.append(
-            f"⚠ API keys not configured for: {skipped}. "
+            f"API keys not configured for: {skipped}. "
             f"These sources were skipped. Set the required environment variables to enable them."
         )
 
@@ -451,9 +429,8 @@ def search_archives(
         },
     }
 
-    # Save raw search results to session state for downstream agents
+    # セッション状態に保存
     if tool_context is not None:
-        # 言語指定がある場合は言語別キーに保存
         state_key = f"raw_search_results_{language}" if language else "raw_search_results"
         existing = tool_context.state.get(state_key, [])
         existing.append(result)

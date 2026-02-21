@@ -1,38 +1,18 @@
-"""Digital Public Library of America (DPLA) API tool.
+"""Digital Public Library of America (DPLA) API ソース。
 
-Searches the DPLA aggregated collections from libraries, archives,
-and museums across the United States.
+DPLA の集約コレクション（全米の図書館・アーカイブ・博物館）を検索する。
 """
 
-import json
-import logging
-import os
-import time
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 import requests
 
-from shared.http_retry import create_retry_session
-
-logger = logging.getLogger(__name__)
-
-from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
+from ..schemas.document import ArchiveDocument, SourceLanguage
+from .archive_source_base import ArchiveSearchResult, ArchiveSource
 from .search_utils import build_search_query
+from .source_registry import register_source
 
 BASE_URL = "https://api.dp.la/v2/items"
-_session = create_retry_session()
-MIN_REQUEST_DELAY = 1.0
-_last_request_time = 0.0
-
-
-def _rate_limit() -> None:
-    global _last_request_time
-    now = time.time()
-    elapsed = now - _last_request_time
-    if elapsed < MIN_REQUEST_DELAY:
-        time.sleep(MIN_REQUEST_DELAY - elapsed)
-    _last_request_time = time.time()
-
 
 # DPLA sourceResource.language.name で使われる言語名マッピング
 _DPLA_LANG_NAMES = {
@@ -45,53 +25,51 @@ _DPLA_LANG_NAMES = {
 }
 
 
-def search_dpla(
-    keywords: List[str],
-    date_start: str = "1800",
-    date_end: str = "1899",
-    max_results: int = 20,
-    language: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Search DPLA for historical documents.
+class DPLASource(ArchiveSource):
+    """Digital Public Library of America ソース。"""
 
-    Args:
-        keywords: List of search keywords
-        date_start: Start year
-        date_end: End year
-        max_results: Maximum results to return
-        language: Optional ISO 639-1 language code to filter by sourceResource.language.name
+    source_key = "dpla"
+    source_name = "DPLA"
+    source_type = "dpla"
+    min_request_delay = 1.0
+    supported_languages = {"en", "es"}
+    supports_language_filter = True
+    is_newspaper_source = False
+    expected_domains = []  # パートナー機関ドメインが多様
+    env_var_key = "DPLA_API_KEY"
 
-    Returns:
-        Dict with documents, total_hits, error keys.
-    """
-    api_key = os.environ.get("DPLA_API_KEY", "")
-    if not api_key:
-        return {"documents": [], "total_hits": 0, "error": "DPLA_API_KEY not set"}
+    def _search_impl(
+        self,
+        keywords: list[str],
+        date_start: str,
+        date_end: str,
+        max_results: int,
+        language: str | None,
+    ) -> ArchiveSearchResult:
+        import os
 
-    search_text = build_search_query(keywords)
-    if not search_text:
-        return {"documents": [], "total_hits": 0, "error": "No keywords provided"}
+        api_key = os.environ.get("DPLA_API_KEY", "")
 
-    start_year = date_start[:4] if len(date_start) >= 4 else date_start
-    end_year = date_end[:4] if len(date_end) >= 4 else date_end
+        search_text = build_search_query(keywords)
+        if not search_text:
+            return ArchiveSearchResult(error="No keywords provided")
 
-    params = {
-        "q": search_text,
-        "api_key": api_key,
-        "page_size": min(max_results, 100),
-        "sourceResource.date.after": start_year,
-        "sourceResource.date.before": end_year,
-    }
+        start_year = date_start[:4] if len(date_start) >= 4 else date_start
+        end_year = date_end[:4] if len(date_end) >= 4 else date_end
 
-    # 言語フィルタ: sourceResource.language.name で絞り込み
-    if language and language in _DPLA_LANG_NAMES:
-        params["sourceResource.language.name"] = _DPLA_LANG_NAMES[language][0]
+        params = {
+            "q": search_text,
+            "api_key": api_key,
+            "page_size": min(max_results, 100),
+            "sourceResource.date.after": start_year,
+            "sourceResource.date.before": end_year,
+        }
 
-    _rate_limit()
-    start = time.monotonic()
+        # 言語フィルタ
+        if language and language in _DPLA_LANG_NAMES:
+            params["sourceResource.language.name"] = _DPLA_LANG_NAMES[language][0]
 
-    try:
-        response = _session.get(
+        response = self._session.get(
             BASE_URL,
             params=params,
             timeout=30,
@@ -118,7 +96,11 @@ def search_dpla(
                 date_str = date_info.get("displayDate", date_info.get("begin", ""))
             elif isinstance(date_info, list) and date_info:
                 d = date_info[0]
-                date_str = d.get("displayDate", d.get("begin", "")) if isinstance(d, dict) else str(d)
+                date_str = (
+                    d.get("displayDate", d.get("begin", ""))
+                    if isinstance(d, dict)
+                    else str(d)
+                )
 
             spatial = sr.get("spatial", [])
             location = "Unknown"
@@ -133,7 +115,9 @@ def search_dpla(
             lang = SourceLanguage.EN
             if lang_field:
                 lang_val = lang_field[0] if isinstance(lang_field, list) else lang_field
-                lang_name = lang_val.get("name", "") if isinstance(lang_val, dict) else str(lang_val)
+                lang_name = (
+                    lang_val.get("name", "") if isinstance(lang_val, dict) else str(lang_val)
+                )
                 lang = _detect_dpla_language(lang_name)
 
             url = item.get("isShownAt", item.get("@id", ""))
@@ -142,35 +126,24 @@ def search_dpla(
 
             doc = ArchiveDocument(
                 title=str(title)[:500],
-                date=_parse_year(str(date_str)),
+                date=self.parse_year(str(date_str)),
                 source_url=url,
                 summary=str(description)[:500] if description else "No description",
                 language=lang,
                 location=str(location)[:200],
-                source_type=SourceType.DPLA,
+                source_type=self.source_type,
                 raw_text=str(description)[:5000] if description else None,
-                keywords_matched=[kw for kw in keywords if kw.lower() in str(description).lower() or kw.lower() in str(title).lower()],
+                keywords_matched=[
+                    kw
+                    for kw in keywords
+                    if kw.lower() in str(description).lower()
+                    or kw.lower() in str(title).lower()
+                ],
             )
             documents.append(doc)
 
         total_hits = data.get("count", 0)
-
-        latency_ms = round((time.monotonic() - start) * 1000)
-        logger.info(
-            "DPLA 検索完了: %d 件 (%dms)", len(documents), latency_ms,
-            extra={"api_name": "dpla", "result_count": len(documents),
-                   "total_hits": total_hits, "latency_ms": latency_ms},
-        )
-
-        return {"documents": documents, "total_hits": total_hits, "error": None}
-
-    except (requests.RequestException, json.JSONDecodeError) as e:
-        latency_ms = round((time.monotonic() - start) * 1000)
-        logger.warning(
-            "DPLA API エラー: %s (%dms)", e, latency_ms,
-            extra={"api_name": "dpla", "latency_ms": latency_ms, "error": str(e)},
-        )
-        return {"documents": [], "total_hits": 0, "error": f"DPLA API error: {e}"}
+        return ArchiveSearchResult(documents=documents, total_hits=total_hits)
 
 
 def _detect_dpla_language(lang_name: str) -> SourceLanguage:
@@ -186,11 +159,6 @@ def _detect_dpla_language(lang_name: str) -> SourceLanguage:
     return SourceLanguage.EN
 
 
-def _parse_year(date_str: str) -> Optional[str]:
-    if not date_str:
-        return None
-    import re
-    year_match = re.search(r"\b(1[5-9]\d{2}|20\d{2})\b", date_str)
-    if year_match:
-        return f"{year_match.group(1)}-01-01"
-    return date_str[:10] if len(date_str) > 10 else date_str
+# レジストリに自動登録
+_instance = DPLASource()
+register_source(_instance)

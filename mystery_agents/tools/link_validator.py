@@ -14,27 +14,15 @@ import requests
 
 from shared.http_retry import create_retry_session
 
-from ..schemas.document import ArchiveDocument, SourceType
+from ..schemas.document import ArchiveDocument
 
 logger = logging.getLogger(__name__)
 
 # 確定リンク切れとみなすステータスコード
 _DEAD_LINK_STATUSES = {404, 410}
 
-# SourceType ごとの期待ドメインリスト
-# 空リスト = ドメイン検証スキップ（DPLA のようにパートナー機関ドメインが多様なケース）
 # リンク検証は URL 数が多いためリトライ回数を抑制
 _session = create_retry_session(retries=2)
-
-EXPECTED_DOMAINS: dict[SourceType, list[str]] = {
-    SourceType.NEWSPAPER: ["loc.gov"],
-    SourceType.LOC_DIGITAL: ["loc.gov"],
-    SourceType.DPLA: [],
-    SourceType.NYPL: ["digitalcollections.nypl.org", "nypl.org"],
-    SourceType.INTERNET_ARCHIVE: ["archive.org"],
-    SourceType.DDB: ["deutsche-digitale-bibliothek.de"],
-    SourceType.EUROPEANA: ["europeana.eu"],
-}
 
 
 @dataclass
@@ -64,11 +52,24 @@ class ValidationSummary:
     verified_documents: list[ArchiveDocument] = field(default_factory=list)
 
 
+def _get_expected_domains(source_type: str) -> list[str]:
+    """source_type に対応する期待ドメインを Source Registry から取得する。
+
+    Registry にソースが見つからない場合は空リスト（ドメイン検証スキップ）。
+    """
+    from .source_registry import get_all_sources
+
+    for source in get_all_sources().values():
+        if source.source_type == source_type:
+            return source.expected_domains
+    return []
+
+
 def _check_domain_consistency(
-    final_url: str, source_type: SourceType
+    final_url: str, source_type: str
 ) -> bool:
     """最終 URL のドメインが期待ドメインと一致するか確認する。"""
-    expected = EXPECTED_DOMAINS.get(source_type, [])
+    expected = _get_expected_domains(source_type)
     if not expected:
         # 期待ドメインが未定義または空 → ドメイン検証スキップ
         return True
@@ -78,7 +79,7 @@ def _check_domain_consistency(
 
 def verify_link(
     url: str,
-    source_type: SourceType,
+    source_type: str,
     timeout: float = 10.0,
 ) -> LinkCheckResult:
     """単一 URL の疎通を確認する。
@@ -90,7 +91,7 @@ def verify_link(
 
     Args:
         url: 検証対象の URL
-        source_type: ソースタイプ（期待ドメイン判定用）
+        source_type: ソースタイプ文字列（期待ドメイン判定用）
         timeout: リクエストタイムアウト（秒）
 
     Returns:
