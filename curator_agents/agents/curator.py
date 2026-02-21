@@ -1,6 +1,6 @@
 """Curator Agent - Research theme suggestions
 
-Suggests Fact × Folklore hybrid research themes when the administrator
+Suggests interdisciplinary research themes when the administrator
 needs ideas for the next investigation. Generates new themes that don't
 overlap with existing mysteries.
 """
@@ -21,8 +21,8 @@ _CATEGORY_SECTION = build_category_prompt_section()
 #
 # ## プロジェクトの方針
 # 本プロジェクトは世界の公開デジタルアーカイブを多言語横断分析し、
-# **歴史的事実（Fact）** と **民俗学的怪異・伝説（Folklore）** を融合させた
-# ナラティブを生成します。提案するテーマもこの Fact × Folklore のハイブリッドであるべきです。
+# **5つの学術領域**（歴史学・民俗学・文化人類学・言語学・文書館学）の学際的視点で分析し、
+# 記録の隙間に潜むアノマリーを発掘するナラティブを生成します。提案するテーマもこの学際的分析に適したものであるべきです。
 #
 # ## カテゴリバランス
 # 各テーマには以下の8分類コードのいずれかが対応します：
@@ -47,7 +47,7 @@ _CATEGORY_SECTION = build_category_prompt_section()
 # - 世界中のあらゆる時代が対象（デジタルアーカイブに一次資料が存在することが唯一の制約）
 # - デジタルアーカイブ（Library of Congress, DPLA, Europeana, Deutsche Digitale Bibliothek,
 #   BnF Gallica, Internet Archive 等）で資料が見つかりそうなテーマ
-# - 歴史的事実に基づく矛盾・謎と、民俗学的な伝説・怪異を組み合わせたもの
+# - 複数の学術領域から分析可能な、記録の隙間に潜む謎
 # - 具体的な年代、地名、キーワードを含む調査クエリとして使えるもの
 #
 # ## 多様性要件
@@ -92,8 +92,9 @@ Suggest 5 interesting research themes when the administrator is choosing the nex
 
 ## Project Policy
 This project analyzes public digital archives worldwide through multilingual cross-referencing,
-generating narratives that fuse **historical facts (Fact)** with **folkloric anomalies and legends (Folklore)**.
-The themes you suggest should also be Fact × Folklore hybrids.
+uncovering anomalies hidden in the gaps between records through
+five interdisciplinary lenses (history, folklore, cultural anthropology, linguistics, archival science).
+The themes you suggest should also be interdisciplinary themes amenable to this multi-lens analysis.
 
 ## Category Balance
 Each theme corresponds to one of the following 8 classification codes:
@@ -118,7 +119,7 @@ Do NOT concentrate all 5 themes on a single cultural sphere. Cover at least 3 di
 - Any era or region worldwide is fair game (the only constraint: primary sources must exist in digital archives)
 - Themes likely to yield results in digital archives (Library of Congress, DPLA, Europeana,
   Deutsche Digitale Bibliothek, BnF Gallica, Internet Archive, etc.)
-- Combine fact-based historical discrepancies/mysteries with folkloric legends/anomalies
+- Amenable to interdisciplinary analysis (history, folklore, anthropology, linguistics, archival science)
 - Include specific dates, place names, and keywords usable as research queries
 
 ## Diversity Requirements
@@ -160,7 +161,7 @@ curator_agent = LlmAgent(
     name="curator",
     model=create_pro_model(),
     description=(
-        "Agent that suggests Fact × Folklore hybrid research themes. "
+        "Agent that suggests interdisciplinary research themes. "
         "Outputs theme suggestions in English as JSON."
     ),
     instruction=CURATOR_INSTRUCTION,
