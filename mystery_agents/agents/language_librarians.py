@@ -178,6 +178,7 @@ LANGUAGE_CONFIGS = {
         "lang_code": "nl",
         "cultural_context": (
             "Search Dutch-language archives for the Dutch-speaking world:\n"
+            "- **KB/Delpher** for digitized Dutch historical newspapers (1618-1879, CC0)\n"
             "- Europeana for pan-European cultural heritage materials in Dutch\n"
             "- Internet Archive for digitized Dutch-language materials\n"
             "- Dutch national archives and Flemish/Belgian collections\n"
