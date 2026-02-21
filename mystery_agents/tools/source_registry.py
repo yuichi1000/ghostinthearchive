@@ -34,6 +34,7 @@ _SOURCE_MODULES = [
     "mystery_agents.tools.trove",
     "mystery_agents.tools.delpher",
     "mystery_agents.tools.ndl_search",
+    "mystery_agents.tools.wellcome_collection",
 ]
 
 
