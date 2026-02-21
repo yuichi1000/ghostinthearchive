@@ -204,3 +204,52 @@ class TestDelpherSource:
         assert result.documents[0].date == "1842-01-01"
         # "1756/08/20 00:00:00" → "1756-01-01"
         assert result.documents[1].date == "1756-01-01"
+
+
+class TestDelpherDateFilter:
+    """Delpher 年代フィルタのテスト。"""
+
+    @responses.activate
+    def test_date_filter_in_cql_query(self):
+        """日付パラメータが CQL dc.date 比較としてリクエストに含まれる。"""
+        responses.add(
+            responses.GET,
+            BASE_URL,
+            body=MOCK_EMPTY_RESPONSE,
+            content_type="application/xml",
+            status=200,
+        )
+
+        source = DelpherSource()
+        source.search(
+            keywords=["spook"],
+            date_start="1800",
+            date_end="1899",
+        )
+
+        request = responses.calls[0].request
+        from urllib.parse import unquote_plus
+        query_str = unquote_plus(request.url)
+        assert 'dc.date >= "1800"' in query_str
+        assert 'dc.date <= "1899"' in query_str
+
+    @responses.activate
+    def test_no_date_filter_when_dates_empty(self):
+        """date_start/date_end が空文字の場合、dc.date が含まれない。"""
+        responses.add(
+            responses.GET,
+            BASE_URL,
+            body=MOCK_EMPTY_RESPONSE,
+            content_type="application/xml",
+            status=200,
+        )
+
+        source = DelpherSource()
+        source.search(
+            keywords=["spook"],
+            date_start="",
+            date_end="",
+        )
+
+        request = responses.calls[0].request
+        assert "dc.date" not in request.url

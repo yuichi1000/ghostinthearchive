@@ -137,8 +137,13 @@ class DelpherSource(ArchiveSource):
         if not search_text:
             return ArchiveSearchResult(error="No keywords provided")
 
-        # CQL クエリ構築
-        query = search_text
+        # CQL クエリ構築（年代フィルタ: dc.date への範囲比較）
+        if date_start and date_end:
+            start_year = date_start[:4] if len(date_start) >= 4 else date_start
+            end_year = date_end[:4] if len(date_end) >= 4 else date_end
+            query = f'({search_text}) AND dc.date >= "{start_year}" AND dc.date <= "{end_year}"'
+        else:
+            query = search_text
 
         params = {
             "operation": "searchRetrieve",
