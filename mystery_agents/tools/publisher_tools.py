@@ -150,8 +150,11 @@ def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
 
         # Rename file to mystery_id-based name
         variant_suffix = ""
-        for label in ("_sm", "_md", "_lg", "_xl"):
+        is_thumbnail = False
+        for label in ("_thumb", "_sm", "_md", "_lg", "_xl"):
             if p.stem.endswith(label):
+                if label == "_thumb":
+                    is_thumbnail = True
                 variant_suffix = label
                 break
         new_filename = f"{mystery_id}{variant_suffix}{p.suffix}"
@@ -195,11 +198,15 @@ def _upload_images_internal(mystery_id: str, image_paths: list[str]) -> dict:
                 f"/o/{blob_name.replace('/', '%2F')}?alt=media"
             )
 
-        lbl = variant_suffix.lstrip("_") if variant_suffix else "original"
-        if lbl == "original":
-            images["hero"] = public_url
+        # サムネイルは images["thumbnail"] に、それ以外は hero/variants に格納
+        if is_thumbnail:
+            images["thumbnail"] = public_url
         else:
-            variants[lbl] = public_url
+            lbl = variant_suffix.lstrip("_") if variant_suffix else "original"
+            if lbl == "original":
+                images["hero"] = public_url
+            else:
+                variants[lbl] = public_url
 
     if variants:
         if "lg" in variants:
@@ -383,6 +390,10 @@ def publish_mystery(
                 for variant in image_source.get("variants", []):
                     if variant.get("filepath"):
                         image_paths.append(variant["filepath"])
+                # サムネイルも含める
+                thumb = image_source.get("thumbnail")
+                if thumb and isinstance(thumb, dict) and thumb.get("filepath"):
+                    image_paths.append(thumb["filepath"])
                 if image_paths:
                     images = _upload_images_internal(mystery_id, image_paths)
                     if images:
@@ -398,6 +409,10 @@ def publish_mystery(
                     for variant in visual_assets.get("variants", []):
                         if variant.get("filepath"):
                             image_paths.append(variant["filepath"])
+                    # サムネイルも含める
+                    thumb = visual_assets.get("thumbnail")
+                    if thumb and isinstance(thumb, dict) and thumb.get("filepath"):
+                        image_paths.append(thumb["filepath"])
 
                     if image_paths:
                         images = _upload_images_internal(mystery_id, image_paths)
@@ -514,8 +529,11 @@ def upload_images(mystery_id: str, image_paths: str) -> str:
 
             # Rename file to mystery_id-based name
             variant_suffix = ""
-            for label in ("_sm", "_md", "_lg", "_xl"):
+            is_thumbnail = False
+            for label in ("_thumb", "_sm", "_md", "_lg", "_xl"):
                 if p.stem.endswith(label):
+                    if label == "_thumb":
+                        is_thumbnail = True
                     variant_suffix = label
                     break
             new_filename = f"{mystery_id}{variant_suffix}{p.suffix}"
@@ -548,7 +566,7 @@ def upload_images(mystery_id: str, image_paths: str) -> str:
 
             uploaded.append({
                 "path": local_path,
-                "label": variant_suffix.lstrip("_") if variant_suffix else "original",
+                "label": "thumb" if is_thumbnail else (variant_suffix.lstrip("_") if variant_suffix else "original"),
                 "status": "success",
                 "storage_path": f"gs://{bucket.name}/{blob_name}",
                 "public_url": public_url,
@@ -561,7 +579,9 @@ def upload_images(mystery_id: str, image_paths: str) -> str:
             if entry["status"] != "success":
                 continue
             lbl = entry["label"]
-            if lbl == "original":
+            if lbl == "thumb":
+                images["thumbnail"] = entry["public_url"]
+            elif lbl == "original":
                 images["hero"] = entry["public_url"]
             else:
                 variants[lbl] = entry["public_url"]
