@@ -54,16 +54,18 @@ class DPLASource(ArchiveSource):
         if not search_text:
             return ArchiveSearchResult(error="No keywords provided")
 
-        start_year = date_start[:4] if len(date_start) >= 4 else date_start
-        end_year = date_end[:4] if len(date_end) >= 4 else date_end
-
         params = {
             "q": search_text,
             "api_key": api_key,
             "page_size": min(max_results, 100),
-            "sourceResource.date.after": start_year,
-            "sourceResource.date.before": end_year,
         }
+
+        # 空文字日付対応: 日付フィルタを条件付きに
+        if date_start and date_end:
+            start_year = date_start[:4] if len(date_start) >= 4 else date_start
+            end_year = date_end[:4] if len(date_end) >= 4 else date_end
+            params["sourceResource.date.after"] = start_year
+            params["sourceResource.date.before"] = end_year
 
         # 言語フィルタ
         if language and language in _DPLA_LANG_NAMES:

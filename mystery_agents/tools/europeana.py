@@ -63,14 +63,14 @@ class EuropeanaSource(ArchiveSource):
             "profile": "standard",
         }
 
-        # 日付フィルタ
-        qf_list: list[str] = [f"YEAR:[{date_start} TO {date_end}]"]
-
-        # 言語フィルタ
+        # 空文字日付対応: フィルタを条件付きに
+        qf_list: list[str] = []
+        if date_start and date_end:
+            qf_list.append(f"YEAR:[{date_start} TO {date_end}]")
         if language:
             qf_list.append(f"LANGUAGE:{language}")
-
-        params["qf"] = qf_list
+        if qf_list:
+            params["qf"] = qf_list
 
         headers = {
             "Accept": "application/json",

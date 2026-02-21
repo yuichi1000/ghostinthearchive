@@ -44,10 +44,13 @@ class NYPLSource(ArchiveSource):
         if not search_text:
             return ArchiveSearchResult(error="No keywords provided")
 
-        # 日付範囲をクエリに含める
-        start_year = date_start[:4] if len(date_start) >= 4 else date_start
-        end_year = date_end[:4] if len(date_end) >= 4 else date_end
-        search_text_with_date = f"{search_text} {start_year}-{end_year}"
+        # 空文字日付対応: 日付範囲をクエリに含めるのを条件付きに
+        if date_start and date_end:
+            start_year = date_start[:4] if len(date_start) >= 4 else date_start
+            end_year = date_end[:4] if len(date_end) >= 4 else date_end
+            search_text_with_date = f"{search_text} {start_year}-{end_year}"
+        else:
+            search_text_with_date = search_text
 
         params = {
             "q": search_text_with_date,

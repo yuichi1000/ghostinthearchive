@@ -19,7 +19,7 @@ from ..schemas.document import ArchiveDocument
 from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
 from .link_validator import ValidationSummary, validate_documents
-from .source_registry import get_all_sources, get_source
+from .source_registry import get_all_sources, get_source, resolve_newspaper_sources
 
 # 並列実行の最大ワーカー数
 _MAX_WORKERS = 6
@@ -30,34 +30,66 @@ _TOTAL_DOCS_CAP = 30
 
 def search_newspapers(
     keywords: str,
-    date_start: str = "1800",
+    date_start: str = "1500",
     date_end: str = "1899",
     states: Optional[str] = None,
     max_results: int = 20,
     min_results: int = 3,
+    language: Optional[str] = None,
     tool_context: Optional[ToolContext] = None,
 ) -> str:
-    """Search historical newspapers in Chronicling America with automatic fallback.
+    """Search historical newspapers with automatic routing to available sources.
 
-    Searches the Library of Congress Chronicling America database for
-    18th-19th century newspaper articles. Automatically expands keywords
-    to include both English and Spanish variants.
+    Routes to newspaper sources registered in the Source Registry based on
+    language. Currently supports Chronicling America (English). For unsupported
+    languages, returns an empty result (not an error).
 
-    If fewer than min_results documents are found, automatically applies
-    progressive fallback strategies: individual keyword search, geographic
-    expansion (all US states), and date range expansion (+/-10 years).
+    When a newspaper source is found, applies progressive fallback strategies:
+    individual keyword search, geographic expansion, and date range expansion.
 
     Args:
         keywords: Comma-separated list of search keywords related to historical mysteries
-        date_start: Start year (default: 1800)
+        date_start: Start year (default: 1500)
         date_end: End year (default: 1899)
         states: Comma-separated US states to search (default: East Coast states)
         max_results: Maximum number of results to return (default: 20)
         min_results: Minimum documents before stopping fallback (default: 3)
+        language: ISO 639-1 language code (default: "en")
 
     Returns:
         JSON string containing search results with documents matching the query
     """
+    # 言語のデフォルト
+    lang = language or "en"
+
+    # Registry から新聞ソースを解決
+    newspaper_sources = resolve_newspaper_sources(lang)
+    if not newspaper_sources:
+        # 該当言語の新聞ソースなし → 空結果を返す（エラーではない）
+        empty_result = {
+            "source": "none",
+            "keywords_used": [kw.strip() for kw in keywords.split(",") if kw.strip()],
+            "total_hits": 0,
+            "documents_returned": 0,
+            "documents": [],
+            "error": None,
+            "search_levels_used": [],
+            "link_validation": {
+                "total_checked": 0,
+                "reachable": 0,
+                "unreachable": 0,
+                "removed_count": 0,
+                "removed_urls": [],
+                "duration_ms": 0,
+            },
+        }
+        if tool_context is not None:
+            existing = tool_context.state.get("raw_search_results", [])
+            existing.append(empty_result)
+            tool_context.state["raw_search_results"] = existing
+        return json.dumps(empty_result, ensure_ascii=False, indent=2)
+
+    # --- Chronicling America フォールバックロジック ---
     # キーワードパース
     keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
@@ -138,7 +170,7 @@ def search_newspapers(
 
     # Level 4: 日付範囲拡大（±10年）
     if len(all_docs) < min_results:
-        expanded_start = str(max(1700, int(date_start) - 10))
+        expanded_start = str(max(1400, int(date_start) - 10))
         expanded_end = str(min(1920, int(date_end) + 10))
         if expanded_start != date_start or expanded_end != date_end:
             logger.info(
@@ -342,7 +374,7 @@ def _rank_documents(
 
 def search_archives(
     keywords: str,
-    date_start: str = "1800",
+    date_start: str = "1500",
     date_end: str = "1899",
     sources: Optional[str] = None,
     max_results: int = 10,
@@ -355,33 +387,22 @@ def search_archives(
     Deutsche Digitale Bibliothek, and Europeana using ThreadPoolExecutor.
     Results are ranked by keyword match count and capped at a total limit.
 
-    When no language filter is specified, automatically expands keywords to
-    include both English and Spanish variants. When a language is specified,
-    keywords are passed as-is and the language filter is applied to APIs that
-    support it.
-
     Args:
         keywords: Comma-separated search keywords
-        date_start: Start year (default: 1800)
+        date_start: Start year (default: 1500)
         date_end: End year (default: 1899)
         sources: Comma-separated source names to search (default: all US sources).
                  Options: loc, dpla, nypl, internet_archive, ddb, europeana
         max_results: Max results per source (default: 10)
         language: Optional ISO 639-1 language code (en, de, fr, es, nl, pt).
-                  When specified, applies language filter to supported APIs
-                  and skips bilingual expansion.
+                  When specified, applies language filter to supported APIs.
 
     Returns:
         JSON string with merged results from all sources.
     """
     keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
-    # 言語指定がある場合はバイリンガル展開をスキップ
-    if language:
-        keyword_groups = [keyword_list]
-    else:
-        expanded = expand_keywords_bilingual(keyword_list)
-        keyword_groups = [expanded["en"], expanded["es"]]
+    keyword_groups = [keyword_list]
 
     all_sources_map = get_all_sources()
 
@@ -536,8 +557,10 @@ def search_archives(
 def get_available_keywords() -> str:
     """Get the list of available bilingual keyword pairs.
 
-    Returns the predefined English-Spanish keyword pairs that can be
-    used for searching historical mysteries.
+    .. deprecated::
+        Bilingual keyword pairs are no longer used in the pipeline.
+        Each language Librarian generates keywords natively.
+        Retained for backward compatibility.
 
     Returns:
         JSON string containing keyword pairs

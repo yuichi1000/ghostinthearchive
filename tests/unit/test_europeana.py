@@ -188,6 +188,24 @@ class TestExtractLocation:
         assert _extract_location({}) == "Europe"
 
 
+class TestEmptyDates:
+    """空文字日付のテスト。"""
+
+    @responses.activate
+    def test_empty_dates_omits_date_filter(self):
+        """date_start/date_end が空文字の場合、YEAR フィルタが省略される。"""
+        mock_response = {"success": True, "totalResults": 0, "items": []}
+        responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
+
+        source = EuropeanaSource()
+        with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
+            source.search(keywords=["test"], date_start="", date_end="")
+
+        request = responses.calls[0].request
+        # YEAR フィルタが URL に含まれないことを確認
+        assert "YEAR" not in request.url
+
+
 class TestParseYear:
     """Tests for ArchiveSource.parse_year() (旧 _parse_year)。"""
 

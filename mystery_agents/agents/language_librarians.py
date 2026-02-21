@@ -47,7 +47,12 @@ def _resolve_sources_hint(lang_code: str) -> str:
 #    - `sources` パラメータで関連アーカイブを指定: {sources_hint}
 #    - `language` パラメータを "{lang_code}" に設定して言語フィルタリングを行う
 #    - 例: keywords="Bell Witch, Adams Tennessee, poltergeist, haunting"
-# 3. {newspaper_instruction}
+#    - テーマが特定の時代を示唆する場合、`date_start` / `date_end` で年パラメータを設定する
+#      （例: date_start="1700", date_end="1800"）
+#    - デフォルト範囲は 1500-1899。テーマの歴史的文脈に応じて調整する
+# 3. 歴史的な新聞記事を検索するには **search_newspapers** を呼び出す
+#    - ツールは対象言語で利用可能な新聞ソースに自動ルーティングする
+#    - 対象言語の新聞ソースが存在しない場合、空の結果を返す（エラーではない）
 # 4. 各ツールは1回ずつ呼び出す。リトライ不要
 # 5. 資料が見つからなかった場合は NO_DOCUMENTS_FOUND を出力
 # === End 日本語訳 ===
@@ -77,6 +82,9 @@ Search digital archives for {language_name}-language primary sources related to 
    - Use the `sources` parameter to target relevant archives: {sources_hint}
    - Use the `language` parameter set to "{lang_code}" for language filtering
    - Example: keywords="Bell Witch, Adams Tennessee, poltergeist, haunting"
+   - If the theme suggests a specific time period, set `date_start` and `date_end` year parameters
+     (e.g., date_start="1700", date_end="1800")
+   - Default range is 1500-1899; adjust based on the historical context of the theme
 3. {newspaper_instruction}
 
 ## Output Format
@@ -102,6 +110,13 @@ Search theme: [theme]
 ```
 """
 
+# 全言語共通の新聞検索指示
+_NEWSPAPER_INSTRUCTION = (
+    "Call **search_newspapers** for historical newspaper articles.\n"
+    "   - The tool automatically routes to newspaper sources available for your language.\n"
+    "   - If no newspaper sources exist for your language, it returns an empty result (not an error)."
+)
+
 # 言語別設定
 LANGUAGE_CONFIGS = {
     "en": {
@@ -115,11 +130,7 @@ LANGUAGE_CONFIGS = {
             "- Europeana for English-language materials in European collections\n"
             "- English-speaking regions globally: British Isles, North America, Australia, India, etc."
         ),
-        "newspaper_instruction": (
-            "Also call **search_newspapers** for Chronicling America newspaper articles.\n"
-            "   - The tool handles bilingual expansion (English/Spanish) automatically"
-        ),
-        "has_newspaper_tool": True,
+        "newspaper_instruction": _NEWSPAPER_INSTRUCTION,
     },
     "de": {
         "language_name": "German",
@@ -132,8 +143,7 @@ LANGUAGE_CONFIGS = {
             "- German, Austrian, and Swiss historical records and archives\n"
             "- Church records, university archives, Germanic folklore collections"
         ),
-        "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
-        "has_newspaper_tool": False,
+        "newspaper_instruction": _NEWSPAPER_INSTRUCTION,
     },
     "es": {
         "language_name": "Spanish",
@@ -147,8 +157,7 @@ LANGUAGE_CONFIGS = {
             "- Europeana for Iberian cultural heritage materials\n"
             "- Mission records, colonial correspondence, Inquisition records"
         ),
-        "newspaper_instruction": "Do NOT call search_newspapers (the EN Librarian already handles bilingual newspaper search).",
-        "has_newspaper_tool": False,
+        "newspaper_instruction": _NEWSPAPER_INSTRUCTION,
     },
     "fr": {
         "language_name": "French",
@@ -162,8 +171,7 @@ LANGUAGE_CONFIGS = {
             "- Belgian and Swiss French-language archives\n"
             "- Revolutionary and Napoleonic era documents, Enlightenment texts"
         ),
-        "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
-        "has_newspaper_tool": False,
+        "newspaper_instruction": _NEWSPAPER_INSTRUCTION,
     },
     "nl": {
         "language_name": "Dutch",
@@ -177,8 +185,7 @@ LANGUAGE_CONFIGS = {
             "- Colonial records (Indonesia, Suriname, Caribbean, South Africa)\n"
             "- Maritime trade networks, cartography, Dutch Reformed Church records"
         ),
-        "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
-        "has_newspaper_tool": False,
+        "newspaper_instruction": _NEWSPAPER_INSTRUCTION,
     },
     "pt": {
         "language_name": "Portuguese",
@@ -192,8 +199,7 @@ LANGUAGE_CONFIGS = {
             "- Atlantic trade networks, colonial records (Brazil, Africa, Asia)\n"
             "- Lusophone Africa and Macau historical records"
         ),
-        "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
-        "has_newspaper_tool": False,
+        "newspaper_instruction": _NEWSPAPER_INSTRUCTION,
     },
 }
 
@@ -206,10 +212,7 @@ def create_librarian(lang_code: str) -> LlmAgent:
     sources_hint = _resolve_sources_hint(lang_code)
     instruction = _BASE_INSTRUCTION.format(sources_hint=sources_hint, **config)
 
-    if config.get("has_newspaper_tool"):
-        tools = [search_newspapers, search_archives, get_available_keywords]
-    else:
-        tools = [search_archives]
+    tools = [search_newspapers, search_archives, get_available_keywords]
 
     return LlmAgent(
         name=f"librarian_{lang_code}",
