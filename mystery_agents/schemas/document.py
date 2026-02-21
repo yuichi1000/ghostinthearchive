@@ -30,6 +30,7 @@ class SourceType(str, Enum):
     DDB = "ddb"
     EUROPEANA = "europeana"
     TROVE = "trove"
+    DELPHER = "delpher"
 
 
 class ArchiveDocument(BaseModel):
