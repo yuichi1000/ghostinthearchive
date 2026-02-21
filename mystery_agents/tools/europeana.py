@@ -1,27 +1,21 @@
-"""Europeana Search API tool.
+"""Europeana Search API ソース。
 
-Searches the Europeana aggregated collections from 6,000+ European cultural
-heritage institutions (museums, libraries, archives). Uses wskey query
-parameter authentication.
+Europeana の集約コレクション（6,000+ の欧州文化遺産機関）を検索する。
+wskey クエリパラメータ認証を使用。
 """
 
-import json
 import os
 import re
-import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import requests
 
-from shared.http_retry import create_retry_session
-
-from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
+from ..schemas.document import ArchiveDocument, SourceLanguage
+from .archive_source_base import ArchiveSearchResult, ArchiveSource
 from .search_utils import build_search_query
+from .source_registry import register_source
 
 BASE_URL = "https://api.europeana.eu/record/v2/search.json"
-_session = create_retry_session()
-MIN_REQUEST_DELAY = 1.0
-_last_request_time = 0.0
 
 # Europeana の language フィールドから SourceLanguage へのマッピング
 _LANG_MAP: dict[str, SourceLanguage] = {
@@ -34,113 +28,56 @@ _LANG_MAP: dict[str, SourceLanguage] = {
 }
 
 
-def _rate_limit() -> None:
-    global _last_request_time
-    now = time.time()
-    elapsed = now - _last_request_time
-    if elapsed < MIN_REQUEST_DELAY:
-        time.sleep(MIN_REQUEST_DELAY - elapsed)
-    _last_request_time = time.time()
+class EuropeanaSource(ArchiveSource):
+    """Europeana ソース。"""
 
+    source_key = "europeana"
+    source_name = "Europeana"
+    source_type = "europeana"
+    min_request_delay = 1.0
+    supported_languages = {"de", "es", "fr", "nl", "pt"}
+    supports_language_filter = True
+    is_newspaper_source = False
+    expected_domains = ["europeana.eu"]
+    env_var_key = "EUROPEANA_API_KEY"
 
-def _detect_language(item: dict) -> SourceLanguage:
-    """アイテムの language フィールドから SourceLanguage を検出する。"""
-    languages = item.get("language", [])
-    if isinstance(languages, list):
-        for lang in languages:
-            if lang and lang.lower() in _LANG_MAP:
-                return _LANG_MAP[lang.lower()]
-    elif isinstance(languages, str) and languages.lower() in _LANG_MAP:
-        return _LANG_MAP[languages.lower()]
-    # デフォルトは英語
-    return SourceLanguage.EN
+    def _search_impl(
+        self,
+        keywords: list[str],
+        date_start: str,
+        date_end: str,
+        max_results: int,
+        language: str | None,
+    ) -> ArchiveSearchResult:
+        api_key = os.environ.get("EUROPEANA_API_KEY", "")
 
+        search_text = build_search_query(keywords)
+        if not search_text:
+            return ArchiveSearchResult(error="No keywords provided")
 
-def _extract_location(item: dict) -> str:
-    """アイテムから場所情報を抽出する。"""
-    # edmPlaceLabelLangAware を優先
-    place_labels = item.get("edmPlaceLabelLangAware", {})
-    if isinstance(place_labels, dict):
-        # 英語ラベルを優先、なければ最初の値を使用
-        for key in ("en", "def"):
-            if key in place_labels and place_labels[key]:
-                labels = place_labels[key]
-                if isinstance(labels, list) and labels:
-                    return str(labels[0])[:200]
+        params: dict[str, Any] = {
+            "wskey": api_key,
+            "query": search_text,
+            "rows": min(max_results, 100),
+            "start": 1,
+            "profile": "standard",
+        }
 
-    # country フィールドにフォールバック
-    country = item.get("country", [])
-    if isinstance(country, list) and country:
-        return str(country[0])[:200]
-    elif isinstance(country, str) and country:
-        return country[:200]
+        # 日付フィルタ
+        qf_list: list[str] = [f"YEAR:[{date_start} TO {date_end}]"]
 
-    return "Europe"
+        # 言語フィルタ
+        if language:
+            qf_list.append(f"LANGUAGE:{language}")
 
+        params["qf"] = qf_list
 
-def _parse_year(date_str: str) -> Optional[str]:
-    """年文字列を ISO 日付形式に変換する。"""
-    if not date_str:
-        return None
-    year_match = re.search(r"\b(1[3-9]\d{2}|20\d{2})\b", date_str)
-    if year_match:
-        return f"{year_match.group(1)}-01-01"
-    return date_str[:10] if len(date_str) > 10 else date_str
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": "GhostInTheArchive/1.0",
+        }
 
-
-def search_europeana(
-    keywords: List[str],
-    date_start: str = "1800",
-    date_end: str = "1899",
-    max_results: int = 20,
-    language: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Search Europeana for European cultural heritage materials.
-
-    Args:
-        keywords: List of search keywords
-        date_start: Start year
-        date_end: End year
-        max_results: Maximum results to return
-        language: Optional ISO 639-1 language code for filtering
-
-    Returns:
-        Dict with documents, total_hits, error keys.
-    """
-    api_key = os.environ.get("EUROPEANA_API_KEY", "")
-    if not api_key:
-        return {"documents": [], "total_hits": 0, "error": "EUROPEANA_API_KEY not set"}
-
-    search_text = build_search_query(keywords)
-    if not search_text:
-        return {"documents": [], "total_hits": 0, "error": "No keywords provided"}
-
-    params: dict[str, Any] = {
-        "wskey": api_key,
-        "query": search_text,
-        "rows": min(max_results, 100),
-        "start": 1,
-        "profile": "standard",
-    }
-
-    # 日付フィルタ
-    qf_list: list[str] = [f"YEAR:[{date_start} TO {date_end}]"]
-
-    # 言語フィルタ
-    if language:
-        qf_list.append(f"LANGUAGE:{language}")
-
-    params["qf"] = qf_list
-
-    headers = {
-        "Accept": "application/json",
-        "User-Agent": "GhostInTheArchive/1.0",
-    }
-
-    _rate_limit()
-
-    try:
-        response = _session.get(
+        response = self._session.get(
             BASE_URL,
             params=params,
             headers=headers,
@@ -197,19 +134,52 @@ def search_europeana(
 
             doc = ArchiveDocument(
                 title=str(title)[:500],
-                date=_parse_year(str(date_str)),
+                date=self.parse_year(str(date_str), min_century=13),
                 source_url=url,
                 summary=str(description)[:500] if description else str(title)[:500],
                 language=lang,
                 location=str(location)[:200],
-                source_type=SourceType.EUROPEANA,
+                source_type=self.source_type,
                 raw_text=str(description)[:5000] if description else None,
                 keywords_matched=matched,
             )
             documents.append(doc)
 
         total_hits = data.get("totalResults", len(documents))
-        return {"documents": documents, "total_hits": total_hits, "error": None}
+        return ArchiveSearchResult(documents=documents, total_hits=total_hits)
 
-    except (requests.RequestException, json.JSONDecodeError) as e:
-        return {"documents": [], "total_hits": 0, "error": f"Europeana API error: {e}"}
+
+def _detect_language(item: dict) -> SourceLanguage:
+    """アイテムの language フィールドから SourceLanguage を検出する。"""
+    languages = item.get("language", [])
+    if isinstance(languages, list):
+        for lang in languages:
+            if lang and lang.lower() in _LANG_MAP:
+                return _LANG_MAP[lang.lower()]
+    elif isinstance(languages, str) and languages.lower() in _LANG_MAP:
+        return _LANG_MAP[languages.lower()]
+    return SourceLanguage.EN
+
+
+def _extract_location(item: dict) -> str:
+    """アイテムから場所情報を抽出する。"""
+    place_labels = item.get("edmPlaceLabelLangAware", {})
+    if isinstance(place_labels, dict):
+        for key in ("en", "def"):
+            if key in place_labels and place_labels[key]:
+                labels = place_labels[key]
+                if isinstance(labels, list) and labels:
+                    return str(labels[0])[:200]
+
+    country = item.get("country", [])
+    if isinstance(country, list) and country:
+        return str(country[0])[:200]
+    elif isinstance(country, str) and country:
+        return country[:200]
+
+    return "Europe"
+
+
+# レジストリに自動登録
+_instance = EuropeanaSource()
+register_source(_instance)

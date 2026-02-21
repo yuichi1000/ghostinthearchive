@@ -1,82 +1,66 @@
-"""Deutsche Digitale Bibliothek (DDB) REST API tool.
+"""Deutsche Digitale Bibliothek (DDB) REST API ソース。
 
-Searches the DDB aggregated collections from German cultural heritage
-institutions. Uses OAuth consumer key authentication.
+DDB の集約コレクション（ドイツの文化遺産機関）を検索する。
+OAuth consumer key 認証を使用。
 """
 
-import json
 import os
-import time
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 import requests
 
-from shared.http_retry import create_retry_session
-
-from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
+from ..schemas.document import ArchiveDocument, SourceLanguage
+from .archive_source_base import ArchiveSearchResult, ArchiveSource
 from .search_utils import build_search_query
+from .source_registry import register_source
 
 BASE_URL = "https://api.deutsche-digitale-bibliothek.de/search"
-_session = create_retry_session()
 ITEM_URL = "https://www.deutsche-digitale-bibliothek.de/item"
-MIN_REQUEST_DELAY = 1.0
-_last_request_time = 0.0
 
 
-def _rate_limit() -> None:
-    global _last_request_time
-    now = time.time()
-    elapsed = now - _last_request_time
-    if elapsed < MIN_REQUEST_DELAY:
-        time.sleep(MIN_REQUEST_DELAY - elapsed)
-    _last_request_time = time.time()
+class DDBSource(ArchiveSource):
+    """Deutsche Digitale Bibliothek ソース。"""
 
+    source_key = "ddb"
+    source_name = "Deutsche Digitale Bibliothek"
+    source_type = "ddb"
+    min_request_delay = 1.0
+    supported_languages = {"de"}
+    supports_language_filter = False
+    is_newspaper_source = False
+    expected_domains = ["deutsche-digitale-bibliothek.de"]
+    env_var_key = "DDB_API_KEY"
 
-def search_ddb(
-    keywords: List[str],
-    date_start: str = "1800",
-    date_end: str = "1899",
-    max_results: int = 20,
-) -> Dict[str, Any]:
-    """Search Deutsche Digitale Bibliothek for historical materials.
+    def _search_impl(
+        self,
+        keywords: list[str],
+        date_start: str,
+        date_end: str,
+        max_results: int,
+        language: str | None,
+    ) -> ArchiveSearchResult:
+        api_key = os.environ.get("DDB_API_KEY", "")
 
-    Args:
-        keywords: List of search keywords
-        date_start: Start year
-        date_end: End year
-        max_results: Maximum results to return
+        search_text = build_search_query(keywords)
+        if not search_text:
+            return ArchiveSearchResult(error="No keywords provided")
 
-    Returns:
-        Dict with documents, total_hits, error keys.
-    """
-    api_key = os.environ.get("DDB_API_KEY", "")
-    if not api_key:
-        return {"documents": [], "total_hits": 0, "error": "DDB_API_KEY not set"}
+        # DDB は Lucene クエリ構文をサポート
+        query = f"({search_text})"
 
-    search_text = build_search_query(keywords)
-    if not search_text:
-        return {"documents": [], "total_hits": 0, "error": "No keywords provided"}
+        params = {
+            "query": query,
+            "rows": min(max_results, 100),
+            "offset": 0,
+        }
 
-    # DDB は Lucene クエリ構文をサポート
-    # 日付フィルタは temporal.begin_time / temporal.end_time ファセットで絞り込み
-    query = f"({search_text})"
+        headers = {
+            "Authorization": f'OAuth oauth_consumer_key="{api_key}"',
+            "Accept": "application/json",
+            "User-Agent": "GhostInTheArchive/1.0",
+        }
 
-    params = {
-        "query": query,
-        "rows": min(max_results, 100),
-        "offset": 0,
-    }
-
-    headers = {
-        "Authorization": f'OAuth oauth_consumer_key="{api_key}"',
-        "Accept": "application/json",
-        "User-Agent": "GhostInTheArchive/1.0",
-    }
-
-    _rate_limit()
-
-    try:
-        response = _session.get(
+        response = self._session.get(
             BASE_URL,
             params=params,
             headers=headers,
@@ -114,9 +98,6 @@ def search_ddb(
             elif isinstance(temporal, str):
                 date_str = temporal
 
-            # DDB は基本的にドイツ語資料
-            lang = SourceLanguage.DE
-
             # 場所の取得
             location = "Germany"
             place = item.get("place", item.get("spatial", ""))
@@ -130,29 +111,21 @@ def search_ddb(
 
             doc = ArchiveDocument(
                 title=str(title)[:500],
-                date=_parse_year(str(date_str)),
+                date=self.parse_year(str(date_str), min_century=13),
                 source_url=url,
                 summary=str(description)[:500] if description else str(title)[:500],
-                language=lang,
+                language=SourceLanguage.DE,
                 location=str(location)[:200],
-                source_type=SourceType.DDB,
+                source_type=self.source_type,
                 raw_text=str(description)[:5000] if description else None,
                 keywords_matched=matched,
             )
             documents.append(doc)
 
         total_hits = data.get("numberOfResults", data.get("numFound", len(documents)))
-        return {"documents": documents, "total_hits": total_hits, "error": None}
-
-    except (requests.RequestException, json.JSONDecodeError) as e:
-        return {"documents": [], "total_hits": 0, "error": f"DDB API error: {e}"}
+        return ArchiveSearchResult(documents=documents, total_hits=total_hits)
 
 
-def _parse_year(date_str: str) -> Optional[str]:
-    if not date_str:
-        return None
-    import re
-    year_match = re.search(r"\b(1[3-9]\d{2}|20\d{2})\b", date_str)
-    if year_match:
-        return f"{year_match.group(1)}-01-01"
-    return date_str[:10] if len(date_str) > 10 else date_str
+# レジストリに自動登録
+_instance = DDBSource()
+register_source(_instance)
