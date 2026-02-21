@@ -43,6 +43,17 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # 3. 深層 — 民俗学的文脈との交差
 # 4. 結び — 解明されない余韻
 #
+# ## フォーマット：アーカイブ証拠と考察の分離
+# Markdown の引用記法（`>`）を以下に使用する：
+# - アーカイブ資料からの直接引用（新聞、公式記録、乗客名簿、航海日誌）
+# - 一次資料から抽出した事実の記述
+# - 民俗的な口承伝統、地方伝説、目撃証言
+#
+# 通常の段落（`>` なし）を以下に使用する：
+# - あなたの分析、解釈、推測
+# - 証拠をつなぐナラティブの橋渡し
+# - 証拠から生じる疑問
+#
 # ## クリエイティブガイドライン
 # - トーン: 学術的信頼性を維持しつつ、怪異的な情緒を醸し出す
 # - 言語: 英語
@@ -119,6 +130,27 @@ Bring to light the process by which facts became legends, or the historical trut
 ### 4. Conclusion — Lingering Without Resolution
 End without fully resolving the mystery, suggesting that "something still sleeps in the archive."
 Leave readers with a lingering chill.
+
+## Formatting: Separating Archive Evidence from Analysis
+
+Use Markdown blockquotes (`>`) for:
+- Direct quotes from archive sources (newspapers, official records, manifests, logs)
+- Factual descriptions extracted from primary sources
+- Folkloric oral traditions, local legends, and eyewitness accounts
+
+Use regular paragraphs (no `>`) for:
+- Your analysis, interpretation, and speculation
+- Narrative bridges connecting pieces of evidence
+- Questions raised by the evidence
+
+Example:
+> The Boston Daily Advertiser reported on March 15, 1842: "The vessel was last seen departing Boston Light at approximately 3:00 PM."
+
+> The ship's manifest, preserved in the National Archives, lists 23 crew members and 4 passengers — yet the harbor master's log records only 19 souls aboard.
+
+This four-person discrepancy raises uncomfortable questions. If the manifest was filed before departure, who were these phantom passengers?
+
+> Local fishermen in Gloucester have long spoken of "the crying ship" — a vessel heard but never seen on foggy March nights.
 
 ## Output Format
 
