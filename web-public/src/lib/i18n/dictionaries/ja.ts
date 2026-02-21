@@ -91,6 +91,14 @@ const dict: Dictionary = {
     storyAngles: "物語の視点",
     classificationNotice:
       "このケースファイルはAIによるアーカイブ記録の分析です。すべてのソースを独自に検証してください。",
+    breadcrumbHome: "ホーム",
+    tableOfContents: "目次",
+    tocNarrative: "本文",
+    tocDiscrepancy: "矛盾の発見",
+    tocEvidence: "証拠資料",
+    tocHypothesis: "仮説",
+    tocHistoricalContext: "歴史的背景",
+    relatedArticles: "関連ケースファイル",
   },
   evidence: {
     source: "出典",

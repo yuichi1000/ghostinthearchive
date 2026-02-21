@@ -43,7 +43,7 @@ export function NarrativeSection({ narrativeContent, summary, lang = "en" }: Nar
     }
 
     return (
-      <section className="prose prose-lg prose-invert max-w-none prose-headings:font-serif prose-headings:text-parchment prose-headings:mt-12 prose-headings:mb-4 prose-p:text-foreground/90 prose-p:leading-loose prose-p:mb-6 prose-a:text-gold prose-strong:text-parchment prose-hr:border-border">
+      <section id="section-narrative" className="scroll-mt-24 prose prose-lg prose-invert max-w-none prose-headings:font-serif prose-headings:text-parchment prose-headings:mt-12 prose-headings:mb-4 prose-p:text-foreground/90 prose-p:leading-loose prose-p:mb-6 prose-a:text-gold prose-strong:text-parchment prose-hr:border-border">
         <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
           {stripLeadingH1(narrativeContent).replace(/\*\*(.+?)\*\*/g, ' **$1** ')}
         </Markdown>
@@ -52,7 +52,7 @@ export function NarrativeSection({ narrativeContent, summary, lang = "en" }: Nar
   }
 
   return (
-    <section>
+    <section id="section-narrative" className="scroll-mt-24">
       <p className="text-lg text-foreground/90 leading-relaxed">
         {summary}
       </p>

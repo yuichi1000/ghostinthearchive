@@ -92,6 +92,14 @@ const dict: Dictionary = {
     storyAngles: "Ângulos narrativos",
     classificationNotice:
       "Este dossiê representa uma análise gerada por IA de registros de arquivo. Todas as fontes devem ser verificadas de forma independente.",
+    breadcrumbHome: "Início",
+    tableOfContents: "Índice",
+    tocNarrative: "Narrativa",
+    tocDiscrepancy: "Discrepância",
+    tocEvidence: "Evidência",
+    tocHypothesis: "Hipótese",
+    tocHistoricalContext: "Contexto histórico",
+    relatedArticles: "Dossiês relacionados",
   },
   evidence: {
     source: "Fonte",

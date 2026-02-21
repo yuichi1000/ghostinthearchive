@@ -20,7 +20,7 @@ export function HypothesisSection({
   const altLabel = labels?.alternativeHypotheses ?? "Alternative Hypotheses:"
 
   return (
-    <section>
+    <section id="section-hypothesis" className="scroll-mt-24">
       <div className="flex items-center gap-3 mb-4">
         <Lightbulb className="w-5 h-5 text-gold" />
         <h2 className="font-serif text-xl text-parchment">{hypothesisLabel}</h2>

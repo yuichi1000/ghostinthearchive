@@ -92,6 +92,14 @@ const dict: Dictionary = {
     storyAngles: "Verhaalperspectieven",
     classificationNotice:
       "Dit dossier betreft een door AI gegenereerde analyse van archiefstukken. Alle bronnen dienen onafhankelijk te worden geverifieerd.",
+    breadcrumbHome: "Home",
+    tableOfContents: "Inhoudsopgave",
+    tocNarrative: "Verhaal",
+    tocDiscrepancy: "Discrepantie",
+    tocEvidence: "Bewijs",
+    tocHypothesis: "Hypothese",
+    tocHistoricalContext: "Historische context",
+    relatedArticles: "Gerelateerde dossiers",
   },
   evidence: {
     source: "Bron",

@@ -91,6 +91,14 @@ const dict: Dictionary = {
     storyAngles: "Story Angles",
     classificationNotice:
       "This case file represents AI-generated analysis of archival records. All sources should be independently verified.",
+    breadcrumbHome: "Home",
+    tableOfContents: "Table of Contents",
+    tocNarrative: "Narrative",
+    tocDiscrepancy: "Discrepancy",
+    tocEvidence: "Evidence",
+    tocHypothesis: "Hypothesis",
+    tocHistoricalContext: "Historical Context",
+    relatedArticles: "Related Case Files",
   },
   evidence: {
     source: "Source",

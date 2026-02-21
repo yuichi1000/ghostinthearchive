@@ -10,7 +10,7 @@ export function DiscrepancySection({
   label = "Discovered Discrepancy",
 }: DiscrepancySectionProps) {
   return (
-    <section>
+    <section id="section-discrepancy" className="scroll-mt-24">
       <div className="flex items-center gap-3 mb-4">
         <AlertTriangle className="w-5 h-5 text-blood-red" />
         <h2 className="font-serif text-xl text-parchment">{label}</h2>
