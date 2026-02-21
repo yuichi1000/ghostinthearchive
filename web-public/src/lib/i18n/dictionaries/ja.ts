@@ -86,6 +86,17 @@ const dict: Dictionary = {
     view: "閲覧",
     originalText: "原文",
   },
+  classification: {
+    HIS: "歴史",
+    FLK: "民俗",
+    ANT: "人類学",
+    OCC: "怪奇",
+    URB: "都市伝説",
+    CRM: "未解決事件",
+    REL: "信仰・禁忌",
+    LOC: "地霊・場所",
+    moreLocations: "他{count}件",
+  },
   footer: {
     description:
       "世界の公開デジタルアーカイブの多言語横断分析——記録と言語と学問の隙間に潜むGhostを発掘する。",

@@ -87,6 +87,17 @@ const dict: Dictionary = {
     view: "Ansehen",
     originalText: "Originaltext",
   },
+  classification: {
+    HIS: "Geschichte",
+    FLK: "Volkskunde",
+    ANT: "Anthropologie",
+    OCC: "Okkultismus",
+    URB: "Urbane Legende",
+    CRM: "Kriminalfall",
+    REL: "Religion",
+    LOC: "Genius Loci",
+    moreLocations: "+{count} weitere",
+  },
   footer: {
     description:
       "Mehrsprachige Kreuzanalyse der öffentlichen digitalen Archive der Welt — die Geister aufspüren, die sich in den Lücken zwischen Aufzeichnungen, Sprachen und Disziplinen verbergen.",

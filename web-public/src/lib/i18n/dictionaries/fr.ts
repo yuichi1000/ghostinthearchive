@@ -87,6 +87,17 @@ const dict: Dictionary = {
     view: "Voir",
     originalText: "Texte original",
   },
+  classification: {
+    HIS: "Histoire",
+    FLK: "Folklore",
+    ANT: "Anthropologie",
+    OCC: "Occultisme",
+    URB: "Légende urbaine",
+    CRM: "Crime",
+    REL: "Religion",
+    LOC: "Genius Loci",
+    moreLocations: "+{count} autres",
+  },
   footer: {
     description:
       "Analyse croisée multilingue des archives numériques publiques du monde — exhumant les Fantômes cachés dans les interstices entre documents, langues et disciplines.",
