@@ -60,6 +60,11 @@ def save_language_selection(
     # 討論ホワイトボードを初期化（LoopAgent の累積書き込み用）
     tool_context.state["debate_whiteboard"] = ""
 
+    # structured_report を空 dict で初期化
+    # Illustrator / Translator の instruction が {structured_report} を参照するため、
+    # Armchair Polymath がツールを呼ばなかった場合に KeyError を防ぐ
+    tool_context.state["structured_report"] = {}
+
     # 未選択言語のセッション変数にデフォルト値を設定
     # Scholar の instruction が全言語の {scholar_analysis_*} を参照するため、
     # 未設定だと ADK の template 展開で KeyError になる

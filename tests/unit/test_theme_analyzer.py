@@ -106,6 +106,20 @@ class TestSaveLanguageSelection:
 
         assert ctx.state["debate_whiteboard"] == ""
 
+    def test_structured_report_initialized(self):
+        """structured_report が空 dict で初期化される。"""
+        ctx = self._make_tool_context()
+        save_language_selection('["en", "de"]', ctx)
+
+        assert ctx.state["structured_report"] == {}
+
+    def test_structured_report_not_initialized_on_fallback(self):
+        """フォールバック時には structured_report は初期化されない（早期リターン）。"""
+        ctx = self._make_tool_context()
+        save_language_selection("not valid json", ctx)
+
+        assert "structured_report" not in ctx.state
+
     def test_debate_whiteboard_initialized_on_fallback(self):
         """フォールバック時にも debate_whiteboard が初期化されない（フォールバックは早期リターン）。"""
         ctx = self._make_tool_context()
