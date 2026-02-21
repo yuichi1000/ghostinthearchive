@@ -31,6 +31,7 @@ from ..tools.scholar_tools import save_structured_report
 # - {scholar_analysis_fr}: フランス語圏の分析（存在する場合）
 # - {scholar_analysis_nl}: オランダ語圏の分析（存在する場合）
 # - {scholar_analysis_pt}: ポルトガル語圏の分析（存在する場合）
+# - {scholar_analysis_ja}: 日本語圏の分析（存在する場合）
 #
 # ## 入力（討論ホワイトボード）
 # - {debate_whiteboard}: 全ラウンドの討論記録（空の場合は討論なし）
@@ -80,6 +81,7 @@ Read the following Scholar analysis results from session state (some may be abse
 - {scholar_analysis_fr}: French cultural perspective analysis (if available)
 - {scholar_analysis_nl}: Dutch cultural perspective analysis (if available)
 - {scholar_analysis_pt}: Portuguese cultural perspective analysis (if available)
+- {scholar_analysis_ja}: Japanese cultural perspective analysis (if available)
 
 ## Input: Debate Whiteboard
 - {debate_whiteboard}: Full record of scholarly debate across all rounds
@@ -185,7 +187,7 @@ After completing your analysis, you MUST call `save_structured_report` with a JS
   "discrepancy_type": "date_mismatch|person_missing|event_outcome|location_conflict|narrative_gap|name_variant",
   "evidence_a": {{
     "source_type": "newspaper/archive/book",
-    "source_language": "en/de/es/fr/nl/pt",
+    "source_language": "en/de/es/fr/nl/pt/ja",
     "source_title": "Source name",
     "source_date": "YYYY-MM-DD",
     "source_url": "URL",
@@ -194,7 +196,7 @@ After completing your analysis, you MUST call `save_structured_report` with a JS
   }},
   "evidence_b": {{
     "source_type": "newspaper/archive/book",
-    "source_language": "en/de/es/fr/nl/pt",
+    "source_language": "en/de/es/fr/nl/pt/ja",
     "source_title": "Contrasting source name",
     "source_date": "YYYY-MM-DD",
     "source_url": "URL",
@@ -204,7 +206,7 @@ After completing your analysis, you MUST call `save_structured_report` with a JS
   "additional_evidence": [
     {{
       "source_type": "newspaper/archive/book",
-      "source_language": "en/de/es/fr/nl/pt",
+      "source_language": "en/de/es/fr/nl/pt/ja",
       "source_title": "Additional source name",
       "source_date": "YYYY-MM-DD",
       "source_url": "URL",

@@ -118,6 +118,7 @@ Structure your analysis as a focused report:
 # - {{scholar_analysis_fr}}: フランス語圏の分析（存在する場合）
 # - {{scholar_analysis_nl}}: オランダ語圏の分析（存在する場合）
 # - {{scholar_analysis_pt}}: ポルトガル語圏の分析（存在する場合）
+# - {{scholar_analysis_ja}}: 日本語圏の分析（存在する場合）
 # - {{debate_whiteboard}}: これまでの討論記録
 #
 # ## 討論の目的
@@ -154,6 +155,7 @@ Read all available Scholar analysis results from session state:
 - {{scholar_analysis_fr}}: French cultural perspective analysis (if available)
 - {{scholar_analysis_nl}}: Dutch cultural perspective analysis (if available)
 - {{scholar_analysis_pt}}: Portuguese cultural perspective analysis (if available)
+- {{scholar_analysis_ja}}: Japanese cultural perspective analysis (if available)
 
 Focus especially on analyses from perspectives OTHER than {language_name}.
 
@@ -278,6 +280,19 @@ SCHOLAR_CONFIGS = {
             "- Portuguese influence on global maritime terminology and navigation records"
         ),
     },
+    "ja": {
+        "language_name": "Japanese",
+        "lang_code": "ja",
+        "cultural_perspective": (
+            "You bring the perspective of Japanese historical and cultural scholarship:\n"
+            "- Kokugaku (国学) and Kangaku (漢学) intellectual traditions\n"
+            "- Domain feudal records (藩政記録) and temple/shrine registers (寺社台帳)\n"
+            "- Kaidan research (怪談研究) from Edo period to modern folkloristics\n"
+            "- Buddhist and Shinto cosmological frameworks and their influence on record-keeping\n"
+            "- Meiji modernization and the systematic rewriting of pre-modern narratives\n"
+            "- Japanese ethnographic traditions (柳田国男, 折口信夫) and their methodologies"
+        ),
+    },
 }
 
 
@@ -285,7 +300,7 @@ def create_scholar(lang_code: str, mode: str = "analysis") -> LlmAgent:
     """指定された言語の Scholar エージェントを生成する。
 
     Args:
-        lang_code: 言語コード（en, de, es, fr, nl, pt）
+        lang_code: 言語コード（en, de, es, fr, nl, pt, ja）
         mode: "analysis"（分析モード）または "debate"（討論モード）
     """
     config = SCHOLAR_CONFIGS[lang_code]

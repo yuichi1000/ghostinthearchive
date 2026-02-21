@@ -25,6 +25,7 @@ from ..tools.theme_analyzer_tools import save_language_selection
 # - fr: フランス語（フランス語圏 — フランス、ベルギー、西アフリカ、カナダ）— フランス植民地帝国
 # - nl: オランダ語（オランダ語圏 — オランダ、ベルギー、旧植民地）— 海洋交易史
 # - pt: ポルトガル語（ポルトガル語圏 — ポルトガル、ブラジル）— 大航海時代・大西洋世界
+# - ja: 日本語（日本）— 江戸〜昭和期の記録、怪談・妖怪伝承、寺社仏閣記録
 #
 # ## 判定基準
 # - テーマに地名・民族名・文化的要素が含まれる場合、対応する言語を選択
@@ -50,6 +51,7 @@ Analyze the user's investigation query and determine which language archives sho
 - **fr**: French (French-speaking world — France, Belgium, West Africa, Canada) — French colonial empire
 - **nl**: Dutch (Dutch-speaking world — Netherlands, Belgium, former colonies) — Maritime trade history
 - **pt**: Portuguese (Portuguese-speaking world — Portugal, Brazil) — Age of Discovery, Atlantic world
+- **ja**: Japanese (Japan) — Edo to Showa era records, kaidan/yokai folklore, temple and shrine records
 
 ## Decision Criteria
 
@@ -64,7 +66,7 @@ Analyze the user's investigation query and determine which language archives sho
 - **Atlantic trade / maritime / Age of Discovery**: en, pt, es, nl
 - **Colonial Americas (North)**: en + relevant colonial languages (es, fr, nl)
 - **Colonial Americas (South)**: en, es, pt
-- **Japan / East Asia**: en (limited to English-language sources unless theme is cross-cultural)
+- **Japan / East Asia**: en, ja
 - **Middle East / North Africa**: en, fr (for Francophone North Africa)
 
 ### Cultural/Ethnic Indicators
