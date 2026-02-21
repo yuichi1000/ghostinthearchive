@@ -31,7 +31,7 @@ def _resolve_sources_hint(lang_code: str) -> str:
 # === 日本語訳 ===
 # 言語別 Librarian の共通指示テンプレート:
 # あなたは {language_name} 専門の司書エージェントです。
-# {language_name} の一次資料をデジタルアーカイブから検索・収集します。
+# {language_name} の一次資料を世界の公開デジタルアーカイブから検索・収集します。
 #
 # ## 検索戦略
 # 1. 調査テーマに基づき、{language_name} で3-5個の的を絞った検索キーワードを生成する:
@@ -108,11 +108,12 @@ LANGUAGE_CONFIGS = {
         "language_name": "English",
         "lang_code": "en",
         "cultural_context": (
-            "Focus on American and British archives. Primary sources include:\n"
-            "- Official government records, diplomatic correspondence\n"
-            "- English-language newspapers (Chronicling America)\n"
-            "- Library of Congress, DPLA, NYPL, Internet Archive collections\n"
-            "- New England, Mid-Atlantic, and Southern port cities"
+            "Search English-language archives worldwide. Primary sources include:\n"
+            "- Official government records, diplomatic correspondence (UK, US, Commonwealth)\n"
+            "- English-language newspapers (Chronicling America, British Newspaper Archive)\n"
+            "- Library of Congress, DPLA, NYPL, British Library, Internet Archive collections\n"
+            "- Europeana for English-language materials in European collections\n"
+            "- English-speaking regions globally: British Isles, North America, Australia, India, etc."
         ),
         "newspaper_instruction": (
             "Also call **search_newspapers** for Chronicling America newspaper articles.\n"
@@ -124,12 +125,12 @@ LANGUAGE_CONFIGS = {
         "language_name": "German",
         "lang_code": "de",
         "cultural_context": (
-            "Focus on German-language sources relevant to American history:\n"
-            "- German immigrant communities (Pennsylvania Dutch, Texas Germans)\n"
+            "Search German-language archives for the German-speaking world:\n"
             "- Deutsche Digitale Bibliothek (DDB) for German institutional records\n"
             "- Europeana for pan-European cultural heritage materials in German\n"
             "- Internet Archive for digitized German-language books and periodicals\n"
-            "- Protestant church records, immigration documents, German-language American newspapers"
+            "- German, Austrian, and Swiss historical records and archives\n"
+            "- Church records, university archives, Germanic folklore collections"
         ),
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
         "has_newspaper_tool": False,
@@ -138,11 +139,13 @@ LANGUAGE_CONFIGS = {
         "language_name": "Spanish",
         "lang_code": "es",
         "cultural_context": (
-            "Focus on Spanish-language sources relevant to American history:\n"
-            "- Spanish colonial administration records (Florida, Louisiana, California, Southwest)\n"
+            "Search Spanish-language archives for the Spanish-speaking world:\n"
+            "- Spanish national and colonial administration records\n"
+            "- Latin American national archives and digital collections\n"
             "- Internet Archive for digitized Spanish-language materials\n"
             "- DPLA for Spanish-language materials in US collections\n"
-            "- Colonial correspondence, mission records, trade documents"
+            "- Europeana for Iberian cultural heritage materials\n"
+            "- Mission records, colonial correspondence, Inquisition records"
         ),
         "newspaper_instruction": "Do NOT call search_newspapers (the EN Librarian already handles bilingual newspaper search).",
         "has_newspaper_tool": False,
@@ -151,12 +154,13 @@ LANGUAGE_CONFIGS = {
         "language_name": "French",
         "lang_code": "fr",
         "cultural_context": (
-            "Focus on French-language sources relevant to American history:\n"
-            "- French colonial records (Louisiana, Quebec, Nouvelle-France)\n"
-            "- Acadian/Cajun history and culture\n"
+            "Search French-language archives for the Francophone world:\n"
+            "- BnF Gallica for French national library digital collections\n"
             "- Europeana for pan-European cultural heritage materials in French\n"
             "- Internet Archive for digitized French-language materials\n"
-            "- Huguenot immigration, fur trade, French-Indian alliances"
+            "- French colonial records (Africa, Southeast Asia, Americas, Pacific)\n"
+            "- Belgian and Swiss French-language archives\n"
+            "- Revolutionary and Napoleonic era documents, Enlightenment texts"
         ),
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
         "has_newspaper_tool": False,
@@ -165,11 +169,13 @@ LANGUAGE_CONFIGS = {
         "language_name": "Dutch",
         "lang_code": "nl",
         "cultural_context": (
-            "Focus on Dutch-language sources relevant to American history:\n"
-            "- Dutch colonial records (New Amsterdam/New York, Dutch West India Company)\n"
+            "Search Dutch-language archives for the Dutch-speaking world:\n"
             "- Europeana for pan-European cultural heritage materials in Dutch\n"
             "- Internet Archive for digitized Dutch-language materials\n"
-            "- VOC/WIC trade records, colonial administration, patroon system"
+            "- Dutch national archives and Flemish/Belgian collections\n"
+            "- VOC/WIC trade records, Dutch Golden Age documentation\n"
+            "- Colonial records (Indonesia, Suriname, Caribbean, South Africa)\n"
+            "- Maritime trade networks, cartography, Dutch Reformed Church records"
         ),
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
         "has_newspaper_tool": False,
@@ -178,11 +184,13 @@ LANGUAGE_CONFIGS = {
         "language_name": "Portuguese",
         "lang_code": "pt",
         "cultural_context": (
-            "Focus on Portuguese-language sources relevant to American/Atlantic history:\n"
-            "- Atlantic trade networks, Brazil-Africa-Americas triangle\n"
+            "Search Portuguese-language archives for the Lusophone world:\n"
             "- Europeana for pan-European cultural heritage materials in Portuguese\n"
             "- Internet Archive for digitized Portuguese-language materials\n"
-            "- Maritime exploration, slave trade documentation, colonial correspondence"
+            "- Portuguese national archives and Brazilian digital collections\n"
+            "- Age of Discovery records, maritime exploration documentation\n"
+            "- Atlantic trade networks, colonial records (Brazil, Africa, Asia)\n"
+            "- Lusophone Africa and Macau historical records"
         ),
         "newspaper_instruction": "Do NOT call search_newspapers (it only searches English/Spanish newspapers).",
         "has_newspaper_tool": False,

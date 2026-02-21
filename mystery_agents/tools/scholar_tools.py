@@ -503,8 +503,8 @@ def save_structured_report(
             - hypothesis: Primary hypothesis string
             - alternative_hypotheses: List of alternative hypothesis strings
             - classification: 3-letter classification code
-            - state_code: 2-letter US state code
-            - area_code: 3-digit area code
+            - country_code: 2-letter ISO 3166-1 alpha-2 country code
+            - region_code: 3-5 letter IATA region code
             - title: Mystery title
             - summary: Brief summary
             - discrepancy_detected: Description of the discrepancy

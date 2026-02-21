@@ -20,7 +20,8 @@ from .language_gate import make_debate_gate, make_language_gate
 # === 日本語訳 ===
 # 言語別 Scholar の共通指示テンプレート（分析モード）:
 # あなたは {language_name} 圏の視点を持つ学者エージェントです。
-# {language_name} の一次資料を中心に分析し、歴史的矛盾や民俗学的アノマリーを特定します。
+# {language_name} 圏の一次資料を中心に分析し、歴史的矛盾や民俗学的アノマリーを特定します。
+# 世界中のあらゆる時代・地域が分析対象です。
 #
 # ## 入力
 # - {{collected_documents_{lang_code}}}: {language_name} Librarian が収集した資料
@@ -204,11 +205,11 @@ SCHOLAR_CONFIGS = {
         "language_name": "English",
         "lang_code": "en",
         "cultural_perspective": (
-            "You bring the perspective of English-speaking American historical scholarship:\n"
-            "- Official US government records, diplomatic correspondence\n"
-            "- American newspaper narratives and their biases\n"
-            "- The dominant narrative tradition of US historiography\n"
-            "- Protestant cultural frameworks and their influence on record-keeping\n"
+            "You bring the perspective of English-language historical scholarship:\n"
+            "- Official government records, diplomatic correspondence (UK, US, Commonwealth)\n"
+            "- English-language press narratives and their biases across eras and regions\n"
+            "- The Anglo-American historiographic tradition and its blind spots\n"
+            "- Protestant and Enlightenment cultural frameworks and their influence on record-keeping\n"
             "- Consider whose voices are centered and whose are marginalized in English sources"
         ),
     },
@@ -216,65 +217,65 @@ SCHOLAR_CONFIGS = {
         "language_name": "German",
         "lang_code": "de",
         "cultural_perspective": (
-            "You bring the perspective of German cultural and immigration history:\n"
-            "- German immigrant experience in America (Pennsylvania Dutch, Texas Germans)\n"
-            "- Protestant Reformation heritage and its influence on community records\n"
-            "- German-language American newspapers (Germantowner Zeitung etc.)\n"
-            "- Differences between official American and German community narratives\n"
+            "You bring the perspective of German-language cultural and intellectual history:\n"
+            "- Germanic historiographic traditions (Ranke, Historismus, Quellenkritik)\n"
+            "- Protestant Reformation heritage and its influence on documentation\n"
+            "- German, Austrian, and Swiss archival traditions\n"
             "- Heimat culture, Vereinswesen (club culture), and their documentation traditions\n"
-            "- German folk traditions (Märchen, Sagen) transplanted to America"
+            "- German folk traditions (Märchen, Sagen) and Romantic-era folklore studies\n"
+            "- Central European perspectives on cross-cultural contact and migration"
         ),
     },
     "es": {
         "language_name": "Spanish",
         "lang_code": "es",
         "cultural_perspective": (
-            "You bring the perspective of Spanish colonial and Hispanic cultural history:\n"
-            "- Spanish colonial administration and its record-keeping practices\n"
-            "- Differences between Spanish and American narratives of the same events\n"
-            "- Catholic mission records and their cultural context\n"
+            "You bring the perspective of Spanish and Latin American cultural history:\n"
+            "- Spanish imperial administration and its record-keeping practices\n"
+            "- Latin American independence movements and their historiography\n"
+            "- Catholic mission records, Inquisition documentation, and their cultural context\n"
             "- Indigenous-Spanish cultural contact and mestizo traditions\n"
             "- La Leyenda Negra vs. historical reality of Spanish colonialism\n"
-            "- Folk Catholicism and syncretic religious practices"
+            "- Folk Catholicism and syncretic religious practices across the Hispanic world"
         ),
     },
     "fr": {
         "language_name": "French",
         "lang_code": "fr",
         "cultural_perspective": (
-            "You bring the perspective of French colonial and Francophone cultural history:\n"
-            "- French colonial administration (Nouvelle-France, Louisiana)\n"
-            "- Acadian/Cajun cultural traditions and their oral histories\n"
-            "- French-Indian alliances and their documentation\n"
-            "- Huguenot immigration and their persecution narratives\n"
-            "- French Enlightenment influence on American intellectual history\n"
-            "- Voodoo/Vodou traditions in French Louisiana"
+            "You bring the perspective of Francophone cultural and intellectual history:\n"
+            "- French colonial administration across Africa, Asia, Americas, and the Pacific\n"
+            "- Enlightenment philosophy and its global influence\n"
+            "- French Revolutionary and Napoleonic era documentation\n"
+            "- Francophone oral traditions and ethnographic studies\n"
+            "- Annales school historiography and mentalités approach\n"
+            "- Creole cultures and syncretic traditions in the Francophone world"
         ),
     },
     "nl": {
         "language_name": "Dutch",
         "lang_code": "nl",
         "cultural_perspective": (
-            "You bring the perspective of Dutch colonial and commercial history:\n"
-            "- Dutch West India Company (WIC) records and their commercial focus\n"
-            "- New Amsterdam/New York transition and what was lost in translation\n"
+            "You bring the perspective of Dutch and Flemish commercial and colonial history:\n"
+            "- Dutch Golden Age documentation and its commercial worldview\n"
+            "- VOC/WIC records and the Dutch maritime trading empire\n"
             "- Dutch Reformed Church records and community documentation\n"
-            "- Patroon system and land ownership records\n"
-            "- Dutch trading networks and their documentation practices\n"
-            "- Differences between Dutch and English colonial governance perspectives"
+            "- Colonial administration records (Indonesia, Suriname, Caribbean, South Africa)\n"
+            "- Dutch cartographic and scientific traditions\n"
+            "- Flemish/Belgian perspectives and their distinct archival traditions"
         ),
     },
     "pt": {
         "language_name": "Portuguese",
         "lang_code": "pt",
         "cultural_perspective": (
-            "You bring the perspective of Portuguese maritime and Atlantic trade history:\n"
-            "- Portuguese maritime exploration and Atlantic trade networks\n"
-            "- Brazil-Africa-Americas triangle trade documentation\n"
-            "- Portuguese-language records of the Atlantic slave trade\n"
+            "You bring the perspective of Portuguese and Lusophone world history:\n"
+            "- Portuguese Age of Discovery and maritime exploration records\n"
+            "- Atlantic trade networks and their documentation\n"
+            "- Brazilian colonial and imperial history\n"
+            "- Lusophone Africa (Angola, Mozambique, Cape Verde) and Macau records\n"
             "- Sephardic Jewish communities and their diaspora narratives\n"
-            "- Portuguese influence on maritime terminology and navigation records\n"
-            "- Connections between Brazilian and North American colonial history"
+            "- Portuguese influence on global maritime terminology and navigation records"
         ),
     },
 }

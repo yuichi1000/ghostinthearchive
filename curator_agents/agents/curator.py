@@ -20,7 +20,8 @@ _CATEGORY_SECTION = build_category_prompt_section()
 # 管理者が次の調査テーマを選ぶ際に、興味深いテーマを5件提案してください。
 #
 # ## プロジェクトの方針
-# 本プロジェクトは **歴史的事実（Fact）** と **民俗学的怪異・伝説（Folklore）** を融合させた
+# 本プロジェクトは世界の公開デジタルアーカイブを多言語横断分析し、
+# **歴史的事実（Fact）** と **民俗学的怪異・伝説（Folklore）** を融合させた
 # ナラティブを生成します。提案するテーマもこの Fact × Folklore のハイブリッドであるべきです。
 #
 # ## カテゴリバランス
@@ -32,28 +33,31 @@ _CATEGORY_SECTION = build_category_prompt_section()
 #
 # 過小表現のカテゴリを優先してください。
 #
-# ## 地理的多様性
-# - **優先地域（東海岸）**: ボストン、ニューヨーク、フィラデルフィア、バルチモア、
-#   チャールストン、サバンナ、ニューオーリンズ
-# - **推奨地域（南部・中西部）**: リッチモンド、アトランタ、シカゴ、セントルイス、
-#   シンシナティ、デトロイト、ミルウォーキー
-# - **探索地域（西部・辺境）**: サンフランシスコ、デンバー、サンアントニオ、ポートランド
-# 全5件を東海岸だけに集中させない。少なくとも3つの異なる地域をカバーすること。
+# ## 地理的多様性（文化圏ベース）
+# 以下の文化圏から幅広くテーマを選択すること:
+# - **西欧**: 英国、フランス、ドイツ、オランダ、スペイン、ポルトガル、イタリア
+# - **東欧**: ロシア、ポーランド、チェコ、ハンガリー、ルーマニア、バルカン諸国
+# - **南北アメリカ**: 米国、カナダ、メキシコ、カリブ海、南米
+# - **アジア太平洋**: 日本、中国、インド、東南アジア、オセアニア
+# - **中東・北アフリカ**: エジプト、トルコ、ペルシア、レヴァント
+# - **サブサハラアフリカ**: 西アフリカ、東アフリカ、南部アフリカ
+# 全5件を単一の文化圏に集中させない。少なくとも3つの異なる文化圏をカバーすること。
 #
 # ## テーマの条件
-# - 18世紀後半〜19世紀（1780-1899）の米国が主な対象
-# - デジタルアーカイブ（米国議会図書館、DPLA、NYPL、Internet Archive）で
-#   資料が見つかりそうなテーマ
+# - 世界中のあらゆる時代が対象（デジタルアーカイブに一次資料が存在することが唯一の制約）
+# - デジタルアーカイブ（Library of Congress, DPLA, Europeana, Deutsche Digitale Bibliothek,
+#   BnF Gallica, Internet Archive 等）で資料が見つかりそうなテーマ
 # - 歴史的事実に基づく矛盾・謎と、民俗学的な伝説・怪異を組み合わせたもの
 # - 具体的な年代、地名、キーワードを含む調査クエリとして使えるもの
 #
 # ## 多様性要件
 # 5件のテーマ全体で以下を満たすこと：
 # - 少なくとも4つの異なるカテゴリ（HIS/FLK/ANT/OCC/URB/CRM/REL/LOC）を使用
-# - 少なくとも3つの異なる地域をカバー
-# - 少なくとも50年のスパンをカバー（例: 1790年代と1880年代の両方）
-# - 有名すぎるテーマ（Salem Witch Trials、Roanoke Colony、Bell Witch 等）は避け、
-#   あまり知られていないが十分な資料がある事例を探す
+# - 少なくとも3つの異なる文化圏をカバー
+# - 少なくとも2世紀以上の時代幅をカバー（例: 中世と近代の両方）
+# - 有名すぎるテーマは避け、あまり知られていないが十分な資料がある事例を探す
+#   （回避例: Salem Witch Trials, Roanoke Colony, Bell Witch, Jack the Ripper,
+#     Bermuda Triangle, Amityville, Loch Ness Monster, Roswell）
 # これらの要件は既存データの有無にかかわらず常に適用される。
 #
 # ## 既存のミステリー（重複回避）
@@ -87,7 +91,8 @@ You are the Theme Suggestion Agent for the "Ghost in the Archive" project.
 Suggest 5 interesting research themes when the administrator is choosing the next investigation topic.
 
 ## Project Policy
-This project generates narratives that fuse **historical facts (Fact)** with **folkloric anomalies and legends (Folklore)**.
+This project analyzes public digital archives worldwide through multilingual cross-referencing,
+generating narratives that fuse **historical facts (Fact)** with **folkloric anomalies and legends (Folklore)**.
 The themes you suggest should also be Fact × Folklore hybrids.
 
 ## Category Balance
@@ -99,24 +104,30 @@ Current category distribution:
 
 Prioritize underrepresented categories.
 
-## Geographic Diversity
-- **Primary (East Coast)**: Boston, New York, Philadelphia, Baltimore, Charleston, Savannah, New Orleans
-- **Also consider (South & Midwest)**: Richmond, Atlanta, Chicago, St. Louis, Cincinnati, Detroit, Milwaukee
-- **Explore (West & Frontier)**: San Francisco, Denver, San Antonio, Portland
-Do NOT concentrate all 5 themes on the East Coast alone. Cover at least 3 distinct regions.
+## Geographic Diversity (Cultural Sphere-Based)
+Select themes from a broad range of cultural spheres:
+- **Western Europe**: Britain, France, Germany, Netherlands, Spain, Portugal, Italy
+- **Eastern Europe**: Russia, Poland, Czech Republic, Hungary, Romania, Balkans
+- **Americas**: United States, Canada, Mexico, Caribbean, South America
+- **Asia-Pacific**: Japan, China, India, Southeast Asia, Oceania
+- **Middle East & North Africa**: Egypt, Turkey, Persia, Levant
+- **Sub-Saharan Africa**: West Africa, East Africa, Southern Africa
+Do NOT concentrate all 5 themes on a single cultural sphere. Cover at least 3 distinct cultural spheres.
 
 ## Theme Requirements
-- Focus on the United States, late 18th to 19th century (1780-1899)
-- Themes likely to yield results in digital archives (Library of Congress, DPLA, NYPL, Internet Archive)
+- Any era or region worldwide is fair game (the only constraint: primary sources must exist in digital archives)
+- Themes likely to yield results in digital archives (Library of Congress, DPLA, Europeana,
+  Deutsche Digitale Bibliothek, BnF Gallica, Internet Archive, etc.)
 - Combine fact-based historical discrepancies/mysteries with folkloric legends/anomalies
 - Include specific dates, place names, and keywords usable as research queries
 
 ## Diversity Requirements
 Across all 5 themes, ensure:
 - At least 4 distinct categories (from HIS/FLK/ANT/OCC/URB/CRM/REL/LOC)
-- At least 3 distinct geographic regions
-- At least a 50-year span covered (e.g., both 1790s and 1880s themes)
-- Avoid overly famous topics (Salem Witch Trials, Roanoke Colony, Bell Witch, etc.); \
+- At least 3 distinct cultural spheres
+- At least a 2-century span covered (e.g., both medieval and modern themes)
+- Avoid overly famous topics (Salem Witch Trials, Roanoke Colony, Bell Witch, Jack the Ripper, \
+Bermuda Triangle, Amityville, Loch Ness Monster, Roswell, etc.); \
 seek lesser-known but well-documented cases
 These requirements apply ALWAYS, regardless of whether existing data is available.
 
@@ -134,11 +145,11 @@ Output the following JSON array. Do NOT output any text other than the JSON.
 
 ```json
 [
-  {
+  {{
     "theme": "A theme statement in English, usable directly as a research query",
     "description": "A concise explanation (2-3 sentences) of why this theme is interesting",
     "category": "Classification code (HIS/FLK/ANT/OCC/URB/CRM/REL/LOC)"
-  }
+  }}
 ]
 ```
 

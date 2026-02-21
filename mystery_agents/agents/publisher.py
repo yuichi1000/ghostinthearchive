@@ -41,8 +41,8 @@ class PublisherAgent(BaseAgent):
         minimal_json = json.dumps(
             {
                 "classification": sr.get("classification", ""),
-                "state_code": sr.get("state_code", ""),
-                "area_code": sr.get("area_code", ""),
+                "country_code": sr.get("country_code", ""),
+                "region_code": sr.get("region_code", ""),
             }
         )
 

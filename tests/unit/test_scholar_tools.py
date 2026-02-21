@@ -25,8 +25,8 @@ class TestSaveStructuredReport:
             "hypothesis": "The ship faked its sinking",
             "alternative_hypotheses": ["Mistaken identity"],
             "classification": "OCC",
-            "state_code": "MA",
-            "area_code": "617",
+            "country_code": "US",
+            "region_code": "BOS",
         }
         report_json = json.dumps(report_data)
 
@@ -123,8 +123,8 @@ class TestSaveStructuredReport:
             "research_questions": ["What cargo?"],
             "story_hooks": ["Ghost ship"],
             "classification": "OCC",
-            "state_code": "MA",
-            "area_code": "617",
+            "country_code": "US",
+            "region_code": "BOS",
         }
         report_json = json.dumps(report_data)
 
