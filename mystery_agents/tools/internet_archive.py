@@ -22,6 +22,7 @@ _LANG_CODE_MAP = {
     "fr": ["fre", "fra", "french", "français"],
     "nl": ["dut", "nld", "dutch", "nederlands"],
     "pt": ["por", "portuguese", "português"],
+    "ja": ["jpn", "japanese"],
 }
 
 
@@ -32,7 +33,7 @@ class InternetArchiveSource(ArchiveSource):
     source_name = "Internet Archive"
     source_type = "internet_archive"
     min_request_delay = 2.0
-    supported_languages = {"en", "es", "de", "fr", "nl", "pt"}
+    supported_languages = {"en", "es", "de", "fr", "nl", "pt", "ja"}
     supports_language_filter = True
     is_newspaper_source = False
     expected_domains = ["archive.org"]

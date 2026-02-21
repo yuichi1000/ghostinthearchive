@@ -49,11 +49,11 @@ class TestSaveLanguageSelection:
     def test_invalid_language_filtered(self):
         """許可リストにない言語コードは除外される。"""
         ctx = self._make_tool_context()
-        save_language_selection('["en", "ja", "zh", "de"]', ctx)
+        save_language_selection('["en", "zh", "ko", "de"]', ctx)
 
         selected = ctx.state["selected_languages"]
-        assert "ja" not in selected
         assert "zh" not in selected
+        assert "ko" not in selected
         assert "en" in selected
         assert "de" in selected
 
@@ -197,7 +197,7 @@ class TestAllowedLanguages:
 
     def test_allowed_languages_set(self):
         """許可言語セットが正しい。"""
-        assert ALLOWED_LANGUAGES == {"en", "de", "es", "fr", "nl", "pt"}
+        assert ALLOWED_LANGUAGES == {"en", "de", "es", "fr", "ja", "nl", "pt"}
 
     def test_max_languages_is_4(self):
         """最大言語数が 4。"""

@@ -202,6 +202,20 @@ LANGUAGE_CONFIGS = {
         ),
         "newspaper_instruction": _NEWSPAPER_INSTRUCTION,
     },
+    "ja": {
+        "language_name": "Japanese",
+        "lang_code": "ja",
+        "cultural_context": (
+            "Search Japanese-language archives for Japan and East Asia:\n"
+            "- NDL Search (National Diet Library) for digitized books, periodicals, and manuscripts\n"
+            "- Edo, Meiji, Taisho, and Showa era records and publications\n"
+            "- Kaidan (怪談) collections, yokai folklore, and supernatural traditions\n"
+            "- Temple and shrine records (寺社仏閣記録), local histories (地方史)\n"
+            "- Internet Archive for digitized Japanese-language materials\n"
+            "- Domain feudal records (藩政記録), village chronicles, and oral tradition transcriptions"
+        ),
+        "newspaper_instruction": _NEWSPAPER_INSTRUCTION,
+    },
 }
 
 
