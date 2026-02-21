@@ -1,20 +1,67 @@
 """Unit tests for mystery_agents/tools/librarian_tools.py"""
 
 import json
+import time
 from unittest.mock import patch
 
 from mystery_agents.schemas.document import ArchiveDocument, SourceLanguage
+from mystery_agents.tools.archive_source_base import ArchiveSearchResult
+from mystery_agents.tools.librarian_tools import (
+    _TOTAL_DOCS_CAP,
+    _rank_documents,
+    _search_single_source,
+    search_archives,
+    search_newspapers,
+)
 
 
-def _make_doc(url="https://www.loc.gov/item/test/", title="Test Doc"):
+def _make_doc(
+    url="https://www.loc.gov/item/test/",
+    title="Test Doc",
+    keywords_matched=None,
+    source_type="loc_digital",
+):
     return ArchiveDocument(
         title=title,
         source_url=url,
         summary="A test document",
         language=SourceLanguage.EN,
         location="Test",
-        source_type="loc_digital",
+        source_type=source_type,
+        keywords_matched=keywords_matched or [],
     )
+
+
+def _make_mock_source(
+    source_key="mock",
+    source_name="Mock Source",
+    docs=None,
+    total_hits=0,
+    error=None,
+    supports_language_filter=False,
+    delay=0,
+):
+    """テスト用のモック ArchiveSource を作成する。"""
+
+    class MockSource:
+        pass
+
+    s = MockSource()
+    s.source_key = source_key
+    s.source_name = source_name
+    s.supports_language_filter = supports_language_filter
+
+    def _search(**kwargs):
+        if delay > 0:
+            time.sleep(delay)
+        return ArchiveSearchResult(
+            documents=list(docs or []),
+            total_hits=total_hits,
+            error=error,
+        )
+
+    s.search = _search
+    return s
 
 
 class TestSearchNewspapersValidationFallback:
@@ -34,8 +81,6 @@ class TestSearchNewspapersValidationFallback:
         }
         mock_validate.side_effect = RuntimeError("unexpected error in validation")
 
-        from mystery_agents.tools.librarian_tools import search_newspapers
-
         result_json = search_newspapers(keywords="test keyword")
         result = json.loads(result_json)
 
@@ -54,30 +99,21 @@ class TestSearchArchivesValidationFallback:
         self, mock_get_all, mock_validate
     ):
         """validate_documents が例外を投げても全ドキュメントが保持される。"""
-        from mystery_agents.tools.archive_source_base import ArchiveSearchResult
-
         doc = _make_doc()
-
-        # ArchiveSource のモックを作成
-        mock_source = type("MockSource", (), {
-            "source_name": "LOC Digital Collections",
-            "supports_language_filter": False,
-            "search": lambda self, **kwargs: ArchiveSearchResult(
-                documents=[doc], total_hits=1
-            ),
-        })()
-
+        mock_source = _make_mock_source(
+            source_key="loc",
+            source_name="LOC Digital Collections",
+            docs=[doc],
+            total_hits=1,
+        )
         mock_get_all.return_value = {"loc": mock_source}
         mock_validate.side_effect = RuntimeError("unexpected error in validation")
-
-        from mystery_agents.tools.librarian_tools import search_archives
 
         result_json = search_archives(keywords="test keyword", sources="loc")
         result = json.loads(result_json)
 
         assert result["total_documents"] == 1
         assert result["documents"][0]["title"] == "Test Doc"
-        # リンク検証はスキップされる
         assert result["link_validation"]["total_checked"] == 0
 
 
@@ -91,16 +127,356 @@ class TestSearchAndCollectFallback:
     ):
         """search_chronicling_america が例外を投げるとエラーメッセージが記録される。"""
         mock_search.side_effect = ConnectionError("API unreachable")
-        # validate_documents は呼ばれないはずだが念のためモック
         mock_validate.return_value = type("Summary", (), {
             "total_checked": 0, "reachable": 0, "unreachable": 0,
             "removed_urls": [], "duration_ms": 0, "verified_documents": [],
         })()
-
-        from mystery_agents.tools.librarian_tools import search_newspapers
 
         result_json = search_newspapers(keywords="test keyword")
         result = json.loads(result_json)
 
         assert result["error"] == "API unreachable"
         assert result["documents_returned"] == 0
+
+
+# === PR 2: 並列実行・動的制限・ランキングのテスト ===
+
+
+class TestParallelExecution:
+    """ThreadPoolExecutor 並列実行のテスト"""
+
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    def test_parallel_execution_faster_than_sequential(
+        self, mock_get_all, mock_validate
+    ):
+        """3ソース × 0.3s delay → 合計 < 1.5s（逐次なら 0.9s 以上）。"""
+        delay = 0.3
+        docs = [_make_doc(url=f"https://example.com/{i}") for i in range(3)]
+        sources = {}
+        for i, key in enumerate(["s1", "s2", "s3"]):
+            sources[key] = _make_mock_source(
+                source_key=key,
+                source_name=f"Source {i}",
+                docs=[docs[i]],
+                total_hits=1,
+                delay=delay,
+            )
+        mock_get_all.return_value = sources
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 3, "reachable": 3, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 100,
+            "verified_documents": docs,
+        })()
+
+        start = time.monotonic()
+        result_json = search_archives(
+            keywords="test", sources="s1,s2,s3", language="en"
+        )
+        elapsed = time.monotonic() - start
+
+        result = json.loads(result_json)
+        assert result["total_documents"] == 3
+        # 並列なので逐次（0.9s）よりはるかに短い
+        assert elapsed < 1.5, f"並列実行が遅すぎる: {elapsed:.2f}s"
+
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    def test_parallel_deduplication(self, mock_get_all, mock_validate):
+        """2ソースから同一 URL が返った場合、1件に重複除去される。"""
+        shared_doc = _make_doc(url="https://shared.example.com/doc1")
+        unique_doc = _make_doc(url="https://unique.example.com/doc2", title="Unique")
+
+        sources = {
+            "s1": _make_mock_source(
+                source_key="s1", docs=[shared_doc], total_hits=1,
+            ),
+            "s2": _make_mock_source(
+                source_key="s2", docs=[shared_doc, unique_doc], total_hits=2,
+            ),
+        }
+        mock_get_all.return_value = sources
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 2, "reachable": 2, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 50,
+            "verified_documents": [shared_doc, unique_doc],
+        })()
+
+        result_json = search_archives(
+            keywords="test", sources="s1,s2", language="en"
+        )
+        result = json.loads(result_json)
+
+        assert result["total_documents"] == 2
+        urls = [d["source_url"] for d in result["documents"]]
+        assert len(set(urls)) == 2
+
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    def test_parallel_one_source_fails(self, mock_get_all, mock_validate):
+        """1ソースが例外を投げても他ソースの結果は保持される。"""
+        good_doc = _make_doc(url="https://good.example.com/doc")
+
+        class FailingSource:
+            source_key = "bad"
+            source_name = "Bad Source"
+            supports_language_filter = False
+
+            def search(self, **kwargs):
+                raise ConnectionError("API down")
+
+        sources = {
+            "good": _make_mock_source(
+                source_key="good", source_name="Good Source",
+                docs=[good_doc], total_hits=1,
+            ),
+            "bad": FailingSource(),
+        }
+        mock_get_all.return_value = sources
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 1, "reachable": 1, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 50,
+            "verified_documents": [good_doc],
+        })()
+
+        result_json = search_archives(
+            keywords="test", sources="good,bad", language="en"
+        )
+        result = json.loads(result_json)
+
+        assert result["total_documents"] == 1
+        assert result["documents"][0]["source_url"] == "https://good.example.com/doc"
+        # bad ソースのエラーが記録されている
+        assert result["errors"] is not None
+        assert "bad" in result["errors"]
+
+
+class TestDynamicMaxResults:
+    """動的 per-source 結果制限のテスト"""
+
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    def test_dynamic_limit_2_sources(self, mock_get_all, mock_validate):
+        """2ソース → per_source_limit = min(10, max(3, 30//2)) = 10。"""
+        call_log = []
+
+        def _make_logging_source(key):
+            class LogSource:
+                source_key = key
+                source_name = f"Source {key}"
+                supports_language_filter = False
+
+                def search(self, **kwargs):
+                    call_log.append((key, kwargs["max_results"]))
+                    return ArchiveSearchResult(documents=[], total_hits=0)
+
+            return LogSource()
+
+        sources = {
+            "s1": _make_logging_source("s1"),
+            "s2": _make_logging_source("s2"),
+        }
+        mock_get_all.return_value = sources
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 0, "reachable": 0, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 0, "verified_documents": [],
+        })()
+
+        search_archives(keywords="test", sources="s1,s2", language="en")
+
+        # per_source_limit = min(10, max(3, 30//2)) = 10
+        for key, max_r in call_log:
+            assert max_r == 10
+
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    def test_dynamic_limit_6_sources(self, mock_get_all, mock_validate):
+        """6ソース → per_source_limit = min(10, max(3, 30//6)) = 5。"""
+        call_log = []
+
+        def _make_logging_source(key):
+            class LogSource:
+                source_key = key
+                source_name = f"Source {key}"
+                supports_language_filter = False
+
+                def search(self, **kwargs):
+                    call_log.append((key, kwargs["max_results"]))
+                    return ArchiveSearchResult(documents=[], total_hits=0)
+
+            return LogSource()
+
+        keys = [f"s{i}" for i in range(6)]
+        sources = {k: _make_logging_source(k) for k in keys}
+        mock_get_all.return_value = sources
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 0, "reachable": 0, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 0, "verified_documents": [],
+        })()
+
+        search_archives(
+            keywords="test",
+            sources=",".join(keys),
+            language="en",
+        )
+
+        # per_source_limit = min(10, max(3, 30//6)) = 5
+        for key, max_r in call_log:
+            assert max_r == 5
+
+
+class TestTotalDocsCap:
+    """合計ドキュメント上限のテスト"""
+
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    def test_total_docs_capped(self, mock_get_all, mock_validate):
+        """全ソースから合計 40 件 → 上限 30 件にカットされる。"""
+        docs_per_source = 20
+        all_docs = []
+        sources = {}
+        for src_idx in range(2):
+            key = f"s{src_idx}"
+            src_docs = [
+                _make_doc(
+                    url=f"https://example.com/{key}/{i}",
+                    title=f"Doc {key}-{i}",
+                )
+                for i in range(docs_per_source)
+            ]
+            all_docs.extend(src_docs)
+            sources[key] = _make_mock_source(
+                source_key=key,
+                docs=src_docs,
+                total_hits=docs_per_source,
+            )
+
+        mock_get_all.return_value = sources
+        # validate_documents は全件通す
+        mock_validate.side_effect = lambda docs: type("Summary", (), {
+            "total_checked": len(docs), "reachable": len(docs), "unreachable": 0,
+            "removed_urls": [], "duration_ms": 50,
+            "verified_documents": list(docs),
+        })()
+
+        result_json = search_archives(
+            keywords="test", sources="s0,s1", language="en"
+        )
+        result = json.loads(result_json)
+
+        assert result["total_documents"] <= _TOTAL_DOCS_CAP
+
+
+class TestRankDocuments:
+    """_rank_documents のテスト"""
+
+    def test_ranking_by_keyword_match(self):
+        """keywords_matched が多い順にソートされる。"""
+        doc_0kw = _make_doc(url="https://a.com/0", keywords_matched=[])
+        doc_2kw = _make_doc(url="https://a.com/2", keywords_matched=["ghost", "ship"])
+        doc_1kw = _make_doc(url="https://a.com/1", keywords_matched=["ghost"])
+        doc_3kw = _make_doc(
+            url="https://a.com/3",
+            keywords_matched=["ghost", "ship", "harbor"],
+        )
+
+        ranked = _rank_documents([doc_0kw, doc_2kw, doc_1kw, doc_3kw])
+
+        assert ranked[0].source_url == "https://a.com/3"
+        assert ranked[1].source_url == "https://a.com/2"
+        assert ranked[2].source_url == "https://a.com/1"
+        assert ranked[3].source_url == "https://a.com/0"
+
+    def test_ranking_stable_for_same_score(self):
+        """同点の場合は元の順序が維持される（安定ソート）。"""
+        doc_a = _make_doc(url="https://a.com/a", keywords_matched=["ghost"])
+        doc_b = _make_doc(url="https://a.com/b", keywords_matched=["ship"])
+
+        ranked = _rank_documents([doc_a, doc_b])
+
+        # 同スコアなので元の順序を維持
+        assert ranked[0].source_url == "https://a.com/a"
+        assert ranked[1].source_url == "https://a.com/b"
+
+    def test_ranking_empty_list(self):
+        """空リストでエラーにならない。"""
+        assert _rank_documents([]) == []
+
+
+class TestSearchSingleSource:
+    """_search_single_source のテスト"""
+
+    def test_returns_docs_and_metadata(self):
+        """正常時にドキュメントとメタデータが返される。"""
+        doc = _make_doc()
+        source = _make_mock_source(
+            source_key="test_src",
+            docs=[doc],
+            total_hits=1,
+        )
+
+        key, docs, hits, err, fallback = _search_single_source(
+            source,
+            [["ghost"]],
+            date_start="1800",
+            date_end="1899",
+            per_source_limit=10,
+            language=None,
+        )
+
+        assert key == "test_src"
+        assert len(docs) == 1
+        assert hits == 1
+        assert err is None
+        assert fallback is False
+
+    def test_fallback_on_empty_combined_result(self):
+        """複合キーワードで結果なし → 個別キーワードでフォールバック。"""
+        doc = _make_doc()
+        call_count = 0
+
+        class FallbackSource:
+            source_key = "fb"
+            source_name = "Fallback Source"
+            supports_language_filter = False
+
+            def search(self, **kwargs):
+                nonlocal call_count
+                call_count += 1
+                # 最初の呼び出し（複合キーワード）は結果なし
+                # 個別キーワードでは結果あり
+                if len(kwargs["keywords"]) > 1:
+                    return ArchiveSearchResult(documents=[], total_hits=0)
+                return ArchiveSearchResult(documents=[doc], total_hits=1)
+
+        key, docs, hits, err, fallback = _search_single_source(
+            FallbackSource(),
+            [["ghost", "ship"]],
+            date_start="1800",
+            date_end="1899",
+            per_source_limit=10,
+            language=None,
+        )
+
+        assert fallback is True
+        assert len(docs) == 1
+
+    def test_deduplicates_within_source(self):
+        """同一ソース内の URL 重複が除去される。"""
+        doc1 = _make_doc(url="https://same.com/doc")
+        doc2 = _make_doc(url="https://same.com/doc", title="Duplicate")
+
+        source = _make_mock_source(
+            source_key="dup", docs=[doc1, doc2], total_hits=2,
+        )
+
+        key, docs, hits, err, fallback = _search_single_source(
+            source,
+            [["ghost"]],
+            date_start="1800",
+            date_end="1899",
+            per_source_limit=10,
+            language=None,
+        )
+
+        assert len(docs) == 1

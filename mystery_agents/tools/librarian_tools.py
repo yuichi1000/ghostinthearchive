@@ -4,6 +4,7 @@
 インターフェースを提供する。
 """
 
+import concurrent.futures
 import json
 import logging
 from datetime import datetime
@@ -14,10 +15,17 @@ from google.adk.tools.tool_context import ToolContext
 
 logger = logging.getLogger(__name__)
 
+from ..schemas.document import ArchiveDocument
 from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
 from .link_validator import ValidationSummary, validate_documents
 from .source_registry import get_all_sources, get_source
+
+# 並列実行の最大ワーカー数
+_MAX_WORKERS = 6
+
+# 全ソース合計のドキュメント上限
+_TOTAL_DOCS_CAP = 30
 
 
 def search_newspapers(
@@ -248,6 +256,90 @@ def save_search_results(
     )
 
 
+def _search_single_source(
+    source_obj,
+    keyword_groups: list[list[str]],
+    *,
+    date_start: str,
+    date_end: str,
+    per_source_limit: int,
+    language: str | None,
+) -> tuple[str, list[ArchiveDocument], int, str | None, bool]:
+    """単一ソースを検索して結果を返す（並列実行用）。
+
+    各キーワードグループで検索し、結果なし＆複数キーワード時は
+    個別キーワードでフォールバック検索を実行する。
+
+    Returns:
+        (source_key, documents, total_hits, error, fallback_used)
+    """
+    key = source_obj.source_key
+    docs: list[ArchiveDocument] = []
+    seen_urls: set[str] = set()
+    total_hits = 0
+    error: str | None = None
+    fallback_used = False
+
+    def _do_search(kw_list: list[str]) -> tuple[list[ArchiveDocument], int, str | None]:
+        """キーワードリストで1回検索する。"""
+        if not kw_list:
+            return [], 0, None
+        try:
+            lang_arg = language if (language and source_obj.supports_language_filter) else None
+            result = source_obj.search(
+                keywords=kw_list,
+                date_start=date_start,
+                date_end=date_end,
+                max_results=per_source_limit,
+                language=lang_arg,
+            )
+            return result.documents, result.total_hits, result.error
+        except Exception as e:
+            return [], 0, str(e)
+
+    # 各キーワードグループで検索してマージ
+    for kw_list in keyword_groups:
+        found_docs, hits, err = _do_search(kw_list)
+        total_hits += hits
+        if err:
+            error = err
+        for doc in found_docs:
+            if doc.source_url not in seen_urls:
+                seen_urls.add(doc.source_url)
+                docs.append(doc)
+
+    # フォールバック: 結果なし & 複数キーワードの場合、個別に検索
+    first_group = keyword_groups[0] if keyword_groups else []
+    if not docs and len(first_group) > 1:
+        fallback_used = True
+        for kw_group in keyword_groups:
+            for kw in kw_group:
+                found_docs, hits, err = _do_search([kw])
+                total_hits += hits
+                if err:
+                    error = err
+                for doc in found_docs:
+                    if doc.source_url not in seen_urls:
+                        seen_urls.add(doc.source_url)
+                        docs.append(doc)
+                if docs:
+                    break
+            if docs:
+                break
+
+    return key, docs, total_hits, error, fallback_used
+
+
+def _rank_documents(
+    docs: list[ArchiveDocument],
+) -> list[ArchiveDocument]:
+    """keywords_matched 数でドキュメントをランキングする。
+
+    同点の場合は元の順序（API 応答順）を維持する。
+    """
+    return sorted(docs, key=lambda d: len(d.keywords_matched), reverse=True)
+
+
 def search_archives(
     keywords: str,
     date_start: str = "1800",
@@ -257,11 +349,11 @@ def search_archives(
     language: Optional[str] = None,
     tool_context: Optional[ToolContext] = None,
 ) -> str:
-    """Search multiple public archive APIs simultaneously.
+    """Search multiple public archive APIs in parallel.
 
     Searches across LOC Digital Collections, DPLA, NYPL, Internet Archive,
-    and Deutsche Digitale Bibliothek.
-    Results are merged and returned as a unified JSON response.
+    Deutsche Digitale Bibliothek, and Europeana using ThreadPoolExecutor.
+    Results are ranked by keyword match count and capped at a total limit.
 
     When no language filter is specified, automatically expands keywords to
     include both English and Spanish variants. When a language is specified,
@@ -291,7 +383,7 @@ def search_archives(
         expanded = expand_keywords_bilingual(keyword_list)
         keyword_groups = [expanded["en"], expanded["es"]]
 
-    all_sources = get_all_sources()
+    all_sources_map = get_all_sources()
 
     if sources:
         source_keys = [s.strip().lower() for s in sources.split(",") if s.strip()]
@@ -299,84 +391,86 @@ def search_archives(
         # デフォルトは US ソース
         source_keys = ["loc", "dpla", "nypl", "internet_archive"]
 
-    all_docs = []
-    source_results = {}
-    errors = {}
+    # 動的 per-source 制限: ソース数で均等割（最低3件/ソース）
+    valid_source_count = sum(1 for k in source_keys if k in all_sources_map)
+    if valid_source_count > 0:
+        per_source_limit = min(max_results, max(3, _TOTAL_DOCS_CAP // valid_source_count))
+    else:
+        per_source_limit = max_results
+
+    all_docs: list[ArchiveDocument] = []
+    source_results: dict = {}
+    errors: dict = {}
     seen_urls: set[str] = set()
     fallback_used = False
 
-    def _search_source(source_obj, kw_list, source_key):
-        """単一ソースを検索して結果を収集する。"""
-        docs = []
-        hits = 0
-        err = None
-        if not kw_list:
-            return docs, hits, err
-        try:
-            lang_arg = language if (language and source_obj.supports_language_filter) else None
-            result = source_obj.search(
-                keywords=kw_list,
-                date_start=date_start,
-                date_end=date_end,
-                max_results=max_results,
-                language=lang_arg,
-            )
-            hits = result.total_hits
-            err = result.error
-            for doc in result.documents:
-                url = doc.source_url
-                if url not in seen_urls:
-                    seen_urls.add(url)
-                    docs.append(doc)
-        except Exception as e:
-            err = str(e)
-        return docs, hits, err
-
+    # 不明ソースを先にエラー登録
+    valid_sources = []
     for key in source_keys:
-        source_obj = all_sources.get(key)
+        source_obj = all_sources_map.get(key)
         if source_obj is None:
             errors[key] = f"Unknown source: {key}"
-            continue
+        else:
+            valid_sources.append((key, source_obj))
 
-        source_hits = 0
-        source_docs = []
-
-        # 各キーワードグループで検索してマージ
-        for kw_list in keyword_groups:
-            docs, hits, err = _search_source(source_obj, kw_list, key)
-            source_docs.extend(docs)
-            source_hits += hits
-            if err:
-                errors[key] = err
-
-        # フォールバック: 結果なし & 複数キーワードの場合、個別に検索
-        first_group = keyword_groups[0] if keyword_groups else []
-        if not source_docs and len(first_group) > 1:
-            fallback_used = True
-            for kw_group in keyword_groups:
-                for kw in kw_group:
-                    docs, hits, err = _search_source(source_obj, [kw], key)
-                    source_docs.extend(docs)
-                    source_hits += hits
-                    if err:
-                        errors[key] = err
-                    if source_docs:
-                        break
-                if source_docs:
-                    break
-
-        all_docs.extend(source_docs)
-        source_results[key] = {
-            "name": source_obj.source_name,
-            "total_hits": source_hits,
-            "documents_returned": len(source_docs),
+    # 並列実行
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=min(_MAX_WORKERS, len(valid_sources) or 1)
+    ) as executor:
+        futures = {
+            executor.submit(
+                _search_single_source,
+                source_obj,
+                keyword_groups,
+                date_start=date_start,
+                date_end=date_end,
+                per_source_limit=per_source_limit,
+                language=language,
+            ): key
+            for key, source_obj in valid_sources
         }
+        for future in concurrent.futures.as_completed(futures):
+            key = futures[future]
+            source_obj = all_sources_map[key]
+            try:
+                src_key, src_docs, src_hits, src_err, src_fallback = future.result()
+            except Exception as e:
+                errors[key] = str(e)
+                source_results[key] = {
+                    "name": source_obj.source_name,
+                    "total_hits": 0,
+                    "documents_returned": 0,
+                }
+                continue
+
+            if src_err:
+                errors[key] = src_err
+            if src_fallback:
+                fallback_used = True
+
+            # メインスレッドで URL 重複除去
+            deduped_docs = []
+            for doc in src_docs:
+                if doc.source_url not in seen_urls:
+                    seen_urls.add(doc.source_url)
+                    deduped_docs.append(doc)
+
+            all_docs.extend(deduped_docs)
+            source_results[key] = {
+                "name": source_obj.source_name,
+                "total_hits": src_hits,
+                "documents_returned": len(deduped_docs),
+            }
 
     all_keywords_used = []
     for kw_group in keyword_groups:
         all_keywords_used.extend(kw_group)
 
-    # リンク品質検証（失敗時は検証スキップで全ドキュメント保持）
+    # ランキング（keywords_matched 数でスコアリング）→ 上限適用
+    all_docs = _rank_documents(all_docs)
+    all_docs = all_docs[:_TOTAL_DOCS_CAP]
+
+    # リンク品質検証（ランキング後の上位ドキュメントのみ）
     try:
         validation = validate_documents(all_docs)
         all_docs = validation.verified_documents
