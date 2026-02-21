@@ -26,6 +26,7 @@ const dict: Dictionary = {
   },
   nav: {
     about: "Over ons",
+    archive: "Archief",
   },
   home: {
     latestDiscoveries: "Laatste ontdekkingen",
@@ -34,6 +35,16 @@ const dict: Dictionary = {
     noMysteriesDesc:
       "Er zijn momenteel geen gepubliceerde mysteries. Kom later terug voor nieuwe ontdekkingen.",
     classifiedRedacted: "Aanvullende zaken blijven gerubriceerd",
+    viewAllArticles: "Alle dossiers bekijken",
+  },
+  archive: {
+    title: "Zaakarchief | Ghost in the Archive",
+    heading: "Zaakarchief",
+    description: "Volledige index van alle onderzochte anomalieën, discrepanties en onverklaarde verschijnselen uit de openbare archieven van de wereld.",
+    noArticles: "Er zijn nog geen dossiers gepubliceerd.",
+    page: "Pagina",
+    previous: "Vorige",
+    next: "Volgende",
   },
   about: {
     title: "Over ons | Ghost in the Archive",

@@ -25,6 +25,7 @@ const dict: Dictionary = {
   },
   nav: {
     about: "このサイトについて",
+    archive: "アーカイブ",
   },
   home: {
     latestDiscoveries: "最新の発見",
@@ -33,6 +34,16 @@ const dict: Dictionary = {
     noMysteriesDesc:
       "現在公開中のミステリーはありません。新しい発見をお待ちください。",
     classifiedRedacted: "追加の事件は機密扱いのままです",
+    viewAllArticles: "すべてのケースファイルを見る",
+  },
+  archive: {
+    title: "ケースアーカイブ | Ghost in the Archive",
+    heading: "ケースアーカイブ",
+    description: "世界の公開記録から発掘された、すべての異常・矛盾・説明不能な現象の完全索引。",
+    noArticles: "まだケースファイルは公開されていません。",
+    page: "ページ",
+    previous: "前へ",
+    next: "次へ",
   },
   about: {
     title: "このサイトについて | Ghost in the Archive",

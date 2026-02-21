@@ -8,11 +8,12 @@ import type { SupportedLang } from "@/lib/i18n/config"
 
 interface HeaderProps {
   lang?: SupportedLang
-  nav?: { about: string }
+  nav?: { about: string; archive: string }
 }
 
 export function Header({ lang = "en", nav }: HeaderProps) {
   const pathname = usePathname()
+  const isArchiveActive = pathname.startsWith(`/${lang}/archive`)
   const isAboutActive = pathname === `/${lang}/about`
 
   return (
@@ -33,7 +34,17 @@ export function Header({ lang = "en", nav }: HeaderProps) {
           {/* Nav + Language Switcher */}
           <div className="flex items-center gap-4">
             {nav && (
-              <nav>
+              <nav className="flex items-center gap-4">
+                <Link
+                  href={`/${lang}/archive`}
+                  className={`text-sm font-mono uppercase tracking-wider transition-colors no-underline ${
+                    isArchiveActive
+                      ? "text-gold"
+                      : "text-muted-foreground hover:text-parchment"
+                  }`}
+                >
+                  {nav.archive}
+                </Link>
                 <Link
                   href={`/${lang}/about`}
                   className={`text-sm font-mono uppercase tracking-wider transition-colors no-underline ${
