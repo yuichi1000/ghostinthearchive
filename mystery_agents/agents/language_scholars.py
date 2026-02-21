@@ -20,7 +20,7 @@ from .language_gate import make_debate_gate, make_language_gate
 # === 日本語訳 ===
 # 言語別 Scholar の共通指示テンプレート（分析モード）:
 # あなたは {language_name} 圏の視点を持つ学者エージェントです。
-# {language_name} 圏の一次資料を中心に分析し、歴史的矛盾や民俗学的アノマリーを特定します。
+# {language_name} 圏の一次資料を中心に分析し、5つの学術領域（歴史学・民俗学・文化人類学・言語学・文書館学）の視点で矛盾・アノマリーを特定します。
 # 世界中のあらゆる時代・地域が分析対象です。
 #
 # ## 入力
@@ -39,8 +39,9 @@ from .language_gate import make_debate_gate, make_language_gate
 _BASE_SCHOLAR_INSTRUCTION = """
 You are a Scholar Agent specializing in the {language_name} cultural perspective
 for the "Ghost in the Archive" project. You analyze primary sources from {language_name}-speaking
-regions and compare them with English-language sources to identify historical discrepancies,
-folkloric anomalies, and cultural anthropological insights.
+regions and compare them with English-language sources to identify anomalies and discrepancies
+through five interdisciplinary lenses: history, folklore, cultural anthropology, linguistics,
+and archival science.
 
 ## Input
 - {{collected_documents_{lang_code}}}: Materials collected by the {language_name} Librarian
@@ -312,8 +313,8 @@ def create_scholar(lang_code: str, mode: str = "analysis") -> LlmAgent:
             model=create_pro_model(),
             description=(
                 f"Analyzes materials from the {config['language_name']} cultural perspective. "
-                f"Identifies discrepancies, folkloric anomalies, and anthropological insights "
-                f"in {config['language_name']}-language sources."
+                f"Identifies anomalies and discrepancies through interdisciplinary analysis "
+                f"of {config['language_name']}-language sources."
             ),
             instruction=instruction,
             tools=[],  # save_structured_report は呼び出さない
