@@ -132,7 +132,7 @@ export default async function MysteryDetailPage({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Main content */}
             <div className="lg:col-span-2 space-y-12">
-              <NarrativeSection narrativeContent={narrativeContent} summary={summary} />
+              <NarrativeSection narrativeContent={narrativeContent} summary={summary} lang={lang} />
 
               {/* Divider between narrative and archival data */}
               <div className="flex items-center gap-4">
