@@ -70,6 +70,17 @@ export interface Dictionary {
     view: string;
     originalText: string;
   };
+  classification: {
+    HIS: string;
+    FLK: string;
+    ANT: string;
+    OCC: string;
+    URB: string;
+    CRM: string;
+    REL: string;
+    LOC: string;
+    moreLocations: string;
+  };
   footer: {
     description: string;
     primarySources: string;

@@ -4,18 +4,21 @@ import { ResponsiveHeroImage } from "@/components/responsive-hero-image"
 import type { FirestoreMystery } from "@ghost/shared/src/types/mystery"
 import { localizeMystery } from "@ghost/shared/src/lib/localize"
 import { cn } from "@ghost/shared/src/lib/utils"
+import { ClassificationBadge } from "@/components/classification-badge"
 import type { SupportedLang } from "@/lib/i18n/config"
+import type { Dictionary } from "@/lib/i18n/dictionaries"
 
 interface FeaturedMysteryCardProps {
   mystery: FirestoreMystery
   lang: SupportedLang
   label: string
+  classificationLabels: Dictionary["classification"]
 }
 
-export function FeaturedMysteryCard({ mystery, lang, label }: FeaturedMysteryCardProps) {
+export function FeaturedMysteryCard({ mystery, lang, label, classificationLabels }: FeaturedMysteryCardProps) {
   const { title, summary } = localizeMystery(mystery, lang)
 
-  const location = mystery.historical_context?.geographic_scope?.[0] || ""
+  const locations = mystery.historical_context?.geographic_scope || []
   const timePeriod = mystery.historical_context?.time_period || ""
   const hasImage = !!mystery.images?.hero
 
@@ -46,12 +49,15 @@ export function FeaturedMysteryCard({ mystery, lang, label }: FeaturedMysteryCar
           "p-6 md:p-8",
           hasImage && "lg:flex lg:flex-col lg:justify-center lg:py-10 lg:px-10"
         )}>
-          {/* フィーチャーバッジ */}
-          <div className="flex items-center gap-2 mb-4">
-            <Star className="w-4 h-4 text-gold" />
-            <span className="text-xs font-mono uppercase tracking-widest text-gold">
-              {label}
-            </span>
+          {/* フィーチャーバッジ + 分類バッジ */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Star className="w-4 h-4 text-gold" />
+              <span className="text-xs font-mono uppercase tracking-widest text-gold">
+                {label}
+              </span>
+            </div>
+            <ClassificationBadge mysteryId={mystery.mystery_id} labels={classificationLabels} />
           </div>
 
           {/* メタデータ */}
@@ -79,10 +85,15 @@ export function FeaturedMysteryCard({ mystery, lang, label }: FeaturedMysteryCar
 
           {/* フッターメタデータ */}
           <div className="flex items-center gap-3 pt-4 border-t border-border/50 text-xs text-muted-foreground">
-            {location && (
+            {locations.length > 0 && (
               <span className="flex items-center gap-1">
                 <MapPin className="w-3 h-3" />
-                {location}
+                {locations[0]}
+                {locations.length > 1 && (
+                  <span className="text-muted-foreground/70">
+                    {classificationLabels.moreLocations.replace("{count}", String(locations.length - 1))}
+                  </span>
+                )}
               </span>
             )}
             {timePeriod && (

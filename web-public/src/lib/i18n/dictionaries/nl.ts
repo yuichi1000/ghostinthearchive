@@ -87,6 +87,17 @@ const dict: Dictionary = {
     view: "Bekijken",
     originalText: "Originele tekst",
   },
+  classification: {
+    HIS: "Geschiedenis",
+    FLK: "Volkskunde",
+    ANT: "Antropologie",
+    OCC: "Occultisme",
+    URB: "Stadlegende",
+    CRM: "Misdaad",
+    REL: "Religie",
+    LOC: "Genius Loci",
+    moreLocations: "+{count} meer",
+  },
   footer: {
     description:
       "Meertalige kruisanalyse van de openbare digitale archieven van de wereld — de Geesten opgraven die zich verschuilen in de hiaten tussen documenten, talen en disciplines.",

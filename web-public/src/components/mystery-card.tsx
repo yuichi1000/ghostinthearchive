@@ -4,18 +4,21 @@ import { FileText, MapPin, Calendar } from "lucide-react"
 import type { FirestoreMystery } from "@ghost/shared/src/types/mystery"
 import { cn } from "@ghost/shared/src/lib/utils"
 import { localizeMystery } from "@ghost/shared/src/lib/localize"
+import { ClassificationBadge } from "@/components/classification-badge"
 import type { SupportedLang } from "@/lib/i18n/config"
+import type { Dictionary } from "@/lib/i18n/dictionaries"
 
 interface MysteryCardProps {
   mystery: FirestoreMystery
   lang?: SupportedLang
+  classificationLabels: Dictionary["classification"]
   className?: string
 }
 
-export function MysteryCard({ mystery, lang = "en", className }: MysteryCardProps) {
+export function MysteryCard({ mystery, lang = "en", classificationLabels, className }: MysteryCardProps) {
   const { title, summary } = localizeMystery(mystery, lang)
 
-  const location = mystery.historical_context?.geographic_scope?.[0] || ""
+  const locations = mystery.historical_context?.geographic_scope || []
   const timePeriod = mystery.historical_context?.time_period || ""
   const thumbnailUrl = mystery.images?.thumbnail
 
@@ -38,16 +41,21 @@ export function MysteryCard({ mystery, lang = "en", className }: MysteryCardProp
 
           <div className="min-w-0">
             {/* File tab decoration */}
-            <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono uppercase tracking-wider">
                 <FileText className="w-3.5 h-3.5 text-gold" />
                 <span>{mystery.mystery_id}</span>
               </div>
-              <time className="text-xs text-muted-foreground font-mono">
+              <time className="text-xs text-muted-foreground font-mono shrink-0">
                 {mystery.publishedAt
                   ? mystery.publishedAt.toLocaleDateString()
                   : mystery.createdAt.toLocaleDateString()}
               </time>
+            </div>
+
+            {/* 分類バッジ */}
+            <div className="mb-3">
+              <ClassificationBadge mysteryId={mystery.mystery_id} labels={classificationLabels} />
             </div>
 
             {/* Title */}
@@ -62,10 +70,15 @@ export function MysteryCard({ mystery, lang = "en", className }: MysteryCardProp
 
             {/* Footer metadata */}
             <div className="flex items-center gap-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
-              {location && (
+              {locations.length > 0 && (
                 <span className="flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
-                  {location}
+                  {locations[0]}
+                  {locations.length > 1 && (
+                    <span className="text-muted-foreground/70">
+                      {classificationLabels.moreLocations.replace("{count}", String(locations.length - 1))}
+                    </span>
+                  )}
                 </span>
               )}
               {timePeriod && (

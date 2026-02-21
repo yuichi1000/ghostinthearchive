@@ -86,6 +86,17 @@ const dict: Dictionary = {
     view: "View",
     originalText: "Original text",
   },
+  classification: {
+    HIS: "History",
+    FLK: "Folklore",
+    ANT: "Anthropology",
+    OCC: "Occult",
+    URB: "Urban Legend",
+    CRM: "Crime",
+    REL: "Religion",
+    LOC: "Locus",
+    moreLocations: "+{count} more",
+  },
   footer: {
     description:
       "Multi-lingual cross-analysis of the world's public digital archives — unearthing the Ghosts hiding in the gaps between records, languages, and disciplines.",
