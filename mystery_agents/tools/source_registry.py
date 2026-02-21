@@ -31,6 +31,7 @@ _SOURCE_MODULES = [
     "mystery_agents.tools.ddb",
     "mystery_agents.tools.europeana",
     "mystery_agents.tools.chronicling_america",
+    "mystery_agents.tools.trove",
 ]
 
 
