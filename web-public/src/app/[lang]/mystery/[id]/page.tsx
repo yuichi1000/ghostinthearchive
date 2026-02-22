@@ -195,7 +195,7 @@ export default async function MysteryDetailPage({
           )}
 
           {/* モバイル目次（Hero 画像下、Grid の前） */}
-          <TableOfContents sections={tocSections} heading={dict.detail.tableOfContents} />
+          <TableOfContents sections={tocSections} heading={dict.detail.tableOfContents} variant="mobile" />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Main content */}
@@ -293,7 +293,7 @@ export default async function MysteryDetailPage({
               sourceCoverageLabels={dict.sourceCoverage}
             >
               {/* デスクトップ目次（サイドバー内） */}
-              <TableOfContents sections={tocSections} heading={dict.detail.tableOfContents} />
+              <TableOfContents sections={tocSections} heading={dict.detail.tableOfContents} variant="desktop" />
             </DetailSidebar>
           </div>
 

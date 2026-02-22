@@ -19,6 +19,7 @@ export interface TocSection {
 interface TableOfContentsProps {
   sections: TocSection[]
   heading: string
+  variant: "mobile" | "desktop"
 }
 
 function TocLinks({
@@ -50,7 +51,7 @@ function TocLinks({
   )
 }
 
-export function TableOfContents({ sections, heading }: TableOfContentsProps) {
+export function TableOfContents({ sections, heading, variant }: TableOfContentsProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -78,31 +79,30 @@ export function TableOfContents({ sections, heading }: TableOfContentsProps) {
     if (el) el.scrollIntoView({ behavior: "smooth" })
   }
 
+  if (variant === "desktop") {
+    return (
+      <div className="aged-card letterpress-border rounded-sm p-5">
+        <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
+          <List className="w-3.5 h-3.5" />
+          {heading}
+        </h3>
+        <TocLinks sections={sections} activeId={activeId} onClick={scrollTo} />
+      </div>
+    )
+  }
+
+  // variant === "mobile"
   return (
-    <>
-      {/* デスクトップ版: サイドバー内で表示 */}
-      <div className="hidden lg:block">
-        <div className="aged-card letterpress-border rounded-sm p-5">
-          <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
-            <List className="w-3.5 h-3.5" />
-            {heading}
-          </h3>
+    <div className="lg:hidden mb-8">
+      <details className="aged-card letterpress-border rounded-sm">
+        <summary className="px-5 py-3 cursor-pointer font-mono text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+          <List className="w-3.5 h-3.5" />
+          {heading}
+        </summary>
+        <div className="px-5 pb-4">
           <TocLinks sections={sections} activeId={activeId} onClick={scrollTo} />
         </div>
-      </div>
-
-      {/* モバイル版: details/summary トグル */}
-      <div className="lg:hidden mb-8">
-        <details className="aged-card letterpress-border rounded-sm">
-          <summary className="px-5 py-3 cursor-pointer font-mono text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-            <List className="w-3.5 h-3.5" />
-            {heading}
-          </summary>
-          <div className="px-5 pb-4">
-            <TocLinks sections={sections} activeId={activeId} onClick={scrollTo} />
-          </div>
-        </details>
-      </div>
-    </>
+      </details>
+    </div>
   )
 }
