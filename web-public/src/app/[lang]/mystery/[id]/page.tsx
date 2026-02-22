@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import { ResponsiveHeroImage } from "@/components/responsive-hero-image"
 import { Header } from "@/components/header"
-import { Footer } from "@ghost/shared/src/components/footer"
+import { PublicFooter } from "@/components/public-footer"
 import { EvidenceBlock } from "@ghost/shared/src/components/evidence-block"
 import { CaseFileHeader } from "@/components/mystery/case-file-header"
 import { NarrativeSection } from "@/components/mystery/narrative-section"
@@ -311,14 +311,7 @@ export default async function MysteryDetailPage({
         </div>
       </main>
 
-      <Footer
-        labels={dict.footer}
-        siteLinks={[
-          { label: dict.footer.home, href: `/${lang}` },
-          { label: dict.footer.archive, href: `/${lang}/archive` },
-          { label: dict.footer.about, href: `/${lang}/about` },
-        ]}
-      />
+      <PublicFooter lang={lang} dict={dict} />
     </div>
   )
 }
