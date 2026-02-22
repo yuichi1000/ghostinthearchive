@@ -7,8 +7,10 @@ import { Button } from "@ghost/shared/src/components/ui/button"
 import { getAllPodcasts } from "@/lib/firestore/podcasts"
 import { getAllMysteries } from "@/lib/firestore/mysteries"
 import { PodcastCard } from "@/components/podcast-card"
+import { ActionToast } from "@/components/action-toast"
 import { ActivePipelinePanel } from "@/components/active-pipeline-panel"
 import { usePipelineRuns } from "@/hooks/use-pipeline-runs"
+import { useActionFeedback } from "@/hooks/use-action-feedback"
 import type { FirestorePodcast, PodcastStatus, FirestoreMystery } from "@ghost/shared/src/types/mystery"
 import {
   Mic,
@@ -29,8 +31,7 @@ export default function PodcastsPage() {
   const [selectedMysteryId, setSelectedMysteryId] = useState("")
   const [customInstructions, setCustomInstructions] = useState("")
   const [generating, setGenerating] = useState(false)
-  const [feedback, setFeedback] = useState<string | null>(null)
-  const [feedbackIsError, setFeedbackIsError] = useState(false)
+  const feedback = useActionFeedback()
 
   // Podcast タイプのパイプラインのみ表示
   const { runs: runningPipelines, dismiss: dismissRunning } = usePipelineRuns()
@@ -98,17 +99,13 @@ export default function PodcastsPage() {
       if (data.podcast_id) {
         router.push(`/podcasts/${data.podcast_id}`)
       } else {
-        setFeedback("脚本生成を開始しました")
-        setFeedbackIsError(false)
+        feedback.showSuccess("脚本生成を開始しました")
         fetchData()
-        setTimeout(() => setFeedback(null), 3000)
       }
     } catch (error) {
       console.error("Failed to generate script:", error)
       const message = error instanceof Error ? error.message : "不明なエラー"
-      setFeedback(`脚本生成の開始に失敗しました: ${message}`)
-      setFeedbackIsError(true)
-      setTimeout(() => setFeedback(null), 5000)
+      feedback.showError(`脚本生成の開始に失敗しました: ${message}`)
     } finally {
       setGenerating(false)
     }
@@ -193,20 +190,7 @@ export default function PodcastsPage() {
           </div>
         </div>
 
-        {/* フィードバック */}
-        {feedback && (
-          <div className={cn(
-            "fixed top-20 right-4 z-50 px-4 py-3 rounded-sm animate-in fade-in slide-in-from-right-5",
-            feedbackIsError
-              ? "bg-blood-red/10 border border-blood-red/30"
-              : "bg-teal/20 border border-teal/30"
-          )}>
-            <p className={cn(
-              "text-sm font-mono",
-              feedbackIsError ? "text-[#ff6b6b]" : "text-[#5fb3a1]"
-            )}>{feedback}</p>
-          </div>
-        )}
+        <ActionToast message={feedback.message} isError={feedback.isError} />
 
         {/* 実行中のパイプライン */}
         {podcastRuns.length > 0 && (

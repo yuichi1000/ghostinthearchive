@@ -2,14 +2,15 @@
 
 import { useState, useCallback, useRef, useEffect } from "react"
 import Link from "next/link"
-import { cn } from "@ghost/shared/src/lib/utils"
 import { Button } from "@ghost/shared/src/components/ui/button"
 import { usePodcast } from "@/hooks/use-podcast"
 import { usePipelineRun } from "@/hooks/use-pipeline-run"
+import { useActionFeedback } from "@/hooks/use-action-feedback"
 import { updatePodcastScript } from "@/lib/firestore/podcasts"
 import { PodcastStatusBadge } from "@/components/podcast-status-badge"
 import { AudioPlayer } from "@/components/audio-player"
 import { ScriptEditor } from "@/components/script-editor"
+import { ActionToast } from "@/components/action-toast"
 import { ActivePipelinePanel } from "@/components/active-pipeline-panel"
 import type { PodcastScript } from "@ghost/shared/src/types/mystery"
 import {
@@ -32,8 +33,7 @@ export function PodcastDetail({ podcastId }: PodcastDetailProps) {
   const [editedScript, setEditedScript] = useState<PodcastScript | null>(null)
   const [saving, setSaving] = useState(false)
   const [audioGenerating, setAudioGenerating] = useState(false)
-  const [feedback, setFeedback] = useState<string | null>(null)
-  const [feedbackIsError, setFeedbackIsError] = useState(false)
+  const feedback = useActionFeedback()
   const hasUnsavedChanges = useRef(false)
 
   // podcast のステータスが audio_generating に変わったらローカルの generating フラグもリセット
@@ -54,15 +54,11 @@ export function PodcastDetail({ podcastId }: PodcastDetailProps) {
     try {
       await updatePodcastScript(podcastId, editedScript)
       hasUnsavedChanges.current = false
-      setFeedback("脚本を保存しました")
-      setFeedbackIsError(false)
-      setTimeout(() => setFeedback(null), 3000)
+      feedback.showSuccess("脚本を保存しました")
     } catch (error) {
       console.error("Failed to save script:", error)
       const message = error instanceof Error ? error.message : "不明なエラー"
-      setFeedback(`脚本の保存に失敗しました: ${message}`)
-      setFeedbackIsError(true)
-      setTimeout(() => setFeedback(null), 5000)
+      feedback.showError(`脚本の保存に失敗しました: ${message}`)
     } finally {
       setSaving(false)
     }
@@ -87,16 +83,12 @@ export function PodcastDetail({ podcastId }: PodcastDetailProps) {
         const errorData = await res.json().catch(() => ({}))
         throw new Error(errorData.detail || errorData.error || `API error (${res.status})`)
       }
-      setFeedback("音声生成を開始しました")
-      setFeedbackIsError(false)
-      setTimeout(() => setFeedback(null), 3000)
+      feedback.showSuccess("音声生成を開始しました")
     } catch (error) {
       console.error("Failed to generate audio:", error)
       setAudioGenerating(false)
       const message = error instanceof Error ? error.message : "不明なエラー"
-      setFeedback(`音声生成の開始に失敗しました: ${message}`)
-      setFeedbackIsError(true)
-      setTimeout(() => setFeedback(null), 5000)
+      feedback.showError(`音声生成の開始に失敗しました: ${message}`)
     }
   }, [podcast, podcastId, editedScript])
 
@@ -120,9 +112,7 @@ export function PodcastDetail({ podcastId }: PodcastDetailProps) {
     } catch (error) {
       console.error("Failed to retry:", error)
       const message = error instanceof Error ? error.message : "不明なエラー"
-      setFeedback(`再試行に失敗しました: ${message}`)
-      setFeedbackIsError(true)
-      setTimeout(() => setFeedback(null), 5000)
+      feedback.showError(`再試行に失敗しました: ${message}`)
     }
   }, [podcast])
 
@@ -156,20 +146,7 @@ export function PodcastDetail({ podcastId }: PodcastDetailProps) {
   return (
     <div className="py-8 md:py-12">
       <div className="container mx-auto px-4">
-        {/* フィードバック */}
-        {feedback && (
-          <div className={cn(
-            "fixed top-20 right-4 z-50 px-4 py-3 rounded-sm animate-in fade-in slide-in-from-right-5",
-            feedbackIsError
-              ? "bg-blood-red/10 border border-blood-red/30"
-              : "bg-teal/20 border border-teal/30"
-          )}>
-            <p className={cn(
-              "text-sm font-mono",
-              feedbackIsError ? "text-[#ff6b6b]" : "text-[#5fb3a1]"
-            )}>{feedback}</p>
-          </div>
-        )}
+        <ActionToast message={feedback.message} isError={feedback.isError} />
 
         {/* パンくずリスト */}
         <div className="flex items-center gap-4 mb-8">
