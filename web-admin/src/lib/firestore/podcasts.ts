@@ -111,4 +111,17 @@ export async function updatePodcastScript(
   })
 }
 
+/**
+ * mystery_id → 最新 Podcast の Map を構築
+ * getAllPodcasts が updated_at desc で返すため、最初に見つかるものが最新
+ */
+export async function getPodcastsByMysteryIdMap(): Promise<Map<string, FirestorePodcast>> {
+  const podcasts = await getAllPodcasts(200)
+  const map = new Map<string, FirestorePodcast>()
+  for (const p of podcasts) {
+    if (!map.has(p.mystery_id)) map.set(p.mystery_id, p)
+  }
+  return map
+}
+
 export { docToPodcast }
