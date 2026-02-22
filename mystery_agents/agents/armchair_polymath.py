@@ -55,6 +55,24 @@ from ..tools.scholar_tools import save_structured_report
 # 空でない relevant_excerpt を必ず含めること。具体的な抜粋が見つからない場合は、
 # 元資料の内容を簡潔に言い換えること。空の excerpt は絶対に不可。
 #
+# ## ソースカバレッジ評価（confidence 判定の前提）
+# confidence_level を判定する前に、調査の限界を明示的に評価する:
+# - API 検索範囲 vs 実在アーカイブ: どのデジタルアーカイブを検索し、どのアーカイブが検索対象外だったか
+# - デジタル化範囲: この時代・地域の記録のうちデジタル化済みの推定割合
+# - 不在≠不存在: API で見つからない記録は存在しないわけではない
+# - OCR・索引の限界: 歴史文書の OCR 品質や旧式用語による索引の限界
+#
+# ## 学術界のカバレッジと盲点の評価
+# - 言語バイアス: 特定の言語圏の学術伝統でのみ研究されていないか
+# - 分野バイアス: 特定分野では網羅されているが他分野では見落とされていないか
+# - 時代バイアス: 学術的関心の変遷による研究の偏り
+# - アクセスバイアス: 主要一次資料がアクセス制限のある機関に保管されていないか
+#
+# ## confidence_level チェックリスト
+# HIGH（Confirmed Ghost）: 3+独立資料の矛盾 + API限界で説明不可 + 2+代替仮説を検討・棄却 + 再現可能
+# MEDIUM（Suspected Ghost）: 2独立資料の矛盾 + API限界で部分的に説明可 + 1+代替仮説を検討
+# LOW（Archival Echo）: 単一ソース or 単一アーカイブ + API限界で説明可能 + 言語横断裏付けなし
+#
 # ## ガード
 # - 全言語の分析が空 → INSUFFICIENT_DATA を出力
 # - 1言語のみ → その結果のみで Master Report 作成
@@ -133,6 +151,22 @@ Drawing on all available language perspectives:
 - How do facts from different languages create a more complete picture?
 - How do folkloric traditions in different languages preserve different memories?
 - What anthropological insights emerge from comparing cultural practices across language groups?
+
+### 6. Source Coverage Assessment (MANDATORY — before confidence judgment)
+Before assigning a confidence level, explicitly evaluate the limits of the investigation:
+- **APIs searched vs. archives that exist**: Which digital archives were queried? Which known archives for this region/period were NOT available through API?
+- **Digitization coverage**: What percentage of records from this period and region are estimated to be digitized? (Use your knowledge of archival digitization trends.)
+- **Absence ≠ non-existence**: A record not found via API does not mean the record does not exist. It may exist in a physical archive, in an undigitized collection, or indexed under different terminology.
+- **OCR and indexing limitations**: Historical documents may be poorly OCR'd or indexed under outdated terminology, making them invisible to keyword searches.
+
+### 7. Academic Coverage and Blind Spots
+Assess what existing scholarship may already cover this topic:
+- **Language bias**: Is this topic primarily studied in one language's academic tradition? Would scholars working in other languages frame it differently?
+- **Disciplinary bias**: Is this topic well-covered in one field (e.g., political history) but neglected in others (e.g., social history, folklore studies)?
+- **Temporal bias**: Has academic interest in this topic shifted over time? Are there periods of intense study followed by neglect?
+- **Access bias**: Are the key primary sources held in institutions with restricted access, creating a skew in who has published on this topic?
+
+Note: This assessment draws on general scholarly knowledge — no additional API calls required.
 
 ## Output Format
 Structure your integrated analysis as a "Mystery Report":
@@ -214,6 +248,51 @@ After completing your analysis, you MUST call `save_structured_report` with a JS
       "location_context": "Location"
     }}
   ],
+  "hypothesis": "Primary hypothesis in English",
+  "alternative_hypotheses": ["Alt 1", "Alt 2"],
+  "confidence_level": "high|medium|low",
+  "languages_analyzed": ["en", "de"]
+}}
+```
+
+### Confidence Level Checklist (MANDATORY)
+
+Before assigning `confidence_level`, evaluate against these criteria:
+
+**HIGH — Confirmed Ghost:**
+- [ ] 3+ independent primary sources contain mutually contradictory information
+- [ ] The contradictions CANNOT be explained by API coverage gaps, digitization bias, or OCR errors
+- [ ] 2+ alternative (non-Ghost) hypotheses have been considered and found insufficient
+- [ ] The anomaly is reproducible: a third party using only public sources could verify it
+
+**MEDIUM — Suspected Ghost:**
+- [ ] 2 independent primary sources contain contradictory or inconsistent information
+- [ ] API coverage gaps PARTIALLY but not fully explain the discrepancy
+- [ ] At least 1 alternative hypothesis has been considered
+- [ ] Further investigation in undigitized archives might resolve or confirm the anomaly
+
+**LOW — Archival Echo:**
+- [ ] Based on a single source, or sources from a single archive/collection
+- [ ] The anomaly is likely explainable by API limitations, OCR errors, or naming variations
+- [ ] No cross-language corroboration available
+- [ ] The "discrepancy" may reflect normal historical record-keeping variance
+
+Assign the confidence level AFTER completing the Source Coverage Assessment. If you skipped the assessment, you MUST default to LOW.
+
+The full JSON structure for `save_structured_report`:
+
+```json
+{{
+  "classification": "HIS/FLK/ANT/OCC/URB/CRM/REL/LOC",
+  "country_code": "US/GB/JP/DE/FR/etc. (ISO 3166-1 alpha-2)",
+  "region_code": "BOS/LHR/NRT/etc. (IATA code, 3-5 uppercase letters)",
+  "title": "Mystery title in English",
+  "summary": "2-3 sentence summary in English",
+  "discrepancy_detected": "Description of the key discrepancy",
+  "discrepancy_type": "date_mismatch|person_missing|event_outcome|location_conflict|narrative_gap|name_variant",
+  "evidence_a": {{ ... }},
+  "evidence_b": {{ ... }},
+  "additional_evidence": [ ... ],
   "hypothesis": "Primary hypothesis in English",
   "alternative_hypotheses": ["Alt 1", "Alt 2"],
   "confidence_level": "high|medium|low",

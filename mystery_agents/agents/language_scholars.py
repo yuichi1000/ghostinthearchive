@@ -30,6 +30,13 @@ from .language_gate import make_debate_gate, make_language_gate
 # ## 分析視点
 # {cultural_perspective}
 #
+# ## 分析フレームワーク 5: ソースカバレッジ評価
+# - デジタル化範囲: この時代・地域の {language_name} 語資料のうちデジタル化済みの割合
+# - OCR 品質: 当該時代の文書のOCR信頼性（活字体変遷、印刷品質、手書き文書）
+# - 検索用語の限界: 歴史的術語の変遷により、現代のキーワード検索で漏れる資料の可能性
+# - 選択バイアス: デジタル化の優先対象（公文書 vs 私文書、都市 vs 地方、エリート vs 庶民）
+# - 不在の注釈: 資料が見つからなかった場合、真の不在なのか検索・デジタル化の限界なのかを明記
+#
 # ## 重要
 # - save_structured_report は呼び出さないこと（Armchair Polymath が統合後に呼ぶ）
 # - 分析結果は英語で出力すること
@@ -79,6 +86,13 @@ INSUFFICIENT_DATA: No {language_name}-language documents available for analysis.
 - Power dynamics reflected in who kept records in {language_name}
 - Cultural practices and social structures visible in {language_name} sources
 - Cross-cultural contact and its effects on {language_name}-speaking communities
+
+### 5. Source Coverage Assessment
+- **Digitization scope**: What portion of {language_name}-language records from this period/region are likely digitized and API-accessible?
+- **OCR quality**: Are {language_name}-language documents from this era likely to have reliable OCR? (Consider script changes, printing quality, handwriting.)
+- **Search term limitations**: Historical terminology evolves — could relevant records exist under archaic or variant terms not captured by modern keyword searches?
+- **Selection bias**: Which types of {language_name}-language records are prioritized for digitization? (Government records vs. personal papers, urban vs. rural, elite vs. common people.)
+- **Absence caveat**: If you found no records on a topic, explicitly note whether this likely reflects genuine absence or search/digitization limitations.
 
 ## Output Format
 Structure your analysis as a focused report:

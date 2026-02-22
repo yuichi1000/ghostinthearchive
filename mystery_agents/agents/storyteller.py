@@ -54,6 +54,14 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # - 証拠をつなぐナラティブの橋渡し
 # - 証拠から生じる疑問
 #
+# ## 知的誠実性ガイドライン
+# アーカイブ調査結果について記述する際、厳格な認識論的規律を保つ:
+# - 「見つからなかった」≠「存在しない」: 「記録は存在しない」ではなく「検索したアーカイブでは記録が見つからなかった」と書く
+# - API 不在≠歴史的不在: デジタルアーカイブ検索結果の不在を、出来事が起きなかった証拠として提示しない
+# - 矛盾は事実であり判断ではない: 資料間の矛盾は「資料Aは X と述べ、資料Bは Y と述べている」と事実として提示する
+# - 確信度を限定する: 「調査したデジタルアーカイブに基づく限り」等の表現で調査の範囲を明示する
+# - 謎を捏造せず保存する: Ghost はアーカイブ制約の修辞的誇張からではなく、真の空白と矛盾から自然に浮かび上がるべき
+#
 # ## クリエイティブガイドライン
 # - トーン: 学術的信頼性を維持しつつ、怪異的な情緒を醸し出す
 # - 言語: 英語
@@ -178,6 +186,15 @@ Output the narrative text in Markdown format.
 - **Target audience**: History enthusiasts, mystery lovers, and ghost story fans worldwide
 - **Style**: A hybrid of "historical detective" and "collector of the uncanny"
 - **Reference**: Atlas Obscura, Smithsonian Magazine, BBC History
+
+## Epistemic Honesty Guidelines
+When writing about archival findings, maintain strict epistemic discipline:
+
+- **"Not found" ≠ "Does not exist"**: Never write "no records exist" or "there is no evidence." Instead write "no records were found in the archives searched" or "the digital collections consulted contain no mention of..."
+- **API absence ≠ historical absence**: Do not present the absence of results from digital archive searches as evidence that something did not happen. Undigitized records, restricted collections, and destroyed archives may hold relevant materials.
+- **Contradictions are facts, not judgments**: When sources contradict each other, present the contradiction itself as a fact ("Source A states X while Source B states Y") rather than declaring one source wrong ("Source A is incorrect because...").
+- **Qualify your confidence**: Use phrases like "based on the digital archives consulted," "within the scope of this investigation," or "among the sources available through public APIs" to remind readers of the investigation's boundaries.
+- **Preserve mystery without manufacturing it**: The Ghost should emerge naturally from genuine gaps and contradictions in the record — never from rhetorical exaggeration of ordinary archival limitations.
 
 ## Important
 - Clearly distinguish between facts and speculation
