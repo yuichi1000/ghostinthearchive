@@ -5,7 +5,9 @@ import { PublicFooter } from "@/components/public-footer"
 import { MysteryCard } from "@/components/mystery-card"
 import { Pagination } from "@/components/pagination"
 import { ArchiveFilter } from "@/components/archive-filter"
+import type { MysteryEntry } from "@/components/archive-filter"
 import { getPublishedMysteries, getAllPublishedMysteriesMap } from "@ghost/shared/src/lib/firestore/queries"
+import { localizeMystery } from "@ghost/shared/src/lib/localize"
 import { ARCHIVE_PAGE_SIZE } from "@/lib/constants"
 import { FileStack, Search } from "lucide-react"
 import { isValidLang, SUPPORTED_LANGS } from "@/lib/i18n/config"
@@ -80,6 +82,22 @@ export default async function ArchivePage({
   const startIndex = (currentPage - 1) * ARCHIVE_PAGE_SIZE
   const pageMysteries = allMysteries.slice(startIndex, startIndex + ARCHIVE_PAGE_SIZE)
 
+  // フィルタ用の軽量データを構築（全記事・全言語の title/summary）
+  const filterEntries: MysteryEntry[] = allMysteries.map((m) => {
+    const i18n: Record<string, { title: string; summary: string }> = {}
+    for (const l of SUPPORTED_LANGS) {
+      const localized = localizeMystery(m, l)
+      i18n[l] = { title: localized.title, summary: localized.summary }
+    }
+    return {
+      id: m.mystery_id,
+      classification: m.mystery_id.slice(0, 3).toUpperCase(),
+      thumbnail: m.images?.thumbnail ?? null,
+      publishedAt: m.publishedAt?.toISOString() ?? "",
+      i18n,
+    }
+  })
+
   return (
     <div className="min-h-screen flex flex-col film-grain">
       <Header lang={lang as SupportedLang} nav={dict.nav} />
@@ -103,7 +121,7 @@ export default async function ArchivePage({
 
             {/* 分類フィルタ（?c= パラメータ使用時） */}
             <Suspense fallback={null}>
-              <ArchiveFilter lang={lang as SupportedLang} dict={dict} />
+              <ArchiveFilter lang={lang as SupportedLang} dict={dict} mysteries={filterEntries} />
             </Suspense>
 
             {/* SSG 記事グリッド（フィルタ未使用時に表示） */}
