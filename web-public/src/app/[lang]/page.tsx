@@ -10,6 +10,8 @@ import { getPublishedMysteries } from "@ghost/shared/src/lib/firestore/queries"
 import { HOMEPAGE_MYSTERY_LIMIT } from "@/lib/constants"
 import Link from "next/link"
 import { FileStack, Search } from "lucide-react"
+import { SiteIntro } from "@/components/site-intro"
+import { ClassificationGuide } from "@/components/classification-guide"
 import { isValidLang } from "@/lib/i18n/config"
 import type { SupportedLang } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/dictionaries"
@@ -109,25 +111,30 @@ export default async function HomePage({
       <Header lang={lang} nav={dict.nav} />
 
       <main className="flex-1">
-        {/* sr-only h1 */}
-        <h1 className="sr-only">Ghost in the Archive</h1>
+        {/* サイトイントロ */}
+        <SiteIntro dict={dict} />
 
         {/* 記事一覧 */}
-        <section className="py-16 md:py-24">
+        <section className="pb-16 md:pb-24">
           <div className="container mx-auto px-4">
             <Suspense fallback={<MysteryListSkeleton />}>
               <MysteryList lang={lang} dict={dict} />
             </Suspense>
+          </div>
+        </section>
 
-            {/* アーカイブ導線 */}
-            <div className="mt-12 text-center">
-              <Link
-                href={`/${lang}/archive`}
-                className="inline-block text-sm font-mono text-muted-foreground hover:text-gold transition-colors no-underline"
-              >
-                <span className="redacted">████</span> {dict.home.viewAllArticles} → <span className="redacted">████</span>
-              </Link>
-            </div>
+        {/* 分類インデックス */}
+        <ClassificationGuide lang={lang} dict={dict} />
+
+        {/* アーカイブ導線 */}
+        <section className="pb-16">
+          <div className="container mx-auto px-4 text-center">
+            <Link
+              href={`/${lang}/archive`}
+              className="inline-block text-sm font-mono text-muted-foreground hover:text-gold transition-colors no-underline"
+            >
+              <span className="redacted">████</span> {dict.home.viewAllArticles} → <span className="redacted">████</span>
+            </Link>
           </div>
         </section>
       </main>

@@ -116,6 +116,24 @@ const dict: Dictionary = {
     LOC: "地霊・場所",
     moreLocations: "他{count}件",
   },
+  siteIntro: {
+    tagline: "言語・記録・学問の境界を越えて、アノマリーを発掘する",
+    description:
+      "世界の公開デジタルアーカイブを5つの学術領域で多言語横断分析する自律型AIエージェントシステム。単一の記録・言語・学問分野では説明できない矛盾を浮かび上がらせる。",
+  },
+  classificationGuide: {
+    heading: "分類索引",
+    descriptions: {
+      HIS: "歴史的記録の矛盾、消失した人物、文書の欠落",
+      FLK: "地方伝承、口承伝統、民間信仰",
+      ANT: "儀礼、社会構造、異文化接触",
+      OCC: "説明不能な現象、超常的事象",
+      URB: "近代の噂話、現代の怪談",
+      CRM: "未解決犯罪、失踪事件、謎の死",
+      REL: "宗教的タブー、呪い、禁じられた儀式",
+      LOC: "場所に紐づく怪異、心霊スポット",
+    },
+  },
   share: {
     shareOnX: "Xでシェア",
     shareOnFacebook: "Facebookでシェア",

@@ -117,6 +117,24 @@ const dict: Dictionary = {
     LOC: "Locus",
     moreLocations: "+{count} más",
   },
+  siteIntro: {
+    tagline: "Desenterrando anomalías entre idiomas, archivos y disciplinas",
+    description:
+      "Un sistema autónomo de agentes de IA que analiza cruzadamente los archivos digitales públicos del mundo a través de cinco campos académicos — revelando las contradicciones que ningún registro, idioma o disciplina puede explicar por sí solo.",
+  },
+  classificationGuide: {
+    heading: "Índice de clasificación",
+    descriptions: {
+      HIS: "Discrepancias en registros históricos, personas desaparecidas, lagunas documentales",
+      FLK: "Tradiciones locales, folclore oral, creencias populares",
+      ANT: "Rituales, estructuras sociales, contacto intercultural",
+      OCC: "Fenómenos inexplicables, eventos sobrenaturales",
+      URB: "Rumores modernos, historias de fantasmas contemporáneas",
+      CRM: "Crímenes sin resolver, desapariciones, muertes misteriosas",
+      REL: "Tabúes religiosos, maldiciones, ritos prohibidos",
+      LOC: "Anomalías ligadas a lugares, ubicaciones encantadas",
+    },
+  },
   share: {
     shareOnX: "Compartir en X",
     shareOnFacebook: "Compartir en Facebook",

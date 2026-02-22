@@ -117,6 +117,24 @@ const dict: Dictionary = {
     LOC: "Genius Loci",
     moreLocations: "+{count} weitere",
   },
+  siteIntro: {
+    tagline: "Anomalien über Sprachen, Archive und Disziplinen hinweg aufspüren",
+    description:
+      "Ein autonomes KI-Agentensystem, das die öffentlichen digitalen Archive der Welt über fünf akademische Bereiche hinweg kreuzanalysiert — und Widersprüche aufdeckt, die keine einzelne Aufzeichnung, Sprache oder Disziplin allein erklären kann.",
+  },
+  classificationGuide: {
+    heading: "Klassifikationsindex",
+    descriptions: {
+      HIS: "Diskrepanzen in historischen Aufzeichnungen, vermisste Personen, Dokumentenlücken",
+      FLK: "Lokale Traditionen, mündliche Überlieferungen, Volksglauben",
+      ANT: "Rituale, Sozialstrukturen, interkultureller Kontakt",
+      OCC: "Unerklärliche Phänomene, übernatürliche Ereignisse",
+      URB: "Moderne Gerüchte, zeitgenössische Geistergeschichten",
+      CRM: "Ungelöste Verbrechen, Verschwundene, mysteriöse Todesfälle",
+      REL: "Religiöse Tabus, Flüche, verbotene Riten",
+      LOC: "Ortsgebundene Anomalien, Spukorte",
+    },
+  },
   share: {
     shareOnX: "Auf X teilen",
     shareOnFacebook: "Auf Facebook teilen",

@@ -116,6 +116,24 @@ const dict: Dictionary = {
     LOC: "Locus",
     moreLocations: "+{count} more",
   },
+  siteIntro: {
+    tagline: "Unearthing anomalies across languages, archives, and disciplines",
+    description:
+      "An autonomous AI agent system that cross-analyzes the world's public digital archives through five academic fields — surfacing the contradictions that no single record, language, or discipline can explain alone.",
+  },
+  classificationGuide: {
+    heading: "Classification Index",
+    descriptions: {
+      HIS: "Historical record discrepancies, missing persons, document gaps",
+      FLK: "Local traditions, oral folklore, folk beliefs",
+      ANT: "Rituals, social structures, cross-cultural contact",
+      OCC: "Unexplainable phenomena, supernatural events",
+      URB: "Modern rumors, contemporary ghost stories",
+      CRM: "Unsolved crimes, disappearances, mysterious deaths",
+      REL: "Religious taboos, curses, forbidden rites",
+      LOC: "Place-bound anomalies, haunted locations",
+    },
+  },
   share: {
     shareOnX: "Share on X",
     shareOnFacebook: "Share on Facebook",
