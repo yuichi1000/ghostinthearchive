@@ -66,19 +66,20 @@ class TestCreateFlashModel:
 class TestCreateClaudeSonnetModel:
     """create_claude_sonnet_model() のテスト。"""
 
-    def test_returns_model_string(self):
-        """戻り値が MODEL_CLAUDE_SONNET と一致すること。"""
-        result = create_claude_sonnet_model()
-        assert result == MODEL_CLAUDE_SONNET
+    def test_returns_instance(self):
+        """_ClaudeWithRetry インスタンスが返されること（LLMRegistry バイパス）。"""
+        from shared.model_config import _claude_with_retry_cls
 
-    def test_model_string_format(self):
-        """モデル文字列が Vertex AI 形式（claude- プレフィックス + @ セパレータ）であること。"""
         result = create_claude_sonnet_model()
-        assert result.startswith("claude-")
-        assert "@" in result
+        # _claude_with_retry_cls が None でない場合はインスタンスが返される
+        if _claude_with_retry_cls is not None:
+            assert isinstance(result, _claude_with_retry_cls)
+        else:
+            # anthropic が未インストールの場合はモデル文字列にフォールバック
+            assert result == MODEL_CLAUDE_SONNET
 
     def test_claude_with_retry_registered(self):
-        """_ClaudeWithRetry が LLMRegistry に登録されていること。"""
+        """_ClaudeWithRetry が LLMRegistry に登録され、cache_clear が呼ばれていること。"""
         from google.adk.models.registry import LLMRegistry
 
         # LLMRegistry.register() が呼び出されたこと
@@ -86,6 +87,8 @@ class TestCreateClaudeSonnetModel:
         # 最後の register 呼び出しの引数が _ClaudeWithRetry クラスであること
         registered_cls = LLMRegistry.register.call_args_list[-1][0][0]
         assert registered_cls.__name__ == "_ClaudeWithRetry"
+        # ADK 自動登録 Claude の LRU キャッシュ無効化が呼ばれていること
+        assert LLMRegistry.resolve.cache_clear.called
 
     def test_claude_max_retries_value(self):
         """_CLAUDE_MAX_RETRIES が 10 であること。"""
