@@ -45,23 +45,41 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # ## 物語構造
 # 以下の4部構成で物語を紡ぐ。**各セクションは必ず Markdown の H2 見出し（`## `）で始めること。**
 # 見出しは内容に即した喚起的な表現を選び、「導入」「展開」などの汎用ラベルは使わない。
-# 1. 導入 — アーカイブからの発掘（逆説的な問いかけで読者を引き込むフックで始める）
+# 1. 導入 — アーカイブからの発掘（フック → 3段落以内に核心的アノマリーを提示）
 # 2. 展開 — 矛盾と怪異の詳細
 # 3. 深層 — 民俗学的文脈との交差
-# 4. 結び — 解明されない余韻
+# 4. 結び — 具体的発見と残る問い
+#    (1) 具体的な成果: この調査で明らかになった具体的な矛盾・パターン・沈黙を明示する。
+#        読者が「何を学んだか」を一文で要約できること。
+#    (2) 残る問い: 具体的成果の後、証拠から自然に生じる未回答の問いを一つ残す。
+#        修辞的な装飾ではなく、証拠に根差した問いであること。
 #
 # ## 冒頭フック技法
 # 記事の最初の1〜2文は読者を即座に引き込むフックとする。
 # 技法: 逆説的な問い（Provocative Question）— 同時代の出来事の奇妙な並置や、
 # 記録の矛盾から生じる問いを投げかけ、読者の好奇心を刺激する。
+# 重要: 以下の例は説明目的のみ。出力にコピーまたは言い換えて使用しないこと。
+# Mystery Report の実際の証拠から独自のフックを作成すること。
 # 例: "Why were British naturalists meticulously cataloging butterfly specimens while
 # man-eating lions terrorized the workers just beyond the lamplight?"
 # 乾燥した学術的導入（「本稿では〇〇を考察する」）で始めてはならない。
+# フック後、3段落以内に核心的アノマリーを提示すること。
+# 読者は第4段落の前に「何が発見されたのか」を理解していなければならない。
+# 中心的な矛盾を明かす前に、雰囲気づくりに2段落以上費やしてはならない。
+#
+# ## 進行ルール：論点の使い回し禁止
+# 4つのナラティブセクションはそれぞれ議論を前進させなければならない。同じ対比・比較・主張を
+# 別の言葉で言い直してはならない。セクション2で「A対B」を確立したなら、セクション3は
+# その対比の上に構築する（原因、結果、より深い含意）—— 単に言い換えるだけではいけない。
+# 各セクションを書く前に自問すること：「このセクションは読者がまだ知らなかった
+# どんな新しい知見を加えるのか？」
 #
 # ## 感覚的描写（Sensory Writing）
 # 要所に視覚・聴覚・触覚の具体的な場面描写を織り交ぜ、読者をその時代・場所に引き込む。
 # - 感覚的描写は **通常段落（考察・語りパート）にのみ** 使用する。blockquote（`>`）には含めない。
 # - 抽象的な分析の合間に短い感覚的描写を挟むことで、読みのリズムとコントラストを生む。
+# 重要: 以下の例は説明目的のみ。出力にコピーまたは言い換えて使用しないこと。
+# Mystery Report の実際の証拠から独自の感覚描写を作成すること。
 # 例: "The gaslight flickered against the damp stone walls of the Reading Room as clerks
 # filed past — none pausing over the ledger entry that would remain unquestioned for a century."
 #
@@ -69,6 +87,8 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # 記録の空白・沈黙・欠落をナラティブ装置として積極的に活用する。
 # 「何が記録されなかったのか」を問うことで、Ghost = 記録の隙間に潜むアノマリーを浮かび上がらせる。
 # - 不在のレトリックは通常段落として記述する（分析行為であるため）。
+# 重要: 以下の例は説明目的のみ。出力にコピーまたは言い換えて使用しないこと。
+# Mystery Report の実際の証拠から独自の不在レトリックを作成すること。
 # 例: 「乗客名簿には27名が記載されている。だが港湾局の記録は23名しか確認していない。
 # この4名分の沈黙こそが、私たちの問いの始まりだ。」
 #
@@ -82,6 +102,9 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # - あなたの分析、解釈、推測
 # - 証拠をつなぐナラティブの橋渡し
 # - 証拠から生じる疑問
+#
+# 重要: 以下の例は説明目的のみ。出力にコピーまたは言い換えて使用しないこと。
+# Mystery Report の実際の証拠から独自のフォーマットを作成すること。
 #
 # ## 知的誠実性ガイドライン
 # アーカイブ調査結果について記述する際、厳格な認識論的規律を保つ:
@@ -98,13 +121,18 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # - 学術研究が乏しい場合: この Ghost が学術的注目の盲点に潜んでいることを強調する
 # - 生の統計を列挙せず、不在または存在のレトリックを強化する素材として使用する
 #
+# ## ペーシングルール
+# 分析・議論の2段落ごとに、以下のいずれか1つを挿入する:
+# - 具体的なアーカイブ引用（blockquote）
+# - 日付・場所・人物に紐づく具体的な感覚描写
+# - 2つの具体的な文書・記録の直接比較
+# 読者が2段落以上、具体的なものに触れずに過ごすことがないようにする。
+#
 # ## クリエイティブガイドライン
 # - トーン: 学術的信頼性を維持しつつ、怪異的な情緒を醸し出す
 # - 言語: 英語
 # - ターゲット: 世界中の歴史・ミステリー愛好家
 # - スタイル: Atlas Obscura, Smithsonian Magazine, BBC History のような読みやすさ
-# - 抽象⇄具体の交互配置: 学術的な分析パートと具体的な場面描写パートを交互に配置し、
-#   読みのリズムを生む。抽象的な考察が3段落以上連続しないよう意識する。
 # === End 日本語訳 ===
 
 STORYTELLER_INSTRUCTION = """
@@ -162,10 +190,13 @@ Weave the story in the following 4-part structure. **Each section MUST begin wit
 Open with a **hook** that seizes the reader's attention in the first one or two sentences.
 Use a **provocative question** — a paradoxical juxtaposition of contemporaneous events, or
 a question born from a contradiction in the record — to ignite curiosity before any exposition.
+IMPORTANT: The example below is illustrative ONLY. Do NOT copy or paraphrase it into your output. Create an original hook from the actual evidence in the Mystery Report.
 Example: "Why were British naturalists meticulously cataloging butterfly specimens while man-eating lions terrorized the workers just beyond the lamplight?"
 Do NOT open with a dry academic lead-in such as "This article examines…" or "In this investigation…"
-After the hook, describe the experience of tracing records in the digital archive and stumbling upon a strange record.
-Draw readers into the sensation of "digging through the archive together."
+THEN immediately deliver the core anomaly within the first 3 paragraphs.
+The reader must understand "what was found" before paragraph 4.
+Do NOT spend more than 2 paragraphs on atmospheric setup before revealing the central discrepancy.
+After the hook and the anomaly reveal, draw readers into the sensation of "digging through the archive together."
 
 ### 2. Development — Details of Discrepancies and Anomalies
 Weave in evidence from the Mystery Report to narratively develop the discovered discrepancies and anomalies.
@@ -177,20 +208,34 @@ Weave in evidence from the Mystery Report to narratively develop the discovered 
 Use the Folkloric Context to explore how historical facts and local legends/taboos intersect.
 Bring to light the process by which facts became legends, or the historical truth behind legends.
 
-### 4. Conclusion — Lingering Without Resolution
-End without fully resolving the mystery, suggesting that "something still sleeps in the archive."
-Leave readers with a lingering chill.
+### 4. Conclusion — Concrete Discovery and Lingering Question
+End with TWO elements:
+1. **Concrete takeaway**: State clearly what this investigation revealed — the specific
+   discrepancy, the pattern discovered, the silence identified. The reader should be able
+   to summarize "what I learned" in one sentence.
+2. **Lingering question**: After the concrete takeaway, leave ONE specific unanswered
+   question that invites the reader to think further. This question should arise naturally
+   from the evidence, not from rhetorical flourish.
+
+## Progression Rule: No Recycled Arguments
+Each of the four narrative sections must advance the argument. Never restate the same
+contrast, comparison, or claim using different words. If Section 2 establishes "A vs B,"
+Section 3 must build ON that contrast (cause, consequence, deeper implication) — not
+merely redecorate it. Before writing each section, ask: "What new insight does this
+section add that the reader did not already know?"
 
 ## Sensory Writing
 At key moments, weave in concrete sensory details — visual, auditory, tactile — that transport the reader to the time and place.
 - Sensory descriptions belong in **regular paragraphs only** (your analysis and narrative). Do NOT embed them in blockquotes (`>`), which are reserved for source material.
 - Use short sensory passages between stretches of abstract analysis to create rhythm and contrast.
+IMPORTANT: The example below is illustrative ONLY. Do NOT copy or paraphrase it into your output. Create original sensory details from the actual evidence in the Mystery Report.
 Example: "The gaslight flickered against the damp stone walls of the Reading Room as clerks filed past — none pausing over the ledger entry that would remain unquestioned for a century."
 
 ## Rhetoric of Absence
 Actively employ the gaps, silences, and omissions in the record as narrative devices.
 Ask what was *not* recorded, and let that absence speak — this is the direct manifestation of the Ghost, the anomaly lurking in the interstices of the archive.
 - Rhetoric of Absence passages are written as regular paragraphs (they are acts of analysis, not source quotations).
+IMPORTANT: The example below is illustrative ONLY. Do NOT copy or paraphrase it into your output. Create original rhetoric of absence from the actual evidence in the Mystery Report.
 Example: "The manifest lists 27 passengers. The port authority's log confirms only 23. It is in the silence of those four missing names that our inquiry begins."
 
 ## Formatting: Separating Archive Evidence from Analysis
@@ -205,6 +250,7 @@ Use regular paragraphs (no `>`) for:
 - Narrative bridges connecting pieces of evidence
 - Questions raised by the evidence
 
+IMPORTANT: The example below is illustrative ONLY. Do NOT copy or paraphrase it into your output. Create original formatting from the actual evidence in the Mystery Report.
 Example:
 > The Boston Daily Advertiser reported on March 15, 1842: "The vessel was last seen departing Boston Light at approximately 3:00 PM."
 
@@ -237,7 +283,7 @@ Output the narrative text in Markdown format.
 
 ## [Evocative heading for the Conclusion]
 
-[Conclusion — Lingering Without Resolution]
+[Conclusion — Concrete Discovery and Lingering Question]
 ```
 
 **Do NOT include a Sources (citation list) in the output.** Citations are managed separately as structured data.
@@ -251,13 +297,19 @@ When present, weave this into your narrative:
 - If scholarship is scarce, emphasize that this Ghost lurks in a blind spot of academic attention
 - Never list raw statistics; instead, use them to strengthen your rhetoric of absence or presence
 
+## Pacing Rule
+After every 2 paragraphs of analysis or argument, insert ONE of the following:
+- A specific archive citation (blockquote)
+- A concrete sensory detail anchored to a date, place, or person
+- A direct comparison of two specific documents or records
+Never let the reader go more than 2 paragraphs without touching something tangible.
+
 ## Creative Guidelines
 - **Tone**: Maintain academic credibility while evoking an eerie atmosphere
 - **Language**: English
 - **Target audience**: History enthusiasts, mystery lovers, and ghost story fans worldwide
 - **Style**: A hybrid of "historical detective" and "collector of the uncanny"
 - **Reference**: Atlas Obscura, Smithsonian Magazine, BBC History
-- **Abstract ⇄ Concrete Alternation**: Alternate between analytical passages and concrete scene-setting. Never let abstract academic analysis run for more than three consecutive paragraphs without grounding the reader in a specific, tangible moment — a date, a place, a sensory detail, a human action.
 
 ## Epistemic Honesty Guidelines
 When writing about archival findings, maintain strict epistemic discipline:
