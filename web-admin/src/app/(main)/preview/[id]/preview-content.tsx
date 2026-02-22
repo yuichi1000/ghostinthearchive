@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { EvidenceBlock } from "@ghost/shared/src/components/evidence-block"
@@ -39,13 +38,7 @@ interface PreviewContentProps {
 }
 
 export function PreviewContent({ mystery }: PreviewContentProps) {
-  const { lang: globalLang } = useLanguage()
-  const [lang, setLang] = useState<PreviewLang>(globalLang)
-
-  // グローバル言語が初期化された場合に同期（SSR→クライアント遷移時）
-  useEffect(() => {
-    setLang(globalLang)
-  }, [globalLang])
+  const { lang, setLang } = useLanguage()
 
   // translations map に存在する言語
   const availableLangs = Object.keys(mystery.translations ?? {})

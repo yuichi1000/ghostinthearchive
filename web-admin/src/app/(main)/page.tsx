@@ -499,7 +499,7 @@ function AdminMysteryCard({ mystery, lang, onApprove, onArchive, onUnpublish }: 
           <>
             <div className="flex items-center gap-3">
               <a
-                href={`${process.env.NEXT_PUBLIC_SITE_URL || ""}/en/mystery/${mystery.mystery_id}`}
+                href={`${process.env.NEXT_PUBLIC_SITE_URL || ""}/${lang}/mystery/${mystery.mystery_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm text-gold hover:text-parchment transition-colors no-underline"
