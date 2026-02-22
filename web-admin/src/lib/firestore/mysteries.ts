@@ -98,3 +98,17 @@ export async function archiveMystery(mysteryId: string): Promise<void> {
     updatedAt: Timestamp.now(),
   });
 }
+
+/**
+ * 公開済みミステリーを非公開に戻す（published → pending）
+ * publishedAt は再公開時の参考情報として保持する
+ */
+export async function unpublishMystery(mysteryId: string): Promise<void> {
+  const db = getFirestoreDb();
+  const docRef = doc(db, COLLECTIONS.MYSTERIES, mysteryId);
+
+  await updateDoc(docRef, {
+    status: "pending" as MysteryStatus,
+    updatedAt: Timestamp.now(),
+  });
+}
