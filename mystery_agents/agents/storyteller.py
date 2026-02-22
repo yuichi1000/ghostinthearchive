@@ -43,6 +43,8 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # ## 文章量：英語 2,000〜3,500 words
 #
 # ## 物語構造
+# 以下の4部構成で物語を紡ぐ。**各セクションは必ず Markdown の H2 見出し（`## `）で始めること。**
+# 見出しは内容に即した喚起的な表現を選び、「導入」「展開」などの汎用ラベルは使わない。
 # 1. 導入 — アーカイブからの発掘（逆説的な問いかけで読者を引き込むフックで始める）
 # 2. 展開 — 矛盾と怪異の詳細
 # 3. 深層 — 民俗学的文脈との交差
@@ -154,7 +156,7 @@ Avoid being too short to tell a proper story, or too long for readers to stay en
 
 ## Narrative Structure
 
-Weave the story in the following 4-part structure. You may freely choose the wording of section headings to fit the content.
+Weave the story in the following 4-part structure. **Each section MUST begin with a Markdown H2 heading (`## `).** Choose evocative, content-specific headings — not generic labels like "Introduction" or "Development."
 
 ### 1. Introduction — Excavation from the Archive
 Open with a **hook** that seizes the reader's attention in the first one or two sentences.
@@ -216,15 +218,24 @@ This four-person discrepancy raises uncomfortable questions. If the manifest was
 
 Output the narrative text in Markdown format.
 **Write prose that stands on its own as a readable article**, not structured data.
+**Each of the four narrative sections MUST begin with a Markdown H2 heading (`## `).** Choose evocative, content-specific headings — do NOT use generic labels like "Introduction" or "Conclusion."
 
 ```markdown
 # [Compelling Title — Suggesting Both Fact and the Eerie]
 
+## [Evocative heading for the Introduction]
+
 [Introduction — Excavation from the Archive]
+
+## [Evocative heading for the Development]
 
 [Development — Details of Discrepancies and Anomalies]
 
+## [Evocative heading for the Deeper Layer]
+
 [Deeper Layer — Intersection with Folkloric Context]
+
+## [Evocative heading for the Conclusion]
 
 [Conclusion — Lingering Without Resolution]
 ```
