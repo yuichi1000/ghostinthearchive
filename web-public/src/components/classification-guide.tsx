@@ -58,7 +58,7 @@ export function ClassificationGuide({ lang, dict }: ClassificationGuideProps) {
             return (
               <Link
                 key={code}
-                href={`/${lang}/archive`}
+                href={`/${lang}/archive?c=${code}`}
                 className={`group block rounded-lg border ${colors.border} bg-card p-4 transition-transform hover:scale-[1.02] no-underline`}
               >
                 <Icon className={`w-6 h-6 ${colors.icon} mb-2`} aria-hidden="true" />

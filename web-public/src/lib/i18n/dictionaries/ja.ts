@@ -41,6 +41,8 @@ const dict: Dictionary = {
     heading: "ケースアーカイブ",
     description: "世界の公開記録から発掘された、すべての異常・矛盾・説明不能な現象の完全索引。",
     noArticles: "まだケースファイルは公開されていません。",
+    filterActive: "表示中: {classification}",
+    clearFilter: "すべて表示",
     page: "ページ",
     previous: "前へ",
     next: "次へ",

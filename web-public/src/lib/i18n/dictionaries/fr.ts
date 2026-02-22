@@ -42,6 +42,8 @@ const dict: Dictionary = {
     heading: "Archives des dossiers",
     description: "Index complet de toutes les anomalies, divergences et phénomènes inexpliqués exhumés des archives publiques du monde.",
     noArticles: "Aucun dossier n'a encore été publié.",
+    filterActive: "Affichage : {classification}",
+    clearFilter: "Tout afficher",
     page: "Page",
     previous: "Précédent",
     next: "Suivant",

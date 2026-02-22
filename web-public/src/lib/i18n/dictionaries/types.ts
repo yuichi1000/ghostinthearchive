@@ -34,6 +34,8 @@ export interface Dictionary {
     heading: string;
     description: string;
     noArticles: string;
+    filterActive: string;
+    clearFilter: string;
     page: string;
     previous: string;
     next: string;
