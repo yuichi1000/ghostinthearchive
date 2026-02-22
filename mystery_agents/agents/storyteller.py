@@ -19,7 +19,7 @@ from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models.llm_response import LlmResponse
 
-from shared.model_config import create_pro_model
+from shared.model_config import create_claude_sonnet_model
 
 logger = logging.getLogger(__name__)
 
@@ -322,7 +322,7 @@ def _storyteller_after_model(
 
 storyteller_agent = LlmAgent(
     name="storyteller",
-    model=create_pro_model(),
+    model=create_claude_sonnet_model(),
     description=(
         "Creative agent that weaves narratives fusing historical rigor with eerie atmosphere. "
         "Receives the Mystery Report (including Folkloric Context) and generates "

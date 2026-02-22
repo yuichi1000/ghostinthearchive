@@ -1,6 +1,6 @@
 """shared/model_config のユニットテスト。
 
-Gemini モデルアダプタのモデル名・リトライ設定が
+Gemini / Claude モデルアダプタのモデル名・リトライ設定が
 正しいパラメータで生成されることを検証する。
 
 Note: HttpRetryOptions はモジュールインポート時にモジュールレベル定数として
@@ -9,10 +9,12 @@ model_config モジュールの定数を直接検証する。
 """
 
 from shared.model_config import (
+    MODEL_CLAUDE_SONNET,
     MODEL_FLASH,
     MODEL_PRO,
     _FLASH_RETRY_OPTIONS,
     _PRO_RETRY_OPTIONS,
+    create_claude_sonnet_model,
     create_flash_model,
     create_pro_model,
 )
@@ -58,3 +60,18 @@ class TestCreateFlashModel:
         last_call = Gemini.call_args
         # retry_options 引数が _FLASH_RETRY_OPTIONS と同一オブジェクトであること
         assert last_call.kwargs.get("retry_options") is _FLASH_RETRY_OPTIONS
+
+
+class TestCreateClaudeSonnetModel:
+    """create_claude_sonnet_model() のテスト。"""
+
+    def test_returns_model_string(self):
+        """戻り値が MODEL_CLAUDE_SONNET と一致すること。"""
+        result = create_claude_sonnet_model()
+        assert result == MODEL_CLAUDE_SONNET
+
+    def test_model_string_format(self):
+        """モデル文字列が Vertex AI 形式（claude- プレフィックス + @ セパレータ）であること。"""
+        result = create_claude_sonnet_model()
+        assert result.startswith("claude-")
+        assert "@" in result
