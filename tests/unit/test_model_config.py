@@ -12,6 +12,7 @@ from shared.model_config import (
     MODEL_CLAUDE_SONNET,
     MODEL_FLASH,
     MODEL_PRO,
+    _CLAUDE_MAX_RETRIES,
     _FLASH_RETRY_OPTIONS,
     _PRO_RETRY_OPTIONS,
     create_claude_sonnet_model,
@@ -75,3 +76,17 @@ class TestCreateClaudeSonnetModel:
         result = create_claude_sonnet_model()
         assert result.startswith("claude-")
         assert "@" in result
+
+    def test_claude_with_retry_registered(self):
+        """_ClaudeWithRetry が LLMRegistry に登録されていること。"""
+        from google.adk.models.registry import LLMRegistry
+
+        # LLMRegistry.register() が呼び出されたこと
+        assert LLMRegistry.register.called
+        # 最後の register 呼び出しの引数が _ClaudeWithRetry クラスであること
+        registered_cls = LLMRegistry.register.call_args_list[-1][0][0]
+        assert registered_cls.__name__ == "_ClaudeWithRetry"
+
+    def test_claude_max_retries_value(self):
+        """_CLAUDE_MAX_RETRIES が 10 であること。"""
+        assert _CLAUDE_MAX_RETRIES == 10

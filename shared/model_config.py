@@ -12,12 +12,57 @@ ADK はデフォルトで retry_options=None（リトライ0回）のため、
 from google.adk.models.google_llm import Gemini
 from google.genai.types import HttpRetryOptions
 
+# === 日本語訳 ===
+# Claude (Vertex AI) のリトライ回数上限。
+# Anthropic SDK のデフォルトは 2回だが、Vertex AI の 429 レート制限に対応するため
+# 10回に引き上げる。指数バックオフは SDK が自動適用する。
+# === End 日本語訳 ===
+_CLAUDE_MAX_RETRIES = 10
+
 # Claude モデルの LLMRegistry 登録（Vertex AI 経由）
 # anthropic パッケージが未インストールの場合はスキップ（テスト環境等）
 try:
+    import os
+    from functools import cached_property
+
+    from anthropic import AsyncAnthropicVertex
     from google.adk.models.anthropic_llm import Claude
     from google.adk.models.registry import LLMRegistry
-    LLMRegistry.register(Claude)
+
+    class _ClaudeWithRetry(Claude):
+        """Vertex AI 429 レート制限に対応するリトライ強化版 Claude。
+
+        ADK の Claude クラスは AsyncAnthropicVertex に max_retries を渡さないため、
+        Anthropic SDK のデフォルト（2回）しかリトライされない。
+        このサブクラスで max_retries=_CLAUDE_MAX_RETRIES を明示的に設定する。
+        """
+
+        @cached_property
+        def _anthropic_client(self) -> AsyncAnthropicVertex:
+            if (
+                "GOOGLE_CLOUD_PROJECT" not in os.environ
+                or "GOOGLE_CLOUD_LOCATION" not in os.environ
+            ):
+                raise ValueError(
+                    "GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION "
+                    "environment variables must be set."
+                )
+            try:
+                from google.adk.utils._google_client_headers import (
+                    get_tracking_headers,
+                )
+
+                headers = get_tracking_headers()
+            except ImportError:
+                headers = {}
+            return AsyncAnthropicVertex(
+                project_id=os.environ["GOOGLE_CLOUD_PROJECT"],
+                region=os.environ["GOOGLE_CLOUD_LOCATION"],
+                default_headers=headers,
+                max_retries=_CLAUDE_MAX_RETRIES,
+            )
+
+    LLMRegistry.register(_ClaudeWithRetry)
 except ImportError:
     pass
 
@@ -72,8 +117,8 @@ def create_flash_model() -> Gemini:
 def create_claude_sonnet_model() -> str:
     """Claude Sonnet 4.5 (Vertex AI) のモデル文字列を返す。
 
-    Claude は ADK の LLMRegistry 経由で解決されるため、
+    Claude は ADK の LLMRegistry 経由で _ClaudeWithRetry に解決されるため、
     Gemini のようなアダプタオブジェクトではなくモデル文字列を返す。
-    リトライは anthropic SDK 側で自動処理される。
+    リトライは _ClaudeWithRetry が max_retries=10 で Anthropic SDK に委譲する。
     """
     return MODEL_CLAUDE_SONNET
