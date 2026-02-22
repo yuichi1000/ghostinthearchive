@@ -1,6 +1,10 @@
-"""Unit tests for Armchair Polymath agent instruction."""
+"""Unit tests for Armchair Polymath agent instruction and configuration."""
 
-from mystery_agents.agents.armchair_polymath import ARMCHAIR_POLYMATH_INSTRUCTION
+from mystery_agents.agents.armchair_polymath import (
+    ARMCHAIR_POLYMATH_INSTRUCTION,
+    armchair_polymath_agent,
+)
+from mystery_agents.tools.search_metadata import get_search_metadata
 
 
 class TestArmchairPolymathInstruction:
@@ -30,3 +34,23 @@ class TestArmchairPolymathInstruction:
         sca_pos = ARMCHAIR_POLYMATH_INSTRUCTION.index("Source Coverage Assessment")
         clc_pos = ARMCHAIR_POLYMATH_INSTRUCTION.index("Confidence Level Checklist")
         assert sca_pos < clc_pos
+
+    def test_instruction_includes_source_coverage_in_json(self):
+        """instruction の JSON 例に source_coverage フィールドが含まれる。"""
+        assert '"source_coverage"' in ARMCHAIR_POLYMATH_INSTRUCTION
+
+    def test_instruction_includes_confidence_rationale_in_json(self):
+        """instruction の JSON 例に confidence_rationale フィールドが含まれる。"""
+        assert '"confidence_rationale"' in ARMCHAIR_POLYMATH_INSTRUCTION
+
+    def test_instruction_includes_get_search_metadata(self):
+        """instruction に get_search_metadata ツールの説明が含まれる。"""
+        assert "get_search_metadata" in ARMCHAIR_POLYMATH_INSTRUCTION
+
+
+class TestArmchairPolymathTools:
+    def test_tools_include_get_search_metadata(self):
+        """armchair_polymath_agent の tools に get_search_metadata が含まれる。"""
+        tool_functions = [t for t in armchair_polymath_agent.tools if callable(t)]
+        tool_names = [t.__name__ for t in tool_functions]
+        assert "get_search_metadata" in tool_names

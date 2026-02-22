@@ -319,3 +319,47 @@ class TestSaveStructuredReportEvidenceValidation:
 
         assert result_data["status"] == "success"
         assert result_data["warnings"] == []
+
+
+class TestSaveStructuredReportNewFields:
+    """source_coverage と confidence_rationale の保存テスト。"""
+
+    def test_source_coverage_preserved(self):
+        """source_coverage オブジェクトがそのまま保存される。"""
+        report_data = {
+            "title": "Test",
+            "source_coverage": {
+                "apis_searched": ["chronicling_america", "loc", "dpla"],
+                "apis_with_results": ["chronicling_america", "loc"],
+                "apis_without_results": ["dpla"],
+                "known_undigitized_sources": ["Parish registers"],
+                "coverage_assessment": "About 20% digitized",
+            },
+        }
+        mock_ctx = MagicMock()
+        mock_ctx.state = {}
+
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved = mock_ctx.state["structured_report"]
+        assert saved["source_coverage"]["apis_searched"] == ["chronicling_america", "loc", "dpla"]
+        assert saved["source_coverage"]["apis_without_results"] == ["dpla"]
+        assert saved["source_coverage"]["coverage_assessment"] == "About 20% digitized"
+
+    def test_confidence_rationale_preserved(self):
+        """confidence_rationale 文字列がそのまま保存される。"""
+        report_data = {
+            "title": "Test",
+            "confidence_rationale": "Rated LOW because only one source was found via API.",
+        }
+        mock_ctx = MagicMock()
+        mock_ctx.state = {}
+
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved = mock_ctx.state["structured_report"]
+        assert saved["confidence_rationale"] == "Rated LOW because only one source was found via API."

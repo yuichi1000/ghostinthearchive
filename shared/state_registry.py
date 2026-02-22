@@ -48,6 +48,18 @@ STATE_KEYS: list[StateKey] = [
         read_by=("scholar_{lang}", "pipeline_gate", "publisher_tools"),
     ),
     StateKey(
+        name="raw_search_results",
+        description="Librarian ツールが直接書き込む検索結果リスト（ベースキー）",
+        written_by=("librarian_tools",),
+        read_by=("search_metadata",),
+    ),
+    StateKey(
+        name="raw_search_results_{lang}",
+        description="Librarian ツールが直接書き込む検索結果リスト（言語別）",
+        written_by=("librarian_tools",),
+        read_by=("search_metadata",),
+    ),
+    StateKey(
         name="scholar_analysis_{lang}",
         description="Scholar（分析モード）の分析レポート（言語別）",
         written_by=("scholar_{lang}",),
