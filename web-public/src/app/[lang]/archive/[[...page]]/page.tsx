@@ -1,8 +1,10 @@
+import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { PublicFooter } from "@/components/public-footer"
 import { MysteryCard } from "@/components/mystery-card"
 import { Pagination } from "@/components/pagination"
+import { ArchiveFilter } from "@/components/archive-filter"
 import { getPublishedMysteries, getAllPublishedMysteriesMap } from "@ghost/shared/src/lib/firestore/queries"
 import { ARCHIVE_PAGE_SIZE } from "@/lib/constants"
 import { FileStack, Search } from "lucide-react"
@@ -99,35 +101,42 @@ export default async function ArchivePage({
               <div className="mt-4 h-px bg-gradient-to-r from-border to-transparent" />
             </div>
 
-            {/* 記事グリッド or 空状態 */}
-            {pageMysteries.length === 0 ? (
-              <div className="text-center py-16">
-                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" aria-hidden="true" />
-                <h2 className="font-serif text-xl text-parchment mb-2">
-                  {dict.archive.noArticles}
-                </h2>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {pageMysteries.map((mystery) => (
-                    <MysteryCard
-                      key={mystery.mystery_id}
-                      mystery={mystery}
-                      lang={lang as SupportedLang}
-                      classificationLabels={dict.classification}
-                    />
-                  ))}
-                </div>
+            {/* 分類フィルタ（?c= パラメータ使用時） */}
+            <Suspense fallback={null}>
+              <ArchiveFilter lang={lang as SupportedLang} dict={dict} />
+            </Suspense>
 
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  basePath={`/${lang}/archive`}
-                  labels={dict.archive}
-                />
-              </>
-            )}
+            {/* SSG 記事グリッド（フィルタ未使用時に表示） */}
+            <div className="archive-default-content">
+              {pageMysteries.length === 0 ? (
+                <div className="text-center py-16">
+                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" aria-hidden="true" />
+                  <h2 className="font-serif text-xl text-parchment mb-2">
+                    {dict.archive.noArticles}
+                  </h2>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {pageMysteries.map((mystery) => (
+                      <MysteryCard
+                        key={mystery.mystery_id}
+                        mystery={mystery}
+                        lang={lang as SupportedLang}
+                        classificationLabels={dict.classification}
+                      />
+                    ))}
+                  </div>
+
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    basePath={`/${lang}/archive`}
+                    labels={dict.archive}
+                  />
+                </>
+              )}
+            </div>
           </div>
         </section>
       </main>

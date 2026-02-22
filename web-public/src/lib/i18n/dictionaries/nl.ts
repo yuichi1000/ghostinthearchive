@@ -42,6 +42,8 @@ const dict: Dictionary = {
     heading: "Zaakarchief",
     description: "Volledige index van alle onderzochte anomalieën, discrepanties en onverklaarde verschijnselen uit de openbare archieven van de wereld.",
     noArticles: "Er zijn nog geen dossiers gepubliceerd.",
+    filterActive: "Weergave: {classification}",
+    clearFilter: "Alles tonen",
     page: "Pagina",
     previous: "Vorige",
     next: "Volgende",

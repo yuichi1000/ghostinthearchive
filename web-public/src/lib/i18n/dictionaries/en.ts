@@ -41,6 +41,8 @@ const dict: Dictionary = {
     heading: "Case Archive",
     description: "Complete index of all investigated anomalies, discrepancies, and unexplained phenomena unearthed from the world's public records.",
     noArticles: "No case files have been published yet.",
+    filterActive: "Showing: {classification}",
+    clearFilter: "Show all",
     page: "Page",
     previous: "Previous",
     next: "Next",

@@ -42,6 +42,8 @@ const dict: Dictionary = {
     heading: "Fallarchiv",
     description: "Vollständiges Verzeichnis aller untersuchten Anomalien, Diskrepanzen und unerklärlichen Phänomene aus den öffentlichen Aufzeichnungen der Welt.",
     noArticles: "Es wurden noch keine Fallakten veröffentlicht.",
+    filterActive: "Anzeige: {classification}",
+    clearFilter: "Alle anzeigen",
     page: "Seite",
     previous: "Zurück",
     next: "Weiter",

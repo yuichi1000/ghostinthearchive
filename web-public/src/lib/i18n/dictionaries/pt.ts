@@ -42,6 +42,8 @@ const dict: Dictionary = {
     heading: "Arquivo de casos",
     description: "Índice completo de todas as anomalias, discrepâncias e fenômenos inexplicáveis desenterrados dos registros públicos do mundo.",
     noArticles: "Nenhum dossiê foi publicado ainda.",
+    filterActive: "Exibindo: {classification}",
+    clearFilter: "Mostrar tudo",
     page: "Página",
     previous: "Anterior",
     next: "Próximo",
