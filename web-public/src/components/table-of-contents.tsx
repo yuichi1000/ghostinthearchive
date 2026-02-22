@@ -33,8 +33,8 @@ function TocLinks({
 }) {
   return (
     <ul className="space-y-1">
-      {sections.map((section) => (
-        <li key={section.id}>
+      {sections.map((section, index) => (
+        <li key={`${section.id}-${index}`}>
           <button
             onClick={() => onClick(section.id)}
             className={`w-full text-left text-sm font-mono py-1.5 pl-3 border-l-2 transition-colors ${

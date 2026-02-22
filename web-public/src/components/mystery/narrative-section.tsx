@@ -2,6 +2,8 @@ import Markdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { FileText } from "lucide-react"
 import { stripLeadingH1 } from "@ghost/shared/src/lib/utils"
+import { slugify } from "@/lib/markdown-headings"
+import type { ReactNode } from "react"
 
 // 7言語のアーカイブ引用ラベル
 const ARCHIVE_LABEL: Record<string, string> = {
@@ -28,6 +30,20 @@ function ArchiveBlockquote({ children, lang }: { children?: React.ReactNode; lan
   )
 }
 
+/**
+ * React children からプレーンテキストを再帰的に抽出する。
+ * h2 要素の children はネストした要素（bold, em 等）を含むため再帰処理が必要。
+ */
+function getTextContent(children: ReactNode): string {
+  if (typeof children === "string") return children
+  if (typeof children === "number") return String(children)
+  if (Array.isArray(children)) return children.map(getTextContent).join("")
+  if (children && typeof children === "object" && "props" in children) {
+    return getTextContent((children as { props: { children?: ReactNode } }).props.children)
+  }
+  return ""
+}
+
 interface NarrativeSectionProps {
   narrativeContent?: string
   summary: string
@@ -36,14 +52,25 @@ interface NarrativeSectionProps {
 
 export function NarrativeSection({ narrativeContent, summary, lang = "en" }: NarrativeSectionProps) {
   if (narrativeContent) {
+    // 重複スラグを追跡するクロージャ（レンダーごとにリセット）
+    const slugCounts = new Map<string, number>()
+
     const markdownComponents: Components = {
       blockquote: ({ children }) => (
         <ArchiveBlockquote lang={lang}>{children}</ArchiveBlockquote>
       ),
+      h2: ({ children }) => {
+        const text = getTextContent(children)
+        const baseSlug = slugify(text)
+        const count = slugCounts.get(baseSlug) || 0
+        const id = count > 0 ? `${baseSlug}-${count}` : baseSlug
+        slugCounts.set(baseSlug, count + 1)
+        return <h2 id={id} className="scroll-mt-24">{children}</h2>
+      },
     }
 
     return (
-      <section id="section-narrative" className="scroll-mt-24 prose prose-lg prose-invert max-w-none prose-headings:font-serif prose-headings:text-parchment prose-headings:mt-12 prose-headings:mb-4 prose-p:text-foreground/90 prose-p:leading-loose prose-p:mb-6 prose-a:text-gold prose-strong:text-parchment prose-hr:border-border">
+      <section className="prose prose-lg prose-invert max-w-none prose-headings:font-serif prose-headings:text-parchment prose-headings:mt-12 prose-headings:mb-4 prose-p:text-foreground/90 prose-p:leading-loose prose-p:mb-6 prose-a:text-gold prose-strong:text-parchment prose-hr:border-border">
         <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
           {stripLeadingH1(narrativeContent).replace(/\*\*(.+?)\*\*/g, ' **$1** ')}
         </Markdown>

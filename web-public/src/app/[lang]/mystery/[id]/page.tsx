@@ -23,6 +23,8 @@ import { getDictionary } from "@/lib/i18n/dictionaries"
 import { findRelatedArticles } from "@/lib/related-articles"
 import { getSiteUrl } from "@/lib/site-url"
 import { buildOgpMetadata, buildAlternates } from "@/lib/seo"
+import { extractHeadings } from "@/lib/markdown-headings"
+import { stripLeadingH1 } from "@ghost/shared/src/lib/utils"
 import type { TocSection } from "@/components/table-of-contents"
 
 // SSG: ビルド時に生成されたページ以外は 404
@@ -113,20 +115,19 @@ export default async function MysteryDetailPage({
   const evidenceAExcerpt = getTranslatedExcerpt(mystery, "a", lang)
   const evidenceBExcerpt = getTranslatedExcerpt(mystery, "b", lang)
 
-  // 目次セクションの動的構築（存在するセクションのみ含める）
+  // 本文見出しから TOC セクションを動的構築
+  const narrativeHeadings = extractHeadings(stripLeadingH1(narrativeContent || ""))
   const tocSections: TocSection[] = [
-    { id: SECTION_IDS.narrative, label: dict.detail.tocNarrative },
+    // 見出しが抽出できた場合は記事固有の見出しを使用、なければ固定ラベル
+    ...(narrativeHeadings.length > 0
+      ? narrativeHeadings.map(h => ({ id: h.id, label: h.text }))
+      : [{ id: SECTION_IDS.narrative, label: dict.detail.tocNarrative }]),
+    // 固定セクション（条件付き）
+    ...(discrepancyDetected ? [{ id: SECTION_IDS.discrepancy, label: dict.detail.tocDiscrepancy }] : []),
+    { id: SECTION_IDS.evidence, label: dict.detail.tocEvidence },
+    ...(hypothesis ? [{ id: SECTION_IDS.hypothesis, label: dict.detail.tocHypothesis }] : []),
+    ...(mystery.historical_context ? [{ id: SECTION_IDS.historicalContext, label: dict.detail.tocHistoricalContext }] : []),
   ]
-  if (discrepancyDetected) {
-    tocSections.push({ id: SECTION_IDS.discrepancy, label: dict.detail.tocDiscrepancy })
-  }
-  tocSections.push({ id: SECTION_IDS.evidence, label: dict.detail.tocEvidence })
-  if (hypothesis) {
-    tocSections.push({ id: SECTION_IDS.hypothesis, label: dict.detail.tocHypothesis })
-  }
-  if (mystery.historical_context) {
-    tocSections.push({ id: SECTION_IDS.historicalContext, label: dict.detail.tocHistoricalContext })
-  }
 
   // シェアボタン用の URL
   const shareUrl = `${getSiteUrl()}/${lang}/mystery/${id}`
