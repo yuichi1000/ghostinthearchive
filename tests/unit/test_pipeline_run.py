@@ -1,5 +1,7 @@
 """Unit tests for shared/pipeline_run.py."""
 
+import logging
+
 from unittest.mock import MagicMock, patch
 
 
@@ -430,3 +432,30 @@ class TestErrorPipelineRun:
 
             # Should not raise
             error_pipeline_run("run-123", "some error")
+
+    def test_error_pipeline_run_logs_at_error_level(
+        self, mock_firestore_client, caplog
+    ):
+        """error_pipeline_run が ERROR レベルでログ出力する。"""
+        mock_doc_ref = MagicMock()
+        mock_firestore_client.collection.return_value.document.return_value = (
+            mock_doc_ref
+        )
+
+        with patch(
+            "shared.pipeline_run.get_firestore_client",
+            return_value=mock_firestore_client,
+        ):
+            from shared.pipeline_run import error_pipeline_run
+
+            with caplog.at_level(logging.ERROR, logger="shared.pipeline_run"):
+                error_pipeline_run("run-err-001", "記事の生成に失敗しました")
+
+        # ERROR レベルでエラーメッセージが含まれる
+        error_records = [
+            r for r in caplog.records
+            if r.levelno == logging.ERROR and "Pipeline run errored" in r.message
+        ]
+        assert len(error_records) == 1
+        assert "run-err-001" in error_records[0].message
+        assert "記事の生成に失敗しました" in error_records[0].message

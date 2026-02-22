@@ -606,6 +606,35 @@ class TestDetectGateFailure:
         assert summary["published_mystery_id"] == "missing"
 
 
+    def test_includes_storyteller_llm_metadata_when_present(self):
+        """storyteller_llm_metadata があれば error_detail に含まれる。"""
+        llm_meta = {
+            "finish_reason": "SAFETY",
+            "error_code": "SAFETY_FILTER",
+            "error_message": "Content blocked",
+            "has_content": False,
+            "prompt_tokens": 5000,
+            "output_tokens": 0,
+        }
+        state = {
+            "mystery_report": "A valid analysis...",
+            "creative_content": "",
+            "storyteller_llm_metadata": llm_meta,
+        }
+        _, detail = _detect_gate_failure(state)
+        assert detail["storyteller_llm_metadata"] == llm_meta
+        assert detail["failed_stage"] == "storyteller"
+
+    def test_no_storyteller_llm_metadata_when_absent(self):
+        """storyteller_llm_metadata がない場合は error_detail に含まれない。"""
+        state = {
+            "mystery_report": "A valid analysis...",
+            "creative_content": "",
+        }
+        _, detail = _detect_gate_failure(state)
+        assert "storyteller_llm_metadata" not in detail
+
+
 class TestGateFailureIntegration:
     """blog パイプラインのゲート失敗 → error_pipeline_run の統合テスト"""
 

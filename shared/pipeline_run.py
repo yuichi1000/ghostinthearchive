@@ -186,6 +186,6 @@ def error_pipeline_run(
         if error_detail:
             update_data["error_detail"] = error_detail
         db.collection(COLLECTION).document(run_id).update(update_data)
-        logger.info("Pipeline run errored: %s", run_id)
+        logger.error("Pipeline run errored: %s — %s", run_id, error_message)
     except Exception:
         logger.exception("Failed to mark pipeline run as error: %s", run_id)
