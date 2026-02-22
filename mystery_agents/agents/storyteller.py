@@ -11,12 +11,17 @@ Input: Mystery Report with Folkloric Context (from Scholar)
 Output: Creative content that weaves together fact and legend
 """
 
+import logging
 from pathlib import Path
 
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
+from google.adk.agents.callback_context import CallbackContext
+from google.adk.models.llm_response import LlmResponse
 
 from shared.model_config import create_pro_model
+
+logger = logging.getLogger(__name__)
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
@@ -262,6 +267,48 @@ When writing about archival findings, maintain strict epistemic discipline:
 - **Remember the concept of "Ghost in the Archive"** — weave into the narrative that this mystery was excavated from the archive
 """
 
+def _storyteller_after_model(
+    callback_context: CallbackContext,
+    llm_response: LlmResponse,
+) -> LlmResponse | None:
+    """Storyteller の LLM 応答メタデータを記録し、異常応答を検出する。"""
+    # 正常応答（テキストあり + エラーなし）はスルー
+    has_text = (
+        llm_response.content
+        and llm_response.content.parts
+        and any(
+            hasattr(p, "text") and p.text
+            for p in llm_response.content.parts
+        )
+    )
+    if has_text and not llm_response.error_code:
+        return None
+
+    # 異常応答: メタデータをログ + セッション状態に記録
+    metadata = {
+        "finish_reason": str(llm_response.finish_reason) if llm_response.finish_reason else None,
+        "error_code": llm_response.error_code,
+        "error_message": llm_response.error_message,
+        "has_content": llm_response.content is not None,
+        "prompt_tokens": (
+            llm_response.usage_metadata.prompt_token_count
+            if llm_response.usage_metadata else None
+        ),
+        "output_tokens": (
+            llm_response.usage_metadata.candidates_token_count
+            if llm_response.usage_metadata else None
+        ),
+    }
+    logger.error(
+        "Storyteller 異常応答: finish_reason=%s, error_code=%s",
+        metadata["finish_reason"],
+        metadata["error_code"],
+        extra=metadata,
+    )
+    callback_context.state["storyteller_llm_metadata"] = metadata
+    return None
+
+
 storyteller_agent = LlmAgent(
     name="storyteller",
     model=create_pro_model(),
@@ -272,4 +319,5 @@ storyteller_agent = LlmAgent(
     ),
     instruction=STORYTELLER_INSTRUCTION,
     output_key="creative_content",
+    after_model_callback=_storyteller_after_model,
 )

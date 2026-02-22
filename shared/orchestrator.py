@@ -84,6 +84,11 @@ def _detect_gate_failure(session_state: dict) -> tuple[str, dict]:
     """
     detail = _build_state_summary(session_state)
 
+    # LLM メタデータがあれば追加（安全フィルタ等の原因特定用）
+    llm_meta = session_state.get("storyteller_llm_metadata")
+    if llm_meta:
+        detail["storyteller_llm_metadata"] = llm_meta
+
     mystery_report = session_state.get("mystery_report", "")
     if not _is_meaningful(mystery_report):
         return "十分な資料が見つからなかったため、記事を生成できませんでした", {
@@ -367,6 +372,12 @@ async def run_pipeline(
         # blog パイプラインで記事未生成の場合、ゲート失敗を検出してエラーマーク
         if run_type == "blog" and mystery_id is None:
             failure_reason, detail = _detect_gate_failure(session_state)
+            logger.error(
+                "ゲート失敗: %s (stage=%s)",
+                failure_reason,
+                detail.get("failed_stage", "unknown"),
+                extra={"status": "error", **detail},
+            )
             error_pipeline_run(run_id, failure_reason, error_detail=detail)
         else:
             # パイプライン正常完了サマリ
