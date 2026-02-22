@@ -3,7 +3,7 @@
  * ブラウザ側で使用するFirebase SDKの初期化
  */
 
-import { initializeApp, getApps, FirebaseApp } from "firebase/app";
+import { initializeApp, getApps, deleteApp, FirebaseApp } from "firebase/app";
 import { getFirestore, Firestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getStorage, FirebaseStorage, connectStorageEmulator } from "firebase/storage";
 
@@ -27,22 +27,49 @@ const globalForFirebase = globalThis as unknown as {
   _firebaseStorage?: FirebaseStorage;
   _firestoreEmulatorConnected?: boolean;
   _storageEmulatorConnected?: boolean;
+  _moduleEvalId?: symbol;
 };
+
+/**
+ * HMR 検出用: モジュールが再評価されるたびに新しい Symbol が生成される。
+ * globalThis に保存した前回の Symbol と異なれば HMR が発生したと判定する。
+ */
+const MODULE_EVAL_ID = Symbol("firebase-config");
+
+/**
+ * HMR（Hot Module Replacement）検出 — モジュール再評価時に全キャッシュをクリアする。
+ *
+ * Turbopack の HMR でモジュールが再評価されると firebase/firestore の
+ * collection() 等が新しいクラス定義を持つ。globalThis にキャッシュされた
+ * 古い Firestore インスタンスは instanceof チェックに失敗するため、
+ * 古い Firebase App ごと破棄して再初期化する必要がある。
+ */
+function invalidateOnHmr(): void {
+  if (globalForFirebase._moduleEvalId === MODULE_EVAL_ID) return;
+
+  // 古い Firebase App を破棄（内部の Firestore/Storage サービスも解放される）
+  if (globalForFirebase._firebaseApp) {
+    try {
+      deleteApp(globalForFirebase._firebaseApp).catch(() => {});
+    } catch {
+      // 既に削除済みの場合は無視
+    }
+  }
+
+  globalForFirebase._firebaseApp = undefined;
+  globalForFirebase._firestoreDb = undefined;
+  globalForFirebase._firebaseStorage = undefined;
+  globalForFirebase._firestoreEmulatorConnected = undefined;
+  globalForFirebase._storageEmulatorConnected = undefined;
+  globalForFirebase._moduleEvalId = MODULE_EVAL_ID;
+}
 
 /**
  * Firebaseアプリを初期化して返す
  * 既に初期化済みの場合は既存のインスタンスを返す
  */
 export function getFirebaseApp(): FirebaseApp {
-  // HMR 対応: globalThis にキャッシュがあるが Firebase 内部レジストリが空の場合、
-  // モジュールが再評価されたと判断しキャッシュをクリアして再初期化する
-  if (globalForFirebase._firebaseApp && getApps().length === 0) {
-    globalForFirebase._firebaseApp = undefined;
-    globalForFirebase._firestoreDb = undefined;
-    globalForFirebase._firebaseStorage = undefined;
-    globalForFirebase._firestoreEmulatorConnected = undefined;
-    globalForFirebase._storageEmulatorConnected = undefined;
-  }
+  invalidateOnHmr();
 
   if (!globalForFirebase._firebaseApp) {
     // projectId が未設定なら環境変数の設定漏れ
@@ -69,8 +96,10 @@ export function getFirebaseApp(): FirebaseApp {
  * 開発環境ではエミュレータに接続
  */
 export function getFirestoreDb(): Firestore {
+  // 必ず getFirebaseApp() を先に呼び、HMR チェックをトリガーする
+  const firebaseApp = getFirebaseApp();
+
   if (!globalForFirebase._firestoreDb) {
-    const firebaseApp = getFirebaseApp();
     globalForFirebase._firestoreDb = getFirestore(firebaseApp);
 
     // 開発環境でエミュレータを使用する場合（クライアント・サーバー両方）
@@ -96,8 +125,10 @@ export function getFirestoreDb(): Firestore {
  * 開発環境ではエミュレータに接続
  */
 export function getFirebaseStorage(): FirebaseStorage {
+  // 必ず getFirebaseApp() を先に呼び、HMR チェックをトリガーする
+  const firebaseApp = getFirebaseApp();
+
   if (!globalForFirebase._firebaseStorage) {
-    const firebaseApp = getFirebaseApp();
     globalForFirebase._firebaseStorage = getStorage(firebaseApp);
 
     if (
