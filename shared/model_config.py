@@ -9,8 +9,12 @@ ADK はデフォルトで retry_options=None（リトライ0回）のため、
 参照: https://google.github.io/adk-docs/agents/models/google-gemini/
 """
 
+import logging
+
 from google.adk.models.google_llm import Gemini
 from google.genai.types import HttpRetryOptions
+
+logger = logging.getLogger(__name__)
 
 # === 日本語訳 ===
 # Claude (Vertex AI) のリトライ回数上限。
@@ -18,6 +22,10 @@ from google.genai.types import HttpRetryOptions
 # 10回に引き上げる。指数バックオフは SDK が自動適用する。
 # === End 日本語訳 ===
 _CLAUDE_MAX_RETRIES = 10
+
+# _ClaudeWithRetry クラスの参照（try ブロック外に sentinel 定義）
+# anthropic パッケージが未インストールの場合は None のまま
+_claude_with_retry_cls = None
 
 # Claude モデルの LLMRegistry 登録（Vertex AI 経由）
 # anthropic パッケージが未インストールの場合はスキップ（テスト環境等）
@@ -55,6 +63,10 @@ try:
                 headers = get_tracking_headers()
             except ImportError:
                 headers = {}
+            logger.info(
+                "AsyncAnthropicVertex 初期化: max_retries=%d",
+                _CLAUDE_MAX_RETRIES,
+            )
             return AsyncAnthropicVertex(
                 project_id=os.environ["GOOGLE_CLOUD_PROJECT"],
                 region=os.environ["GOOGLE_CLOUD_LOCATION"],
@@ -62,7 +74,11 @@ try:
                 max_retries=_CLAUDE_MAX_RETRIES,
             )
 
+    _claude_with_retry_cls = _ClaudeWithRetry
     LLMRegistry.register(_ClaudeWithRetry)
+    # ADK が自動登録した Claude の LRU キャッシュを無効化し、
+    # _ClaudeWithRetry が resolve() で返されるようにする
+    LLMRegistry.resolve.cache_clear()
 except ImportError:
     pass
 
@@ -114,11 +130,14 @@ def create_flash_model() -> Gemini:
     return Gemini(model=MODEL_FLASH, retry_options=_FLASH_RETRY_OPTIONS)
 
 
-def create_claude_sonnet_model() -> str:
-    """Claude Sonnet 4.5 (Vertex AI) のモデル文字列を返す。
+def create_claude_sonnet_model():
+    """Claude Sonnet 4.5 (Vertex AI) のモデルを返す。
 
-    Claude は ADK の LLMRegistry 経由で _ClaudeWithRetry に解決されるため、
-    Gemini のようなアダプタオブジェクトではなくモデル文字列を返す。
-    リトライは _ClaudeWithRetry が max_retries=10 で Anthropic SDK に委譲する。
+    _ClaudeWithRetry が利用可能な場合はインスタンスを直接返す。
+    LlmAgent(model=BaseLlm_instance) は LLMRegistry.resolve() を完全にバイパスするため、
+    ADK 自動登録 Claude の LRU キャッシュ問題を根本解決する。
+    利用不可能な場合はモデル文字列にフォールバック。
     """
+    if _claude_with_retry_cls is not None:
+        return _claude_with_retry_cls(model=MODEL_CLAUDE_SONNET)
     return MODEL_CLAUDE_SONNET

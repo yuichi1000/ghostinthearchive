@@ -29,10 +29,11 @@ mock_adk.utils.context_utils = MagicMock()
 mock_adk.models = MagicMock()
 mock_adk.models.google_llm = MagicMock()
 mock_adk.models.llm_response = MagicMock()
-# _ClaudeWithRetry のサブクラス化に必要な実クラス
+# _ClaudeWithRetry のサブクラス化 + インスタンス化に必要な実クラス
 class _MockClaude:
     """テスト用 Claude スタブ。model_config._ClaudeWithRetry の親クラスとして使用。"""
-    pass
+    def __init__(self, *, model=None, **kwargs):
+        self.model = model
 
 mock_adk.models.anthropic_llm = MagicMock()
 mock_adk.models.anthropic_llm.Claude = _MockClaude

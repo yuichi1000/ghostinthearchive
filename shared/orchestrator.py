@@ -48,6 +48,22 @@ def _format_exception_group(exc: BaseException) -> str:
     return " | ".join(parts)
 
 
+def _is_rate_limit_error(exc: BaseException) -> bool:
+    """429 レート制限エラーか判定する。ExceptionGroup も再帰的にチェック。"""
+    if isinstance(exc, ExceptionGroup):
+        return any(_is_rate_limit_error(sub) for sub in exc.exceptions)
+    error_str = str(exc)
+    return "429" in error_str or "RESOURCE_EXHAUSTED" in error_str
+
+
+# === 日本語訳 ===
+# レートリミットリトライ設定
+# SDK の 10回リトライ（~70秒）で解決しない長時間レート制限に対応するため、
+# オーケストレーターレベルで 3分待ってパイプラインを再実行する（最大2回リトライ）。
+# === End 日本語訳 ===
+_RATE_LIMIT_RETRY_DELAY = 180  # 3分
+_RATE_LIMIT_MAX_RETRIES = 2    # 最大2回リトライ（計3回試行）
+
 # スキップされたエージェント判定の閾値（秒）
 _SKIP_DURATION_THRESHOLD = 0.5
 
@@ -230,193 +246,224 @@ async def run_pipeline(
     pipeline_start_time = time.monotonic()
     logger.info("パイプライン開始: %s", run_type, extra={"status": "started"})
 
-    # Runner + Session セットアップ
-    session_service = InMemorySessionService()
-    runner = Runner(
-        agent=agent,
-        app_name=app_name,
-        session_service=session_service,
-    )
-
     user_id = "pipeline_user"
     session_id = "pipeline_session"
 
-    state = {
-        "pipeline_log": [],
-        "pipeline_run_id": run_id,
-        **initial_state,
-    }
-
-    await session_service.create_session(
-        app_name=app_name,
-        user_id=user_id,
-        session_id=session_id,
-        state=state,
-    )
-
-    # 進捗追跡（並列対応: エージェントごとの dict で管理）
-    pipeline_logger = PipelineLogger()
-    agent_texts: dict[str, list[str]] = {}  # {agent_name: [text_chunks]}
-    agent_log_indices: dict[str, int | None] = {}  # {agent_name: firestore_index}
-
-    run_config = RunConfig(max_llm_calls=max_llm_calls)
-
-    try:
-        async with asyncio.timeout(timeout_seconds):
-            async for event in runner.run_async(
-                user_id=user_id,
-                session_id=session_id,
-                new_message=types.Content(
-                    role="user",
-                    parts=[types.Part(text=user_message)],
-                ),
-                run_config=run_config,
-            ):
-                # エージェント遷移検出
-                author = getattr(event, "author", None)
-                if not author or author in skip_authors:
-                    # skip_authors のイベントはステージ境界として検出
-                    # 前ステージの全 active エージェントを一括完了
-                    if author and author in skip_authors and agent_texts:
-                        for name in list(agent_texts.keys()):
-                            _complete_agent(
-                                pipeline_logger,
-                                run_id,
-                                name,
-                                agent_texts.pop(name),
-                                agent_log_indices.pop(name, None),
-                            )
-                    continue
-
-                # 順次実行エージェントの直列完了:
-                # 同セット内の既存 active エージェントを自動完了する
-                if sequential_agents and author in sequential_agents:
-                    for name in list(agent_texts.keys()):
-                        if name in sequential_agents and name != author:
-                            _complete_agent(
-                                pipeline_logger,
-                                run_id,
-                                name,
-                                agent_texts.pop(name),
-                                agent_log_indices.pop(name, None),
-                            )
-
-                # 新規エージェントの場合のみエントリ作成
-                if author not in agent_texts:
-                    agent_texts[author] = []
-                    pipeline_logger.start_agent(author)
-                    logger.info(
-                        "エージェント開始: %s", author,
-                        extra={"agent_name": author, "status": "started"},
-                    )
-                    agent_log_indices[author] = update_agent_started(
-                        run_id, author, pipeline_logger.get_logs()[-1]
-                    )
-
-                # テキスト出力処理
-                if event.content and event.content.parts:
-                    for part in event.content.parts:
-                        if hasattr(part, "text") and part.text:
-                            if on_text:
-                                on_text(part.text)
-                            agent_texts[author].append(part.text[:100])
-
-        # 残存エージェントを完了マーク
-        for name in list(agent_texts.keys()):
-            _complete_agent(
-                pipeline_logger,
-                run_id,
-                name,
-                agent_texts.pop(name),
-                agent_log_indices.pop(name, None),
+    # レートリミットリトライループ
+    # SDK の 10回リトライで解決しない長時間レート制限に対応
+    last_error: Exception | None = None
+    for attempt in range(_RATE_LIMIT_MAX_RETRIES + 1):
+        if attempt > 0:
+            logger.warning(
+                "レートリミットエラー: %d秒後にパイプラインをリトライ (試行 %d/%d)",
+                _RATE_LIMIT_RETRY_DELAY, attempt + 1, _RATE_LIMIT_MAX_RETRIES + 1,
+                extra={"status": "retrying", "attempt": attempt + 1},
             )
+            await asyncio.sleep(_RATE_LIMIT_RETRY_DELAY)
 
-        # セッション状態を取得
-        session = await session_service.get_session(
+        # 各試行で Session/Runner を再作成
+        session_service = InMemorySessionService()
+        runner = Runner(
+            agent=agent,
+            app_name=app_name,
+            session_service=session_service,
+        )
+
+        state = {
+            "pipeline_log": [],
+            "pipeline_run_id": run_id,
+            **initial_state,
+        }
+
+        await session_service.create_session(
             app_name=app_name,
             user_id=user_id,
             session_id=session_id,
+            state=state,
         )
-        session_state = dict(session.state) if session else {}
 
-        # pipeline_log をセッション状態に保存
-        if session:
-            session.state["pipeline_log"] = pipeline_logger.get_logs()
+        # 進捗追跡（並列対応: エージェントごとの dict で管理）
+        pipeline_logger = PipelineLogger()
+        agent_texts: dict[str, list[str]] = {}  # {agent_name: [text_chunks]}
+        agent_log_indices: dict[str, int | None] = {}  # {agent_name: firestore_index}
 
-        # mystery_id 抽出（blog パイプラインのみ）
-        mystery_id = None
-        if run_type == "blog" and session_state:
-            # 優先: ツールがセッション状態に直接書き込んだ mystery_id
-            mystery_id = session_state.get("published_mystery_id")
+        run_config = RunConfig(max_llm_calls=max_llm_calls)
 
-            # フォールバック: published_episode テキストから抽出
-            if not mystery_id:
-                published = session_state.get("published_episode", "")
-                if isinstance(published, str):
-                    text = published.strip()
-                    if text.startswith("{"):
-                        try:
-                            published_data = json.loads(text)
-                            mystery_id = published_data.get("mystery_id")
-                        except (json.JSONDecodeError, AttributeError):
-                            pass
-                elif isinstance(published, dict):
-                    mystery_id = published.get("mystery_id")
+        try:
+            async with asyncio.timeout(timeout_seconds):
+                async for event in runner.run_async(
+                    user_id=user_id,
+                    session_id=session_id,
+                    new_message=types.Content(
+                        role="user",
+                        parts=[types.Part(text=user_message)],
+                    ),
+                    run_config=run_config,
+                ):
+                    # エージェント遷移検出
+                    author = getattr(event, "author", None)
+                    if not author or author in skip_authors:
+                        # skip_authors のイベントはステージ境界として検出
+                        # 前ステージの全 active エージェントを一括完了
+                        if author and author in skip_authors and agent_texts:
+                            for name in list(agent_texts.keys()):
+                                _complete_agent(
+                                    pipeline_logger,
+                                    run_id,
+                                    name,
+                                    agent_texts.pop(name),
+                                    agent_log_indices.pop(name, None),
+                                )
+                        continue
 
-        # mystery_id をコンテキストに追加
-        if mystery_id:
-            set_pipeline_context(PipelineContext(
-                run_id=run_id, pipeline_type=run_type, mystery_id=mystery_id,
-            ))
+                    # 順次実行エージェントの直列完了:
+                    # 同セット内の既存 active エージェントを自動完了する
+                    if sequential_agents and author in sequential_agents:
+                        for name in list(agent_texts.keys()):
+                            if name in sequential_agents and name != author:
+                                _complete_agent(
+                                    pipeline_logger,
+                                    run_id,
+                                    name,
+                                    agent_texts.pop(name),
+                                    agent_log_indices.pop(name, None),
+                                )
 
-        # blog パイプラインで記事未生成の場合、ゲート失敗を検出してエラーマーク
-        if run_type == "blog" and mystery_id is None:
-            failure_reason, detail = _detect_gate_failure(session_state)
+                    # 新規エージェントの場合のみエントリ作成
+                    if author not in agent_texts:
+                        agent_texts[author] = []
+                        pipeline_logger.start_agent(author)
+                        logger.info(
+                            "エージェント開始: %s", author,
+                            extra={"agent_name": author, "status": "started"},
+                        )
+                        agent_log_indices[author] = update_agent_started(
+                            run_id, author, pipeline_logger.get_logs()[-1]
+                        )
+
+                    # テキスト出力処理
+                    if event.content and event.content.parts:
+                        for part in event.content.parts:
+                            if hasattr(part, "text") and part.text:
+                                if on_text:
+                                    on_text(part.text)
+                                agent_texts[author].append(part.text[:100])
+
+            # 残存エージェントを完了マーク
+            for name in list(agent_texts.keys()):
+                _complete_agent(
+                    pipeline_logger,
+                    run_id,
+                    name,
+                    agent_texts.pop(name),
+                    agent_log_indices.pop(name, None),
+                )
+
+            # セッション状態を取得
+            session = await session_service.get_session(
+                app_name=app_name,
+                user_id=user_id,
+                session_id=session_id,
+            )
+            session_state = dict(session.state) if session else {}
+
+            # pipeline_log をセッション状態に保存
+            if session:
+                session.state["pipeline_log"] = pipeline_logger.get_logs()
+
+            # mystery_id 抽出（blog パイプラインのみ）
+            mystery_id = None
+            if run_type == "blog" and session_state:
+                # 優先: ツールがセッション状態に直接書き込んだ mystery_id
+                mystery_id = session_state.get("published_mystery_id")
+
+                # フォールバック: published_episode テキストから抽出
+                if not mystery_id:
+                    published = session_state.get("published_episode", "")
+                    if isinstance(published, str):
+                        text = published.strip()
+                        if text.startswith("{"):
+                            try:
+                                published_data = json.loads(text)
+                                mystery_id = published_data.get("mystery_id")
+                            except (json.JSONDecodeError, AttributeError):
+                                pass
+                    elif isinstance(published, dict):
+                        mystery_id = published.get("mystery_id")
+
+            # mystery_id をコンテキストに追加
+            if mystery_id:
+                set_pipeline_context(PipelineContext(
+                    run_id=run_id, pipeline_type=run_type, mystery_id=mystery_id,
+                ))
+
+            # blog パイプラインで記事未生成の場合、ゲート失敗を検出してエラーマーク
+            if run_type == "blog" and mystery_id is None:
+                failure_reason, detail = _detect_gate_failure(session_state)
+                logger.error(
+                    "ゲート失敗: %s (stage=%s)",
+                    failure_reason,
+                    detail.get("failed_stage", "unknown"),
+                    extra={"status": "error", **detail},
+                )
+                error_pipeline_run(run_id, failure_reason, error_detail=detail)
+            else:
+                # パイプライン正常完了サマリ
+                completed_logs = pipeline_logger.get_logs()
+                total_agents = len(completed_logs)
+                total_duration = round(time.monotonic() - pipeline_start_time, 1)
+                logger.info(
+                    "パイプライン完了: %s (エージェント数=%d, 合計%.1fs)",
+                    run_type, total_agents, total_duration,
+                    extra={
+                        "status": "completed",
+                        "agent_count": total_agents,
+                        "total_duration_seconds": total_duration,
+                        "mystery_id": mystery_id or "",
+                    },
+                )
+                complete_pipeline_run(run_id, mystery_id=mystery_id)
+
+            return PipelineResult(
+                run_id=run_id,
+                mystery_id=mystery_id,
+                logs=pipeline_logger.get_logs(),
+                session_state=session_state,
+            )
+
+        except TimeoutError:
+            error_pipeline_run(run_id, f"Pipeline timed out after {timeout_seconds}s", error_detail={
+                "error_type": "timeout",
+                "timeout_seconds": timeout_seconds,
+            })
+            raise
+        except Exception as e:
+            # 429 レートリミットエラーの場合はリトライ
+            if _is_rate_limit_error(e) and attempt < _RATE_LIMIT_MAX_RETRIES:
+                last_error = e
+                logger.warning(
+                    "レートリミットエラー検出: %s", _format_exception_group(e),
+                    extra={"status": "rate_limited", "attempt": attempt + 1},
+                )
+                continue
+
+            error_message = _format_exception_group(e)
             logger.error(
-                "ゲート失敗: %s (stage=%s)",
-                failure_reason,
-                detail.get("failed_stage", "unknown"),
-                extra={"status": "error", **detail},
+                "Pipeline failed: %s", error_message, exc_info=True,
+                extra={"status": "error", "exception_class": type(e).__name__},
             )
-            error_pipeline_run(run_id, failure_reason, error_detail=detail)
-        else:
-            # パイプライン正常完了サマリ
-            completed_logs = pipeline_logger.get_logs()
-            total_agents = len(completed_logs)
-            total_duration = round(time.monotonic() - pipeline_start_time, 1)
-            logger.info(
-                "パイプライン完了: %s (エージェント数=%d, 合計%.1fs)",
-                run_type, total_agents, total_duration,
-                extra={
-                    "status": "completed",
-                    "agent_count": total_agents,
-                    "total_duration_seconds": total_duration,
-                    "mystery_id": mystery_id or "",
-                },
-            )
-            complete_pipeline_run(run_id, mystery_id=mystery_id)
+            error_pipeline_run(run_id, error_message, error_detail={
+                "error_type": "exception",
+                "exception_class": type(e).__name__,
+            })
+            raise
 
-        return PipelineResult(
-            run_id=run_id,
-            mystery_id=mystery_id,
-            logs=pipeline_logger.get_logs(),
-            session_state=session_state,
-        )
-
-    except TimeoutError:
-        error_pipeline_run(run_id, f"Pipeline timed out after {timeout_seconds}s", error_detail={
-            "error_type": "timeout",
-            "timeout_seconds": timeout_seconds,
-        })
-        raise
-    except Exception as e:
-        error_message = _format_exception_group(e)
-        logger.error(
-            "Pipeline failed: %s", error_message, exc_info=True,
-            extra={"status": "error", "exception_class": type(e).__name__},
-        )
-        error_pipeline_run(run_id, error_message, error_detail={
-            "error_type": "exception",
-            "exception_class": type(e).__name__,
-        })
-        raise
+    # リトライ上限到達（通常ここには到達しない — 最後の try で raise されるため）
+    assert last_error is not None
+    error_message = _format_exception_group(last_error)
+    error_pipeline_run(run_id, error_message, error_detail={
+        "error_type": "rate_limit_exhausted",
+        "exception_class": type(last_error).__name__,
+        "retry_attempts": _RATE_LIMIT_MAX_RETRIES + 1,
+    })
+    raise last_error
