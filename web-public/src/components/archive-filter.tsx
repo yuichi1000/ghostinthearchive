@@ -1,7 +1,7 @@
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useMemo } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { FileText, X, Filter } from "lucide-react"
@@ -24,12 +24,12 @@ const badgeColorMap: Record<ClassificationCode, string> = {
   LOC: "bg-emerald-900/30 text-emerald-400",
 }
 
-interface MysteryI18n {
+export interface MysteryI18n {
   title: string
   summary: string
 }
 
-interface MysteryEntry {
+export interface MysteryEntry {
   id: string
   classification: string
   thumbnail: string | null
@@ -40,43 +40,27 @@ interface MysteryEntry {
 interface ArchiveFilterProps {
   lang: SupportedLang
   dict: Dictionary
+  /** サーバーコンポーネントから渡される全記事データ */
+  mysteries: MysteryEntry[]
 }
 
 /**
  * クライアントサイドの分類フィルタコンポーネント
- * ?c=HIS 等のクエリパラメータを読み取り、search-index.json からフィルタ結果を表示
+ * ?c=HIS 等のクエリパラメータを読み取り、props のデータからフィルタ結果を表示
  */
-export function ArchiveFilter({ lang, dict }: ArchiveFilterProps) {
+export function ArchiveFilter({ lang, dict, mysteries }: ArchiveFilterProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const filterCode = searchParams.get("c")?.toUpperCase() || null
-  const [mysteries, setMysteries] = useState<MysteryEntry[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(false)
 
   // 有効な分類コードかチェック
   const isValidFilter = filterCode && VALID_CODES.has(filterCode)
 
-  useEffect(() => {
-    if (!isValidFilter) return
-
-    setLoading(true)
-    setError(false)
-
-    fetch("/api/search-index.json")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch")
-        return res.json()
-      })
-      .then((data: { mysteries: MysteryEntry[] }) => {
-        const filtered = data.mysteries.filter(
-          (m) => m.classification === filterCode
-        )
-        setMysteries(filtered)
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false))
-  }, [filterCode, isValidFilter])
+  // フィルタ結果をメモ化
+  const filtered = useMemo(() => {
+    if (!isValidFilter) return []
+    return mysteries.filter((m) => m.classification === filterCode)
+  }, [mysteries, filterCode, isValidFilter])
 
   // フィルタが無効または未指定の場合は何も表示しない（SSG コンテンツが表示される）
   if (!isValidFilter) return null
@@ -112,15 +96,7 @@ export function ArchiveFilter({ lang, dict }: ArchiveFilterProps) {
       </div>
 
       {/* フィルタ結果 */}
-      {loading ? (
-        <div className="text-center py-16">
-          <div className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-        </div>
-      ) : error ? (
-        <div className="text-center py-16 text-muted-foreground">
-          Failed to load data.
-        </div>
-      ) : mysteries.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="text-center py-16">
           <h2 className="font-serif text-xl text-parchment mb-2">
             {dict.archive.noArticles}
@@ -128,7 +104,7 @@ export function ArchiveFilter({ lang, dict }: ArchiveFilterProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mysteries.map((mystery) => (
+          {filtered.map((mystery) => (
             <FilteredMysteryCard
               key={mystery.id}
               mystery={mystery}
