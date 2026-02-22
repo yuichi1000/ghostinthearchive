@@ -104,7 +104,9 @@ def get_search_metadata(tool_context: Optional[ToolContext] = None) -> str:
 
     # 言語別キー
     languages_searched: list[str] = []
-    for key in list(state.keys()):
+    # ADK State は .keys() を持たないため to_dict() 経由、テスト用 dict はそのまま
+    state_dict = state.to_dict() if hasattr(state, "to_dict") else state
+    for key in list(state_dict.keys()):
         if key.startswith("raw_search_results_") and key != "raw_search_results":
             lang = key.replace("raw_search_results_", "")
             lang_results = state.get(key)
