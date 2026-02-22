@@ -157,7 +157,14 @@ export default async function AboutPage({
         </section>
       </main>
 
-      <Footer labels={dict.footer} />
+      <Footer
+        labels={dict.footer}
+        siteLinks={[
+          { label: dict.footer.home, href: `/${lang}` },
+          { label: dict.footer.archive, href: `/${lang}/archive` },
+          { label: dict.footer.about, href: `/${lang}/about` },
+        ]}
+      />
     </div>
   )
 }

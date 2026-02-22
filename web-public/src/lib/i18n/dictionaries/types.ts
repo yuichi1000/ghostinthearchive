@@ -130,5 +130,8 @@ export interface Dictionary {
     primarySources: string;
     technical: string;
     classification: string;
+    home: string;
+    archive: string;
+    about: string;
   };
 }

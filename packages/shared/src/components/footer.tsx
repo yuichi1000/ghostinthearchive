@@ -24,9 +24,10 @@ interface FooterLabels {
 
 interface FooterProps {
   labels?: FooterLabels
+  siteLinks?: Array<{ label: string; href: string }>
 }
 
-export function Footer({ labels }: FooterProps) {
+export function Footer({ labels, siteLinks }: FooterProps) {
   const description = labels?.description ?? "Multi-lingual cross-analysis of the world's public digital archives — unearthing the Ghosts hiding in the gaps between records, languages, and disciplines."
   const primarySources = labels?.primarySources ?? "Primary Sources"
   const technical = labels?.technical ?? "Technical"
@@ -45,6 +46,19 @@ export function Footer({ labels }: FooterProps) {
             <p className="text-sm text-muted-foreground leading-relaxed">
               {description}
             </p>
+            {siteLinks && siteLinks.length > 0 && (
+              <nav className="flex gap-4">
+                {siteLinks.map(({ label, href }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    className="text-sm text-muted-foreground hover:text-gold transition-colors no-underline"
+                  >
+                    {label}
+                  </a>
+                ))}
+              </nav>
+            )}
           </div>
 
           {/* Sources */}
