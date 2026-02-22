@@ -3,20 +3,19 @@
 from unittest.mock import MagicMock
 
 from mystery_agents.tools.debate_tools import append_to_whiteboard
+from tests.fakes import make_tool_context
 
 
 class TestAppendToWhiteboard:
     """append_to_whiteboard のテスト。"""
 
-    def _make_tool_context(self, whiteboard=""):
+    def _make_ctx(self, whiteboard=""):
         """ToolContext モックを作成する。"""
-        ctx = MagicMock()
-        ctx.state = {"debate_whiteboard": whiteboard}
-        return ctx
+        return make_tool_context({"debate_whiteboard": whiteboard})
 
     def test_append_to_empty_whiteboard(self):
         """空のホワイトボードに最初の発言を追記できる。"""
-        ctx = self._make_tool_context("")
+        ctx = self._make_ctx("")
         result = append_to_whiteboard("English", 1, "Test contribution", ctx)
 
         assert "### [Round 1] English Perspective" in ctx.state["debate_whiteboard"]
@@ -25,7 +24,7 @@ class TestAppendToWhiteboard:
 
     def test_accumulation(self):
         """複数の発言が累積される（上書きされない）。"""
-        ctx = self._make_tool_context("")
+        ctx = self._make_ctx("")
 
         append_to_whiteboard("English", 1, "English analysis", ctx)
         append_to_whiteboard("German", 1, "German analysis", ctx)
@@ -38,7 +37,7 @@ class TestAppendToWhiteboard:
 
     def test_round_number_in_output(self):
         """ラウンド番号がフォーマットに含まれる。"""
-        ctx = self._make_tool_context("")
+        ctx = self._make_ctx("")
 
         append_to_whiteboard("French", 2, "Round 2 contribution", ctx)
 
@@ -57,7 +56,7 @@ class TestAppendToWhiteboard:
     def test_preserves_existing_content(self):
         """既存コンテンツが保持される。"""
         existing = "### [Round 1] English Perspective\n\nExisting content\n\n"
-        ctx = self._make_tool_context(existing)
+        ctx = self._make_ctx(existing)
 
         append_to_whiteboard("German", 1, "New content", ctx)
 
@@ -67,7 +66,7 @@ class TestAppendToWhiteboard:
 
     def test_return_message(self):
         """戻り値に speaker と round_number が含まれる。"""
-        ctx = self._make_tool_context("")
+        ctx = self._make_ctx("")
         result = append_to_whiteboard("Dutch", 2, "contribution", ctx)
 
         assert "Dutch" in result

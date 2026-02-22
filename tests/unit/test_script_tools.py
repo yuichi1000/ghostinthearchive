@@ -4,15 +4,11 @@ import json
 from unittest.mock import MagicMock
 
 from podcast_agents.tools.script_tools import save_podcast_script
+from tests.fakes import make_tool_context
 
 
 class TestSavePodcastScript:
     """Tests for save_podcast_script()."""
-
-    def _make_tool_context(self) -> MagicMock:
-        ctx = MagicMock()
-        ctx.state = {}
-        return ctx
 
     def _make_valid_script(self) -> dict:
         return {
@@ -43,7 +39,7 @@ class TestSavePodcastScript:
     def test_saves_to_session_state(self):
         """正常な JSON を session state に保存する。"""
         script = self._make_valid_script()
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_podcast_script(json.dumps(script), ctx)
         result_data = json.loads(result)
@@ -55,7 +51,7 @@ class TestSavePodcastScript:
     def test_returns_segment_count(self):
         """セグメント数を返す。"""
         script = self._make_valid_script()
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_podcast_script(json.dumps(script), ctx)
         result_data = json.loads(result)
@@ -65,7 +61,7 @@ class TestSavePodcastScript:
     def test_returns_episode_title(self):
         """エピソードタイトルを返す。"""
         script = self._make_valid_script()
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_podcast_script(json.dumps(script), ctx)
         result_data = json.loads(result)
@@ -75,7 +71,7 @@ class TestSavePodcastScript:
     def test_returns_estimated_duration(self):
         """想定再生時間を返す。"""
         script = self._make_valid_script()
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_podcast_script(json.dumps(script), ctx)
         result_data = json.loads(result)
@@ -84,7 +80,7 @@ class TestSavePodcastScript:
 
     def test_invalid_json_returns_error(self):
         """不正な JSON はエラーを返す。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_podcast_script("not valid json {", ctx)
         result_data = json.loads(result)
@@ -95,7 +91,7 @@ class TestSavePodcastScript:
 
     def test_missing_segments_returns_error(self):
         """segments がない場合はエラーを返す。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
         script = {"episode_title": "Test", "estimated_duration_minutes": 10}
 
         result = save_podcast_script(json.dumps(script), ctx)
@@ -106,7 +102,7 @@ class TestSavePodcastScript:
 
     def test_empty_segments_returns_error(self):
         """segments が空配列の場合はエラーを返す。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
         script = {
             "episode_title": "Test",
             "estimated_duration_minutes": 10,
@@ -120,7 +116,7 @@ class TestSavePodcastScript:
 
     def test_warns_on_missing_episode_title(self):
         """episode_title 欠如で warning を含む。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
         script = {
             "segments": [
                 {"type": "overview", "label": "Overview", "text": "Hello"},
@@ -135,7 +131,7 @@ class TestSavePodcastScript:
 
     def test_warns_on_invalid_segment_type(self):
         """不正なセグメントタイプで warning を含む。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
         script = {
             "episode_title": "Test",
             "segments": [
@@ -151,7 +147,7 @@ class TestSavePodcastScript:
 
     def test_warns_on_empty_segment_text(self):
         """空テキストのセグメントで warning を含む。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
         script = {
             "episode_title": "Test",
             "segments": [

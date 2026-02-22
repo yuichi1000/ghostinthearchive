@@ -12,15 +12,11 @@ from podcast_agents.tools.script_tools import (
     save_segment,
     finalize_script,
 )
+from tests.fakes import make_tool_context
 
 
 class TestSaveScriptOutline:
     """save_script_outline() のテスト。"""
-
-    def _make_tool_context(self) -> MagicMock:
-        ctx = MagicMock()
-        ctx.state = {}
-        return ctx
 
     def _make_valid_outline(self) -> dict:
         return {
@@ -58,7 +54,7 @@ class TestSaveScriptOutline:
     def test_saves_outline_to_state(self):
         """正常な JSON を state["structured_outline"] に保存する。"""
         outline = self._make_valid_outline()
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_script_outline(json.dumps(outline), ctx)
         result_data = json.loads(result)
@@ -69,7 +65,7 @@ class TestSaveScriptOutline:
     def test_initializes_segment_buffer(self):
         """segment_buffer を空リストで初期化する。"""
         outline = self._make_valid_outline()
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         save_script_outline(json.dumps(outline), ctx)
 
@@ -78,7 +74,7 @@ class TestSaveScriptOutline:
     def test_returns_segment_count(self):
         """セグメント数を返す。"""
         outline = self._make_valid_outline()
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_script_outline(json.dumps(outline), ctx)
         result_data = json.loads(result)
@@ -88,7 +84,7 @@ class TestSaveScriptOutline:
     def test_returns_total_word_target(self):
         """合計語数ターゲットを返す。"""
         outline = self._make_valid_outline()
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_script_outline(json.dumps(outline), ctx)
         result_data = json.loads(result)
@@ -97,7 +93,7 @@ class TestSaveScriptOutline:
 
     def test_invalid_json_returns_error(self):
         """不正な JSON はエラーを返す。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_script_outline("not valid json {", ctx)
         result_data = json.loads(result)
@@ -108,7 +104,7 @@ class TestSaveScriptOutline:
 
     def test_missing_segments_returns_error(self):
         """segments がない場合はエラーを返す。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_script_outline(
             json.dumps({"episode_title": "Test"}), ctx
@@ -120,7 +116,7 @@ class TestSaveScriptOutline:
 
     def test_empty_segments_returns_error(self):
         """segments が空配列の場合はエラーを返す。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_script_outline(
             json.dumps({"episode_title": "Test", "segments": []}), ctx
@@ -131,7 +127,7 @@ class TestSaveScriptOutline:
 
     def test_warns_on_missing_key_points(self):
         """key_points 欠如のセグメントで warning を含む。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
         outline = {
             "episode_title": "Test",
             "segments": [
@@ -149,12 +145,9 @@ class TestSaveScriptOutline:
 class TestSaveSegment:
     """save_segment() のテスト。"""
 
-    def _make_tool_context(self, with_buffer: bool = True) -> MagicMock:
-        ctx = MagicMock()
-        ctx.state = {}
-        if with_buffer:
-            ctx.state["segment_buffer"] = []
-        return ctx
+    def _make_ctx(self, with_buffer: bool = True) -> MagicMock:
+        state = {"segment_buffer": []} if with_buffer else {}
+        return make_tool_context(state)
 
     def _make_valid_segment(self) -> dict:
         return {
@@ -167,7 +160,7 @@ class TestSaveSegment:
     def test_appends_to_buffer(self):
         """セグメントを buffer に追加する。"""
         segment = self._make_valid_segment()
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_segment(json.dumps(segment), ctx)
         result_data = json.loads(result)
@@ -178,7 +171,7 @@ class TestSaveSegment:
 
     def test_accumulates_segments(self):
         """複数回呼び出しで累積する（上書きしない）。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
         seg1 = {"type": "intro", "label": "Intro", "text": "Welcome..."}
         seg2 = {"type": "body", "label": "Body", "text": "In 1842..."}
 
@@ -191,7 +184,7 @@ class TestSaveSegment:
 
     def test_returns_segment_index(self):
         """セグメントのインデックスを返す。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
         segment = self._make_valid_segment()
 
         result = save_segment(json.dumps(segment), ctx)
@@ -201,7 +194,7 @@ class TestSaveSegment:
 
     def test_returns_word_count(self):
         """セグメントの語数を返す。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
         segment = self._make_valid_segment()
 
         result = save_segment(json.dumps(segment), ctx)
@@ -211,7 +204,7 @@ class TestSaveSegment:
 
     def test_returns_cumulative_word_count(self):
         """累積語数を返す。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
         seg1 = {"type": "intro", "label": "Intro", "text": "one two three"}
         seg2 = {"type": "body", "label": "Body", "text": "four five six seven"}
 
@@ -223,7 +216,7 @@ class TestSaveSegment:
 
     def test_invalid_json_returns_error(self):
         """不正な JSON はエラーを返す。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_segment("not valid json {", ctx)
         result_data = json.loads(result)
@@ -233,7 +226,7 @@ class TestSaveSegment:
 
     def test_missing_text_returns_error(self):
         """text 欠如はエラーを返す。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_segment(
             json.dumps({"type": "intro", "label": "Intro"}), ctx
@@ -245,7 +238,7 @@ class TestSaveSegment:
 
     def test_empty_text_returns_error(self):
         """空テキストはエラーを返す。"""
-        ctx = self._make_tool_context()
+        ctx = make_tool_context()
 
         result = save_segment(
             json.dumps({"type": "intro", "label": "Intro", "text": "  "}), ctx
@@ -257,7 +250,7 @@ class TestSaveSegment:
 
     def test_auto_initializes_buffer(self):
         """segment_buffer 未初期化でも自動初期化する。"""
-        ctx = self._make_tool_context(with_buffer=False)
+        ctx = self._make_ctx(with_buffer=False)
         segment = self._make_valid_segment()
 
         result = save_segment(json.dumps(segment), ctx)
@@ -270,18 +263,17 @@ class TestSaveSegment:
 class TestFinalizeScript:
     """finalize_script() のテスト。"""
 
-    def _make_tool_context(
+    def _make_ctx(
         self,
         segments: list | None = None,
         outline: dict | None = None,
     ) -> MagicMock:
-        ctx = MagicMock()
-        ctx.state = {}
+        state = {}
         if segments is not None:
-            ctx.state["segment_buffer"] = segments
+            state["segment_buffer"] = segments
         if outline is not None:
-            ctx.state["structured_outline"] = outline
-        return ctx
+            state["structured_outline"] = outline
+        return make_tool_context(state)
 
     def _make_segments(self) -> list[dict]:
         return [
@@ -298,7 +290,7 @@ class TestFinalizeScript:
 
     def test_assembles_structured_script(self):
         """buffer から structured_script を組み立てる。"""
-        ctx = self._make_tool_context(
+        ctx = self._make_ctx(
             segments=self._make_segments(),
             outline=self._make_outline(),
         )
@@ -314,7 +306,7 @@ class TestFinalizeScript:
 
     def test_uses_episode_title_from_outline(self):
         """episode_title を structured_outline から取得する。"""
-        ctx = self._make_tool_context(
+        ctx = self._make_ctx(
             segments=self._make_segments(),
             outline={"episode_title": "Custom Title", "estimated_duration_minutes": 15},
         )
@@ -325,7 +317,7 @@ class TestFinalizeScript:
 
     def test_returns_segment_count(self):
         """セグメント数を返す。"""
-        ctx = self._make_tool_context(
+        ctx = self._make_ctx(
             segments=self._make_segments(),
             outline=self._make_outline(),
         )
@@ -337,7 +329,7 @@ class TestFinalizeScript:
 
     def test_returns_total_word_count(self):
         """合計語数を返す。"""
-        ctx = self._make_tool_context(
+        ctx = self._make_ctx(
             segments=self._make_segments(),
             outline=self._make_outline(),
         )
@@ -349,7 +341,7 @@ class TestFinalizeScript:
 
     def test_empty_buffer_returns_error(self):
         """buffer が空の場合はエラーを返す。"""
-        ctx = self._make_tool_context(segments=[], outline=self._make_outline())
+        ctx = self._make_ctx(segments=[], outline=self._make_outline())
 
         result = finalize_script(ctx)
         result_data = json.loads(result)
@@ -359,7 +351,7 @@ class TestFinalizeScript:
 
     def test_missing_buffer_returns_error(self):
         """buffer がない場合はエラーを返す。"""
-        ctx = self._make_tool_context(outline=self._make_outline())
+        ctx = self._make_ctx(outline=self._make_outline())
 
         result = finalize_script(ctx)
         result_data = json.loads(result)
@@ -372,7 +364,7 @@ class TestFinalizeScript:
             {"type": "act_i", "label": "Act I", "text": "Content..."},
             {"type": "act_iiii", "label": "Act IIII", "text": "Closing..."},
         ]
-        ctx = self._make_tool_context(
+        ctx = self._make_ctx(
             segments=segments, outline=self._make_outline()
         )
 
@@ -384,7 +376,7 @@ class TestFinalizeScript:
 
     def test_writes_to_structured_script_key(self):
         """state["structured_script"] に保存する（cli.py 互換）。"""
-        ctx = self._make_tool_context(
+        ctx = self._make_ctx(
             segments=self._make_segments(),
             outline=self._make_outline(),
         )
@@ -398,7 +390,7 @@ class TestFinalizeScript:
 
     def test_works_without_outline(self):
         """structured_outline がなくてもフォールバックで動作する。"""
-        ctx = self._make_tool_context(segments=self._make_segments())
+        ctx = self._make_ctx(segments=self._make_segments())
 
         result = finalize_script(ctx)
         result_data = json.loads(result)

@@ -5,6 +5,8 @@ import logging
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 
 from mystery_agents.tools.illustrator_tools import (
     IMAGE_VARIANTS,
@@ -23,23 +25,21 @@ from mystery_agents.tools.illustrator_tools import (
 class TestSanitizePrompt:
     """Tests for _sanitize_prompt function."""
 
-    def test_sanitize_ghost(self):
-        """Should replace 'ghost' with 'ethereal figure'."""
-        result = _sanitize_prompt("A ghost ship sailing")
-        assert "ethereal figure" in result
-        assert "ghost" not in result
-
-    def test_sanitize_ghostly(self):
-        """Should replace 'ghostly' with 'mysterious'."""
-        result = _sanitize_prompt("A ghostly apparition")
-        assert "mysterious" in result
-        assert "ghostly" not in result
-
-    def test_sanitize_haunted(self):
-        """Should replace 'haunted' with 'atmospheric'."""
-        result = _sanitize_prompt("A haunted house")
-        assert "atmospheric" in result
-        assert "haunted" not in result
+    @pytest.mark.parametrize(
+        "word,replacement,prompt",
+        [
+            ("ghost", "ethereal figure", "A ghost ship sailing"),
+            ("ghostly", "mysterious", "A ghostly apparition"),
+            ("haunted", "atmospheric", "A haunted house"),
+            ("vampire", "ancient figure", "A vampire lurking in the shadows"),
+            ("cannibal", "forbidden practitioner", "A cannibal in the wilderness"),
+        ],
+    )
+    def test_sanitize_single_word(self, word, replacement, prompt):
+        """各禁止ワードが対応する安全な表現に置換される。"""
+        result = _sanitize_prompt(prompt)
+        assert replacement in result
+        assert word not in result
 
     def test_sanitize_multiple_words(self):
         """Should replace multiple problematic words."""
@@ -61,37 +61,30 @@ class TestSanitizePrompt:
         result = _sanitize_prompt("A GHOST SHIP")
         assert "ghost" not in result.lower()
 
-    def test_sanitize_vampire(self):
-        """Should replace 'vampire' with 'ancient figure'."""
-        result = _sanitize_prompt("A vampire lurking in the shadows")
-        assert "ancient figure" in result
-        assert "vampire" not in result
-
-    def test_sanitize_cannibal(self):
-        """Should replace 'cannibal' with 'forbidden practitioner'."""
-        result = _sanitize_prompt("A cannibal in the wilderness")
-        assert "forbidden practitioner" in result
-        assert "cannibal" not in result
-
-    def test_sanitize_occult_words(self):
-        """Should replace curse, witch, ritual with safe alternatives."""
-        result = _sanitize_prompt("A curse placed by a witch during a ritual")
-        assert "curse" not in result
-        assert "witch" not in result
-        assert "ritual" not in result
-        assert "legacy" in result
-        assert "wise woman" in result
-        assert "ceremony" in result
-
-    def test_sanitize_violence_words(self):
-        """Should replace murder, skull, grave with safe alternatives."""
-        result = _sanitize_prompt("A murder near the skull on the grave")
-        assert "murder" not in result
-        assert "skull" not in result
-        assert "grave" not in result
-        assert "dark incident" in result
-        assert "relic" in result
-        assert "resting place" in result
+    @pytest.mark.parametrize(
+        "category,prompt,forbidden,expected",
+        [
+            (
+                "occult",
+                "A curse placed by a witch during a ritual",
+                ["curse", "witch", "ritual"],
+                ["legacy", "wise woman", "ceremony"],
+            ),
+            (
+                "violence",
+                "A murder near the skull on the grave",
+                ["murder", "skull", "grave"],
+                ["dark incident", "relic", "resting place"],
+            ),
+        ],
+    )
+    def test_sanitize_category(self, category, prompt, forbidden, expected):
+        """カテゴリ内の複数禁止ワードが一括置換される。"""
+        result = _sanitize_prompt(prompt)
+        for word in forbidden:
+            assert word not in result
+        for replacement in expected:
+            assert replacement in result
 
 
 class TestGenerateImageRetry:

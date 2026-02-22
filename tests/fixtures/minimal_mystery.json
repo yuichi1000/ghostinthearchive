@@ -1,0 +1,40 @@
+{
+  "classification": "OCC",
+  "country_code": "US",
+  "region_code": "BOS",
+  "title": "Test Mystery",
+  "summary": "A test mystery summary.",
+  "discrepancy_detected": "Test discrepancy",
+  "discrepancy_type": "event_outcome",
+  "evidence_a": {
+    "source_type": "newspaper",
+    "source_language": "en",
+    "source_title": "Test",
+    "source_date": "1842-01-01",
+    "source_url": "https://example.com",
+    "relevant_excerpt": "...",
+    "location_context": "Boston"
+  },
+  "evidence_b": {
+    "source_type": "newspaper",
+    "source_language": "es",
+    "source_title": "Test ES",
+    "source_date": "1842-02-01",
+    "source_url": "https://example.com/es",
+    "relevant_excerpt": "...",
+    "location_context": "Havana"
+  },
+  "hypothesis": "Test hypothesis",
+  "alternative_hypotheses": [],
+  "confidence_level": "medium",
+  "historical_context": {
+    "time_period": "19th Century",
+    "geographic_scope": ["Boston"],
+    "relevant_events": [],
+    "key_figures": [],
+    "political_climate": "Stable"
+  },
+  "research_questions": [],
+  "story_hooks": [],
+  "narrative_content": "# Test Story\nOnce upon a time..."
+}

@@ -6,6 +6,18 @@ in the multilingual pipeline:
     → ArmchairPolymath → Storyteller → Illustrator → Translator → Publisher
 """
 
+from shared.state_registry import STATE_KEYS
+
+
+def _registry_output_keys() -> set[str]:
+    """STATE_KEYS から output_key（LLM エージェントの output_key）として
+    使用されるキー名パターンを抽出する。{lang} テンプレートは除外。"""
+    return {
+        sk.name for sk in STATE_KEYS
+        if "{lang}" not in sk.name
+        and any("tools" not in w for w in sk.written_by)
+    }
+
 
 class TestSessionStateKeys:
     """Tests for session state key conventions."""
@@ -46,6 +58,25 @@ class TestSessionStateKeys:
         assert "publisher" in repr(publisher_agent)
 
 
+    def test_output_keys_registered_in_state_registry(self):
+        """主要 output_key が state_registry に登録されていること。"""
+        registry_names = {sk.name for sk in STATE_KEYS}
+
+        # テンプレート展開なしで存在を確認するキー
+        expected = {"creative_content", "visual_assets", "mystery_report", "published_episode"}
+        for key in expected:
+            assert key in registry_names, (
+                f"output_key '{key}' が state_registry に未登録"
+            )
+
+        # テンプレートパターンで存在を確認するキー
+        template_keys = {"collected_documents_{lang}", "scholar_analysis_{lang}", "translation_result_{lang}"}
+        for key in template_keys:
+            assert key in registry_names, (
+                f"output_key pattern '{key}' が state_registry に未登録"
+            )
+
+
 class TestPodcastSessionStateKeys:
     """Tests for podcast pipeline session state keys."""
 
@@ -60,27 +91,6 @@ class TestPodcastSessionStateKeys:
         from podcast_agents.agents.producer import producer_agent
 
         assert producer_agent.output_key == "audio_assets"
-
-
-class TestFailureMarkers:
-    """Tests for failure marker propagation between agents."""
-
-    def test_no_documents_found_marker_format(self):
-        """NO_DOCUMENTS_FOUND marker should follow expected format."""
-        marker = "NO_DOCUMENTS_FOUND"
-        assert marker.isupper()
-        assert "_" in marker
-
-    def test_insufficient_data_marker_format(self):
-        """INSUFFICIENT_DATA marker should follow expected format."""
-        marker = "INSUFFICIENT_DATA"
-        assert marker.isupper()
-        assert "_" in marker
-
-    def test_no_content_marker_format(self):
-        """NO_CONTENT marker should follow expected format."""
-        marker = "NO_CONTENT"
-        assert marker.isupper()
 
 
 class TestInstructionPlaceholders:

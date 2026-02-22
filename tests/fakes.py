@@ -5,6 +5,9 @@
 """
 
 from dataclasses import dataclass, field
+from unittest.mock import MagicMock
+
+from mystery_agents.schemas.document import ArchiveDocument, SourceLanguage
 
 
 @dataclass
@@ -33,3 +36,36 @@ class FakeInMemorySessionService:
         if self._post_run_state is not None:
             self._session.state = self._post_run_state
         return self._session
+
+
+def make_tool_context(state: dict | None = None, **kwargs) -> MagicMock:
+    """ADK ToolContext のモックを作成する。
+
+    6 箇所以上で重複していた _make_tool_context() を統合。
+    """
+    ctx = MagicMock()
+    ctx.state = dict(state) if state else {}
+    for k, v in kwargs.items():
+        setattr(ctx, k, v)
+    return ctx
+
+
+def make_archive_doc(
+    url: str = "https://www.loc.gov/item/test/",
+    title: str = "Test Doc",
+    source_type: str = "loc_digital",
+    keywords_matched: list[str] | None = None,
+) -> ArchiveDocument:
+    """テスト用 ArchiveDocument を作成する。
+
+    librarian_tools / link_validator の _make_doc() を統合。
+    """
+    return ArchiveDocument(
+        title=title,
+        source_url=url,
+        summary="A test document",
+        language=SourceLanguage.EN,
+        location="Test",
+        source_type=source_type,
+        keywords_matched=keywords_matched or [],
+    )
