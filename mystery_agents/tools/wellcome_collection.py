@@ -175,8 +175,8 @@ class WellcomeSource(ArchiveSource):
     def _search_impl(
         self,
         keywords: list[str],
-        date_start: str,
-        date_end: str,
+        date_start: str | None,
+        date_end: str | None,
         max_results: int,
         language: str | None,
     ) -> ArchiveSearchResult:
