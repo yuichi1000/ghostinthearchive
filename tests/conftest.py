@@ -29,7 +29,13 @@ mock_adk.utils.context_utils = MagicMock()
 mock_adk.models = MagicMock()
 mock_adk.models.google_llm = MagicMock()
 mock_adk.models.llm_response = MagicMock()
+# _ClaudeWithRetry のサブクラス化に必要な実クラス
+class _MockClaude:
+    """テスト用 Claude スタブ。model_config._ClaudeWithRetry の親クラスとして使用。"""
+    pass
+
 mock_adk.models.anthropic_llm = MagicMock()
+mock_adk.models.anthropic_llm.Claude = _MockClaude
 mock_adk.models.registry = MagicMock()
 mock_adk.runners = MagicMock()
 mock_adk.sessions = MagicMock()
@@ -52,6 +58,10 @@ sys.modules["google.adk.models.registry"] = mock_adk.models.registry
 sys.modules["google.adk.tools"] = mock_adk.tools
 sys.modules["google.adk.tools.base_tool"] = mock_adk.tools.base_tool
 sys.modules["google.adk.tools.tool_context"] = mock_adk.tools.tool_context
+
+# Mock anthropic (used by shared/model_config.py for _ClaudeWithRetry)
+mock_anthropic = MagicMock()
+sys.modules["anthropic"] = mock_anthropic
 
 mock_genai = MagicMock()
 mock_genai.Client = MagicMock
