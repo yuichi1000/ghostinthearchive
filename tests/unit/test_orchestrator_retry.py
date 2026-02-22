@@ -58,13 +58,13 @@ class TestIsRateLimitError:
 class TestRateLimitConstants:
     """レートリミットリトライ定数のテスト。"""
 
-    def test_retry_delay_is_180_seconds(self):
-        """リトライ間隔が 180秒（3分）であること。"""
-        assert _RATE_LIMIT_RETRY_DELAY == 180
+    def test_retry_delay_is_60_seconds(self):
+        """リトライ間隔が 60秒（1分）であること。"""
+        assert _RATE_LIMIT_RETRY_DELAY == 60
 
-    def test_max_retries_is_2(self):
-        """最大リトライ回数が 2回であること（計3回試行）。"""
-        assert _RATE_LIMIT_MAX_RETRIES == 2
+    def test_max_retries_is_1(self):
+        """最大リトライ回数が 1回であること（計2回試行）。"""
+        assert _RATE_LIMIT_MAX_RETRIES == 1
 
 
 class TestRunPipelineRetry:

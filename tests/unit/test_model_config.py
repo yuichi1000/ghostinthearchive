@@ -87,9 +87,9 @@ class TestCreateClaudeSonnetModel:
         # 最後の register 呼び出しの引数が _ClaudeWithRetry クラスであること
         registered_cls = LLMRegistry.register.call_args_list[-1][0][0]
         assert registered_cls.__name__ == "_ClaudeWithRetry"
-        # ADK 自動登録 Claude の LRU キャッシュ無効化が呼ばれていること
+        # ADK 自動登録 AnthropicLlm の LRU キャッシュ無効化が呼ばれていること
         assert LLMRegistry.resolve.cache_clear.called
 
     def test_claude_max_retries_value(self):
-        """_CLAUDE_MAX_RETRIES が 10 であること。"""
-        assert _CLAUDE_MAX_RETRIES == 10
+        """_CLAUDE_MAX_RETRIES が 3 であること。"""
+        assert _CLAUDE_MAX_RETRIES == 3

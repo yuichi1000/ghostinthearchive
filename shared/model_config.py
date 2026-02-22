@@ -17,43 +17,42 @@ from google.genai.types import HttpRetryOptions
 logger = logging.getLogger(__name__)
 
 # === 日本語訳 ===
-# Claude (Vertex AI) のリトライ回数上限。
-# Anthropic SDK のデフォルトは 2回だが、Vertex AI の 429 レート制限に対応するため
-# 10回に引き上げる。指数バックオフは SDK が自動適用する。
+# Claude (Anthropic API) のリトライ回数上限。
+# Anthropic SDK のデフォルトは 2回だが、429 レート制限に対応するため 3回に設定する。
+# 指数バックオフは SDK が自動適用する。
 # === End 日本語訳 ===
-_CLAUDE_MAX_RETRIES = 10
+_CLAUDE_MAX_RETRIES = 3
 
 # _ClaudeWithRetry クラスの参照（try ブロック外に sentinel 定義）
 # anthropic パッケージが未インストールの場合は None のまま
 _claude_with_retry_cls = None
 
-# Claude モデルの LLMRegistry 登録（Vertex AI 経由）
+# Claude モデルの LLMRegistry 登録（Anthropic API 直接利用）
 # anthropic パッケージが未インストールの場合はスキップ（テスト環境等）
+# TODO: 本番環境（Cloud Run）では ANTHROPIC_API_KEY を Secret Manager に登録し、
+#       サービスの環境変数として注入すること
 try:
     import os
     from functools import cached_property
 
-    from anthropic import AsyncAnthropicVertex
-    from google.adk.models.anthropic_llm import Claude
+    from anthropic import AsyncAnthropic
+    from google.adk.models.anthropic_llm import AnthropicLlm
     from google.adk.models.registry import LLMRegistry
 
-    class _ClaudeWithRetry(Claude):
-        """Vertex AI 429 レート制限に対応するリトライ強化版 Claude。
+    class _ClaudeWithRetry(AnthropicLlm):
+        """Anthropic API 429 レート制限に対応するリトライ強化版 Claude。
 
-        ADK の Claude クラスは AsyncAnthropicVertex に max_retries を渡さないため、
+        ADK の AnthropicLlm クラスは AsyncAnthropic に max_retries を渡さないため、
         Anthropic SDK のデフォルト（2回）しかリトライされない。
         このサブクラスで max_retries=_CLAUDE_MAX_RETRIES を明示的に設定する。
         """
 
         @cached_property
-        def _anthropic_client(self) -> AsyncAnthropicVertex:
-            if (
-                "GOOGLE_CLOUD_PROJECT" not in os.environ
-                or "GOOGLE_CLOUD_LOCATION" not in os.environ
-            ):
+        def _anthropic_client(self) -> AsyncAnthropic:
+            api_key = os.environ.get("ANTHROPIC_API_KEY")
+            if not api_key:
                 raise ValueError(
-                    "GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION "
-                    "environment variables must be set."
+                    "ANTHROPIC_API_KEY environment variable must be set."
                 )
             try:
                 from google.adk.utils._google_client_headers import (
@@ -64,19 +63,18 @@ try:
             except ImportError:
                 headers = {}
             logger.info(
-                "AsyncAnthropicVertex 初期化: max_retries=%d",
+                "AsyncAnthropic 初期化: max_retries=%d",
                 _CLAUDE_MAX_RETRIES,
             )
-            return AsyncAnthropicVertex(
-                project_id=os.environ["GOOGLE_CLOUD_PROJECT"],
-                region=os.environ["GOOGLE_CLOUD_LOCATION"],
+            return AsyncAnthropic(
+                api_key=api_key,
                 default_headers=headers,
                 max_retries=_CLAUDE_MAX_RETRIES,
             )
 
     _claude_with_retry_cls = _ClaudeWithRetry
     LLMRegistry.register(_ClaudeWithRetry)
-    # ADK が自動登録した Claude の LRU キャッシュを無効化し、
+    # ADK が自動登録した AnthropicLlm の LRU キャッシュを無効化し、
     # _ClaudeWithRetry が resolve() で返されるようにする
     LLMRegistry.resolve.cache_clear()
 except ImportError:
@@ -85,7 +83,7 @@ except ImportError:
 # モデル名定数
 MODEL_PRO = "gemini-3-pro-preview"
 MODEL_FLASH = "gemini-2.5-flash"
-MODEL_CLAUDE_SONNET = "claude-sonnet-4-5@20250929"
+MODEL_CLAUDE_SONNET = "claude-sonnet-4-5-20250929"
 
 # === 日本語訳 ===
 # Pro モデル用リトライ設定（レート制限が厳しい）
@@ -131,11 +129,11 @@ def create_flash_model() -> Gemini:
 
 
 def create_claude_sonnet_model():
-    """Claude Sonnet 4.5 (Vertex AI) のモデルを返す。
+    """Claude Sonnet 4.5 (Anthropic API) のモデルを返す。
 
     _ClaudeWithRetry が利用可能な場合はインスタンスを直接返す。
     LlmAgent(model=BaseLlm_instance) は LLMRegistry.resolve() を完全にバイパスするため、
-    ADK 自動登録 Claude の LRU キャッシュ問題を根本解決する。
+    ADK 自動登録 AnthropicLlm の LRU キャッシュ問題を根本解決する。
     利用不可能な場合はモデル文字列にフォールバック。
     """
     if _claude_with_retry_cls is not None:

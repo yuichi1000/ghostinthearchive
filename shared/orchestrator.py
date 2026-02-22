@@ -58,11 +58,11 @@ def _is_rate_limit_error(exc: BaseException) -> bool:
 
 # === 日本語訳 ===
 # レートリミットリトライ設定
-# SDK の 10回リトライ（~70秒）で解決しない長時間レート制限に対応するため、
-# オーケストレーターレベルで 3分待ってパイプラインを再実行する（最大2回リトライ）。
+# SDK のリトライで解決しない長時間レート制限に対応するため、
+# オーケストレーターレベルで 1分待ってパイプラインを再実行する（最大1回リトライ）。
 # === End 日本語訳 ===
-_RATE_LIMIT_RETRY_DELAY = 180  # 3分
-_RATE_LIMIT_MAX_RETRIES = 2    # 最大2回リトライ（計3回試行）
+_RATE_LIMIT_RETRY_DELAY = 60   # 1分
+_RATE_LIMIT_MAX_RETRIES = 1    # 最大1回リトライ（計2回試行）
 
 # スキップされたエージェント判定の閾値（秒）
 _SKIP_DURATION_THRESHOLD = 0.5
