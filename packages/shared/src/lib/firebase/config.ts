@@ -34,6 +34,16 @@ const globalForFirebase = globalThis as unknown as {
  * 既に初期化済みの場合は既存のインスタンスを返す
  */
 export function getFirebaseApp(): FirebaseApp {
+  // HMR 対応: globalThis にキャッシュがあるが Firebase 内部レジストリが空の場合、
+  // モジュールが再評価されたと判断しキャッシュをクリアして再初期化する
+  if (globalForFirebase._firebaseApp && getApps().length === 0) {
+    globalForFirebase._firebaseApp = undefined;
+    globalForFirebase._firestoreDb = undefined;
+    globalForFirebase._firebaseStorage = undefined;
+    globalForFirebase._firestoreEmulatorConnected = undefined;
+    globalForFirebase._storageEmulatorConnected = undefined;
+  }
+
   if (!globalForFirebase._firebaseApp) {
     // projectId が未設定なら環境変数の設定漏れ
     if (!firebaseConfig.projectId) {
