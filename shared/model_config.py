@@ -29,6 +29,8 @@ _claude_with_retry_cls = None
 
 # Claude モデルの LLMRegistry 登録（Anthropic API 直接利用）
 # anthropic パッケージが未インストールの場合はスキップ（テスト環境等）
+# TODO: 本番環境（Cloud Run）では ANTHROPIC_API_KEY を Secret Manager に登録し、
+#       サービスの環境変数として注入すること
 try:
     import os
     from functools import cached_property
