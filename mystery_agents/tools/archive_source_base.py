@@ -71,8 +71,8 @@ class ArchiveSource(ABC):
     def search(
         self,
         keywords: list[str],
-        date_start: str = "1500",
-        date_end: str = "1899",
+        date_start: str | None = None,
+        date_end: str | None = None,
         max_results: int = 20,
         language: str | None = None,
     ) -> ArchiveSearchResult:
@@ -130,8 +130,8 @@ class ArchiveSource(ABC):
     def _search_impl(
         self,
         keywords: list[str],
-        date_start: str,
-        date_end: str,
+        date_start: str | None,
+        date_end: str | None,
         max_results: int,
         language: str | None,
     ) -> ArchiveSearchResult:

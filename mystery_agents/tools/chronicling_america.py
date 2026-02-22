@@ -46,8 +46,8 @@ class ChroniclingAmericaSource(ArchiveSource):
     def _search_impl(
         self,
         keywords: list[str],
-        date_start: str,
-        date_end: str,
+        date_start: str | None,
+        date_end: str | None,
         max_results: int,
         language: str | None,
     ) -> ArchiveSearchResult:
@@ -129,8 +129,8 @@ class ChroniclingAmericaSource(ArchiveSource):
 
 def search_chronicling_america(
     keywords: list[str],
-    date_start: str = "1780",
-    date_end: str = "1899",
+    date_start: str | None = None,
+    date_end: str | None = None,
     states: list[str] | None = None,
     page: int = 1,
     rows: int = 20,

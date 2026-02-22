@@ -30,8 +30,8 @@ _TOTAL_DOCS_CAP = 30
 
 def search_newspapers(
     keywords: str,
-    date_start: str = "1500",
-    date_end: str = "1899",
+    date_start: Optional[str] = None,
+    date_end: Optional[str] = None,
     states: Optional[str] = None,
     max_results: int = 20,
     min_results: int = 3,
@@ -45,12 +45,12 @@ def search_newspapers(
     languages, returns an empty result (not an error).
 
     When a newspaper source is found, applies progressive fallback strategies:
-    individual keyword search, geographic expansion, and date range expansion.
+    individual keyword search and geographic expansion.
 
     Args:
         keywords: Comma-separated list of search keywords related to historical mysteries
-        date_start: Start year (default: 1500)
-        date_end: End year (default: 1899)
+        date_start: Optional start year for filtering (e.g., "1700"). Omit to search all dates.
+        date_end: Optional end year for filtering (e.g., "1800"). Omit to search all dates.
         states: Comma-separated US states to search (default: East Coast states)
         max_results: Maximum number of results to return (default: 20)
         min_results: Minimum documents before stopping fallback (default: 3)
@@ -168,22 +168,6 @@ def search_newspapers(
             if len(all_docs) >= min_results:
                 break
 
-    # Level 4: 日付範囲拡大（±10年）
-    if len(all_docs) < min_results:
-        expanded_start = str(max(1400, int(date_start) - 10))
-        expanded_end = str(min(1920, int(date_end) + 10))
-        if expanded_start != date_start or expanded_end != date_end:
-            logger.info(
-                "Chronicling America フォールバック L4 発動: 日付範囲拡大 %s-%s",
-                expanded_start, expanded_end,
-                extra={"search_level": "L4", "current_count": len(all_docs)},
-            )
-            levels_used.append(f"L4_date_expanded_{expanded_start}_{expanded_end}")
-            for kw_list in [en_keywords, es_keywords]:
-                _search_and_collect(kw_list, search_states=None, start=expanded_start, end=expanded_end)
-                if len(all_docs) >= min_results:
-                    break
-
     # リンク品質検証（失敗時は検証スキップで全ドキュメント保持）
     try:
         validation = validate_documents(all_docs)
@@ -292,8 +276,8 @@ def _search_single_source(
     source_obj,
     keyword_groups: list[list[str]],
     *,
-    date_start: str,
-    date_end: str,
+    date_start: str | None,
+    date_end: str | None,
     per_source_limit: int,
     language: str | None,
 ) -> tuple[str, list[ArchiveDocument], int, str | None, bool]:
@@ -359,44 +343,6 @@ def _search_single_source(
             if docs:
                 break
 
-    # 日付範囲拡大フォールバック: 結果なし & 年代指定あり → ±25年拡大して再検索（1回のみ）
-    if not docs and date_start and date_end:
-        try:
-            start_year = int(date_start[:4])
-            end_year = int(date_end[:4])
-            exp_start = str(max(1400, start_year - 25))
-            exp_end = str(min(2025, end_year + 25))
-            if exp_start != str(start_year) or exp_end != str(end_year):
-                fallback_used = True
-                logger.info(
-                    "%s 日付範囲拡大フォールバック: %s-%s → %s-%s",
-                    key, date_start, date_end, exp_start, exp_end,
-                    extra={"api_name": key, "fallback_type": "date_expansion"},
-                )
-                lang_arg = language if (language and source_obj.supports_language_filter) else None
-                for kw_list in keyword_groups:
-                    try:
-                        result = source_obj.search(
-                            keywords=kw_list,
-                            date_start=exp_start,
-                            date_end=exp_end,
-                            max_results=per_source_limit,
-                            language=lang_arg,
-                        )
-                        for doc in result.documents:
-                            if doc.source_url not in seen_urls:
-                                seen_urls.add(doc.source_url)
-                                docs.append(doc)
-                        total_hits += result.total_hits
-                        if result.error:
-                            error = result.error
-                    except Exception as e:
-                        error = str(e)
-                    if docs:
-                        break
-        except (ValueError, IndexError):
-            pass
-
     return key, docs, total_hits, error, fallback_used
 
 
@@ -412,8 +358,8 @@ def _rank_documents(
 
 def search_archives(
     keywords: str,
-    date_start: str = "1500",
-    date_end: str = "1899",
+    date_start: Optional[str] = None,
+    date_end: Optional[str] = None,
     sources: Optional[str] = None,
     max_results: int = 10,
     language: Optional[str] = None,
@@ -427,8 +373,8 @@ def search_archives(
 
     Args:
         keywords: Comma-separated search keywords
-        date_start: Start year (default: 1500)
-        date_end: End year (default: 1899)
+        date_start: Optional start year for filtering (e.g., "1700"). Omit to search all dates.
+        date_end: Optional end year for filtering (e.g., "1800"). Omit to search all dates.
         sources: Comma-separated source names to search (default: all US sources).
                  Options: loc, dpla, nypl, internet_archive, ddb, europeana
         max_results: Max results per source (default: 10)

@@ -47,9 +47,9 @@ def _resolve_sources_hint(lang_code: str) -> str:
 #    - `sources` パラメータで関連アーカイブを指定: {sources_hint}
 #    - `language` パラメータを "{lang_code}" に設定して言語フィルタリングを行う
 #    - 例: keywords="Bell Witch, Adams Tennessee, poltergeist, haunting"
-#    - テーマが特定の時代を示唆する場合、`date_start` / `date_end` で年パラメータを設定する
+#    - 年代フィルタはオプション。テーマの年代が明確な場合のみ `date_start`/`date_end` を設定してもよい
 #      （例: date_start="1700", date_end="1800"）
-#    - デフォルト範囲は 1500-1899。テーマの歴史的文脈に応じて調整する
+#    - 年代が不明確な場合はフィルタを使わず広く検索する（検索漏れ防止）
 # 3. 歴史的な新聞記事を検索するには **search_newspapers** を呼び出す
 #    - ツールは対象言語で利用可能な新聞ソースに自動ルーティングする
 #    - 対象言語の新聞ソースが存在しない場合、空の結果を返す（エラーではない）
@@ -82,9 +82,9 @@ Search digital archives for {language_name}-language primary sources related to 
    - Use the `sources` parameter to target relevant archives: {sources_hint}
    - Use the `language` parameter set to "{lang_code}" for language filtering
    - Example: keywords="Bell Witch, Adams Tennessee, poltergeist, haunting"
-   - If the theme suggests a specific time period, set `date_start` and `date_end` year parameters
-     (e.g., date_start="1700", date_end="1800")
-   - Default range is 1500-1899; adjust based on the historical context of the theme
+   - Date filtering is OPTIONAL. Only set `date_start` and `date_end` when the theme clearly
+     indicates a specific time period (e.g., date_start="1700", date_end="1800")
+   - When the time period is uncertain, omit date parameters to cast a wider net
 3. {newspaper_instruction}
 
 ## Output Format
