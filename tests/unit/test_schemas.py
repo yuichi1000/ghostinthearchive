@@ -3,58 +3,10 @@
 import pytest
 from pydantic import ValidationError
 
-from mystery_agents.schemas.document import (
-    ArchiveDocument,
-    SearchResults,
-)
 from mystery_agents.schemas.mystery_report import (
     AnalysisResults,
-    Evidence,
-    HistoricalContext,
     MysteryReport,
 )
-
-
-class TestArchiveDocument:
-    """Tests for ArchiveDocument schema."""
-
-    def test_valid_document(self, sample_archive_document_data):
-        """Valid data should create an ArchiveDocument."""
-        doc = ArchiveDocument(**sample_archive_document_data)
-        assert doc.title == "Mystery of the Lost Ship"
-        assert doc.language == "en"
-        assert doc.source_type == "newspaper"
-
-
-class TestSearchResults:
-    """Tests for SearchResults schema."""
-
-    def test_valid_search_results(self, sample_search_results_data):
-        """Valid data should create SearchResults."""
-        results = SearchResults(**sample_search_results_data)
-        assert results.theme == "Boston maritime mysteries 1840s"
-        assert len(results.documents) == 1
-        assert results.total_found == 1
-
-
-class TestEvidence:
-    """Tests for Evidence schema."""
-
-    def test_valid_evidence(self, sample_evidence_data):
-        """Valid data should create an Evidence object."""
-        evidence = Evidence(**sample_evidence_data)
-        assert evidence.source_type == "newspaper"
-        assert evidence.source_language == "en"
-
-
-class TestHistoricalContext:
-    """Tests for HistoricalContext schema."""
-
-    def test_valid_historical_context(self, sample_historical_context_data):
-        """Valid data should create a HistoricalContext object."""
-        context = HistoricalContext(**sample_historical_context_data)
-        assert context.time_period == "Early 19th Century"
-        assert "Boston" in context.geographic_scope
 
 
 class TestMysteryReport:
@@ -86,6 +38,18 @@ class TestMysteryReport:
         sample_mystery_report_data["additional_evidence"] = [
             {**sample_evidence_data, "source_title": f"Source {i}"} for i in range(6)
         ]
+        with pytest.raises(ValidationError):
+            MysteryReport(**sample_mystery_report_data)
+
+    def test_missing_required_field_raises_error(self, sample_mystery_report_data):
+        """mystery_id 省略で ValidationError が発生する。"""
+        del sample_mystery_report_data["mystery_id"]
+        with pytest.raises(ValidationError, match="mystery_id"):
+            MysteryReport(**sample_mystery_report_data)
+
+    def test_invalid_discrepancy_type_raises_error(self, sample_mystery_report_data):
+        """存在しない discrepancy_type で ValidationError が発生する。"""
+        sample_mystery_report_data["discrepancy_type"] = "nonexistent_type"
         with pytest.raises(ValidationError):
             MysteryReport(**sample_mystery_report_data)
 

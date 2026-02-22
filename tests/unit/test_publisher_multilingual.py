@@ -2,49 +2,21 @@
 
 import json
 import logging
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from mystery_agents.tools.publisher_tools import _extract_json_from_text, publish_mystery
+from tests.fakes import make_tool_context
+
+_FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
 
 def _make_mystery_json(**overrides):
     """Build a minimal valid mystery JSON string for testing."""
-    data = {
-        "classification": "OCC",
-        "country_code": "US",
-        "region_code": "BOS",
-        "title": "Test Mystery",
-        "summary": "A test mystery summary.",
-        "discrepancy_detected": "Test discrepancy",
-        "discrepancy_type": "event_outcome",
-        "evidence_a": {"source_type": "newspaper", "source_language": "en",
-                       "source_title": "Test", "source_date": "1842-01-01",
-                       "source_url": "https://example.com", "relevant_excerpt": "...",
-                       "location_context": "Boston"},
-        "evidence_b": {"source_type": "newspaper", "source_language": "es",
-                       "source_title": "Test ES", "source_date": "1842-02-01",
-                       "source_url": "https://example.com/es", "relevant_excerpt": "...",
-                       "location_context": "Havana"},
-        "hypothesis": "Test hypothesis",
-        "alternative_hypotheses": [],
-        "confidence_level": "medium",
-        "historical_context": {"time_period": "19th Century",
-                               "geographic_scope": ["Boston"],
-                               "relevant_events": [], "key_figures": [],
-                               "political_climate": "Stable"},
-        "research_questions": [],
-        "story_hooks": [],
-        "narrative_content": "# Test Story\nOnce upon a time...",
-    }
+    with open(_FIXTURES_DIR / "minimal_mystery.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
     data.update(overrides)
     return json.dumps(data, ensure_ascii=False)
-
-
-def _make_tool_context(state: dict) -> MagicMock:
-    """Create a mock ToolContext with the given state dict."""
-    ctx = MagicMock()
-    ctx.state = state
-    return ctx
 
 
 class TestPublisherTranslationsMap:
@@ -75,7 +47,7 @@ class TestPublisherTranslationsMap:
             }),
         }
 
-        tool_context = _make_tool_context(state)
+        tool_context = make_tool_context(state)
         result = publish_mystery(_make_mystery_json(), "", tool_context)
         result_data = json.loads(result)
 
@@ -105,7 +77,7 @@ class TestPublisherTranslationsMap:
             "translation_result_de": None,
         }
 
-        tool_context = _make_tool_context(state)
+        tool_context = make_tool_context(state)
         result = publish_mystery(_make_mystery_json(), "", tool_context)
         result_data = json.loads(result)
 
@@ -132,7 +104,7 @@ class TestPublisherTranslationsMap:
             "translation_result_es": "NO_TRANSLATION: No content.",
         }
 
-        tool_context = _make_tool_context(state)
+        tool_context = make_tool_context(state)
         result = publish_mystery(_make_mystery_json(), "", tool_context)
         result_data = json.loads(result)
 
@@ -157,7 +129,7 @@ class TestPublisherTranslationsMap:
             },
         }
 
-        tool_context = _make_tool_context(state)
+        tool_context = make_tool_context(state)
         result = publish_mystery(_make_mystery_json(), "", tool_context)
         result_data = json.loads(result)
 
@@ -180,7 +152,7 @@ class TestPublisherTranslationsMap:
             "translation_result_nl": "this is { not valid json",
         }
 
-        tool_context = _make_tool_context(state)
+        tool_context = make_tool_context(state)
         result = publish_mystery(_make_mystery_json(), "", tool_context)
         result_data = json.loads(result)
 
@@ -206,7 +178,7 @@ class TestPublisherTranslationsMap:
                 "summary": f"Summary in {lang}",
             })
 
-        tool_context = _make_tool_context(state)
+        tool_context = make_tool_context(state)
         result = publish_mystery(_make_mystery_json(), "", tool_context)
         result_data = json.loads(result)
 
@@ -283,7 +255,7 @@ class TestPublisherCodeblockTranslation:
             "translation_result_de": 'Here is the translation:\n```json\n{"title": "Deutscher Titel"}\n```',
         }
 
-        tool_context = _make_tool_context(state)
+        tool_context = make_tool_context(state)
         result = publish_mystery(_make_mystery_json(), "", tool_context)
         result_data = json.loads(result)
 
@@ -309,7 +281,7 @@ class TestPublisherCodeblockTranslation:
             "translation_result_es": "NO_TRANSLATION: No content.",
         }
 
-        tool_context = _make_tool_context(state)
+        tool_context = make_tool_context(state)
         with caplog.at_level(logging.INFO, logger="mystery_agents.tools.publisher_tools"):
             publish_mystery(_make_mystery_json(), "", tool_context)
 
@@ -355,7 +327,7 @@ class TestPublisherLanguageValidation:
             "translation_result_fr": json.dumps(english_as_french),
         }
 
-        tool_context = _make_tool_context(state)
+        tool_context = make_tool_context(state)
         with patch("shared.pipeline_failure.log_pipeline_failure"):
             result = publish_mystery(_make_mystery_json(), "", tool_context)
         result_data = json.loads(result)
@@ -390,7 +362,7 @@ class TestPublisherLanguageValidation:
             }),
         }
 
-        tool_context = _make_tool_context(state)
+        tool_context = make_tool_context(state)
         result = publish_mystery(_make_mystery_json(), "", tool_context)
         result_data = json.loads(result)
 
@@ -421,7 +393,7 @@ class TestPublisherLanguageValidation:
             }),
         }
 
-        tool_context = _make_tool_context(state)
+        tool_context = make_tool_context(state)
         with caplog.at_level(logging.WARNING, logger="mystery_agents.tools.publisher_tools"):
             with patch("shared.pipeline_failure.log_pipeline_failure"):
                 publish_mystery(_make_mystery_json(), "", tool_context)

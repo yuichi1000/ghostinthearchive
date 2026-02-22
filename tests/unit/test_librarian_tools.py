@@ -13,23 +13,7 @@ from mystery_agents.tools.librarian_tools import (
     search_archives,
     search_newspapers,
 )
-
-
-def _make_doc(
-    url="https://www.loc.gov/item/test/",
-    title="Test Doc",
-    keywords_matched=None,
-    source_type="loc_digital",
-):
-    return ArchiveDocument(
-        title=title,
-        source_url=url,
-        summary="A test document",
-        language=SourceLanguage.EN,
-        location="Test",
-        source_type=source_type,
-        keywords_matched=keywords_matched or [],
-    )
+from tests.fakes import make_archive_doc as _make_doc
 
 
 def _make_mock_source(

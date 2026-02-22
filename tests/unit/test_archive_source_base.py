@@ -3,6 +3,9 @@
 import time
 from unittest.mock import patch
 
+import pytest
+import responses
+
 from mystery_agents.tools.archive_source_base import ArchiveSearchResult, ArchiveSource
 from mystery_agents.schemas.document import ArchiveDocument, SourceLanguage
 
@@ -165,3 +168,78 @@ class TestRateLimit:
         elapsed = time.monotonic() - start
 
         assert elapsed < 0.05  # 実質遅延なし
+
+
+# === 空日付テスト（旧 test_dpla / test_loc_digital / test_internet_archive / test_nypl_digital） ===
+
+
+from mystery_agents.tools.dpla import BASE_URL as DPLA_BASE_URL, DPLASource
+from mystery_agents.tools.internet_archive import (
+    BASE_URL as IA_BASE_URL,
+    InternetArchiveSource,
+)
+from mystery_agents.tools.loc_digital import (
+    BASE_URL as LOC_BASE_URL,
+    LOCDigitalSource,
+)
+from mystery_agents.tools.nypl_digital import (
+    BASE_URL as NYPL_BASE_URL,
+    NYPLSource,
+)
+
+
+class TestEmptyDatesPerSource:
+    """date_start/date_end が空文字の場合、日付パラメータが省略されるテスト。"""
+
+    @responses.activate
+    @pytest.mark.parametrize(
+        "source_cls,base_url,mock_response,env_vars,date_check,keywords",
+        [
+            (
+                DPLASource,
+                DPLA_BASE_URL,
+                {"count": 0, "docs": []},
+                {"DPLA_API_KEY": "test_key"},
+                lambda url: "date.after" not in url and "date.before" not in url,
+                ["test"],
+            ),
+            (
+                LOCDigitalSource,
+                LOC_BASE_URL,
+                {"results": [], "pagination": {"total": 0}},
+                {},
+                lambda url: "dates=" not in url,
+                ["test"],
+            ),
+            (
+                InternetArchiveSource,
+                IA_BASE_URL,
+                {"response": {"numFound": 0, "docs": []}},
+                {},
+                lambda url: "date%3A%5B" not in url and "date:[" not in url,
+                ["ghost"],
+            ),
+            (
+                NYPLSource,
+                NYPL_BASE_URL,
+                {"nyplAPI": {"response": {"numResults": "0", "result": []}}},
+                {"NYPL_API_TOKEN": "test_token"},
+                lambda url: "1500" not in url,
+                ["ghost"],
+            ),
+        ],
+        ids=["dpla", "loc_digital", "internet_archive", "nypl_digital"],
+    )
+    def test_empty_dates_omits_date_filter(
+        self, source_cls, base_url, mock_response, env_vars, date_check, keywords
+    ):
+        """date_start/date_end が空文字の場合、日付パラメータが省略される。"""
+        responses.add(responses.GET, base_url, json=mock_response, status=200)
+
+        source = source_cls()
+        with patch.dict("os.environ", env_vars):
+            result = source.search(keywords=keywords, date_start="", date_end="")
+
+        request = responses.calls[0].request
+        assert date_check(request.url), f"日付パラメータが URL に含まれている: {request.url}"
+        assert result.error is None

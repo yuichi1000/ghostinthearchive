@@ -13,22 +13,7 @@ from mystery_agents.tools.link_validator import (
     validate_documents,
     verify_link,
 )
-
-
-def _make_doc(
-    url: str = "https://www.loc.gov/item/test123/",
-    source_type: str = "loc_digital",
-    title: str = "Test Document",
-) -> ArchiveDocument:
-    """テスト用 ArchiveDocument を生成するヘルパー。"""
-    return ArchiveDocument(
-        title=title,
-        source_url=url,
-        summary="A test document",
-        language=SourceLanguage.EN,
-        location="Test Location",
-        source_type=source_type,
-    )
+from tests.fakes import make_archive_doc as _make_doc
 
 
 class TestVerifyLink:
@@ -195,7 +180,7 @@ class TestValidateDocuments:
         summary = validate_documents(docs, domain_delay=0)
 
         assert len(summary.verified_documents) == 1
-        assert summary.verified_documents[0].title == "Test Document"
+        assert summary.verified_documents[0].title == "Test Doc"
         assert bad_url in summary.removed_urls
 
     @responses.activate
