@@ -5,7 +5,7 @@ import Link from "next/link"
 import { StatusBadge } from "@/components/status-badge"
 import { cn } from "@ghost/shared/src/lib/utils"
 import { Button } from "@ghost/shared/src/components/ui/button"
-import { getAllMysteries, approveMystery, archiveMystery } from "@/lib/firestore/mysteries"
+import { getAllMysteries, approveMystery, archiveMystery, unpublishMystery } from "@/lib/firestore/mysteries"
 import type { FirestoreMystery, MysteryStatus, PipelineRun } from "@ghost/shared/src/types/mystery"
 import { localizeMystery } from "@ghost/shared/src/lib/localize"
 import { ActivePipelinePanel } from "@/components/active-pipeline-panel"
@@ -19,6 +19,7 @@ import {
   CheckCircle,
   XCircle,
   Eye,
+  EyeOff,
   Clock,
   MapPin,
   Filter,
@@ -148,6 +149,24 @@ export default function AdminPage() {
       console.error("Failed to archive:", error)
       const message = error instanceof Error ? error.message : "不明なエラー"
       setActionFeedback(`アーカイブに失敗しました: ${message}`)
+      setActionFeedbackIsError(true)
+      setTimeout(() => setActionFeedback(null), 5000)
+    }
+  }
+
+  const handleUnpublish = async (id: string) => {
+    if (!window.confirm("この記事を非公開に戻しますか？公開サイトから削除されます。")) return
+    try {
+      await unpublishMystery(id)
+      setActionFeedback(`Case ${id} unpublished`)
+      setActionFeedbackIsError(false)
+      fetchMysteries()
+      triggerRebuild()
+      setTimeout(() => setActionFeedback(null), 3000)
+    } catch (error) {
+      console.error("Failed to unpublish:", error)
+      const message = error instanceof Error ? error.message : "不明なエラー"
+      setActionFeedback(`非公開への変更に失敗しました: ${message}`)
       setActionFeedbackIsError(true)
       setTimeout(() => setActionFeedback(null), 5000)
     }
@@ -413,6 +432,7 @@ export default function AdminPage() {
                 lang={lang}
                 onApprove={() => handleApprove(mystery.mystery_id)}
                 onArchive={() => handleArchive(mystery.mystery_id)}
+                onUnpublish={() => handleUnpublish(mystery.mystery_id)}
               />
             ))}
           </div>
@@ -427,9 +447,10 @@ interface AdminMysteryCardProps {
   lang: PreviewLang
   onApprove: () => void
   onArchive: () => void
+  onUnpublish: () => void
 }
 
-function AdminMysteryCard({ mystery, lang, onApprove, onArchive }: AdminMysteryCardProps) {
+function AdminMysteryCard({ mystery, lang, onApprove, onArchive, onUnpublish }: AdminMysteryCardProps) {
   const isPending = mystery.status === "pending"
   const location = mystery.historical_context?.geographic_scope?.[0] || ""
   const timePeriod = mystery.historical_context?.time_period || ""
@@ -475,17 +496,28 @@ function AdminMysteryCard({ mystery, lang, onApprove, onArchive }: AdminMysteryC
       {/* Actions */}
       <div className="flex items-center justify-between gap-4">
         {mystery.status === "published" ? (
-          <div className="flex items-center gap-3">
-            <a
-              href={`${process.env.NEXT_PUBLIC_SITE_URL || ""}/en/mystery/${mystery.mystery_id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-gold hover:text-parchment transition-colors no-underline"
+          <>
+            <div className="flex items-center gap-3">
+              <a
+                href={`${process.env.NEXT_PUBLIC_SITE_URL || ""}/en/mystery/${mystery.mystery_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-gold hover:text-parchment transition-colors no-underline"
+              >
+                <Eye className="w-4 h-4" />
+                View Published
+              </a>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onUnpublish}
+              className="border-blood-red/30 text-[#ff6b6b] hover:bg-blood-red/20 hover:text-[#ff6b6b] bg-transparent"
             >
-              <Eye className="w-4 h-4" />
-              View Published
-            </a>
-          </div>
+              <EyeOff className="w-4 h-4 mr-1" />
+              Unpublish
+            </Button>
+          </>
         ) : (
           <div className="flex items-center gap-3">
             <Link
