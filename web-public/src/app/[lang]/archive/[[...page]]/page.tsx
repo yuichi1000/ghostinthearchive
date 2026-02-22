@@ -9,6 +9,7 @@ import { FileStack, Search } from "lucide-react"
 import { isValidLang, SUPPORTED_LANGS } from "@/lib/i18n/config"
 import type { SupportedLang } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/dictionaries"
+import { buildOgpMetadata, buildAlternates } from "@/lib/seo"
 
 // SSG: ビルド時に生成されたページ以外は 404
 export const dynamicParams = false
@@ -44,11 +45,13 @@ export async function generateMetadata({
 
   return {
     title: pageTitle,
-    alternates: {
-      languages: Object.fromEntries(
-        SUPPORTED_LANGS.map((l) => [l, `/${l}/archive`])
-      ),
-    },
+    description: dict.seo.archiveDescription,
+    alternates: buildAlternates("archive"),
+    ...buildOgpMetadata(lang, {
+      title: dict.archive.heading,
+      description: dict.seo.archiveDescription,
+      path: "archive",
+    }),
   }
 }
 

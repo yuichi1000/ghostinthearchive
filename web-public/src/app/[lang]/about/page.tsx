@@ -6,6 +6,7 @@ import { BookOpen, ShieldAlert } from "lucide-react"
 import { isValidLang } from "@/lib/i18n/config"
 import { SUPPORTED_LANGS } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/dictionaries"
+import { buildOgpMetadata, buildAlternates } from "@/lib/seo"
 
 // SSG: ビルド時に生成されたページ以外は 404
 export const dynamicParams = false
@@ -26,11 +27,13 @@ export async function generateMetadata({
 
   return {
     title: dict.about.title,
-    alternates: {
-      languages: Object.fromEntries(
-        SUPPORTED_LANGS.map((l) => [l, `/${l}/about`])
-      ),
-    },
+    description: dict.seo.aboutDescription,
+    alternates: buildAlternates("about"),
+    ...buildOgpMetadata(lang, {
+      title: dict.about.heading,
+      description: dict.seo.aboutDescription,
+      path: "about",
+    }),
   }
 }
 

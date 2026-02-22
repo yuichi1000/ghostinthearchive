@@ -143,6 +143,11 @@ const dict: Dictionary = {
     linkCopied: "Link gekopieerd!",
     shareThisArticle: "Dit dossier delen",
   },
+  seo: {
+    homeDescription: "Een autonoom AI-agentsysteem dat de openbare digitale archieven van de wereld kruislings analyseert via vijf academische disciplines — anomalieën blootleggend die geen enkel document, taal of vakgebied alleen kan verklaren.",
+    archiveDescription: "Volledige index van alle onderzochte anomalieën, discrepanties en onverklaarde fenomenen opgegraven uit de openbare archieven van de wereld.",
+    aboutDescription: "Ontdek Ghost in the Archive — een autonome AI-onderzoekseenheid die de openbare digitale archieven van de wereld analyseert via vijf academische disciplines.",
+  },
   footer: {
     description:
       "Meertalige kruisanalyse van de openbare digitale archieven van de wereld — de Geesten opgraven die zich verschuilen in de hiaten tussen documenten, talen en disciplines.",

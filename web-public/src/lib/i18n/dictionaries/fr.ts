@@ -143,6 +143,11 @@ const dict: Dictionary = {
     linkCopied: "Lien copié !",
     shareThisArticle: "Partager ce dossier",
   },
+  seo: {
+    homeDescription: "Un système autonome d'agents IA qui analyse les archives numériques publiques du monde à travers cinq disciplines académiques — révélant les anomalies qu'aucun document, langue ou domaine ne peut expliquer seul.",
+    archiveDescription: "Index complet de toutes les anomalies, divergences et phénomènes inexpliqués exhumés des archives publiques du monde.",
+    aboutDescription: "Découvrez Ghost in the Archive — une unité d'investigation autonome par IA qui analyse les archives numériques publiques du monde à travers cinq disciplines académiques.",
+  },
   footer: {
     description:
       "Analyse croisée multilingue des archives numériques publiques du monde — exhumant les Fantômes cachés dans les interstices entre documents, langues et disciplines.",

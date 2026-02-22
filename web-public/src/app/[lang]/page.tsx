@@ -16,6 +16,7 @@ import { isValidLang } from "@/lib/i18n/config"
 import type { SupportedLang } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 import type { Dictionary } from "@/lib/i18n/dictionaries"
+import { buildOgpMetadata, buildAlternates } from "@/lib/seo"
 
 async function MysteryList({ lang, dict }: { lang: SupportedLang; dict: Dictionary }) {
   let mysteries: Awaited<ReturnType<typeof getPublishedMysteries>> = []
@@ -94,6 +95,30 @@ function MysteryListSkeleton() {
       </div>
     </>
   )
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>
+}) {
+  const { lang } = await params
+  if (!isValidLang(lang)) return {}
+
+  const dict = await getDictionary(lang)
+
+  return {
+    title: "Ghost in the Archive",
+    description: dict.seo.homeDescription,
+    alternates: buildAlternates(""),
+    ...buildOgpMetadata(lang, {
+      title: "Ghost in the Archive",
+      description: dict.seo.homeDescription,
+      path: "",
+      type: "website",
+      images: [{ url: "/images/hero-bg_xl.webp", alt: "Ghost in the Archive" }],
+    }),
+  }
 }
 
 export default async function HomePage({
