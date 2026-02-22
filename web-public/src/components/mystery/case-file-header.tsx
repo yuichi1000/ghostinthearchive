@@ -1,4 +1,7 @@
 import { MapPin, Clock, Calendar, FileText } from "lucide-react"
+import type { ConfidenceLevel } from "@ghost/shared/src/types/mystery"
+import type { Dictionary } from "@/lib/i18n/dictionaries"
+import { GhostConfidenceBadge } from "@/components/ghost-confidence-badge"
 
 interface CaseFileHeaderProps {
   mysteryId: string
@@ -7,6 +10,8 @@ interface CaseFileHeaderProps {
   timePeriod: string
   publishedAt?: Date
   publishedLabel?: string
+  confidenceLevel?: ConfidenceLevel
+  confidenceLabels?: Dictionary["confidence"]
 }
 
 export function CaseFileHeader({
@@ -16,6 +21,8 @@ export function CaseFileHeader({
   timePeriod,
   publishedAt,
   publishedLabel = "Published:",
+  confidenceLevel,
+  confidenceLabels,
 }: CaseFileHeaderProps) {
   return (
     <div className="mb-12">
@@ -51,6 +58,9 @@ export function CaseFileHeader({
             <Calendar className="w-4 h-4 text-gold" />
             {publishedLabel} {publishedAt.toLocaleDateString()}
           </span>
+        )}
+        {confidenceLevel && confidenceLabels && (
+          <GhostConfidenceBadge level={confidenceLevel} labels={confidenceLabels} />
         )}
       </div>
     </div>

@@ -125,6 +125,18 @@ export interface Dictionary {
     linkCopied: string;
     shareThisArticle: string;
   };
+  confidence: {
+    confirmedGhost: string;
+    suspectedGhost: string;
+    archivalEcho: string;
+  };
+  sourceCoverage: {
+    heading: string;
+    languagesAnalyzed: string;
+    apisSearched: string;
+    coverageNote: string;
+    confidenceRationale: string;
+  };
   seo: {
     homeDescription: string;
     archiveDescription: string;

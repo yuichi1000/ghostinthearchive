@@ -143,6 +143,18 @@ const dict: Dictionary = {
     linkCopied: "Link gekopieerd!",
     shareThisArticle: "Dit dossier delen",
   },
+  confidence: {
+    confirmedGhost: "Bevestigde Geest",
+    suspectedGhost: "Vermoede Geest",
+    archivalEcho: "Archiefecho",
+  },
+  sourceCoverage: {
+    heading: "Onderzoeksomvang",
+    languagesAnalyzed: "Geanalyseerde talen",
+    apisSearched: "Doorzochte archieven",
+    coverageNote: "Deze analyse is gebaseerd op materialen die beschikbaar zijn via de hierboven genoemde digitale archief-API's.",
+    confidenceRationale: "Beoordelingsgrondslag",
+  },
   seo: {
     homeDescription: "Een autonoom AI-agentsysteem dat de openbare digitale archieven van de wereld kruislings analyseert via vijf academische disciplines — anomalieën blootleggend die geen enkel document, taal of vakgebied alleen kan verklaren.",
     archiveDescription: "Volledige index van alle onderzochte anomalieën, discrepanties en onverklaarde fenomenen opgegraven uit de openbare archieven van de wereld.",

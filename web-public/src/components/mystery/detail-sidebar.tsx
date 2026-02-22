@@ -1,3 +1,7 @@
+import type { SourceCoverage } from "@ghost/shared/src/types/mystery"
+import type { Dictionary } from "@/lib/i18n/dictionaries"
+import { SourceCoverageCard } from "@/components/mystery/source-coverage-card"
+
 interface DetailSidebarLabels {
   storyAngles?: string
   classificationNotice?: string
@@ -6,10 +10,22 @@ interface DetailSidebarLabels {
 interface DetailSidebarProps {
   storyHooks: string[]
   labels?: DetailSidebarLabels
+  sourceCoverage?: SourceCoverage
+  languagesAnalyzed?: string[]
+  confidenceRationale?: string
+  sourceCoverageLabels?: Dictionary["sourceCoverage"]
   children?: React.ReactNode
 }
 
-export function DetailSidebar({ storyHooks, labels, children }: DetailSidebarProps) {
+export function DetailSidebar({
+  storyHooks,
+  labels,
+  sourceCoverage,
+  languagesAnalyzed,
+  confidenceRationale,
+  sourceCoverageLabels,
+  children,
+}: DetailSidebarProps) {
   const storyAnglesLabel = labels?.storyAngles ?? "Story Angles"
   const noticeText = labels?.classificationNotice ?? "This case file represents AI-generated analysis of archival records. All sources should be independently verified."
 
@@ -33,6 +49,16 @@ export function DetailSidebar({ storyHooks, labels, children }: DetailSidebarPro
               ))}
             </ul>
           </div>
+        )}
+
+        {/* Source coverage（schema_version=2 の記事のみ表示） */}
+        {sourceCoverage && sourceCoverageLabels && (
+          <SourceCoverageCard
+            sourceCoverage={sourceCoverage}
+            languagesAnalyzed={languagesAnalyzed}
+            confidenceRationale={confidenceRationale}
+            labels={sourceCoverageLabels}
+          />
         )}
 
         {/* Classification notice */}

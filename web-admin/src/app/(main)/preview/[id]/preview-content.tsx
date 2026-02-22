@@ -8,6 +8,7 @@ import { localizeMystery, getTranslatedExcerpt } from "@ghost/shared/src/lib/loc
 import { LanguageSelector, type PreviewLang } from "@/components/language-selector"
 import { useLanguage } from "@/contexts/language-context"
 import type { FirestoreMystery } from "@ghost/shared/src/types/mystery"
+import { ConfidenceBadge } from "@/components/status-badge"
 import {
   ArrowLeft,
   MapPin,
@@ -119,6 +120,7 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
               <div className={`px-3 py-1.5 border rounded-sm text-xs font-mono uppercase ${statusColors[mystery.status] || statusColors.pending}`}>
                 {mystery.status}
               </div>
+              <ConfidenceBadge level={mystery.confidence_level} />
               <div className="h-px flex-1 bg-border" />
             </div>
 
@@ -326,6 +328,63 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
                     Content may change before final publication.
                   </p>
                 </div>
+
+                {/* Source coverage */}
+                {mystery.source_coverage && (
+                  <div className="aged-card letterpress-border rounded-sm p-5">
+                    <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-4">
+                      Investigation Scope
+                    </h3>
+
+                    {mystery.languages_analyzed && mystery.languages_analyzed.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
+                          Languages Analyzed
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {mystery.languages_analyzed.map((lang) => (
+                            <span
+                              key={lang}
+                              className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-gold/10 text-gold border border-gold/20"
+                            >
+                              {lang}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {mystery.source_coverage.apis_searched.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
+                          Archives Searched
+                        </p>
+                        <ul className="space-y-0.5">
+                          {mystery.source_coverage.apis_searched.map((api) => (
+                            <li key={api} className="text-xs text-foreground/70 font-mono">
+                              &bull; {api}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {mystery.confidence_rationale && (
+                      <div className="mb-3">
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
+                          Assessment Rationale
+                        </p>
+                        <p className="text-xs text-foreground/70 leading-relaxed">
+                          {mystery.confidence_rationale}
+                        </p>
+                      </div>
+                    )}
+
+                    <p className="text-[10px] text-muted-foreground/60 leading-relaxed mt-3 pt-3 border-t border-border">
+                      This analysis is based on materials available through the digital archive APIs listed above.
+                    </p>
+                  </div>
+                )}
 
                 {/* Classification notice */}
                 <div className="border border-blood-red/30 bg-blood-red/5 rounded-sm p-4">

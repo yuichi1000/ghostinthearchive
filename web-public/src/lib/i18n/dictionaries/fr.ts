@@ -143,6 +143,18 @@ const dict: Dictionary = {
     linkCopied: "Lien copié !",
     shareThisArticle: "Partager ce dossier",
   },
+  confidence: {
+    confirmedGhost: "Fantôme confirmé",
+    suspectedGhost: "Fantôme suspecté",
+    archivalEcho: "Écho archivistique",
+  },
+  sourceCoverage: {
+    heading: "Portée de l'investigation",
+    languagesAnalyzed: "Langues analysées",
+    apisSearched: "Archives consultées",
+    coverageNote: "Cette analyse repose sur les matériaux accessibles via les APIs d'archives numériques mentionnées ci-dessus.",
+    confidenceRationale: "Fondement de l'évaluation",
+  },
   seo: {
     homeDescription: "Un système autonome d'agents IA qui analyse les archives numériques publiques du monde à travers cinq disciplines académiques — révélant les anomalies qu'aucun document, langue ou domaine ne peut expliquer seul.",
     archiveDescription: "Index complet de toutes les anomalies, divergences et phénomènes inexpliqués exhumés des archives publiques du monde.",

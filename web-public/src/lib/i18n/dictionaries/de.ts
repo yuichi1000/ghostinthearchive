@@ -143,6 +143,18 @@ const dict: Dictionary = {
     linkCopied: "Link kopiert!",
     shareThisArticle: "Diese Fallakte teilen",
   },
+  confidence: {
+    confirmedGhost: "Bestätigter Geist",
+    suspectedGhost: "Verdächtiger Geist",
+    archivalEcho: "Archivisches Echo",
+  },
+  sourceCoverage: {
+    heading: "Untersuchungsumfang",
+    languagesAnalyzed: "Analysierte Sprachen",
+    apisSearched: "Durchsuchte Archive",
+    coverageNote: "Diese Analyse basiert auf Materialien, die über die oben aufgeführten digitalen Archiv-APIs verfügbar sind.",
+    confidenceRationale: "Bewertungsgrundlage",
+  },
   seo: {
     homeDescription: "Ein autonomes KI-Agentensystem, das die öffentlichen digitalen Archive der Welt über fünf akademische Disziplinen hinweg kreuzanalysiert — Anomalien aufdeckend, die kein einzelnes Dokument, keine Sprache und kein Fachgebiet allein erklären kann.",
     archiveDescription: "Vollständiger Index aller untersuchten Anomalien, Diskrepanzen und unerklärlichen Phänomene, die aus den öffentlichen Aufzeichnungen der Welt ausgegraben wurden.",
