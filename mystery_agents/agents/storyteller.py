@@ -84,6 +84,13 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # - 確信度を限定する: 「調査したデジタルアーカイブに基づく限り」等の表現で調査の範囲を明示する
 # - 謎を捏造せず保存する: Ghost はアーカイブ制約の修辞的誇張からではなく、真の空白と矛盾から自然に浮かび上がるべき
 #
+# ## 学術的文脈（利用可能な場合）
+# Mystery Report に学術カバレッジデータが含まれる場合がある — このトピックに関する
+# 学術論文の数、言語、時期のデータ。存在する場合、ナラティブに織り込む:
+# - 豊富な学術研究がある場合: アーカイブ証拠がいかに定説に疑問を投げかけるかを記す
+# - 学術研究が乏しい場合: この Ghost が学術的注目の盲点に潜んでいることを強調する
+# - 生の統計を列挙せず、不在または存在のレトリックを強化する素材として使用する
+#
 # ## クリエイティブガイドライン
 # - トーン: 学術的信頼性を維持しつつ、怪異的な情緒を醸し出す
 # - 言語: 英語
@@ -219,6 +226,14 @@ Output the narrative text in Markdown format.
 
 **Do NOT include a Sources (citation list) in the output.** Citations are managed separately as structured data.
 **Do NOT include Open Research Questions in the output.**
+
+## Academic Context (if available)
+The Mystery Report may include academic coverage data — how many scholarly papers
+exist on this topic, in which languages, and from which periods.
+When present, weave this into your narrative:
+- If abundant scholarship exists, note how the archival evidence challenges or complicates the accepted narrative
+- If scholarship is scarce, emphasize that this Ghost lurks in a blind spot of academic attention
+- Never list raw statistics; instead, use them to strengthen your rhetoric of absence or presence
 
 ## Creative Guidelines
 - **Tone**: Maintain academic credibility while evoking an eerie atmosphere

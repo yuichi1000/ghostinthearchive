@@ -106,6 +106,25 @@ export interface HistoricalContext {
 }
 
 /**
+ * 学術論文カバレッジ
+ * OpenAlex データに基づく学術界の分析
+ */
+export interface AcademicCoverage {
+  /** 関連論文の総数 */
+  papers_found: number;
+  /** 言語別の論文数 */
+  language_distribution: Record<string, number>;
+  /** 時代別の論文数 */
+  temporal_distribution: Record<string, number>;
+  /** 頻出概念タグ */
+  key_concepts: string[];
+  /** Polymath が特定した学術的盲点 */
+  identified_gaps: string[];
+  /** 学術的コンセンサスと一次資料の緊張関係 */
+  consensus_vs_primary?: string;
+}
+
+/**
  * ソースカバレッジ評価
  * Polymath が行う調査範囲の自己評価
  */
@@ -154,6 +173,8 @@ export interface MysteryReport {
   confidence_level: ConfidenceLevel;
   /** ソースカバレッジ評価（検索範囲と限界の自己評価） */
   source_coverage?: SourceCoverage;
+  /** 学術論文カバレッジ（OpenAlex データに基づく） */
+  academic_coverage?: AcademicCoverage;
   /** confidence_level 判定の根拠 */
   confidence_rationale?: string;
 

@@ -97,6 +97,32 @@ class SourceCoverage(BaseModel):
     )
 
 
+class AcademicCoverage(BaseModel):
+    """学術論文カバレッジ — OpenAlex データに基づく学術界の分析。"""
+
+    papers_found: int = Field(0, description="関連論文の総数")
+    language_distribution: dict[str, int] = Field(
+        default_factory=dict,
+        description="言語別の論文数（例: {'en': 35, 'de': 5}）",
+    )
+    temporal_distribution: dict[str, int] = Field(
+        default_factory=dict,
+        description="時代別の論文数（例: {'pre-1950': 3, '1950-1999': 15, '2000-present': 24}）",
+    )
+    key_concepts: List[str] = Field(
+        default_factory=list,
+        description="頻出概念タグ上位5件",
+    )
+    identified_gaps: List[str] = Field(
+        default_factory=list,
+        description="Polymath が特定した学術的盲点",
+    )
+    consensus_vs_primary: Optional[str] = Field(
+        None,
+        description="学術的コンセンサスと一次資料の緊張関係",
+    )
+
+
 class AgentLogEntry(BaseModel):
     """パイプライン実行中の単一エージェントのログエントリ。"""
 
@@ -157,6 +183,10 @@ class MysteryReport(BaseModel):
     source_coverage: Optional[SourceCoverage] = Field(
         None,
         description="ソースカバレッジ評価（検索範囲と限界の自己評価）",
+    )
+    academic_coverage: Optional[AcademicCoverage] = Field(
+        None,
+        description="学術論文カバレッジ（OpenAlex データに基づく）",
     )
     confidence_rationale: Optional[str] = Field(
         None,

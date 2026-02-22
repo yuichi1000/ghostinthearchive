@@ -287,6 +287,7 @@ export default async function MysteryDetailPage({
                 classificationNotice: dict.detail.classificationNotice,
               }}
               sourceCoverage={mystery.source_coverage}
+              academicCoverage={mystery.academic_coverage}
               languagesAnalyzed={mystery.languages_analyzed}
               confidenceRationale={mystery.confidence_rationale}
               sourceCoverageLabels={dict.sourceCoverage}

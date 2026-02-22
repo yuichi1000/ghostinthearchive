@@ -1,4 +1,4 @@
-import type { SourceCoverage } from "@ghost/shared/src/types/mystery"
+import type { SourceCoverage, AcademicCoverage } from "@ghost/shared/src/types/mystery"
 import type { Dictionary } from "@/lib/i18n/dictionaries"
 import { SourceCoverageCard } from "@/components/mystery/source-coverage-card"
 
@@ -11,6 +11,7 @@ interface DetailSidebarProps {
   storyHooks: string[]
   labels?: DetailSidebarLabels
   sourceCoverage?: SourceCoverage
+  academicCoverage?: AcademicCoverage
   languagesAnalyzed?: string[]
   confidenceRationale?: string
   sourceCoverageLabels?: Dictionary["sourceCoverage"]
@@ -21,6 +22,7 @@ export function DetailSidebar({
   storyHooks,
   labels,
   sourceCoverage,
+  academicCoverage,
   languagesAnalyzed,
   confidenceRationale,
   sourceCoverageLabels,
@@ -55,6 +57,7 @@ export function DetailSidebar({
         {sourceCoverage && sourceCoverageLabels && (
           <SourceCoverageCard
             sourceCoverage={sourceCoverage}
+            academicCoverage={academicCoverage}
             languagesAnalyzed={languagesAnalyzed}
             confidenceRationale={confidenceRationale}
             labels={sourceCoverageLabels}
