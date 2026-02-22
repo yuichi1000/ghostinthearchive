@@ -72,6 +72,31 @@ class HistoricalContext(BaseModel):
     )
 
 
+class SourceCoverage(BaseModel):
+    """ソースカバレッジ評価 — Polymath が行う調査範囲の自己評価。"""
+
+    apis_searched: List[str] = Field(
+        default_factory=list,
+        description="検索した API/アーカイブのリスト",
+    )
+    apis_with_results: List[str] = Field(
+        default_factory=list,
+        description="結果を返した API/アーカイブのリスト",
+    )
+    apis_without_results: List[str] = Field(
+        default_factory=list,
+        description="結果を返さなかった API/アーカイブのリスト",
+    )
+    known_undigitized_sources: List[str] = Field(
+        default_factory=list,
+        description="この時代・地域に存在するがデジタル化されていない既知のソース",
+    )
+    coverage_assessment: Optional[str] = Field(
+        None,
+        description="デジタル化範囲と調査限界に関する総合評価",
+    )
+
+
 class AgentLogEntry(BaseModel):
     """パイプライン実行中の単一エージェントのログエントリ。"""
 
@@ -128,6 +153,14 @@ class MysteryReport(BaseModel):
     )
     confidence_level: ConfidenceLevel = Field(
         ..., description="Confidence level in the primary hypothesis"
+    )
+    source_coverage: Optional[SourceCoverage] = Field(
+        None,
+        description="ソースカバレッジ評価（検索範囲と限界の自己評価）",
+    )
+    confidence_rationale: Optional[str] = Field(
+        None,
+        description="confidence_level 判定の根拠（なぜその水準か）",
     )
 
     historical_context: HistoricalContext = Field(

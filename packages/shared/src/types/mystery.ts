@@ -106,6 +106,23 @@ export interface HistoricalContext {
 }
 
 /**
+ * ソースカバレッジ評価
+ * Polymath が行う調査範囲の自己評価
+ */
+export interface SourceCoverage {
+  /** 検索した API/アーカイブのリスト */
+  apis_searched: string[];
+  /** 結果を返した API/アーカイブのリスト */
+  apis_with_results: string[];
+  /** 結果を返さなかった API/アーカイブのリスト */
+  apis_without_results: string[];
+  /** この時代・地域に存在するがデジタル化されていない既知のソース */
+  known_undigitized_sources?: string[];
+  /** デジタル化範囲と調査限界に関する総合評価 */
+  coverage_assessment?: string;
+}
+
+/**
  * ミステリーレポート
  * Scholar Agentの出力結果
  */
@@ -135,6 +152,10 @@ export interface MysteryReport {
   alternative_hypotheses: string[];
   /** 信頼度レベル */
   confidence_level: ConfidenceLevel;
+  /** ソースカバレッジ評価（検索範囲と限界の自己評価） */
+  source_coverage?: SourceCoverage;
+  /** confidence_level 判定の根拠 */
+  confidence_rationale?: string;
 
   /** 歴史的コンテキスト */
   historical_context: HistoricalContext;

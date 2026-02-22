@@ -1009,3 +1009,96 @@ class TestThumbnailUpload:
         assert "thumbnail" in images
         assert "hero" not in images  # サムネイルだけなら hero は設定されない
 
+
+class TestPublishMysteryStructuredDataExtension:
+    """source_coverage / confidence_rationale の Firestore 保存テスト。"""
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_source_coverage_from_structured_report(self, mock_get_db, mock_get_bucket):
+        """structured_report の source_coverage が Firestore に保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Test",
+                "summary": "Test summary",
+                "source_coverage": {
+                    "apis_searched": ["chronicling_america", "loc"],
+                    "apis_with_results": ["chronicling_america"],
+                    "apis_without_results": ["loc"],
+                    "known_undigitized_sources": ["Parish registers"],
+                    "coverage_assessment": "Limited coverage",
+                },
+            }
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "source_coverage" in saved
+        assert saved["source_coverage"]["apis_searched"] == ["chronicling_america", "loc"]
+        assert saved["source_coverage"]["coverage_assessment"] == "Limited coverage"
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_confidence_rationale_from_structured_report(self, mock_get_db, mock_get_bucket):
+        """structured_report の confidence_rationale が Firestore に保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "HIS",
+                "country_code": "GB",
+                "region_code": "LHR",
+                "title": "Test",
+                "summary": "Test summary",
+                "confidence_rationale": "Rated MEDIUM because two sources conflict but DPLA was unavailable.",
+            }
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["confidence_rationale"] == "Rated MEDIUM because two sources conflict but DPLA was unavailable."
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_missing_new_fields_does_not_break(self, mock_get_db, mock_get_bucket):
+        """source_coverage / confidence_rationale がなくても後方互換で動作する。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Legacy Report",
+                "summary": "No new fields",
+            }
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "source_coverage" not in saved
+        assert "confidence_rationale" not in saved
+

@@ -12,6 +12,7 @@ from google.adk.agents import LlmAgent
 from shared.model_config import create_pro_model
 
 from ..tools.scholar_tools import save_structured_report
+from ..tools.search_metadata import get_search_metadata
 
 # === 日本語訳 ===
 # あなたは「Ghost in the Archive」プロジェクトの Armchair Polymath です。
@@ -54,6 +55,12 @@ from ..tools.scholar_tools import save_structured_report
 # すべての evidence オブジェクト（evidence_a, evidence_b, additional_evidence 各項目）には
 # 空でない relevant_excerpt を必ず含めること。具体的な抜粋が見つからない場合は、
 # 元資料の内容を簡潔に言い換えること。空の excerpt は絶対に不可。
+#
+# ## ツール: get_search_metadata
+# Source Coverage Assessment を行う前に `get_search_metadata` を呼び出す。
+# このツールは Librarian の raw_search_results からどの API が検索され、
+# どの API で結果が得られたかのコンパクトなサマリを返す。
+# このデータを使って source_coverage フィールドと confidence_rationale を作成する。
 #
 # ## ソースカバレッジ評価（confidence 判定の前提）
 # confidence_level を判定する前に、調査の限界を明示的に評価する:
@@ -107,6 +114,12 @@ Read the following Scholar analysis results from session state (some may be abse
 If the whiteboard is empty, no debate took place (single-language investigation).
 If populated, it contains challenges, corroborations, and synthesis proposals
 from each Scholar after reading other perspectives, organized by round.
+
+## Tool: get_search_metadata
+Before performing the Source Coverage Assessment, call `get_search_metadata` (no arguments needed).
+It returns a compact summary of which APIs the Librarian searched and which returned results,
+extracted from the raw search data in session state. Use this data to populate the
+`source_coverage` object and inform your `confidence_rationale` in the structured report.
 
 ## Critical Rule: Require At Least One Analysis
 Check the session state for Scholar analysis results.
@@ -251,6 +264,14 @@ After completing your analysis, you MUST call `save_structured_report` with a JS
   "hypothesis": "Primary hypothesis in English",
   "alternative_hypotheses": ["Alt 1", "Alt 2"],
   "confidence_level": "high|medium|low",
+  "source_coverage": {{
+    "apis_searched": ["chronicling_america", "loc", "dpla", "europeana"],
+    "apis_with_results": ["chronicling_america", "loc"],
+    "apis_without_results": ["dpla", "europeana"],
+    "known_undigitized_sources": ["Regional parish registers", "Private family archives"],
+    "coverage_assessment": "Approximately 15-20% of records from this period are digitized..."
+  }},
+  "confidence_rationale": "Rated MEDIUM because two independent sources contradict on the date of arrival, but DPLA and Europeana returned no results — the discrepancy might be resolved by undigitized port authority records.",
   "languages_analyzed": ["en", "de"]
 }}
 ```
@@ -305,6 +326,14 @@ The full JSON structure for `save_structured_report`:
   }},
   "research_questions": ["Question 1"],
   "story_hooks": ["Hook 1"],
+  "source_coverage": {{
+    "apis_searched": ["chronicling_america", "loc", "dpla"],
+    "apis_with_results": ["chronicling_america", "loc"],
+    "apis_without_results": ["dpla"],
+    "known_undigitized_sources": [],
+    "coverage_assessment": "Coverage assessment text"
+  }},
+  "confidence_rationale": "Rationale for the chosen confidence level",
   "languages_analyzed": ["en", "de"]
 }}
 ```
@@ -327,6 +356,6 @@ armchair_polymath_agent = LlmAgent(
         "and Anthropology perspectives from all available language sources."
     ),
     instruction=ARMCHAIR_POLYMATH_INSTRUCTION,
-    tools=[save_structured_report],
+    tools=[save_structured_report, get_search_metadata],
     output_key="mystery_report",  # 既存と同じキー → 下流互換性維持
 )
