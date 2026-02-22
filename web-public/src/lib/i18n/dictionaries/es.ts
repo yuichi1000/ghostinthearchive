@@ -117,6 +117,14 @@ const dict: Dictionary = {
     LOC: "Locus",
     moreLocations: "+{count} más",
   },
+  share: {
+    shareOnX: "Compartir en X",
+    shareOnFacebook: "Compartir en Facebook",
+    shareOnReddit: "Compartir en Reddit",
+    copyLink: "Copiar enlace",
+    linkCopied: "Enlace copiado!",
+    shareThisArticle: "Compartir este expediente",
+  },
   footer: {
     description:
       "Análisis multilingüe cruzado de los archivos digitales públicos del mundo — desenterrando los Fantasmas ocultos en las brechas entre registros, idiomas y disciplinas.",

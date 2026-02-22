@@ -116,6 +116,14 @@ const dict: Dictionary = {
     LOC: "Locus",
     moreLocations: "+{count} more",
   },
+  share: {
+    shareOnX: "Share on X",
+    shareOnFacebook: "Share on Facebook",
+    shareOnReddit: "Share on Reddit",
+    copyLink: "Copy link",
+    linkCopied: "Link copied!",
+    shareThisArticle: "Share this case file",
+  },
   footer: {
     description:
       "Multi-lingual cross-analysis of the world's public digital archives — unearthing the Ghosts hiding in the gaps between records, languages, and disciplines.",

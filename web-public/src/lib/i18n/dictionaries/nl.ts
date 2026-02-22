@@ -117,6 +117,14 @@ const dict: Dictionary = {
     LOC: "Genius Loci",
     moreLocations: "+{count} meer",
   },
+  share: {
+    shareOnX: "Delen op X",
+    shareOnFacebook: "Delen op Facebook",
+    shareOnReddit: "Delen op Reddit",
+    copyLink: "Link kopiëren",
+    linkCopied: "Link gekopieerd!",
+    shareThisArticle: "Dit dossier delen",
+  },
   footer: {
     description:
       "Meertalige kruisanalyse van de openbare digitale archieven van de wereld — de Geesten opgraven die zich verschuilen in de hiaten tussen documenten, talen en disciplines.",

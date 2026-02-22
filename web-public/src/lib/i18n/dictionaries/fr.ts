@@ -117,6 +117,14 @@ const dict: Dictionary = {
     LOC: "Genius Loci",
     moreLocations: "+{count} autres",
   },
+  share: {
+    shareOnX: "Partager sur X",
+    shareOnFacebook: "Partager sur Facebook",
+    shareOnReddit: "Partager sur Reddit",
+    copyLink: "Copier le lien",
+    linkCopied: "Lien copié !",
+    shareThisArticle: "Partager ce dossier",
+  },
   footer: {
     description:
       "Analyse croisée multilingue des archives numériques publiques du monde — exhumant les Fantômes cachés dans les interstices entre documents, langues et disciplines.",

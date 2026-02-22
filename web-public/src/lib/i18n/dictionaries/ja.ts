@@ -116,6 +116,14 @@ const dict: Dictionary = {
     LOC: "地霊・場所",
     moreLocations: "他{count}件",
   },
+  share: {
+    shareOnX: "Xでシェア",
+    shareOnFacebook: "Facebookでシェア",
+    shareOnReddit: "Redditでシェア",
+    copyLink: "リンクをコピー",
+    linkCopied: "コピーしました！",
+    shareThisArticle: "このケースファイルをシェア",
+  },
   footer: {
     description:
       "世界の公開デジタルアーカイブの多言語横断分析——記録と言語と学問の隙間に潜むGhostを発掘する。",

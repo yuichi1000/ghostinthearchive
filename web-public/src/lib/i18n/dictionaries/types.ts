@@ -100,6 +100,14 @@ export interface Dictionary {
     LOC: string;
     moreLocations: string;
   };
+  share: {
+    shareOnX: string;
+    shareOnFacebook: string;
+    shareOnReddit: string;
+    copyLink: string;
+    linkCopied: string;
+    shareThisArticle: string;
+  };
   footer: {
     description: string;
     primarySources: string;
