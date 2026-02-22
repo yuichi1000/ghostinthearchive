@@ -12,14 +12,27 @@ import { DetailSidebar } from "@/components/mystery/detail-sidebar"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { TableOfContents, SECTION_IDS } from "@/components/table-of-contents"
 import { RelatedArticles } from "@/components/related-articles"
+import { ShareButtons } from "@/components/share-buttons"
 import { getMysteryById, getPublishedMysteryIds, getAllPublishedMysteriesMap } from "@ghost/shared/src/lib/firestore/queries"
-import { FileText } from "lucide-react"
+import { FileText, Share2 } from "lucide-react"
 import { localizeMystery, getTranslatedExcerpt } from "@ghost/shared/src/lib/localize"
 import { SUPPORTED_LANGS, isValidLang } from "@/lib/i18n/config"
 import type { SupportedLang } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 import { findRelatedArticles } from "@/lib/related-articles"
+import { getSiteUrl } from "@/lib/site-url"
 import type { TocSection } from "@/components/table-of-contents"
+
+// og:locale マッピング
+const OG_LOCALE_MAP: Record<SupportedLang, string> = {
+  en: "en_US",
+  ja: "ja_JP",
+  es: "es_ES",
+  de: "de_DE",
+  fr: "fr_FR",
+  nl: "nl_NL",
+  pt: "pt_BR",
+}
 
 // SSG: ビルド時に生成されたページ以外は 404
 export const dynamicParams = false
@@ -56,13 +69,38 @@ export async function generateMetadata({
 
   const { title, summary } = localizeMystery(mystery, lang)
 
+  const pageUrl = `${getSiteUrl()}/${lang}/mystery/${id}`
+  const ogLocale = OG_LOCALE_MAP[lang]
+  const alternateLocales = SUPPORTED_LANGS
+    .filter((l) => l !== lang)
+    .map((l) => OG_LOCALE_MAP[l])
+
+  // hero 画像がある場合のみ images を設定
+  const heroUrl = mystery.images?.hero
+  const images = heroUrl ? [{ url: heroUrl, alt: title }] : undefined
+
   return {
     title: `${title} | Ghost in the Archive`,
     description: summary,
     alternates: {
+      canonical: pageUrl,
       languages: Object.fromEntries(
         SUPPORTED_LANGS.map((l) => [l, `/${l}/mystery/${id}`])
       ),
+    },
+    openGraph: {
+      title,
+      description: summary,
+      url: pageUrl,
+      type: "article",
+      locale: ogLocale,
+      alternateLocale: alternateLocales,
+      ...(images && { images }),
+    },
+    twitter: {
+      title,
+      description: summary,
+      ...(images && { images }),
     },
   }
 }
@@ -112,6 +150,9 @@ export default async function MysteryDetailPage({
     tocSections.push({ id: SECTION_IDS.historicalContext, label: dict.detail.tocHistoricalContext })
   }
 
+  // シェアボタン用の URL
+  const shareUrl = `${getSiteUrl()}/${lang}/mystery/${id}`
+
   // 関連記事の取得（SSG ビルド時は React.cache で共有済み）
   const relatedArticles = findRelatedArticles(
     mystery,
@@ -142,6 +183,13 @@ export default async function MysteryDetailPage({
             publishedAt={mystery.publishedAt}
             publishedLabel={dict.detail.published}
           />
+
+          {/* シェアボタン（compact） */}
+          <div className="flex items-center gap-4 mb-8">
+            <div className="h-px flex-1 bg-border" />
+            <ShareButtons url={shareUrl} title={title} variant="compact" labels={dict.share} />
+            <div className="h-px flex-1 bg-border" />
+          </div>
 
           {/* Hero image */}
           {mystery.images?.hero && (
@@ -230,6 +278,15 @@ export default async function MysteryDetailPage({
                   }}
                 />
               )}
+
+              {/* シェアボタン（full） */}
+              <section className="pt-4">
+                <div className="flex items-center gap-3 mb-6">
+                  <Share2 className="w-5 h-5 text-gold" />
+                  <h2 className="font-serif text-xl text-parchment">{dict.share.shareThisArticle}</h2>
+                </div>
+                <ShareButtons url={shareUrl} title={title} variant="full" labels={dict.share} />
+              </section>
             </div>
 
             <DetailSidebar

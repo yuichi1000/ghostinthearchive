@@ -117,6 +117,14 @@ const dict: Dictionary = {
     LOC: "Genius Loci",
     moreLocations: "+{count} weitere",
   },
+  share: {
+    shareOnX: "Auf X teilen",
+    shareOnFacebook: "Auf Facebook teilen",
+    shareOnReddit: "Auf Reddit teilen",
+    copyLink: "Link kopieren",
+    linkCopied: "Link kopiert!",
+    shareThisArticle: "Diese Fallakte teilen",
+  },
   footer: {
     description:
       "Mehrsprachige Kreuzanalyse der öffentlichen digitalen Archive der Welt — die Geister aufspüren, die sich in den Lücken zwischen Aufzeichnungen, Sprachen und Disziplinen verbergen.",
