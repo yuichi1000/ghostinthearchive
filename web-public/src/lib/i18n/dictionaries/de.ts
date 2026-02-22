@@ -149,6 +149,9 @@ const dict: Dictionary = {
     primarySources: "Primärquellen",
     technical: "Technik",
     classification: "Klassifikation:",
+    home: "Startseite",
+    archive: "Archiv",
+    about: "Über uns",
   },
 };
 

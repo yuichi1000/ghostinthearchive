@@ -148,6 +148,9 @@ const dict: Dictionary = {
     primarySources: "一次資料",
     technical: "技術情報",
     classification: "分類：",
+    home: "ホーム",
+    archive: "アーカイブ",
+    about: "このサイトについて",
   },
 };
 

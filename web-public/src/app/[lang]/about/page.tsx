@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
-import { Footer } from "@ghost/shared/src/components/footer"
+import { PublicFooter } from "@/components/public-footer"
 import { Hero } from "@/components/hero"
 import { BookOpen, ShieldAlert } from "lucide-react"
 import { isValidLang } from "@/lib/i18n/config"
@@ -157,7 +157,7 @@ export default async function AboutPage({
         </section>
       </main>
 
-      <Footer labels={dict.footer} />
+      <PublicFooter lang={lang} dict={dict} />
     </div>
   )
 }

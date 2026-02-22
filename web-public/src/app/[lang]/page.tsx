@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
-import { Footer } from "@ghost/shared/src/components/footer"
+import { PublicFooter } from "@/components/public-footer"
 import { FeaturedMysteryCard } from "@/components/featured-mystery-card"
 import { FeaturedMysteryCardSkeleton } from "@/components/featured-mystery-card-skeleton"
 import { MysteryCard } from "@/components/mystery-card"
@@ -139,7 +139,7 @@ export default async function HomePage({
         </section>
       </main>
 
-      <Footer labels={dict.footer} />
+      <PublicFooter lang={lang} dict={dict} />
     </div>
   )
 }

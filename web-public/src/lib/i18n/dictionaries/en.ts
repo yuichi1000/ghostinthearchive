@@ -148,6 +148,9 @@ const dict: Dictionary = {
     primarySources: "Primary Sources",
     technical: "Technical",
     classification: "Classification:",
+    home: "Home",
+    archive: "Archive",
+    about: "About",
   },
 };
 
