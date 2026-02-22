@@ -1,6 +1,6 @@
 """LLM モデル設定ユーティリティ。
 
-全エージェントで使用する Gemini モデルアダプタを一元管理する。
+全エージェントで使用する Gemini / Claude モデルアダプタを一元管理する。
 HTTP 429 (RESOURCE_EXHAUSTED) エラーに対する指数バックオフ付きリトライを設定し、
 並列エージェント実行時のレート制限エラーを自動的に回復する。
 
@@ -12,9 +12,19 @@ ADK はデフォルトで retry_options=None（リトライ0回）のため、
 from google.adk.models.google_llm import Gemini
 from google.genai.types import HttpRetryOptions
 
+# Claude モデルの LLMRegistry 登録（Vertex AI 経由）
+# anthropic パッケージが未インストールの場合はスキップ（テスト環境等）
+try:
+    from google.adk.models.anthropic_llm import Claude
+    from google.adk.models.registry import LLMRegistry
+    LLMRegistry.register(Claude)
+except ImportError:
+    pass
+
 # モデル名定数
 MODEL_PRO = "gemini-3-pro-preview"
 MODEL_FLASH = "gemini-2.5-flash"
+MODEL_CLAUDE_SONNET = "claude-sonnet-4-5@20250929"
 
 # === 日本語訳 ===
 # Pro モデル用リトライ設定（レート制限が厳しい）
@@ -57,3 +67,13 @@ def create_pro_model() -> Gemini:
 def create_flash_model() -> Gemini:
     """gemini-2.5-flash のリトライ付きモデルアダプタを生成する。"""
     return Gemini(model=MODEL_FLASH, retry_options=_FLASH_RETRY_OPTIONS)
+
+
+def create_claude_sonnet_model() -> str:
+    """Claude Sonnet 4.5 (Vertex AI) のモデル文字列を返す。
+
+    Claude は ADK の LLMRegistry 経由で解決されるため、
+    Gemini のようなアダプタオブジェクトではなくモデル文字列を返す。
+    リトライは anthropic SDK 側で自動処理される。
+    """
+    return MODEL_CLAUDE_SONNET
