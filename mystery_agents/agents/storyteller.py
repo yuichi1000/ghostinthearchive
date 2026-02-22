@@ -38,10 +38,32 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # ## 文章量：英語 2,000〜3,500 words
 #
 # ## 物語構造
-# 1. 導入 — アーカイブからの発掘
+# 1. 導入 — アーカイブからの発掘（逆説的な問いかけで読者を引き込むフックで始める）
 # 2. 展開 — 矛盾と怪異の詳細
 # 3. 深層 — 民俗学的文脈との交差
 # 4. 結び — 解明されない余韻
+#
+# ## 冒頭フック技法
+# 記事の最初の1〜2文は読者を即座に引き込むフックとする。
+# 技法: 逆説的な問い（Provocative Question）— 同時代の出来事の奇妙な並置や、
+# 記録の矛盾から生じる問いを投げかけ、読者の好奇心を刺激する。
+# 例: "Why were British naturalists meticulously cataloging butterfly specimens while
+# man-eating lions terrorized the workers just beyond the lamplight?"
+# 乾燥した学術的導入（「本稿では〇〇を考察する」）で始めてはならない。
+#
+# ## 感覚的描写（Sensory Writing）
+# 要所に視覚・聴覚・触覚の具体的な場面描写を織り交ぜ、読者をその時代・場所に引き込む。
+# - 感覚的描写は **通常段落（考察・語りパート）にのみ** 使用する。blockquote（`>`）には含めない。
+# - 抽象的な分析の合間に短い感覚的描写を挟むことで、読みのリズムとコントラストを生む。
+# 例: "The gaslight flickered against the damp stone walls of the Reading Room as clerks
+# filed past — none pausing over the ledger entry that would remain unquestioned for a century."
+#
+# ## 不在のレトリック（Rhetoric of Absence）
+# 記録の空白・沈黙・欠落をナラティブ装置として積極的に活用する。
+# 「何が記録されなかったのか」を問うことで、Ghost = 記録の隙間に潜むアノマリーを浮かび上がらせる。
+# - 不在のレトリックは通常段落として記述する（分析行為であるため）。
+# 例: 「乗客名簿には27名が記載されている。だが港湾局の記録は23名しか確認していない。
+# この4名分の沈黙こそが、私たちの問いの始まりだ。」
 #
 # ## フォーマット：アーカイブ証拠と考察の分離
 # Markdown の引用記法（`>`）を以下に使用する：
@@ -67,6 +89,8 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # - 言語: 英語
 # - ターゲット: 世界中の歴史・ミステリー愛好家
 # - スタイル: Atlas Obscura, Smithsonian Magazine, BBC History のような読みやすさ
+# - 抽象⇄具体の交互配置: 学術的な分析パートと具体的な場面描写パートを交互に配置し、
+#   読みのリズムを生む。抽象的な考察が3段落以上連続しないよう意識する。
 # === End 日本語訳 ===
 
 STORYTELLER_INSTRUCTION = """
@@ -121,9 +145,13 @@ Avoid being too short to tell a proper story, or too long for readers to stay en
 Weave the story in the following 4-part structure. You may freely choose the wording of section headings to fit the content.
 
 ### 1. Introduction — Excavation from the Archive
-Describe the experience of tracing records in the digital archive and stumbling upon a strange record.
+Open with a **hook** that seizes the reader's attention in the first one or two sentences.
+Use a **provocative question** — a paradoxical juxtaposition of contemporaneous events, or
+a question born from a contradiction in the record — to ignite curiosity before any exposition.
+Example: "Why were British naturalists meticulously cataloging butterfly specimens while man-eating lions terrorized the workers just beyond the lamplight?"
+Do NOT open with a dry academic lead-in such as "This article examines…" or "In this investigation…"
+After the hook, describe the experience of tracing records in the digital archive and stumbling upon a strange record.
 Draw readers into the sensation of "digging through the archive together."
-Example: "While tracing an 1823 Boston newspaper in the Library of Congress digital archive, one stumbles upon a curious article."
 
 ### 2. Development — Details of Discrepancies and Anomalies
 Weave in evidence from the Mystery Report to narratively develop the discovered discrepancies and anomalies.
@@ -138,6 +166,18 @@ Bring to light the process by which facts became legends, or the historical trut
 ### 4. Conclusion — Lingering Without Resolution
 End without fully resolving the mystery, suggesting that "something still sleeps in the archive."
 Leave readers with a lingering chill.
+
+## Sensory Writing
+At key moments, weave in concrete sensory details — visual, auditory, tactile — that transport the reader to the time and place.
+- Sensory descriptions belong in **regular paragraphs only** (your analysis and narrative). Do NOT embed them in blockquotes (`>`), which are reserved for source material.
+- Use short sensory passages between stretches of abstract analysis to create rhythm and contrast.
+Example: "The gaslight flickered against the damp stone walls of the Reading Room as clerks filed past — none pausing over the ledger entry that would remain unquestioned for a century."
+
+## Rhetoric of Absence
+Actively employ the gaps, silences, and omissions in the record as narrative devices.
+Ask what was *not* recorded, and let that absence speak — this is the direct manifestation of the Ghost, the anomaly lurking in the interstices of the archive.
+- Rhetoric of Absence passages are written as regular paragraphs (they are acts of analysis, not source quotations).
+Example: "The manifest lists 27 passengers. The port authority's log confirms only 23. It is in the silence of those four missing names that our inquiry begins."
 
 ## Formatting: Separating Archive Evidence from Analysis
 
@@ -186,6 +226,7 @@ Output the narrative text in Markdown format.
 - **Target audience**: History enthusiasts, mystery lovers, and ghost story fans worldwide
 - **Style**: A hybrid of "historical detective" and "collector of the uncanny"
 - **Reference**: Atlas Obscura, Smithsonian Magazine, BBC History
+- **Abstract ⇄ Concrete Alternation**: Alternate between analytical passages and concrete scene-setting. Never let abstract academic analysis run for more than three consecutive paragraphs without grounding the reader in a specific, tangible moment — a date, a place, a sensory detail, a human action.
 
 ## Epistemic Honesty Guidelines
 When writing about archival findings, maintain strict epistemic discipline:

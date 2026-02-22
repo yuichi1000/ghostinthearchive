@@ -20,3 +20,24 @@ class TestStorytellerInstruction:
 
     def test_api_absence_not_historical_absence(self):
         assert "API absence" in STORYTELLER_INSTRUCTION
+
+    def test_has_hook_technique(self):
+        """Introduction にフック技法（provocative question）の指示がある。"""
+        assert "provocative question" in STORYTELLER_INSTRUCTION.lower()
+        assert "Do NOT open with a dry academic lead-in" in STORYTELLER_INSTRUCTION
+
+    def test_has_sensory_writing_guidelines(self):
+        """Sensory Writing セクションが存在し、blockquote 除外ルールを含む。"""
+        assert "## Sensory Writing" in STORYTELLER_INSTRUCTION
+        assert "regular paragraphs only" in STORYTELLER_INSTRUCTION
+
+    def test_has_rhetoric_of_absence(self):
+        """Rhetoric of Absence セクションが存在する。"""
+        assert "## Rhetoric of Absence" in STORYTELLER_INSTRUCTION
+        assert "gaps, silences, and omissions" in STORYTELLER_INSTRUCTION
+
+    def test_has_abstract_concrete_alternation(self):
+        """抽象⇄具体の交互配置指示が Creative Guidelines 内にある。"""
+        assert "Abstract" in STORYTELLER_INSTRUCTION
+        assert "Concrete Alternation" in STORYTELLER_INSTRUCTION
+        assert "three consecutive paragraphs" in STORYTELLER_INSTRUCTION
