@@ -3,9 +3,8 @@ import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { PublicFooter } from "@/components/public-footer"
 import { FeaturedMysteryCard } from "@/components/featured-mystery-card"
-import { FeaturedMysteryCardSkeleton } from "@/components/featured-mystery-card-skeleton"
 import { MysteryCard } from "@/components/mystery-card"
-import { MysteryCardSkeleton } from "@/components/mystery-card-skeleton"
+import { MysteryListSkeleton } from "@/components/mystery-list-skeleton"
 import { getPublishedMysteries } from "@ghost/shared/src/lib/firestore/queries"
 import { HOMEPAGE_MYSTERY_LIMIT } from "@/lib/constants"
 import Link from "next/link"
@@ -78,21 +77,6 @@ async function MysteryList({ lang, dict }: { lang: SupportedLang; dict: Dictiona
           </div>
         </>
       )}
-    </>
-  )
-}
-
-function MysteryListSkeleton() {
-  return (
-    <>
-      <div className="mb-12">
-        <FeaturedMysteryCardSkeleton />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(6)].map((_, i) => (
-          <MysteryCardSkeleton key={i} />
-        ))}
-      </div>
     </>
   )
 }
