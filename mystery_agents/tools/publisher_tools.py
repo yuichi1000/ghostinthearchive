@@ -278,7 +278,7 @@ def publish_mystery(
                     "confidence_level", "discrepancy_detected", "discrepancy_type",
                     "historical_context", "research_questions", "story_hooks",
                     "title", "summary",
-                    "source_coverage", "confidence_rationale",
+                    "source_coverage", "academic_coverage", "confidence_rationale",
                 ):
                     if key in structured_report:
                         data[key] = structured_report[key]

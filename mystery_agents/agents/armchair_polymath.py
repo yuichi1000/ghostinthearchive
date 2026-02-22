@@ -11,6 +11,7 @@ from google.adk.agents import LlmAgent
 
 from shared.model_config import create_pro_model
 
+from ..tools.openalex import search_academic_papers
 from ..tools.scholar_tools import save_structured_report
 from ..tools.search_metadata import get_search_metadata
 
@@ -68,6 +69,19 @@ from ..tools.search_metadata import get_search_metadata
 # - デジタル化範囲: この時代・地域の記録のうちデジタル化済みの推定割合
 # - 不在≠不存在: API で見つからない記録は存在しないわけではない
 # - OCR・索引の限界: 歴史文書の OCR 品質や旧式用語による索引の限界
+#
+# ## ツール: search_academic_papers
+# `get_search_metadata` を呼び出した後、ミステリーの中核テーマから導出したクエリで
+# `search_academic_papers` を呼び出す（例: 主要な歴史的事件、人物、現象）。
+# このツールは OpenAlex から論文数、言語分布、年代分布、主要概念、被引用数上位論文を返す。
+#
+# このデータを使って:
+# 1. 構造化レポートの `academic_coverage` フィールドを埋める
+# 2. 言語バイアスを特定する（このトピックは特定言語でのみ研究されていないか？）
+# 3. 時代的ギャップを特定する（学術的関心は増減したか？）
+# 4. 学術的コンセンサスと一次資料の比較
+# 5. `identified_gaps` に学術界が見落としている点を自ら評価して記入
+# 6. `consensus_vs_primary` に学術的ナラティブとアーカイブ証拠の緊張関係を記入
 #
 # ## 学術界のカバレッジと盲点の評価
 # - 言語バイアス: 特定の言語圏の学術伝統でのみ研究されていないか
@@ -173,13 +187,30 @@ Before assigning a confidence level, explicitly evaluate the limits of the inves
 - **OCR and indexing limitations**: Historical documents may be poorly OCR'd or indexed under outdated terminology, making them invisible to keyword searches.
 
 ### 7. Academic Coverage and Blind Spots
+
+## Tool: search_academic_papers
+After calling `get_search_metadata`, call `search_academic_papers` with a query
+derived from the mystery's core theme (e.g., key historical events, figures, or phenomena).
+The tool returns paper counts, language distribution, temporal distribution, key concepts,
+and top-cited papers from OpenAlex.
+
+Use this data to:
+1. Populate the `academic_coverage` field in the structured report
+2. Identify language bias (is this topic studied only in one language?)
+3. Identify temporal gaps (has scholarly interest waxed or waned?)
+4. Compare academic consensus with what primary sources reveal
+5. Fill `identified_gaps` with your own assessment of what scholarship misses
+6. Fill `consensus_vs_primary` with any tension between scholarly narrative and archival evidence
+
+If the tool returns an error (e.g., API key not set), proceed without academic coverage data
+and note this limitation in your analysis. The tool is supplementary — its absence does not
+prevent you from completing the report.
+
 Assess what existing scholarship may already cover this topic:
 - **Language bias**: Is this topic primarily studied in one language's academic tradition? Would scholars working in other languages frame it differently?
 - **Disciplinary bias**: Is this topic well-covered in one field (e.g., political history) but neglected in others (e.g., social history, folklore studies)?
 - **Temporal bias**: Has academic interest in this topic shifted over time? Are there periods of intense study followed by neglect?
 - **Access bias**: Are the key primary sources held in institutions with restricted access, creating a skew in who has published on this topic?
-
-Note: This assessment draws on general scholarly knowledge — no additional API calls required.
 
 ## Output Format
 Structure your integrated analysis as a "Mystery Report":
@@ -333,6 +364,14 @@ The full JSON structure for `save_structured_report`:
     "known_undigitized_sources": [],
     "coverage_assessment": "Coverage assessment text"
   }},
+  "academic_coverage": {{
+    "papers_found": 42,
+    "language_distribution": {{"en": 35, "de": 5, "ja": 2}},
+    "temporal_distribution": {{"pre-1950": 3, "1950-1999": 15, "2000-present": 24}},
+    "key_concepts": ["folklore", "cultural anthropology", "oral tradition"],
+    "identified_gaps": ["No scholarship in Dutch on this topic despite significant Dutch colonial presence"],
+    "consensus_vs_primary": "Academic consensus treats the 1842 incident as a routine maritime loss, but primary sources from two languages suggest deliberate concealment."
+  }},
   "confidence_rationale": "Rationale for the chosen confidence level",
   "languages_analyzed": ["en", "de"]
 }}
@@ -356,6 +395,6 @@ armchair_polymath_agent = LlmAgent(
         "and Anthropology perspectives from all available language sources."
     ),
     instruction=ARMCHAIR_POLYMATH_INSTRUCTION,
-    tools=[save_structured_report, get_search_metadata],
+    tools=[save_structured_report, get_search_metadata, search_academic_papers],
     output_key="mystery_report",  # 既存と同じキー → 下流互換性維持
 )

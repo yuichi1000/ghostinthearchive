@@ -152,6 +152,7 @@ const dict: Dictionary = {
     heading: "Untersuchungsumfang",
     languagesAnalyzed: "Analysierte Sprachen",
     apisSearched: "Durchsuchte Archive",
+    academicPapers: "Akademische Publikationen",
     coverageNote: "Diese Analyse basiert auf Materialien, die über die oben aufgeführten digitalen Archiv-APIs verfügbar sind.",
     confidenceRationale: "Bewertungsgrundlage",
   },

@@ -151,6 +151,7 @@ const dict: Dictionary = {
     heading: "調査範囲",
     languagesAnalyzed: "分析言語",
     apisSearched: "検索アーカイブ",
+    academicPapers: "学術論文",
     coverageNote: "本分析は上記のデジタルアーカイブAPIで取得可能な資料に基づいています。",
     confidenceRationale: "判定根拠",
   },
