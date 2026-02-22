@@ -27,6 +27,7 @@ COPY services/ ./services/
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 ENV GOOGLE_CLOUD_PROJECT=ghostinthearchive
+ENV GOOGLE_CLOUD_LOCATION=global
 ENV GOOGLE_GENAI_USE_VERTEXAI=TRUE
 
 # Default entrypoint (overridden by Cloud Run configuration)
