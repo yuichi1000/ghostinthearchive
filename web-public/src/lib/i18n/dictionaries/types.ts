@@ -100,6 +100,23 @@ export interface Dictionary {
     LOC: string;
     moreLocations: string;
   };
+  siteIntro: {
+    tagline: string;
+    description: string;
+  };
+  classificationGuide: {
+    heading: string;
+    descriptions: {
+      HIS: string;
+      FLK: string;
+      ANT: string;
+      OCC: string;
+      URB: string;
+      CRM: string;
+      REL: string;
+      LOC: string;
+    };
+  };
   share: {
     shareOnX: string;
     shareOnFacebook: string;

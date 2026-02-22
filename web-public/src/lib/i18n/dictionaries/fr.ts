@@ -117,6 +117,24 @@ const dict: Dictionary = {
     LOC: "Genius Loci",
     moreLocations: "+{count} autres",
   },
+  siteIntro: {
+    tagline: "Exhumer les anomalies à travers langues, archives et disciplines",
+    description:
+      "Un système d'agents IA autonomes qui analyse croisément les archives numériques publiques du monde à travers cinq domaines académiques — révélant les contradictions qu'aucun document, aucune langue ni aucune discipline ne peut expliquer seul.",
+  },
+  classificationGuide: {
+    heading: "Index de classification",
+    descriptions: {
+      HIS: "Divergences dans les archives historiques, personnes disparues, lacunes documentaires",
+      FLK: "Traditions locales, folklore oral, croyances populaires",
+      ANT: "Rituels, structures sociales, contacts interculturels",
+      OCC: "Phénomènes inexplicables, événements surnaturels",
+      URB: "Rumeurs modernes, histoires de fantômes contemporaines",
+      CRM: "Crimes non résolus, disparitions, morts mystérieuses",
+      REL: "Tabous religieux, malédictions, rites interdits",
+      LOC: "Anomalies liées aux lieux, endroits hantés",
+    },
+  },
   share: {
     shareOnX: "Partager sur X",
     shareOnFacebook: "Partager sur Facebook",

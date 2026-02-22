@@ -117,6 +117,24 @@ const dict: Dictionary = {
     LOC: "Genius Loci",
     moreLocations: "+{count} meer",
   },
+  siteIntro: {
+    tagline: "Anomalieën opgraven over talen, archieven en disciplines heen",
+    description:
+      "Een autonoom AI-agentsysteem dat de openbare digitale archieven van de wereld kruislings analyseert via vijf academische vakgebieden — en tegenstrijdigheden blootlegt die geen enkel document, geen enkele taal of discipline alleen kan verklaren.",
+  },
+  classificationGuide: {
+    heading: "Classificatie-index",
+    descriptions: {
+      HIS: "Discrepanties in historische documenten, vermiste personen, lacunes in archieven",
+      FLK: "Lokale tradities, mondelinge overlevering, volksgeloof",
+      ANT: "Rituelen, sociale structuren, intercultureel contact",
+      OCC: "Onverklaarbare verschijnselen, bovennatuurlijke gebeurtenissen",
+      URB: "Moderne geruchten, hedendaagse spookverhalen",
+      CRM: "Onopgeloste misdaden, verdwijningen, mysterieuze sterfgevallen",
+      REL: "Religieuze taboes, vloeken, verboden rituelen",
+      LOC: "Plaatsgebonden anomalieën, spooklocaties",
+    },
+  },
   share: {
     shareOnX: "Delen op X",
     shareOnFacebook: "Delen op Facebook",
