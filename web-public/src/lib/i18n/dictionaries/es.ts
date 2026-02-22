@@ -143,6 +143,18 @@ const dict: Dictionary = {
     linkCopied: "Enlace copiado!",
     shareThisArticle: "Compartir este expediente",
   },
+  confidence: {
+    confirmedGhost: "Fantasma confirmado",
+    suspectedGhost: "Fantasma sospechado",
+    archivalEcho: "Eco de archivo",
+  },
+  sourceCoverage: {
+    heading: "Alcance de la investigación",
+    languagesAnalyzed: "Idiomas analizados",
+    apisSearched: "Archivos consultados",
+    coverageNote: "Este análisis se basa en materiales disponibles a través de las APIs de archivos digitales mencionadas.",
+    confidenceRationale: "Fundamento de la evaluación",
+  },
   seo: {
     homeDescription: "Un sistema autónomo de agentes de IA que analiza los archivos digitales públicos del mundo a través de cinco disciplinas académicas — revelando anomalías que ningún registro, idioma o campo puede explicar por sí solo.",
     archiveDescription: "Índice completo de todas las anomalías, discrepancias y fenómenos inexplicables desenterrados de los registros públicos del mundo.",

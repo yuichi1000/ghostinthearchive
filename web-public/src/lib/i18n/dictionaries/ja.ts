@@ -142,6 +142,18 @@ const dict: Dictionary = {
     linkCopied: "コピーしました！",
     shareThisArticle: "このケースファイルをシェア",
   },
+  confidence: {
+    confirmedGhost: "確認済みゴースト",
+    suspectedGhost: "疑わしいゴースト",
+    archivalEcho: "アーカイブの残響",
+  },
+  sourceCoverage: {
+    heading: "調査範囲",
+    languagesAnalyzed: "分析言語",
+    apisSearched: "検索アーカイブ",
+    coverageNote: "本分析は上記のデジタルアーカイブAPIで取得可能な資料に基づいています。",
+    confidenceRationale: "判定根拠",
+  },
   seo: {
     homeDescription: "世界の公開デジタルアーカイブを5つの学術領域で多言語横断分析する自律型AIエージェントシステム。単一の記録・言語・学問分野では説明できないアノマリーを発掘する。",
     archiveDescription: "世界の公開記録から発掘された、すべての異常・矛盾・説明不能な現象の完全索引。",

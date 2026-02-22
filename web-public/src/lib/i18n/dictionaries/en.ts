@@ -142,6 +142,18 @@ const dict: Dictionary = {
     linkCopied: "Link copied!",
     shareThisArticle: "Share this case file",
   },
+  confidence: {
+    confirmedGhost: "Confirmed Ghost",
+    suspectedGhost: "Suspected Ghost",
+    archivalEcho: "Archival Echo",
+  },
+  sourceCoverage: {
+    heading: "Investigation Scope",
+    languagesAnalyzed: "Languages Analyzed",
+    apisSearched: "Archives Searched",
+    coverageNote: "This analysis is based on materials available through the digital archive APIs listed above.",
+    confidenceRationale: "Assessment Rationale",
+  },
   seo: {
     homeDescription: "An autonomous AI agent system cross-analyzing the world's public digital archives through five academic disciplines — unearthing anomalies that no single record, language, or field can explain.",
     archiveDescription: "Complete index of all investigated anomalies, discrepancies, and unexplained phenomena unearthed from the world's public records.",

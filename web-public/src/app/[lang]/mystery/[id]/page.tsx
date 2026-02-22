@@ -171,6 +171,8 @@ export default async function MysteryDetailPage({
             timePeriod={timePeriod}
             publishedAt={mystery.publishedAt}
             publishedLabel={dict.detail.published}
+            confidenceLevel={mystery.confidence_level}
+            confidenceLabels={dict.confidence}
           />
 
           {/* シェアボタン（compact） */}
@@ -284,6 +286,10 @@ export default async function MysteryDetailPage({
                 storyAngles: dict.detail.storyAngles,
                 classificationNotice: dict.detail.classificationNotice,
               }}
+              sourceCoverage={mystery.source_coverage}
+              languagesAnalyzed={mystery.languages_analyzed}
+              confidenceRationale={mystery.confidence_rationale}
+              sourceCoverageLabels={dict.sourceCoverage}
             >
               {/* デスクトップ目次（サイドバー内） */}
               <TableOfContents sections={tocSections} heading={dict.detail.tableOfContents} />
