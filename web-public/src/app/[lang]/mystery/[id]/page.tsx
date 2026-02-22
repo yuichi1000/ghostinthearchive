@@ -13,6 +13,7 @@ import { Breadcrumb } from "@/components/breadcrumb"
 import { TableOfContents, SECTION_IDS } from "@/components/table-of-contents"
 import { RelatedArticles } from "@/components/related-articles"
 import { ShareButtons } from "@/components/share-buttons"
+import { ArticleJsonLd } from "@/components/article-json-ld"
 import { getMysteryById, getPublishedMysteryIds, getAllPublishedMysteriesMap } from "@ghost/shared/src/lib/firestore/queries"
 import { FileText, Share2 } from "lucide-react"
 import { localizeMystery, getTranslatedExcerpt } from "@ghost/shared/src/lib/localize"
@@ -21,18 +22,8 @@ import type { SupportedLang } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 import { findRelatedArticles } from "@/lib/related-articles"
 import { getSiteUrl } from "@/lib/site-url"
+import { buildOgpMetadata, buildAlternates } from "@/lib/seo"
 import type { TocSection } from "@/components/table-of-contents"
-
-// og:locale マッピング
-const OG_LOCALE_MAP: Record<SupportedLang, string> = {
-  en: "en_US",
-  ja: "ja_JP",
-  es: "es_ES",
-  de: "de_DE",
-  fr: "fr_FR",
-  nl: "nl_NL",
-  pt: "pt_BR",
-}
 
 // SSG: ビルド時に生成されたページ以外は 404
 export const dynamicParams = false
@@ -70,10 +61,6 @@ export async function generateMetadata({
   const { title, summary } = localizeMystery(mystery, lang)
 
   const pageUrl = `${getSiteUrl()}/${lang}/mystery/${id}`
-  const ogLocale = OG_LOCALE_MAP[lang]
-  const alternateLocales = SUPPORTED_LANGS
-    .filter((l) => l !== lang)
-    .map((l) => OG_LOCALE_MAP[l])
 
   // hero 画像がある場合のみ images を設定
   const heroUrl = mystery.images?.hero
@@ -84,24 +71,15 @@ export async function generateMetadata({
     description: summary,
     alternates: {
       canonical: pageUrl,
-      languages: Object.fromEntries(
-        SUPPORTED_LANGS.map((l) => [l, `/${l}/mystery/${id}`])
-      ),
+      ...buildAlternates(`mystery/${id}`),
     },
-    openGraph: {
+    ...buildOgpMetadata(lang, {
       title,
       description: summary,
-      url: pageUrl,
+      path: `mystery/${id}`,
       type: "article",
-      locale: ogLocale,
-      alternateLocale: alternateLocales,
-      ...(images && { images }),
-    },
-    twitter: {
-      title,
-      description: summary,
-      ...(images && { images }),
-    },
+      images,
+    }),
   }
 }
 
@@ -173,6 +151,17 @@ export default async function MysteryDetailPage({
               home: dict.detail.breadcrumbHome,
               archive: dict.nav.archive,
             }}
+          />
+
+          {/* Article 構造化データ */}
+          <ArticleJsonLd
+            title={title}
+            description={summary}
+            url={shareUrl}
+            datePublished={mystery.publishedAt?.toISOString()}
+            dateModified={mystery.updatedAt?.toISOString()}
+            imageUrl={mystery.images?.hero}
+            lang={lang}
           />
 
           <CaseFileHeader

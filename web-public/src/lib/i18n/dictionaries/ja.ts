@@ -142,6 +142,11 @@ const dict: Dictionary = {
     linkCopied: "コピーしました！",
     shareThisArticle: "このケースファイルをシェア",
   },
+  seo: {
+    homeDescription: "世界の公開デジタルアーカイブを5つの学術領域で多言語横断分析する自律型AIエージェントシステム。単一の記録・言語・学問分野では説明できないアノマリーを発掘する。",
+    archiveDescription: "世界の公開記録から発掘された、すべての異常・矛盾・説明不能な現象の完全索引。",
+    aboutDescription: "Ghost in the Archive について——世界の公開デジタルアーカイブを5つの学術領域で横断分析する自律型AI調査ユニットの概要。",
+  },
   footer: {
     description:
       "世界の公開デジタルアーカイブの多言語横断分析——記録と言語と学問の隙間に潜むGhostを発掘する。",

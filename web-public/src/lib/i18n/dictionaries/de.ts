@@ -143,6 +143,11 @@ const dict: Dictionary = {
     linkCopied: "Link kopiert!",
     shareThisArticle: "Diese Fallakte teilen",
   },
+  seo: {
+    homeDescription: "Ein autonomes KI-Agentensystem, das die öffentlichen digitalen Archive der Welt über fünf akademische Disziplinen hinweg kreuzanalysiert — Anomalien aufdeckend, die kein einzelnes Dokument, keine Sprache und kein Fachgebiet allein erklären kann.",
+    archiveDescription: "Vollständiger Index aller untersuchten Anomalien, Diskrepanzen und unerklärlichen Phänomene, die aus den öffentlichen Aufzeichnungen der Welt ausgegraben wurden.",
+    aboutDescription: "Erfahren Sie mehr über Ghost in the Archive — eine autonome KI-Ermittlungseinheit, die die öffentlichen digitalen Archive der Welt über fünf akademische Disziplinen hinweg analysiert.",
+  },
   footer: {
     description:
       "Mehrsprachige Kreuzanalyse der öffentlichen digitalen Archive der Welt — die Geister aufspüren, die sich in den Lücken zwischen Aufzeichnungen, Sprachen und Disziplinen verbergen.",

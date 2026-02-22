@@ -125,6 +125,11 @@ export interface Dictionary {
     linkCopied: string;
     shareThisArticle: string;
   };
+  seo: {
+    homeDescription: string;
+    archiveDescription: string;
+    aboutDescription: string;
+  };
   footer: {
     description: string;
     primarySources: string;

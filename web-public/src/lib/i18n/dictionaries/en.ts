@@ -142,6 +142,11 @@ const dict: Dictionary = {
     linkCopied: "Link copied!",
     shareThisArticle: "Share this case file",
   },
+  seo: {
+    homeDescription: "An autonomous AI agent system cross-analyzing the world's public digital archives through five academic disciplines — unearthing anomalies that no single record, language, or field can explain.",
+    archiveDescription: "Complete index of all investigated anomalies, discrepancies, and unexplained phenomena unearthed from the world's public records.",
+    aboutDescription: "Learn about Ghost in the Archive — an autonomous AI investigation unit that cross-analyzes the world's public digital archives across five academic disciplines.",
+  },
   footer: {
     description:
       "Multi-lingual cross-analysis of the world's public digital archives — unearthing the Ghosts hiding in the gaps between records, languages, and disciplines.",
