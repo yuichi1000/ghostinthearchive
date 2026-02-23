@@ -384,17 +384,23 @@ If you cannot find a specific verbatim quote, write a brief paraphrase of the so
 NEVER leave `relevant_excerpt` as an empty string — items with empty excerpts will be automatically removed.
 """
 
-armchair_polymath_agent = LlmAgent(
-    name="armchair_polymath",
-    model=create_pro_model(),
-    description=(
-        "The Armchair Polymath: a sardonic, encyclopaedically learned synthesizer "
-        "who integrates analysis results from multiple language-specific Scholars "
-        "and their debate records. Identifies cross-language discrepancies, cultural "
-        "biases, and produces a unified Mystery Report drawing on Fact, Folklore, "
-        "and Anthropology perspectives from all available language sources."
-    ),
-    instruction=ARMCHAIR_POLYMATH_INSTRUCTION,
-    tools=[save_structured_report, get_search_metadata, search_academic_papers],
-    output_key="mystery_report",  # 既存と同じキー → 下流互換性維持
-)
+def create_armchair_polymath() -> LlmAgent:
+    """Armchair Polymath エージェントを新規生成する。"""
+    return LlmAgent(
+        name="armchair_polymath",
+        model=create_pro_model(),
+        description=(
+            "The Armchair Polymath: a sardonic, encyclopaedically learned synthesizer "
+            "who integrates analysis results from multiple language-specific Scholars "
+            "and their debate records. Identifies cross-language discrepancies, cultural "
+            "biases, and produces a unified Mystery Report drawing on Fact, Folklore, "
+            "and Anthropology perspectives from all available language sources."
+        ),
+        instruction=ARMCHAIR_POLYMATH_INSTRUCTION,
+        tools=[save_structured_report, get_search_metadata, search_academic_papers],
+        output_key="mystery_report",  # 既存と同じキー → 下流互換性維持
+    )
+
+
+# 後方互換: デフォルトシングルトン
+armchair_polymath_agent = create_armchair_polymath()

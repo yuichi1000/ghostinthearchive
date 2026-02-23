@@ -307,36 +307,57 @@ class TestArmchairPolymath:
         assert "armchair_polymath" in repr(armchair_polymath_agent)
 
 
+def _find_sub_agent(pipeline, name: str):
+    """パイプライン内のサブエージェントを名前で再帰検索する。"""
+    for agent in pipeline.sub_agents:
+        if hasattr(agent, "name") and agent.name == name:
+            return agent
+        # MagicMock 環境では name が内部名として repr に含まれる
+        if name in repr(agent):
+            return agent
+        # 再帰検索
+        if hasattr(agent, "sub_agents"):
+            found = _find_sub_agent(agent, name)
+            if found is not None:
+                return found
+    return None
+
+
 class TestDebateLoopConfiguration:
     """Tests for the debate loop LoopAgent configuration."""
 
     def test_debate_loop_is_created_via_loop_agent(self):
         """debate_loop should be created via LoopAgent constructor."""
-        from mystery_agents.agent import debate_loop
+        from mystery_agents.agent import ghost_commander
 
-        # MagicMock 環境では LoopAgent(...) の戻り値は MagicMock インスタンス
-        # debate_loop が存在し、名前に debate_loop が含まれることを確認
+        debate_loop = _find_sub_agent(ghost_commander, "debate_loop")
+        assert debate_loop is not None
         assert "debate_loop" in repr(debate_loop)
 
     def test_debate_loop_max_iterations(self):
         """debate_loop should have max_iterations=2."""
-        from mystery_agents.agent import debate_loop
+        from mystery_agents.agent import ghost_commander
 
+        debate_loop = _find_sub_agent(ghost_commander, "debate_loop")
         assert debate_loop.max_iterations == 2
 
     def test_debate_loop_has_gate_callback(self):
         """debate_loop should have a before_agent_callback."""
-        from mystery_agents.agent import debate_loop
+        from mystery_agents.agent import ghost_commander
 
+        debate_loop = _find_sub_agent(ghost_commander, "debate_loop")
         # before_agent_callback が設定されていること（callable であること）
         assert debate_loop.before_agent_callback is not None
         assert callable(debate_loop.before_agent_callback)
 
-    def test_debate_loop_sub_agents_count(self):
-        """debate_loop should have 6 sub_agents (one per language)."""
-        from mystery_agents.agent import debate_loop
+    def test_debate_loop_contains_debate_round(self):
+        """debate_loop should contain debate_round as its sub_agent."""
+        from mystery_agents.agent import ghost_commander
 
-        assert len(debate_loop.sub_agents) == 6
+        debate_loop = _find_sub_agent(ghost_commander, "debate_loop")
+        # LoopAgent の直接の sub_agent は debate_round（1つ）
+        assert len(debate_loop.sub_agents) == 1
+        assert "debate_round" in repr(debate_loop.sub_agents[0])
 
 
 class TestPipelineGateCallbacks:
@@ -344,29 +365,33 @@ class TestPipelineGateCallbacks:
 
     def test_scholar_block_has_gate(self):
         """scholar_block should have a before_agent_callback."""
-        from mystery_agents.agent import scholar_block
+        from mystery_agents.agent import ghost_commander
 
+        scholar_block = _find_sub_agent(ghost_commander, "scholar_block")
         assert scholar_block.before_agent_callback is not None
         assert callable(scholar_block.before_agent_callback)
 
     def test_polymath_block_has_gate(self):
         """polymath_block should have a before_agent_callback."""
-        from mystery_agents.agent import polymath_block
+        from mystery_agents.agent import ghost_commander
 
+        polymath_block = _find_sub_agent(ghost_commander, "polymath_block")
         assert polymath_block.before_agent_callback is not None
         assert callable(polymath_block.before_agent_callback)
 
     def test_storyteller_block_has_gate(self):
         """storyteller_block should have a before_agent_callback."""
-        from mystery_agents.agent import storyteller_block
+        from mystery_agents.agent import ghost_commander
 
+        storyteller_block = _find_sub_agent(ghost_commander, "storyteller_block")
         assert storyteller_block.before_agent_callback is not None
         assert callable(storyteller_block.before_agent_callback)
 
     def test_post_story_block_has_gate(self):
         """post_story_block should have a before_agent_callback."""
-        from mystery_agents.agent import post_story_block
+        from mystery_agents.agent import ghost_commander
 
+        post_story_block = _find_sub_agent(ghost_commander, "post_story_block")
         assert post_story_block.before_agent_callback is not None
         assert callable(post_story_block.before_agent_callback)
 

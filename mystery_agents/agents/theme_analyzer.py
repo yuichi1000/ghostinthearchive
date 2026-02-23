@@ -91,15 +91,21 @@ Add other languages only when the theme's geographic or cultural context clearly
 - Be decisive — select languages that are genuinely relevant, not every possible language
 """
 
-theme_analyzer_agent = LlmAgent(
-    name="theme_analyzer",
-    model=create_flash_model(),
-    description=(
-        "Analyzes investigation themes to determine which language/cultural spheres "
-        "are relevant for multilingual archive research. Selects target languages "
-        "for downstream Librarian and Scholar agents."
-    ),
-    instruction=THEME_ANALYZER_INSTRUCTION,
-    tools=[save_language_selection],
-    output_key="theme_analysis",
-)
+def create_theme_analyzer() -> LlmAgent:
+    """ThemeAnalyzer エージェントを新規生成する。"""
+    return LlmAgent(
+        name="theme_analyzer",
+        model=create_flash_model(),
+        description=(
+            "Analyzes investigation themes to determine which language/cultural spheres "
+            "are relevant for multilingual archive research. Selects target languages "
+            "for downstream Librarian and Scholar agents."
+        ),
+        instruction=THEME_ANALYZER_INSTRUCTION,
+        tools=[save_language_selection],
+        output_key="theme_analysis",
+    )
+
+
+# 後方互換: デフォルトシングルトン
+theme_analyzer_agent = create_theme_analyzer()
