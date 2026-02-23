@@ -25,6 +25,9 @@ const PIPELINE_PHASES: PipelinePhase[] = [
   { id: "script_planning",    label: "アウトライン設計", match: (n) => n === "script_planner" },
   { id: "scriptwriting",      label: "脚本作成",    match: (n) => n === "scriptwriter" },
   { id: "script_translation", label: "脚本翻訳",    match: (n) => n === "podcast_translator_ja" },
+  // Alchemist パイプライン
+  { id: "alchemist",          label: "デザイン企画",       match: (n) => n === "alchemist" },
+  { id: "alchemist_renderer", label: "デザインレンダリング", match: (n) => n === "alchemist_renderer" },
 ]
 
 /**
