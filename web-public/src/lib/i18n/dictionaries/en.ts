@@ -174,6 +174,7 @@ const dict: Dictionary = {
     primarySources: "Primary Sources",
     technical: "Technical",
     classification: "Classification:",
+    pendingApplication: "Application Pending",
     home: "Home",
     archive: "Archive",
     about: "About",

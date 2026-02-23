@@ -155,6 +155,7 @@ export interface Dictionary {
     primarySources: string;
     technical: string;
     classification: string;
+    pendingApplication: string;
     home: string;
     archive: string;
     about: string;
