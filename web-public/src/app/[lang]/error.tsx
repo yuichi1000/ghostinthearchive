@@ -38,7 +38,7 @@ export default function ErrorPage({
               Try again
             </button>
             <a
-              href={`/${lang}`}
+              href={`/${lang}/`}
               className="px-6 py-2 border border-gold/50 rounded-sm text-gold hover:bg-gold/10 transition-colors no-underline"
             >
               Return home

@@ -101,7 +101,7 @@ export function ArchiveFilter({ lang, dict, mysteries }: ArchiveFilterProps) {
           {filterCode}
         </span>
         <button
-          onClick={() => router.push(`/${lang}/archive`)}
+          onClick={() => router.push(`/${lang}/archive/`)}
           className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground hover:text-parchment transition-colors"
         >
           <X className="w-3.5 h-3.5" />
@@ -157,7 +157,7 @@ function FilteredMysteryCard({
     : ""
 
   return (
-    <Link href={`/${lang}/mystery/${mystery.id}`} className="block group no-underline">
+    <Link href={`/${lang}/mystery/${mystery.id}/`} className="block group no-underline">
       <article className="aged-card letterpress-border rounded-sm p-5 h-full transition-all duration-300 hover:bg-paper-light hover:border-parchment-dark/30 hover:shadow-lg hover:shadow-black/20">
         <div className={cn(mystery.thumbnail && "grid grid-cols-[96px_1fr] gap-4")}>
           {/* サムネイル */}

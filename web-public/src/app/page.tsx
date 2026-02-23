@@ -16,7 +16,7 @@ export default function RootRedirect() {
     // localStorage に保存済みの言語を優先
     const stored = localStorage.getItem("preferred-lang")
     if (stored && (SUPPORTED_LANGS as readonly string[]).includes(stored)) {
-      router.replace(`/${stored}`)
+      router.replace(`/${stored}/`)
       return
     }
 
@@ -28,7 +28,7 @@ export default function RootRedirect() {
         : DEFAULT_LANG
 
     localStorage.setItem("preferred-lang", matched)
-    router.replace(`/${matched}`)
+    router.replace(`/${matched}/`)
   }, [router])
 
   // リダイレクト中のフォールバック表示

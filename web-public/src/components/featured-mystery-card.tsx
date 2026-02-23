@@ -25,7 +25,7 @@ export function FeaturedMysteryCard({ mystery, lang, label, classificationLabels
   const hasImage = !!mystery.images?.hero
 
   return (
-    <Link href={`/${lang}/mystery/${mystery.mystery_id}`} className="block group no-underline">
+    <Link href={`/${lang}/mystery/${mystery.mystery_id}/`} className="block group no-underline">
       <article className={cn(
         "aged-card letterpress-border rounded-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-black/20",
         hasImage && "lg:grid lg:grid-cols-2"

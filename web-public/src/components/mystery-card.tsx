@@ -25,7 +25,7 @@ export function MysteryCard({ mystery, lang = "en", classificationLabels, confid
   const thumbnailUrl = mystery.images?.thumbnail
 
   return (
-    <Link href={`/${lang}/mystery/${mystery.mystery_id}`} className={cn("block group no-underline", className)}>
+    <Link href={`/${lang}/mystery/${mystery.mystery_id}/`} className={cn("block group no-underline", className)}>
       <article className="aged-card letterpress-border rounded-sm p-5 h-full transition-all duration-300 hover:bg-paper-light hover:border-parchment-dark/30 hover:shadow-lg hover:shadow-black/20">
         <div className={cn(thumbnailUrl && "grid grid-cols-[96px_1fr] gap-4")}>
           {/* サムネイル（あれば表示） */}

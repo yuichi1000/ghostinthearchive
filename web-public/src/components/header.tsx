@@ -14,14 +14,14 @@ interface HeaderProps {
 export function Header({ lang = "en", nav }: HeaderProps) {
   const pathname = usePathname()
   const isArchiveActive = pathname.startsWith(`/${lang}/archive`)
-  const isAboutActive = pathname === `/${lang}/about`
+  const isAboutActive = pathname.startsWith(`/${lang}/about`)
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href={`/${lang}`} className="flex items-center gap-3 group">
+          <Link href={`/${lang}/`} className="flex items-center gap-3 group">
             <div className="relative">
               <Archive className="w-6 h-6 text-gold" />
               <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blood-red rounded-full animate-pulse" />
@@ -36,7 +36,7 @@ export function Header({ lang = "en", nav }: HeaderProps) {
             {nav && (
               <nav className="flex items-center gap-4">
                 <Link
-                  href={`/${lang}/archive`}
+                  href={`/${lang}/archive/`}
                   className={`text-sm font-mono uppercase tracking-wider transition-colors no-underline ${
                     isArchiveActive
                       ? "text-gold"
@@ -46,7 +46,7 @@ export function Header({ lang = "en", nav }: HeaderProps) {
                   {nav.archive}
                 </Link>
                 <Link
-                  href={`/${lang}/about`}
+                  href={`/${lang}/about/`}
                   className={`text-sm font-mono uppercase tracking-wider transition-colors no-underline ${
                     isAboutActive
                       ? "text-gold"
