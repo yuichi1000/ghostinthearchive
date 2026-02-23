@@ -18,7 +18,7 @@ dependencies = [
     "Pillow>=10.0.0",
     "google-cloud-texttospeech>=2.16.0",
     "pydub>=0.25.1",
-    "litellm>=1.30.0",
+    "litellm>=1.75.5",
 ]
 
 [project.optional-dependencies]
