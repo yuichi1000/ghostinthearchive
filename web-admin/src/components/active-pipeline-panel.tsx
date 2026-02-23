@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { cn } from "@ghost/shared/src/lib/utils"
-import type { PipelineRun } from "@ghost/shared/src/types/mystery"
+import type { PipelineRun, PipelineRunType } from "@ghost/shared/src/types/mystery"
 import { resolvePhaseLabel } from "@/lib/pipeline-phases"
 import {
   Loader2,
@@ -49,7 +49,14 @@ export function ActivePipelinePanel({ run, onDismiss }: ActivePipelinePanelProps
     ? resolvePhaseLabel(run.current_agent)
     : null
 
-  const typeLabel = run.type === "blog" ? "ブログ調査" : run.type === "podcast" ? "Podcast 生成" : "翻訳"
+  const TYPE_LABELS: Record<PipelineRunType, string> = {
+    blog: "ブログ調査",
+    translate: "翻訳",
+    podcast: "Podcast 生成",
+    design: "デザイン生成",
+    design_render: "アセットレンダリング",
+  }
+  const typeLabel = TYPE_LABELS[run.type] ?? run.type
 
   return (
     <div className={cn(
@@ -110,8 +117,8 @@ export function ActivePipelinePanel({ run, onDismiss }: ActivePipelinePanelProps
         </div>
       </div>
 
-      {/* 完了時: 記事プレビューリンク */}
-      {run.status === "completed" && run.mystery_id && (
+      {/* 完了時: 記事プレビューリンク（blog / translate のみ） */}
+      {run.status === "completed" && run.mystery_id && (run.type === "blog" || run.type === "translate") && (
         <div className="flex items-center gap-2 mb-2">
           <Link
             href={`/preview/${run.mystery_id}`}

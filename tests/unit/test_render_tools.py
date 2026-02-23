@@ -1,9 +1,13 @@
 """Unit tests for alchemist_agents/tools/render_tools.py - generate_design_asset."""
 
 import json
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
-from alchemist_agents.tools.render_tools import generate_design_asset, PRODUCT_ASPECT_RATIOS
+from alchemist_agents.tools.render_tools import (
+    generate_design_asset,
+    _remove_background,
+    PRODUCT_ASPECT_RATIOS,
+)
 from tests.fakes import make_tool_context
 
 # generate_image は関数内で遅延 import されるため、import 元をパッチする
@@ -215,3 +219,106 @@ class TestGenerateDesignAsset:
         """PRODUCT_ASPECT_RATIOS の定義を検証する。"""
         assert PRODUCT_ASPECT_RATIOS["tshirt"] == "1:1"
         assert PRODUCT_ASPECT_RATIOS["mug"] == "16:9"
+
+
+class TestRemoveBackground:
+    """Tests for _remove_background()."""
+
+    def test_returns_original_path_on_error(self):
+        """ファイルが存在しない場合、元のパスをフォールバックで返す。"""
+        result = _remove_background("/nonexistent/path.png")
+        assert result == "/nonexistent/path.png"
+
+    @patch("google.genai.Client")
+    def test_replaces_magenta_with_transparency(self, mock_client_cls, tmp_path):
+        """マゼンタ背景がアルファ 0 に変換される。"""
+        from PIL import Image as PILImage
+        import numpy as np
+        import io
+
+        # マゼンタ背景 + 赤い前景のテスト画像を作成
+        img = PILImage.new("RGB", (10, 10), (255, 0, 255))  # 全面マゼンタ
+        # 中央 4px を赤に（前景）
+        for x in range(4, 6):
+            for y in range(4, 6):
+                img.putpixel((x, y), (255, 0, 0))
+        filepath = str(tmp_path / "test.png")
+        img.save(filepath, "PNG")
+
+        # Edit API が返す画像バイト列（同じ画像 = 背景がマゼンタになった想定）
+        buf = io.BytesIO()
+        img.save(buf, "PNG")
+        edited_bytes = buf.getvalue()
+
+        mock_image = MagicMock()
+        mock_image.image_bytes = edited_bytes
+
+        mock_response = MagicMock()
+        mock_response.generated_images = [MagicMock(image=mock_image)]
+
+        mock_client = MagicMock()
+        mock_client.models.edit_image.return_value = mock_response
+        mock_client_cls.return_value = mock_client
+
+        result = _remove_background(filepath)
+
+        assert result == filepath
+
+        # 結果画像を検証
+        result_img = PILImage.open(filepath).convert("RGBA")
+        data = np.array(result_img)
+
+        # マゼンタ領域（背景）は透明になっている
+        assert data[0, 0, 3] == 0  # 左上（元マゼンタ）→ 透明
+        # 赤い領域（前景）は不透明のまま
+        assert data[4, 4, 3] == 255  # 中央（赤）→ 不透明
+
+    @patch("google.genai.Client")
+    def test_returns_original_on_empty_response(self, mock_client_cls, tmp_path):
+        """Edit API が空レスポンスを返した場合、元画像を維持する。"""
+        from PIL import Image as PILImage
+
+        filepath = str(tmp_path / "test.png")
+        PILImage.new("RGB", (4, 4), (100, 100, 100)).save(filepath, "PNG")
+
+        mock_response = MagicMock()
+        mock_response.generated_images = []
+
+        mock_client = MagicMock()
+        mock_client.models.edit_image.return_value = mock_response
+        mock_client_cls.return_value = mock_client
+
+        result = _remove_background(filepath)
+
+        assert result == filepath
+
+    @patch(_PATCH_GENERATE_IMAGE)
+    @patch("alchemist_agents.tools.render_tools._remove_background")
+    def test_generate_calls_remove_background_on_success(self, mock_remove_bg, mock_gen):
+        """generate_design_asset が成功時に _remove_background を呼び出す。"""
+        mock_gen.return_value = json.dumps({
+            "status": "success",
+            "filepath": "/tmp/test.png",
+        })
+        mock_remove_bg.return_value = "/tmp/test.png"
+
+        result_json = generate_design_asset(
+            prompt="Test", product_type="tshirt",
+        )
+        result = json.loads(result_json)
+
+        mock_remove_bg.assert_called_once_with("/tmp/test.png")
+        assert result["transparent_background"] is True
+
+    @patch(_PATCH_GENERATE_IMAGE)
+    @patch("alchemist_agents.tools.render_tools._remove_background")
+    def test_generate_skips_remove_background_on_error(self, mock_remove_bg, mock_gen):
+        """generate_design_asset がエラー時に _remove_background を呼び出さない。"""
+        mock_gen.return_value = json.dumps({
+            "status": "error",
+            "error": "Generation failed",
+        })
+
+        generate_design_asset(prompt="Test", product_type="tshirt")
+
+        mock_remove_bg.assert_not_called()

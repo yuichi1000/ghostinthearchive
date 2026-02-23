@@ -63,6 +63,9 @@ export function DesignProposalViewer({ products }: DesignProposalViewerProps) {
             <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
               Color Palette
             </span>
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              記事のトーンと地域性に基づく推奨配色。印刷発注・Canva/Adobe でのテキスト配置に使用。
+            </p>
             <div className="flex items-center gap-2 mt-2">
               {product.color_palette.map((color, i) => (
                 <div key={i} className="flex items-center gap-1.5">
@@ -94,6 +97,9 @@ export function DesignProposalViewer({ products }: DesignProposalViewerProps) {
             <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
               Composition
             </span>
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              レンダリング画像の空間構成・視覚的レイアウトの設計意図。
+            </p>
             <p className="text-sm text-foreground/80 mt-1 leading-relaxed">
               {product.composition}
             </p>
