@@ -6,12 +6,12 @@ import {
 } from "lucide-react"
 
 const STORYTELLER_OPTIONS = [
-  { value: "claude", label: "Claude" },
-  { value: "gemini", label: "Gemini" },
-  { value: "gpt", label: "GPT" },
-  { value: "llama", label: "Llama" },
-  { value: "deepseek", label: "DeepSeek" },
-  { value: "mistral", label: "Mistral" },
+  { value: "claude", label: "Claude Sonnet 4.5" },
+  { value: "gemini", label: "Gemini 3 Pro" },
+  { value: "gpt", label: "GPT-4o" },
+  { value: "llama", label: "Llama 4 Maverick" },
+  { value: "deepseek", label: "DeepSeek V3" },
+  { value: "mistral", label: "Mistral Large" },
 ] as const
 
 interface ThemeSuggestion {
