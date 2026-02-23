@@ -174,6 +174,7 @@ const dict: Dictionary = {
     primarySources: "一次資料",
     technical: "技術情報",
     classification: "分類：",
+    pendingApplication: "申請中",
     home: "ホーム",
     archive: "アーカイブ",
     about: "このサイトについて",

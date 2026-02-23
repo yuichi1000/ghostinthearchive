@@ -175,6 +175,7 @@ const dict: Dictionary = {
     primarySources: "Fuentes primarias",
     technical: "Técnico",
     classification: "Clasificación:",
+    pendingApplication: "Solicitud pendiente",
     home: "Inicio",
     archive: "Archivo",
     about: "Acerca de",
