@@ -143,24 +143,24 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
             </div>
           </div>
 
-          {/* Hero image */}
-          {mystery.images?.hero && (
-            <div className="mb-12 rounded-sm overflow-hidden border border-border">
-              <Image
-                src={mystery.images.hero}
-                alt={title}
-                width={1200}
-                height={675}
-                className="w-full h-auto"
-                priority
-                unoptimized={mystery.images.hero.includes('localhost')}
-              />
-            </div>
-          )}
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Main content */}
             <div className="lg:col-span-2 space-y-12">
+              {/* Hero image — グリッド内に配置して PC 時は高さ制限 */}
+              {mystery.images?.hero && (
+                <div className="rounded-sm overflow-hidden border border-border lg:max-h-[400px]">
+                  <Image
+                    src={mystery.images.hero}
+                    alt={title}
+                    width={1200}
+                    height={675}
+                    className="w-full h-full object-cover"
+                    priority
+                    unoptimized={mystery.images.hero.includes('localhost')}
+                  />
+                </div>
+              )}
+
               {/* Narrative Content (primary) */}
               {narrativeContent ? (
                 <section className="prose prose-lg prose-invert max-w-none prose-headings:font-serif prose-headings:text-parchment prose-headings:mt-12 prose-headings:mb-4 prose-p:text-foreground/90 prose-p:leading-loose prose-p:mb-6 prose-a:text-gold prose-blockquote:border-gold/30 prose-blockquote:bg-card prose-blockquote:px-6 prose-blockquote:py-4 prose-blockquote:rounded-sm prose-blockquote:text-foreground/70 prose-blockquote:italic prose-blockquote:font-serif prose-strong:text-parchment prose-hr:border-border">

@@ -56,7 +56,7 @@ export default async function AboutPage({
         <Hero dict={dict} />
 
         {/* ヒーロー画像バナー */}
-        <section className="relative overflow-hidden">
+        <section className="relative overflow-hidden max-h-[400px]">
           <picture>
             <source media="(max-width: 640px)" srcSet="/images/hero-bg_sm.webp" type="image/webp" />
             <source media="(max-width: 828px)" srcSet="/images/hero-bg_md.webp" type="image/webp" />
@@ -65,7 +65,7 @@ export default async function AboutPage({
             <img
               src="/images/hero-bg_xl.webp"
               alt="Ghost in the Archive"
-              className="w-full h-auto"
+              className="w-full h-full object-cover"
               fetchPriority="high"
             />
           </picture>

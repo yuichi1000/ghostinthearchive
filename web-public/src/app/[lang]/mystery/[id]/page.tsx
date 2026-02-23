@@ -188,24 +188,25 @@ export default async function MysteryDetailPage({
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          {/* Hero image */}
-          {mystery.images?.hero && (
-            <div className="mb-12 rounded-sm overflow-hidden border border-border">
-              <ResponsiveHeroImage
-                hero={mystery.images.hero}
-                variants={mystery.images.variants}
-                alt={title}
-                priority
-              />
-            </div>
-          )}
-
-          {/* モバイル目次（Hero 画像下、Grid の前） */}
+          {/* モバイル目次（Grid の前） */}
           <TableOfContents sections={tocSections} heading={dict.detail.tableOfContents} variant="mobile" />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Main content */}
             <div className="lg:col-span-2 space-y-12">
+              {/* Hero image — グリッド内に配置して PC 時は高さ制限 */}
+              {mystery.images?.hero && (
+                <div className="rounded-sm overflow-hidden border border-border lg:max-h-[400px]">
+                  <ResponsiveHeroImage
+                    hero={mystery.images.hero}
+                    variants={mystery.images.variants}
+                    alt={title}
+                    priority
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
               <NarrativeSection narrativeContent={narrativeContent} summary={summary} lang={lang} />
 
               {/* Divider between narrative and archival data */}
