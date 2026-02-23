@@ -56,13 +56,39 @@ def _is_rate_limit_error(exc: BaseException) -> bool:
     return "429" in error_str or "RESOURCE_EXHAUSTED" in error_str
 
 
+# 一時的接続エラーの判定マーカー（httpx を import せず文字列ベースで判定）
+_TRANSIENT_ERROR_MARKERS = (
+    "RemoteProtocolError",
+    "Server disconnected",
+    "NetworkError",
+    "ConnectError",
+    "ReadError",
+    "WriteError",
+    "ReadTimeout",
+    "ConnectTimeout",
+    "PoolTimeout",
+    "ConnectionReset",
+    "ConnectionRefused",
+)
+
+
+def _is_transient_connection_error(exc: BaseException) -> bool:
+    """一時的な接続エラーか判定する。ExceptionGroup も再帰的にチェック。"""
+    if isinstance(exc, ExceptionGroup):
+        return any(_is_transient_connection_error(sub) for sub in exc.exceptions)
+    exc_info = f"{type(exc).__name__} {exc}"
+    return any(marker in exc_info for marker in _TRANSIENT_ERROR_MARKERS)
+
+
 # === 日本語訳 ===
-# レートリミットリトライ設定
+# リトライ設定
 # SDK のリトライで解決しない長時間レート制限に対応するため、
 # オーケストレーターレベルで 1分待ってパイプラインを再実行する（最大1回リトライ）。
+# 接続エラーはより短い間隔（15秒）でリトライする。
 # === End 日本語訳 ===
 _RATE_LIMIT_RETRY_DELAY = 60   # 1分
 _RATE_LIMIT_MAX_RETRIES = 1    # 最大1回リトライ（計2回試行）
+_CONNECTION_ERROR_RETRY_DELAY = 15  # 接続エラー: 15秒
 
 # スキップされたエージェント判定の閾値（秒）
 _SKIP_DURATION_THRESHOLD = 0.5
@@ -249,17 +275,24 @@ async def run_pipeline(
     user_id = "pipeline_user"
     session_id = "pipeline_session"
 
-    # レートリミットリトライループ
-    # SDK の 10回リトライで解決しない長時間レート制限に対応
+    # リトライループ（レートリミット + 一時的接続エラー対応）
+    # SDK の 10回リトライで解決しない長時間レート制限、および
+    # トランスポート層の一時的接続エラー（RemoteProtocolError 等）に対応
     last_error: Exception | None = None
+    last_error_is_rate_limit: bool = False
     for attempt in range(_RATE_LIMIT_MAX_RETRIES + 1):
         if attempt > 0:
+            retry_delay = (
+                _RATE_LIMIT_RETRY_DELAY if last_error_is_rate_limit
+                else _CONNECTION_ERROR_RETRY_DELAY
+            )
+            error_label = "レートリミット" if last_error_is_rate_limit else "接続エラー"
             logger.warning(
-                "レートリミットエラー: %d秒後にパイプラインをリトライ (試行 %d/%d)",
-                _RATE_LIMIT_RETRY_DELAY, attempt + 1, _RATE_LIMIT_MAX_RETRIES + 1,
+                "%s: %d秒後にパイプラインをリトライ (試行 %d/%d)",
+                error_label, retry_delay, attempt + 1, _RATE_LIMIT_MAX_RETRIES + 1,
                 extra={"status": "retrying", "attempt": attempt + 1},
             )
-            await asyncio.sleep(_RATE_LIMIT_RETRY_DELAY)
+            await asyncio.sleep(retry_delay)
 
         # 各試行で Session/Runner を再作成
         session_service = InMemorySessionService()
@@ -441,9 +474,20 @@ async def run_pipeline(
             # 429 レートリミットエラーの場合はリトライ
             if _is_rate_limit_error(e) and attempt < _RATE_LIMIT_MAX_RETRIES:
                 last_error = e
+                last_error_is_rate_limit = True
                 logger.warning(
                     "レートリミットエラー検出: %s", _format_exception_group(e),
                     extra={"status": "rate_limited", "attempt": attempt + 1},
+                )
+                continue
+
+            # 一時的な接続エラーの場合はリトライ
+            if _is_transient_connection_error(e) and attempt < _RATE_LIMIT_MAX_RETRIES:
+                last_error = e
+                last_error_is_rate_limit = False
+                logger.warning(
+                    "一時的な接続エラー検出: %s", _format_exception_group(e),
+                    extra={"status": "connection_error", "attempt": attempt + 1},
                 )
                 continue
 
@@ -461,8 +505,9 @@ async def run_pipeline(
     # リトライ上限到達（通常ここには到達しない — 最後の try で raise されるため）
     assert last_error is not None
     error_message = _format_exception_group(last_error)
+    error_type = "rate_limit_exhausted" if last_error_is_rate_limit else "connection_error_exhausted"
     error_pipeline_run(run_id, error_message, error_detail={
-        "error_type": "rate_limit_exhausted",
+        "error_type": error_type,
         "exception_class": type(last_error).__name__,
         "retry_attempts": _RATE_LIMIT_MAX_RETRIES + 1,
     })
