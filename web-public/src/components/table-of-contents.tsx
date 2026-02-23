@@ -2,19 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { List } from "lucide-react"
+import type { TocSection } from "@/lib/toc-config"
 
-export const SECTION_IDS = {
-  narrative: "section-narrative",
-  discrepancy: "section-discrepancy",
-  evidence: "section-evidence",
-  hypothesis: "section-hypothesis",
-  historicalContext: "section-historical-context",
-} as const
-
-export interface TocSection {
-  id: string
-  label: string
-}
+// サーバーコンポーネントからも使えるよう toc-config.ts に分離した定数・型を再エクスポート
+export { SECTION_IDS, type TocSection } from "@/lib/toc-config"
 
 interface TableOfContentsProps {
   sections: TocSection[]
