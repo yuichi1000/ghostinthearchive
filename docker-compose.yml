@@ -33,6 +33,6 @@ services:
       - FIRESTORE_EMULATOR_HOST=host.docker.internal:8080
       - STORAGE_EMULATOR_HOST=http://host.docker.internal:9199
       - STORAGE_EMULATOR_PUBLIC_HOST=http://localhost:9199
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     volumes:
       - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/keys/adc.json:ro
