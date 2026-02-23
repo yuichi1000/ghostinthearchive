@@ -10,7 +10,8 @@ import { HypothesisSection } from "@/components/mystery/hypothesis-section"
 import { HistoricalContextSection } from "@/components/mystery/historical-context-section"
 import { DetailSidebar } from "@/components/mystery/detail-sidebar"
 import { Breadcrumb } from "@/components/breadcrumb"
-import { TableOfContents, SECTION_IDS } from "@/components/table-of-contents"
+import { TableOfContents } from "@/components/table-of-contents"
+import { SECTION_IDS } from "@/lib/toc-config"
 import { RelatedArticles } from "@/components/related-articles"
 import { ShareButtons } from "@/components/share-buttons"
 import { ArticleJsonLd } from "@/components/article-json-ld"
@@ -25,7 +26,7 @@ import { getSiteUrl } from "@/lib/site-url"
 import { buildOgpMetadata, buildAlternates } from "@/lib/seo"
 import { extractHeadings } from "@/lib/markdown-headings"
 import { stripLeadingH1 } from "@ghost/shared/src/lib/utils"
-import type { TocSection } from "@/components/table-of-contents"
+import type { TocSection } from "@/lib/toc-config"
 
 // SSG: ビルド時に生成されたページ以外は 404
 export const dynamicParams = false
