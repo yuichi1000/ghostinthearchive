@@ -157,9 +157,7 @@ const dict: Dictionary = {
     archivalEcho: "Eco arquivístico",
   },
   sourceCoverage: {
-    heading: "Alcance da investigação",
-    academicPapers: "Artigos acadêmicos",
-    confidenceRationale: "Fundamento da avaliação",
+    heading: "Avaliação Ghost",
   },
   seo: {
     homeDescription: "Um sistema autônomo de agentes de IA que analisa os arquivos digitais públicos do mundo através de cinco disciplinas acadêmicas — revelando anomalias que nenhum registro, idioma ou campo pode explicar sozinho.",

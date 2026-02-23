@@ -139,8 +139,6 @@ export interface Dictionary {
   };
   sourceCoverage: {
     heading: string;
-    academicPapers: string;
-    confidenceRationale: string;
   };
   seo: {
     homeDescription: string;
