@@ -28,6 +28,8 @@ from shared.constants import (
 from shared.firestore import get_firestore_client, get_storage_bucket
 from shared.language_validator import validate_translation_language
 
+from mystery_agents.tools.search_metadata import get_search_metadata as _get_search_metadata
+
 logger = logging.getLogger(__name__)
 
 
@@ -303,6 +305,23 @@ def publish_mystery(
             if multilingual:
                 data["multilingual_analysis"] = multilingual
                 data["languages_analyzed"] = list(multilingual.keys())
+
+            # source_coverage の API フィールドを raw_search_results から programmatic に上書き
+            # （LLM の手動転記ではなくセッション状態から直接生成）
+            search_meta_json = _get_search_metadata(tool_context)
+            search_meta = json.loads(search_meta_json)
+            if search_meta.get("status") == "ok":
+                sc = data.get("source_coverage")
+                if sc and isinstance(sc, dict):
+                    sc["apis_searched"] = search_meta["apis_searched"]
+                    sc["apis_with_results"] = search_meta["apis_with_results"]
+                    sc["apis_without_results"] = search_meta["apis_without_results"]
+                else:
+                    data["source_coverage"] = {
+                        "apis_searched": search_meta["apis_searched"],
+                        "apis_with_results": search_meta["apis_with_results"],
+                        "apis_without_results": search_meta["apis_without_results"],
+                    }
 
             # 全言語の翻訳結果を translations map に収集
             translations: dict[str, dict] = {}

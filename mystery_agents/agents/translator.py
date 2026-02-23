@@ -172,7 +172,7 @@ TRANSLATOR_CONFIGS: dict[str, dict[str, str]] = {
 # - `mystery_report`: Armchair Polymath の統合分析レポート
 #   → `title`, `summary`, `discrepancy_detected`, `hypothesis`,
 #     `alternative_hypotheses`, `story_hooks`,
-#     `historical_context.political_climate` のソース
+#     `historical_context.political_climate`, `confidence_rationale` のソース
 # - `structured_report`: 構造化データ（dict）
 #   → `evidence_a_excerpt`, `evidence_b_excerpt`,
 #     `additional_evidence_excerpts` のソース
@@ -226,7 +226,8 @@ TRANSLATOR_CONFIGS: dict[str, dict[str, str]] = {
 #   "historical_context": {{ "political_climate": "..." }},
 #   "evidence_a_excerpt": "...",
 #   "evidence_b_excerpt": "...",
-#   "additional_evidence_excerpts": ["...", "..."]
+#   "additional_evidence_excerpts": ["...", "..."],
+#   "confidence_rationale": "..."
 # }}
 #
 # Curator テーマ提案の場合:
@@ -263,7 +264,8 @@ The content you need to translate is available in session state:
   → Use this as the source for the `narrative_content` field.
 - `{{mystery_report}}`: The integrated analysis report by the Armchair Polymath.
   → Use this as the source for `title`, `summary`, `discrepancy_detected`, `hypothesis`,
-    `alternative_hypotheses`, `story_hooks`, and `historical_context.political_climate`.
+    `alternative_hypotheses`, `story_hooks`, `historical_context.political_climate`,
+    and `confidence_rationale`.
 - `{{structured_report}}`: Structured data (dict) from the Armchair Polymath tool.
   → Use this as the source for `evidence_a_excerpt`, `evidence_b_excerpt`,
     and `additional_evidence_excerpts` (extract the `relevant_excerpt` from each evidence).
@@ -321,7 +323,8 @@ For blog article fields:
   "historical_context": {{{{ "political_climate": "..." }}}},
   "evidence_a_excerpt": "...",
   "evidence_b_excerpt": "...",
-  "additional_evidence_excerpts": ["...", "..."]
+  "additional_evidence_excerpts": ["...", "..."],
+  "confidence_rationale": "..."
 }}}}
 
 For curator theme suggestions:

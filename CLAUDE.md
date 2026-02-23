@@ -187,6 +187,7 @@ pending (EN原文 + 翻訳あり) → (Approve) → published
 - `discrepancy_detected`, `hypothesis`, `alternative_hypotheses`
 - `historical_context.political_climate`, `story_hooks`
 - `evidence_a_excerpt`, `evidence_b_excerpt`, `additional_evidence_excerpts`
+- `confidence_rationale`
 
 ### Podcast 作成パイプライン（`podcast_agents/`）
 

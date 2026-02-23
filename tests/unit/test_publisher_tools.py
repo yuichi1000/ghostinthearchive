@@ -1099,6 +1099,125 @@ class TestPublishMysteryStructuredDataExtension:
         assert json.loads(result)["status"] == "success"
 
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        # source_coverage は raw_search_results もないため設定されない
         assert "source_coverage" not in saved
         assert "confidence_rationale" not in saved
+
+
+class TestSourceCoverageProgrammaticOverwrite:
+    """source_coverage の API フィールドが raw_search_results から programmatic に上書きされるテスト。"""
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_overwrites_apis_from_raw_search_results(self, mock_get_db, mock_get_bucket):
+        """raw_search_results がある場合、source_coverage の API フィールドが上書きされる。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Test",
+                "summary": "Test summary",
+                "source_coverage": {
+                    "apis_searched": ["llm_hallucinated_api"],
+                    "apis_with_results": ["llm_hallucinated_api"],
+                    "apis_without_results": [],
+                    "known_undigitized_sources": ["Parish registers"],
+                    "coverage_assessment": "Limited coverage",
+                },
+            },
+            # raw_search_results から正確なメタデータが生成される
+            "raw_search_results_en": [
+                {"source": "chronicling_america", "total_hits": 50, "documents_returned": 10},
+                {"source": "loc_digital", "total_hits": 0, "documents_returned": 0},
+            ],
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        sc = saved["source_coverage"]
+        # API フィールドは raw_search_results から上書きされている
+        assert "chronicling_america" in sc["apis_searched"]
+        assert "loc_digital" in sc["apis_searched"]
+        assert "llm_hallucinated_api" not in sc["apis_searched"]
+        assert sc["apis_with_results"] == ["chronicling_america"]
+        assert sc["apis_without_results"] == ["loc_digital"]
+        # LLM が生成した人間的判断フィールドは保持される
+        assert sc["known_undigitized_sources"] == ["Parish registers"]
+        assert sc["coverage_assessment"] == "Limited coverage"
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_creates_source_coverage_when_missing(self, mock_get_db, mock_get_bucket):
+        """structured_report に source_coverage がなくても raw_search_results から生成される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "HIS",
+                "country_code": "GB",
+                "region_code": "LHR",
+                "title": "Test",
+                "summary": "Test summary",
+                # source_coverage なし
+            },
+            "raw_search_results_en": [
+                {"source": "europeana", "total_hits": 20, "documents_returned": 5},
+            ],
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        sc = saved["source_coverage"]
+        assert sc["apis_searched"] == ["europeana"]
+        assert sc["apis_with_results"] == ["europeana"]
+        assert sc["apis_without_results"] == []
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_no_overwrite_without_raw_search_results(self, mock_get_db, mock_get_bucket):
+        """raw_search_results がない場合、LLM 生成の source_coverage がそのまま使われる。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Test",
+                "summary": "Test summary",
+                "source_coverage": {
+                    "apis_searched": ["chronicling_america"],
+                    "apis_with_results": ["chronicling_america"],
+                    "apis_without_results": [],
+                },
+            },
+            # raw_search_results なし
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        sc = saved["source_coverage"]
+        # LLM 生成値がそのまま残る
+        assert sc["apis_searched"] == ["chronicling_america"]
 

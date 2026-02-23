@@ -12,6 +12,7 @@ export interface LocalizedMystery {
   alternativeHypotheses: string[];
   politicalClimate: string;
   storyHooks: string[];
+  confidenceRationale: string;
 }
 
 /**
@@ -38,6 +39,7 @@ export function localizeMystery(
         mystery.historical_context_en?.political_climate ||
         mystery.historical_context?.political_climate || "",
       storyHooks: mystery.story_hooks_en ?? mystery.story_hooks,
+      confidenceRationale: mystery.confidence_rationale || "",
     };
   }
 
@@ -59,6 +61,8 @@ export function localizeMystery(
         mystery.historical_context_ja?.political_climate ||
         mystery.historical_context?.political_climate || "",
       storyHooks: t?.story_hooks ?? mystery.story_hooks_ja ?? mystery.story_hooks,
+      confidenceRationale:
+        t?.confidence_rationale || mystery.confidence_rationale || "",
     };
   }
 
@@ -74,6 +78,8 @@ export function localizeMystery(
         t.historical_context?.political_climate ||
         mystery.historical_context?.political_climate || "",
       storyHooks: t.story_hooks ?? mystery.story_hooks,
+      confidenceRationale:
+        t.confidence_rationale || mystery.confidence_rationale || "",
     };
   }
 
@@ -86,6 +92,7 @@ export function localizeMystery(
     alternativeHypotheses: mystery.alternative_hypotheses,
     politicalClimate: mystery.historical_context?.political_climate || "",
     storyHooks: mystery.story_hooks,
+    confidenceRationale: mystery.confidence_rationale || "",
   };
 }
 
