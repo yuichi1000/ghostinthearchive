@@ -177,10 +177,10 @@ def upload_design_assets(
         アップロード結果のリスト
             各要素: {"product_type", "layer", "gcs_path", "public_url", "aspect_ratio"}
     """
-    from shared.firestore import get_storage_client
+    from shared.firestore import get_storage_bucket
     from pathlib import Path
 
-    bucket = get_storage_client()
+    bucket = get_storage_bucket()
     results = []
 
     for asset in asset_paths:
