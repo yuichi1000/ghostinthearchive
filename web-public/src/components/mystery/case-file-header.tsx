@@ -1,6 +1,6 @@
 import { MapPin, Clock, Calendar, FileText, Pen } from "lucide-react"
 import type { ConfidenceLevel } from "@ghost/shared/src/types/mystery"
-import { REPORTER_DISPLAY_NAMES } from "@ghost/shared/src/types/mystery"
+import { STORYTELLER_DISPLAY_NAMES } from "@ghost/shared/src/types/mystery"
 import type { Dictionary } from "@/lib/i18n/dictionaries"
 import { GhostConfidenceBadge } from "@/components/ghost-confidence-badge"
 
@@ -13,8 +13,8 @@ interface CaseFileHeaderProps {
   publishedLabel?: string
   confidenceLevel?: ConfidenceLevel
   confidenceLabels?: Dictionary["confidence"]
-  reporter?: string
-  reporterBylineLabel?: string
+  storyteller?: string
+  storytellerBylineLabel?: string
 }
 
 export function CaseFileHeader({
@@ -26,10 +26,10 @@ export function CaseFileHeader({
   publishedLabel = "Published:",
   confidenceLevel,
   confidenceLabels,
-  reporter,
-  reporterBylineLabel = "Reported by",
+  storyteller,
+  storytellerBylineLabel = "Storytold by",
 }: CaseFileHeaderProps) {
-  const reporterDisplayName = reporter ? REPORTER_DISPLAY_NAMES[reporter] || reporter : null
+  const storytellerDisplayName = storyteller ? STORYTELLER_DISPLAY_NAMES[storyteller] || storyteller : null
 
   return (
     <div className="mb-12">
@@ -66,10 +66,10 @@ export function CaseFileHeader({
             {publishedLabel} {publishedAt.toLocaleDateString()}
           </span>
         )}
-        {reporterDisplayName && (
+        {storytellerDisplayName && (
           <span className="flex items-center gap-2">
             <Pen className="w-4 h-4 text-gold" />
-            {reporterBylineLabel} {reporterDisplayName}
+            {storytellerBylineLabel} {storytellerDisplayName}
           </span>
         )}
         {confidenceLevel && confidenceLabels && (

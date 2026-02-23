@@ -1,4 +1,4 @@
-"""レポーター選択機能のユニットテスト。
+"""ストーリーテラー選択機能のユニットテスト。
 
 create_storyteller_model() / create_storyteller() / build_pipeline() が
 正しいモデルアダプタとパイプライン構造を生成することを検証する。
@@ -7,38 +7,38 @@ create_storyteller_model() / create_storyteller() / build_pipeline() が
 import pytest
 
 from shared.model_config import (
-    DEFAULT_REPORTER,
-    REPORTER_MODELS,
+    DEFAULT_STORYTELLER,
+    STORYTELLER_MODELS,
     create_storyteller_model,
 )
 
 
-class TestReporterModelsRegistry:
-    """REPORTER_MODELS レジストリの構造検証。"""
+class TestStorytellerModelsRegistry:
+    """STORYTELLER_MODELS レジストリの構造検証。"""
 
-    def test_default_reporter_exists(self):
-        """DEFAULT_REPORTER がレジストリに存在すること。"""
-        assert DEFAULT_REPORTER in REPORTER_MODELS
+    def test_default_storyteller_exists(self):
+        """DEFAULT_STORYTELLER がレジストリに存在すること。"""
+        assert DEFAULT_STORYTELLER in STORYTELLER_MODELS
 
-    def test_all_reporters_have_required_keys(self):
-        """全レポーターが model_id, provider, display_name を持つこと。"""
-        for name, config in REPORTER_MODELS.items():
+    def test_all_storytellers_have_required_keys(self):
+        """全ストーリーテラーが model_id, provider, display_name を持つこと。"""
+        for name, config in STORYTELLER_MODELS.items():
             assert "model_id" in config, f"{name} に model_id がない"
             assert "provider" in config, f"{name} に provider がない"
             assert "display_name" in config, f"{name} に display_name がない"
 
-    def test_six_reporters_registered(self):
-        """6種のレポーターが登録されていること。"""
-        assert len(REPORTER_MODELS) == 6
+    def test_six_storytellers_registered(self):
+        """6種のストーリーテラーが登録されていること。"""
+        assert len(STORYTELLER_MODELS) == 6
         expected = {"claude", "gemini", "gpt", "llama", "deepseek", "mistral"}
-        assert set(REPORTER_MODELS.keys()) == expected
+        assert set(STORYTELLER_MODELS.keys()) == expected
 
 
 class TestCreateStorytellerModel:
     """create_storyteller_model() のテスト。"""
 
     def test_gemini_returns_native_model(self):
-        """gemini レポーターは Gemini（native）モデルを返すこと。"""
+        """gemini ストーリーテラーは Gemini（native）モデルを返すこと。"""
         from google.adk.models.google_llm import Gemini
 
         result = create_storyteller_model("gemini")
@@ -47,7 +47,7 @@ class TestCreateStorytellerModel:
         assert last_call is not None
 
     def test_claude_returns_litellm(self):
-        """claude レポーターは LiteLlm アダプタを返すこと。"""
+        """claude ストーリーテラーは LiteLlm アダプタを返すこと。"""
         from google.adk.models.lite_llm import LiteLlm
 
         create_storyteller_model("claude")
@@ -56,7 +56,7 @@ class TestCreateStorytellerModel:
         assert last_call.kwargs.get("model") == "openrouter/anthropic/claude-sonnet-4.5"
 
     def test_gpt_returns_litellm(self):
-        """gpt レポーターは LiteLlm アダプタを返すこと。"""
+        """gpt ストーリーテラーは LiteLlm アダプタを返すこと。"""
         from google.adk.models.lite_llm import LiteLlm
 
         LiteLlm.reset_mock()
@@ -66,7 +66,7 @@ class TestCreateStorytellerModel:
         assert last_call.kwargs.get("model") == "openrouter/openai/gpt-4o"
 
     def test_llama_returns_litellm(self):
-        """llama レポーターは LiteLlm アダプタを返すこと。"""
+        """llama ストーリーテラーは LiteLlm アダプタを返すこと。"""
         from google.adk.models.lite_llm import LiteLlm
 
         LiteLlm.reset_mock()
@@ -76,7 +76,7 @@ class TestCreateStorytellerModel:
         assert last_call.kwargs.get("model") == "openrouter/meta-llama/llama-4-maverick"
 
     def test_deepseek_returns_litellm(self):
-        """deepseek レポーターは LiteLlm アダプタを返すこと。"""
+        """deepseek ストーリーテラーは LiteLlm アダプタを返すこと。"""
         from google.adk.models.lite_llm import LiteLlm
 
         LiteLlm.reset_mock()
@@ -86,7 +86,7 @@ class TestCreateStorytellerModel:
         assert last_call.kwargs.get("model") == "openrouter/deepseek/deepseek-chat"
 
     def test_mistral_returns_litellm(self):
-        """mistral レポーターは LiteLlm アダプタを返すこと。"""
+        """mistral ストーリーテラーは LiteLlm アダプタを返すこと。"""
         from google.adk.models.lite_llm import LiteLlm
 
         LiteLlm.reset_mock()
@@ -95,14 +95,14 @@ class TestCreateStorytellerModel:
         assert last_call is not None
         assert last_call.kwargs.get("model") == "openrouter/mistralai/mistral-large-2512"
 
-    def test_unknown_reporter_raises_value_error(self):
-        """不正なレポーター名で ValueError が発生すること。"""
-        with pytest.raises(ValueError, match="Unknown reporter 'unknown'"):
+    def test_unknown_storyteller_raises_value_error(self):
+        """不正なストーリーテラー名で ValueError が発生すること。"""
+        with pytest.raises(ValueError, match="Unknown storyteller 'unknown'"):
             create_storyteller_model("unknown")
 
-    def test_default_reporter_is_claude(self):
-        """デフォルトレポーターが claude であること。"""
-        assert DEFAULT_REPORTER == "claude"
+    def test_default_storyteller_is_claude(self):
+        """デフォルトストーリーテラーが claude であること。"""
+        assert DEFAULT_STORYTELLER == "claude"
 
 
 class TestCreateStoryteller:
@@ -116,7 +116,7 @@ class TestCreateStoryteller:
         # LlmAgent は MagicMock なので、呼び出しが行われたことを確認
         assert result is not None
 
-    def test_custom_reporter(self):
+    def test_custom_storyteller(self):
         """create_storyteller("gemini") がエラーなく動作すること。"""
         from mystery_agents.agents.storyteller import create_storyteller
 
@@ -134,16 +134,16 @@ class TestBuildPipeline:
         result = build_pipeline()
         assert result is not None
 
-    def test_custom_reporter_pipeline(self):
-        """build_pipeline("gemini") がカスタムレポーターでパイプラインを構築すること。"""
+    def test_custom_storyteller_pipeline(self):
+        """build_pipeline("gemini") がカスタムストーリーテラーでパイプラインを構築すること。"""
         from mystery_agents.agent import build_pipeline
 
         result = build_pipeline("gemini")
         assert result is not None
 
-    def test_invalid_reporter_raises(self):
-        """build_pipeline() に不正なレポーター名を渡すと ValueError が発生すること。"""
+    def test_invalid_storyteller_raises(self):
+        """build_pipeline() に不正なストーリーテラー名を渡すと ValueError が発生すること。"""
         from mystery_agents.agent import build_pipeline
 
-        with pytest.raises(ValueError, match="Unknown reporter"):
+        with pytest.raises(ValueError, match="Unknown storyteller"):
             build_pipeline("nonexistent")

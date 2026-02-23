@@ -5,7 +5,7 @@ import {
   Sparkles,
 } from "lucide-react"
 
-const REPORTER_OPTIONS = [
+const STORYTELLER_OPTIONS = [
   { value: "claude", label: "Claude" },
   { value: "gemini", label: "Gemini" },
   { value: "gpt", label: "GPT" },
@@ -24,8 +24,8 @@ interface ThemeSuggestion {
 interface InvestigationFormProps {
   themeInput: string
   onThemeInputChange: (value: string) => void
-  reporter: string
-  onReporterChange: (value: string) => void
+  storyteller: string
+  onStorytellerChange: (value: string) => void
   suggestions: ThemeSuggestion[]
   onSelectSuggestion: (theme: string) => void
   suggestLoading: boolean
@@ -37,8 +37,8 @@ interface InvestigationFormProps {
 export function InvestigationForm({
   themeInput,
   onThemeInputChange,
-  reporter,
-  onReporterChange,
+  storyteller,
+  onStorytellerChange,
   suggestions,
   onSelectSuggestion,
   suggestLoading,
@@ -61,11 +61,11 @@ export function InvestigationForm({
           className="flex-1 px-3 py-2 bg-background border border-border rounded-sm text-sm text-parchment placeholder:text-muted-foreground focus:outline-none focus:border-gold/50"
         />
         <select
-          value={reporter}
-          onChange={(e) => onReporterChange(e.target.value)}
+          value={storyteller}
+          onChange={(e) => onStorytellerChange(e.target.value)}
           className="px-3 py-2 bg-background border border-border rounded-sm text-sm text-parchment focus:outline-none focus:border-gold/50"
         >
-          {REPORTER_OPTIONS.map((opt) => (
+          {STORYTELLER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>

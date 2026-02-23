@@ -60,7 +60,7 @@ export interface Dictionary {
       folklore: string;
       coda: string;
     };
-    reporters: {
+    storytellers: {
       heading: string;
       intro: string;
     };
@@ -89,7 +89,7 @@ export interface Dictionary {
     tocHypothesis: string;
     tocHistoricalContext: string;
     relatedArticles: string;
-    reportedBy: string;
+    storytoldBy: string;
   };
   evidence: {
     source: string;

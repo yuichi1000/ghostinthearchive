@@ -34,7 +34,7 @@ from .agents.publisher import publisher_agent
 from .agents.storyteller import create_storyteller, storyteller_agent
 from .agents.theme_analyzer import theme_analyzer_agent
 from .agents.translator import create_all_translators
-from shared.model_config import DEFAULT_REPORTER
+from shared.model_config import DEFAULT_STORYTELLER
 
 # 言語別エージェントを生成
 all_librarians = create_all_librarians()
@@ -160,19 +160,19 @@ SKIP_AUTHORS = {
 root_agent = ghost_commander
 
 
-def build_pipeline(reporter: str = DEFAULT_REPORTER) -> SequentialAgent:
-    """レポーター指定でパイプラインを構築する。
+def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
+    """ストーリーテラー指定でパイプラインを構築する。
 
-    デフォルトレポーター以外が指定された場合のみ Storyteller を再生成する。
+    デフォルトストーリーテラー以外が指定された場合のみ Storyteller を再生成する。
     Storyteller 以外のエージェントはステートレスなので共有再利用する。
 
     Args:
-        reporter: レポーター名（REPORTER_MODELS のキー）
+        storyteller: ストーリーテラー名（STORYTELLER_MODELS のキー）
 
     Returns:
         構築済みパイプライン（SequentialAgent）
     """
-    st = create_storyteller(reporter) if reporter != DEFAULT_REPORTER else storyteller_agent
+    st = create_storyteller(storyteller) if storyteller != DEFAULT_STORYTELLER else storyteller_agent
 
     custom_storyteller_block = SequentialAgent(
         name="storyteller_block",

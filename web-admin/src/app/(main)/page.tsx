@@ -130,8 +130,8 @@ export default function AdminPage() {
         <InvestigationForm
           themeInput={investigation.themeInput}
           onThemeInputChange={investigation.setThemeInput}
-          reporter={investigation.reporter}
-          onReporterChange={investigation.setReporter}
+          storyteller={investigation.storyteller}
+          onStorytellerChange={investigation.setStoryteller}
           suggestions={investigation.suggestions}
           onSelectSuggestion={(theme) => {
             investigation.setThemeInput(theme)

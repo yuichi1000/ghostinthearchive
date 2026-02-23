@@ -4,7 +4,7 @@
 HTTP 429 (RESOURCE_EXHAUSTED) エラーに対する指数バックオフ付きリトライを設定し、
 並列エージェント実行時のレート制限エラーを自動的に回復する。
 
-Storyteller 用のレポーターモデルは REPORTER_MODELS レジストリで管理し、
+Storyteller 用のストーリーテラーモデルは STORYTELLER_MODELS レジストリで管理し、
 Gemini 以外のモデル（Claude, GPT, Llama, DeepSeek, Mistral）は
 OpenRouter 経由で LiteLLM アダプタを使用する。
 
@@ -25,12 +25,12 @@ MODEL_PRO = "gemini-3-pro-preview"
 MODEL_FLASH = "gemini-2.5-flash"
 
 # === 日本語訳 ===
-# レポーターモデルレジストリ。
-# Storyteller エージェントが使用する LLM を「記者（レポーター）」として選択可能にする。
+# ストーリーテラーモデルレジストリ。
+# Storyteller エージェントが使用する LLM を「語り部（ストーリーテラー）」として選択可能にする。
 # - native_gemini: 既存の Gemini Pro（Vertex AI）を使用
 # - litellm: OpenRouter 経由で各プロバイダーのモデルにアクセス（API キー: OPENROUTER_API_KEY 1つで一元管理）
 # === End 日本語訳 ===
-REPORTER_MODELS: dict[str, dict] = {
+STORYTELLER_MODELS: dict[str, dict] = {
     "claude": {
         "model_id": "openrouter/anthropic/claude-sonnet-4.5",
         "provider": "litellm",
@@ -63,7 +63,7 @@ REPORTER_MODELS: dict[str, dict] = {
     },
 }
 
-DEFAULT_REPORTER = "claude"
+DEFAULT_STORYTELLER = "claude"
 
 # === 日本語訳 ===
 # Pro モデル用リトライ設定（レート制限が厳しい）
@@ -108,23 +108,23 @@ def create_flash_model() -> Gemini:
     return Gemini(model=MODEL_FLASH, retry_options=_FLASH_RETRY_OPTIONS)
 
 
-def create_storyteller_model(reporter: str = DEFAULT_REPORTER):
-    """レポーター名から Storyteller 用モデルアダプタを生成する。
+def create_storyteller_model(storyteller: str = DEFAULT_STORYTELLER):
+    """ストーリーテラー名から Storyteller 用モデルアダプタを生成する。
 
     Args:
-        reporter: レポーター名（REPORTER_MODELS のキー）
+        storyteller: ストーリーテラー名（STORYTELLER_MODELS のキー）
 
     Returns:
         ADK モデルアダプタ（Gemini または LiteLlm インスタンス）
 
     Raises:
-        ValueError: 不正なレポーター名が指定された場合
+        ValueError: 不正なストーリーテラー名が指定された場合
     """
-    if reporter not in REPORTER_MODELS:
-        valid = ", ".join(REPORTER_MODELS.keys())
-        raise ValueError(f"Unknown reporter '{reporter}'. Valid reporters: {valid}")
+    if storyteller not in STORYTELLER_MODELS:
+        valid = ", ".join(STORYTELLER_MODELS.keys())
+        raise ValueError(f"Unknown storyteller '{storyteller}'. Valid storytellers: {valid}")
 
-    config = REPORTER_MODELS[reporter]
+    config = STORYTELLER_MODELS[storyteller]
     provider = config["provider"]
 
     if provider == "native_gemini":
