@@ -224,7 +224,7 @@ async def _run_generate_design(
 ) -> None:
     """Background task wrapper for design proposal generation."""
     try:
-        from merch_agents.cli import generate_design
+        from alchemist_agents.cli import generate_design
 
         await generate_design(
             mystery_id, custom_instructions, run_id=run_id, design_id=design_id
@@ -232,20 +232,20 @@ async def _run_generate_design(
     except Exception as e:
         logger.exception("Design generation failed: %s", e)
         error_pipeline_run(run_id, str(e))
-        from merch_agents.tools.firestore_tools import set_design_status
+        from alchemist_agents.tools.firestore_tools import set_design_status
         set_design_status(design_id, "error", str(e))
 
 
 async def _run_render_assets(design_id: str, run_id: str) -> None:
     """Background task wrapper for design asset rendering."""
     try:
-        from merch_agents.cli import render_assets
+        from alchemist_agents.cli import render_assets
 
         await render_assets(design_id, run_id=run_id)
     except Exception as e:
         logger.exception("Design rendering failed: %s", e)
         error_pipeline_run(run_id, str(e))
-        from merch_agents.tools.firestore_tools import set_design_status
+        from alchemist_agents.tools.firestore_tools import set_design_status
         set_design_status(design_id, "error", str(e))
 
 
@@ -257,7 +257,7 @@ async def generate_design_endpoint(body: GenerateDesignRequest):
     フロントエンドが即座に /designs/{design_id} に遷移できるようにする。
     """
     try:
-        from merch_agents.tools.firestore_tools import create_design
+        from alchemist_agents.tools.firestore_tools import create_design
 
         run_id = create_pipeline_run("design", mystery_id=body.mystery_id)
         design_id = create_design(
@@ -287,7 +287,7 @@ async def generate_design_endpoint(body: GenerateDesignRequest):
 async def render_assets_endpoint(body: RenderAssetsRequest):
     """デザインアセットをレンダリング（fire-and-forget）"""
     try:
-        from merch_agents.tools.firestore_tools import get_design
+        from alchemist_agents.tools.firestore_tools import get_design
 
         design = get_design(body.design_id)
         if not design:

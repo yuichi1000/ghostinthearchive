@@ -33,7 +33,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["mystery_agents*", "curator_agents*", "podcast_agents*", "merch_agents*", "shared*", "services*"]
+include = ["mystery_agents*", "curator_agents*", "podcast_agents*", "alchemist_agents*", "shared*", "services*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -59,13 +59,13 @@ ignore = ["E501"]
 "mystery_agents/cli.py" = ["E402"]
 "curator_agents/cli.py" = ["E402"]
 "podcast_agents/cli.py" = ["E402"]
-"merch_agents/cli.py" = ["E402"]
+"alchemist_agents/cli.py" = ["E402"]
 "shared/firestore.py" = ["E402"]
 "mystery_agents/tools/illustrator_tools.py" = ["E402"]
 "tests/**" = ["E402"]
 
 [tool.coverage.run]
-source = ["mystery_agents", "curator_agents", "podcast_agents", "merch_agents", "shared"]
+source = ["mystery_agents", "curator_agents", "podcast_agents", "alchemist_agents", "shared"]
 omit = ["*/tests/*", "*/__pycache__/*"]
 
 [tool.coverage.report]

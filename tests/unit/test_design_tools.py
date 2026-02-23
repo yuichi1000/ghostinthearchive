@@ -1,8 +1,8 @@
-"""Unit tests for merch_agents/tools/design_tools.py - save_design_proposal."""
+"""Unit tests for alchemist_agents/tools/design_tools.py - save_design_proposal."""
 
 import json
 
-from merch_agents.tools.design_tools import save_design_proposal
+from alchemist_agents.tools.design_tools import save_design_proposal
 from tests.fakes import make_tool_context
 
 
