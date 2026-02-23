@@ -158,10 +158,7 @@ const dict: Dictionary = {
   },
   sourceCoverage: {
     heading: "Onderzoeksomvang",
-    languagesAnalyzed: "Geanalyseerde talen",
-    apisSearched: "Doorzochte archieven",
     academicPapers: "Academische publicaties",
-    coverageNote: "Deze analyse is gebaseerd op materialen die beschikbaar zijn via de hierboven genoemde digitale archief-API's.",
     confidenceRationale: "Beoordelingsgrondslag",
   },
   seo: {

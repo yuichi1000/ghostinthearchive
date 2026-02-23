@@ -1,4 +1,4 @@
-import type { SourceCoverage, AcademicCoverage } from "@ghost/shared/src/types/mystery"
+import type { AcademicCoverage } from "@ghost/shared/src/types/mystery"
 import type { Dictionary } from "@/lib/i18n/dictionaries"
 import { SourceCoverageCard } from "@/components/mystery/source-coverage-card"
 
@@ -10,9 +10,7 @@ interface DetailSidebarLabels {
 interface DetailSidebarProps {
   storyHooks: string[]
   labels?: DetailSidebarLabels
-  sourceCoverage?: SourceCoverage
   academicCoverage?: AcademicCoverage
-  languagesAnalyzed?: string[]
   confidenceRationale?: string
   sourceCoverageLabels?: Dictionary["sourceCoverage"]
   children?: React.ReactNode
@@ -21,9 +19,7 @@ interface DetailSidebarProps {
 export function DetailSidebar({
   storyHooks,
   labels,
-  sourceCoverage,
   academicCoverage,
-  languagesAnalyzed,
   confidenceRationale,
   sourceCoverageLabels,
   children,
@@ -54,11 +50,9 @@ export function DetailSidebar({
         )}
 
         {/* Source coverage（schema_version=2 の記事のみ表示） */}
-        {sourceCoverage && sourceCoverageLabels && (
+        {sourceCoverageLabels && (academicCoverage || confidenceRationale) && (
           <SourceCoverageCard
-            sourceCoverage={sourceCoverage}
             academicCoverage={academicCoverage}
-            languagesAnalyzed={languagesAnalyzed}
             confidenceRationale={confidenceRationale}
             labels={sourceCoverageLabels}
           />

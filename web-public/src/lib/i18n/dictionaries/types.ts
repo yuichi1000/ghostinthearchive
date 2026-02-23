@@ -139,10 +139,7 @@ export interface Dictionary {
   };
   sourceCoverage: {
     heading: string;
-    languagesAnalyzed: string;
-    apisSearched: string;
     academicPapers: string;
-    coverageNote: string;
     confidenceRationale: string;
   };
   seo: {
