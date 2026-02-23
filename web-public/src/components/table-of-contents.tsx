@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { List } from "lucide-react"
 
 export const SECTION_IDS = {
@@ -35,16 +35,20 @@ function TocLinks({
     <ul className="space-y-1">
       {sections.map((section, index) => (
         <li key={`${section.id}-${index}`}>
-          <button
-            onClick={() => onClick(section.id)}
-            className={`w-full text-left text-sm font-mono py-1.5 pl-3 border-l-2 transition-colors ${
+          <a
+            href={`#${section.id}`}
+            onClick={(e) => {
+              e.preventDefault()
+              onClick(section.id)
+            }}
+            className={`block text-sm font-mono py-1.5 pl-3 border-l-2 transition-colors ${
               activeId === section.id
                 ? "text-gold border-gold"
                 : "text-muted-foreground border-transparent hover:text-parchment hover:border-muted-foreground/30"
             }`}
           >
             {section.label}
-          </button>
+          </a>
         </li>
       ))}
     </ul>
@@ -53,47 +57,61 @@ function TocLinks({
 
 export function TableOfContents({ sections, heading, variant }: TableOfContentsProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
+  const rafRef = useRef<number>(0)
 
-  // 初期表示時: 現在スクロール位置に基づいて activeId を設定
-  useEffect(() => {
-    const findActiveSection = () => {
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const el = document.getElementById(sections[i].id)
-        if (el && el.getBoundingClientRect().top <= window.innerHeight * 0.3) {
-          setActiveId(sections[i].id)
-          return
-        }
+  // ビューポート上部 30% 以内に入っているセクションを下からスキャンして検出
+  const findActiveSection = useCallback(() => {
+    const threshold = window.innerHeight * 0.3
+    for (let i = sections.length - 1; i >= 0; i--) {
+      const el = document.getElementById(sections[i].id)
+      if (el && el.getBoundingClientRect().top <= threshold) {
+        return sections[i].id
       }
-      if (sections.length > 0) setActiveId(sections[0].id)
     }
-    findActiveSection()
+    // どのセクションもまだ閾値に達していない場合は最初のセクション
+    return sections.length > 0 ? sections[0].id : null
   }, [sections])
 
+  // scroll イベント + requestAnimationFrame でスクロールスパイ
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveId(entry.target.id)
-          }
-        }
-      },
-      { rootMargin: "-10% 0px -60% 0px", threshold: 0 }
-    )
+    // 初期検出
+    setActiveId(findActiveSection())
 
-    for (const section of sections) {
-      const el = document.getElementById(section.id)
-      if (el) observer.observe(el)
+    const onScroll = () => {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = requestAnimationFrame(() => {
+        setActiveId(findActiveSection())
+      })
     }
 
-    return () => observer.disconnect()
-  }, [sections])
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => {
+      window.removeEventListener("scroll", onScroll)
+      cancelAnimationFrame(rafRef.current)
+    }
+  }, [findActiveSection])
+
+  // ページロード時に URL フラグメントがあれば該当セクションにスクロール
+  useEffect(() => {
+    const hash = window.location.hash.slice(1)
+    if (!hash) return
+    // DOM レンダリング完了を待つ
+    const timer = setTimeout(() => {
+      const el = document.getElementById(hash)
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" })
+        setActiveId(hash)
+      }
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [])
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id)
     if (el) {
       setActiveId(id)
       el.scrollIntoView({ behavior: "smooth", block: "start" })
+      history.replaceState(null, "", `#${id}`)
     }
   }
 
