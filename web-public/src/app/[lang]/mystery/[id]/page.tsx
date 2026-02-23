@@ -106,6 +106,7 @@ export default async function MysteryDetailPage({
   const {
     title, summary, narrativeContent, discrepancyDetected,
     hypothesis, alternativeHypotheses, politicalClimate, storyHooks,
+    confidenceRationale,
   } = localizeMystery(mystery, lang)
 
   const location = mystery.historical_context?.geographic_scope?.join(", ") || ""
@@ -293,7 +294,7 @@ export default async function MysteryDetailPage({
               sourceCoverage={mystery.source_coverage}
               academicCoverage={mystery.academic_coverage}
               languagesAnalyzed={mystery.languages_analyzed}
-              confidenceRationale={mystery.confidence_rationale}
+              confidenceRationale={confidenceRationale}
               sourceCoverageLabels={dict.sourceCoverage}
             >
               {/* デスクトップ目次（サイドバー内） */}

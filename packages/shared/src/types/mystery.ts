@@ -41,6 +41,7 @@ export interface TranslatedContent {
   evidence_a_excerpt?: string;
   evidence_b_excerpt?: string;
   additional_evidence_excerpts?: string[];
+  confidence_rationale?: string;
 }
 
 /** ミステリーのステータス */
