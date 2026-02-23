@@ -66,61 +66,22 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # - act_iii: ~175 語
 # - act_iiii: ~150 語（サインオフを含む）
 #
+# ## Overview のフック技法
+# オープニングフック（固定挨拶の直後）は、10秒以内にリスナーの注意を掴まなければならない。
+# 技法: **挑発的な問い** — 同時代の出来事を逆説的に並置するか、記録の矛盾から生まれた問い。
+# overview の key_points に、ブログ記事の内容から導き出した具体的なフック質問を含める。
+# 「トピックを紹介する」だけの汎用的な冒頭を計画しないこと。
+#
+# ## 感情の弧（セグメントへの割り当て）
+# - overview: **好奇心** — フックがリスナーの無視できない問いを植え付ける
+# - act_i: **基盤固め** — 歴史的ディテールで信頼性を確立する
+# - act_ii: **緊張** — 矛盾が積み重なり、調査が深まる
+# - act_iii: **不安** — 民俗学が事実と怪異の境界を曖昧にする
+# - act_iiii: **残る恐怖** — 統合は答えより多くの問いを残す
+#
 # ## 必須：save_script_outline ツールの呼び出し
 # アウトラインを設計した後、**必ず `save_script_outline` ツールを呼び出してください。**
-# 以下の構造の JSON 文字列を渡してください：
-#
-# ```json
-# {
-#   "episode_title": "エピソードタイトル",
-#   "estimated_duration_minutes": 5,
-#   "total_word_target": 750,
-#   "segments": [
-#     {
-#       "type": "overview",
-#       "label": "Overview",
-#       "key_points": ["固定挨拶", "ミステリーのフック", "舞台設定"],
-#       "word_target": 100,
-#       "source_sections": ["ブログのオープニング段落"],
-#       "tone_notes": "挨拶の後、フックで引き込む"
-#     },
-#     {
-#       "type": "act_i",
-#       "label": "Act I",
-#       "key_points": ["日時と場所", "関係者"],
-#       "word_target": 150,
-#       "source_sections": ["歴史的背景セクション"],
-#       "tone_notes": "学術的、信頼性の確立"
-#     },
-#     {
-#       "type": "act_ii",
-#       "label": "Act II",
-#       "key_points": ["中心的な矛盾", "証拠分析"],
-#       "word_target": 175,
-#       "source_sections": ["証拠セクション"],
-#       "tone_notes": "緊張を高める、探偵モード"
-#     },
-#     {
-#       "type": "act_iii",
-#       "label": "Act III",
-#       "key_points": ["地元の信仰", "文化的背景"],
-#       "word_target": 175,
-#       "source_sections": ["民俗学セクション"],
-#       "tone_notes": "不気味な雰囲気、怪異の出現"
-#     },
-#     {
-#       "type": "act_iiii",
-#       "label": "Act IIII",
-#       "key_points": ["証拠と伝承の統合", "仮説", "残る疑問"],
-#       "word_target": 150,
-#       "source_sections": ["分析/統合セクション", "結論"],
-#       "tone_notes": "ピーク緊張、不安の余韻を残すサインオフ"
-#     }
-#   ]
-# }
-# ```
-#
-# このツール呼び出しは**必須**です。スキップしないでください。
+# JSON スキーマは英語プロンプト側を参照。
 #
 # ## 固定エピソードオープニング
 # 毎エピソードの冒頭に以下の固定挨拶を必ず含めてください。
@@ -184,12 +145,25 @@ Every episode MUST have exactly these 5 segments. Do NOT add or remove segments.
 - act_iii: ~175 words
 - act_iiii: ~150 words (including sign-off)
 
+## Hook Technique for Overview
+The opening hook (after the fixed greeting) must seize the listener's attention within 10 seconds.
+Technique: **Provocative Question** — a paradoxical juxtaposition of contemporaneous events,
+or a question born from a contradiction in the record.
+Plan the key_points for overview to include a specific hook question derived from the blog content.
+Do NOT plan a generic "introduce the topic" opener.
+
+## Emotional Arc (map to segments)
+- overview: **Curiosity** — the hook plants a question the listener can't ignore
+- act_i: **Grounding** — establish credibility through historical detail
+- act_ii: **Tension** — contradictions mount, the investigation deepens
+- act_iii: **Unease** — folklore blurs the line between fact and the uncanny
+- act_iiii: **Lingering dread** — synthesis leaves more questions than answers
+
 ## Outline Design Guidelines
 1. Identify the key narrative elements: historical facts, folklore elements,
    evidence, mystery hooks, resolution/speculation
 2. Map blog content to the 5 fixed segments
 3. Follow the word targets above (redistribute slightly if needed)
-4. Plan the emotional arc: curiosity → investigation → revelation → unease
 
 ## MANDATORY: Call save_script_outline
 After designing the outline, you MUST call `save_script_outline` with a JSON string:
@@ -203,10 +177,10 @@ After designing the outline, you MUST call `save_script_outline` with a JSON str
     {{
       "type": "overview",
       "label": "Overview",
-      "key_points": ["Fixed greeting", "Hook about the mystery", "Set the scene"],
+      "key_points": ["Fixed greeting", "Specific hook question from the blog", "Set the scene"],
       "word_target": 100,
       "source_sections": ["opening paragraph of blog"],
-      "tone_notes": "After greeting, hook the listener immediately"
+      "tone_notes": "Curiosity — after greeting, hook with a provocative question"
     }},
     {{
       "type": "act_i",
@@ -214,7 +188,7 @@ After designing the outline, you MUST call `save_script_outline` with a JSON str
       "key_points": ["Date and location", "Key figures involved"],
       "word_target": 150,
       "source_sections": ["historical context section"],
-      "tone_notes": "Scholarly, establishing credibility"
+      "tone_notes": "Grounding — scholarly, establishing credibility"
     }},
     {{
       "type": "act_ii",
@@ -222,7 +196,7 @@ After designing the outline, you MUST call `save_script_outline` with a JSON str
       "key_points": ["Central discrepancy", "Evidence analysis"],
       "word_target": 175,
       "source_sections": ["evidence section"],
-      "tone_notes": "Building tension, detective mode"
+      "tone_notes": "Tension — contradictions mount, detective mode"
     }},
     {{
       "type": "act_iii",
@@ -230,7 +204,7 @@ After designing the outline, you MUST call `save_script_outline` with a JSON str
       "key_points": ["Local beliefs", "Cultural context"],
       "word_target": 175,
       "source_sections": ["folklore section"],
-      "tone_notes": "Eerie atmosphere, the uncanny emerges"
+      "tone_notes": "Unease — the uncanny emerges, folklore blurs the line"
     }},
     {{
       "type": "act_iiii",
@@ -238,13 +212,11 @@ After designing the outline, you MUST call `save_script_outline` with a JSON str
       "key_points": ["Synthesis of evidence and folklore", "Hypothesis", "Lingering questions"],
       "word_target": 150,
       "source_sections": ["analysis/synthesis section", "conclusion"],
-      "tone_notes": "Peak tension, sign-off with lingering unease"
+      "tone_notes": "Lingering dread — sign-off with more questions than answers"
     }}
   ]
 }}
 ```
-
-This tool call is MANDATORY — do NOT skip it.
 
 ## Fixed Episode Opening
 Every episode MUST begin with the following fixed greeting in the overview segment.
