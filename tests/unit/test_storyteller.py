@@ -157,7 +157,7 @@ class TestStorytellerInstruction:
         assert "gaps, silences, and omissions" in STORYTELLER_INSTRUCTION
 
     def test_has_abstract_concrete_alternation(self):
-        """抽象⇄具体の交互配置指示が Creative Guidelines 内にある。"""
-        assert "Abstract" in STORYTELLER_INSTRUCTION
-        assert "Concrete Alternation" in STORYTELLER_INSTRUCTION
-        assert "three consecutive paragraphs" in STORYTELLER_INSTRUCTION
+        """抽象⇄具体の交互配置指示が Sensory Writing 内にある。"""
+        assert "abstract analysis" in STORYTELLER_INSTRUCTION
+        assert "concrete sensory details" in STORYTELLER_INSTRUCTION
+        assert "rhythm and contrast" in STORYTELLER_INSTRUCTION
