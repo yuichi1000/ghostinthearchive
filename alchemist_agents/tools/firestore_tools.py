@@ -7,6 +7,7 @@ podcast_agents/tools/firestore_tools.py と同パターン。
 """
 
 import logging
+import os
 from datetime import datetime, timezone
 
 from shared.firestore import get_firestore_client
@@ -203,13 +204,25 @@ def upload_design_assets(
         }.get(suffix, "image/png")
 
         blob.upload_from_filename(str(filepath), content_type=content_type)
-        blob.make_public()
+
+        # エミュレータではmake_public()が使えないため、URLを直接構築
+        # STORAGE_EMULATOR_PUBLIC_HOST: ブラウザからアクセス可能なURL用ホスト
+        # 本番: Firebase Storage REST API 形式（セキュリティルール allow read: if true が適用される）
+        storage_public_host = os.environ.get("STORAGE_EMULATOR_PUBLIC_HOST", "") or os.environ.get("STORAGE_EMULATOR_HOST", "")
+        if storage_public_host:
+            host = storage_public_host if storage_public_host.startswith("http") else f"http://{storage_public_host}"
+            public_url = f"{host}/v0/b/{bucket.name}/o/{gcs_path.replace('/', '%2F')}?alt=media"
+        else:
+            public_url = (
+                f"https://firebasestorage.googleapis.com/v0/b/{bucket.name}"
+                f"/o/{gcs_path.replace('/', '%2F')}?alt=media"
+            )
 
         results.append({
             "product_type": asset.get("product_type", ""),
             "layer": asset.get("layer", ""),
             "gcs_path": f"gs://{bucket.name}/{gcs_path}",
-            "public_url": blob.public_url,
+            "public_url": public_url,
             "aspect_ratio": asset.get("aspect_ratio", ""),
         })
 
