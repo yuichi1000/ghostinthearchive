@@ -5,6 +5,7 @@ import type { FirestoreMystery } from "@ghost/shared/src/types/mystery"
 import { localizeMystery } from "@ghost/shared/src/lib/localize"
 import { cn } from "@ghost/shared/src/lib/utils"
 import { ClassificationBadge } from "@/components/classification-badge"
+import { GhostConfidenceBadge } from "@/components/ghost-confidence-badge"
 import type { SupportedLang } from "@/lib/i18n/config"
 import type { Dictionary } from "@/lib/i18n/dictionaries"
 
@@ -13,9 +14,10 @@ interface FeaturedMysteryCardProps {
   lang: SupportedLang
   label: string
   classificationLabels: Dictionary["classification"]
+  confidenceLabels: Dictionary["confidence"]
 }
 
-export function FeaturedMysteryCard({ mystery, lang, label, classificationLabels }: FeaturedMysteryCardProps) {
+export function FeaturedMysteryCard({ mystery, lang, label, classificationLabels, confidenceLabels }: FeaturedMysteryCardProps) {
   const { title, summary } = localizeMystery(mystery, lang)
 
   const locations = mystery.historical_context?.geographic_scope || []
@@ -49,8 +51,8 @@ export function FeaturedMysteryCard({ mystery, lang, label, classificationLabels
           "p-6 md:p-8",
           hasImage && "lg:flex lg:flex-col lg:justify-center lg:py-10 lg:px-10"
         )}>
-          {/* フィーチャーバッジ + 分類バッジ */}
-          <div className="flex items-center gap-3 mb-4">
+          {/* フィーチャーバッジ + 分類バッジ + ゴーストレベル */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
             <div className="flex items-center gap-2">
               <Star className="w-4 h-4 text-gold" />
               <span className="text-xs font-mono uppercase tracking-widest text-gold">
@@ -58,6 +60,9 @@ export function FeaturedMysteryCard({ mystery, lang, label, classificationLabels
               </span>
             </div>
             <ClassificationBadge mysteryId={mystery.mystery_id} labels={classificationLabels} />
+            {mystery.confidence_level && (
+              <GhostConfidenceBadge level={mystery.confidence_level} labels={confidenceLabels} />
+            )}
           </div>
 
           {/* メタデータ */}

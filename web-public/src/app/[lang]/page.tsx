@@ -54,6 +54,7 @@ async function MysteryList({ lang, dict }: { lang: SupportedLang; dict: Dictiona
           lang={lang}
           label={dict.home.featuredStory}
           classificationLabels={dict.classification}
+          confidenceLabels={dict.confidence}
         />
       </div>
 
@@ -72,7 +73,7 @@ async function MysteryList({ lang, dict }: { lang: SupportedLang; dict: Dictiona
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {rest.map((mystery) => (
-              <MysteryCard key={mystery.mystery_id} mystery={mystery} lang={lang} classificationLabels={dict.classification} />
+              <MysteryCard key={mystery.mystery_id} mystery={mystery} lang={lang} classificationLabels={dict.classification} confidenceLabels={dict.confidence} />
             ))}
           </div>
         </>
