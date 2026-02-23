@@ -1,10 +1,10 @@
-"""Unit tests for merch_agents/tools/firestore_tools.py - Design Firestore ツール."""
+"""Unit tests for alchemist_agents/tools/firestore_tools.py - Design Firestore ツール."""
 
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from merch_agents.tools.firestore_tools import (
+from alchemist_agents.tools.firestore_tools import (
     load_mystery,
     create_design,
     get_design,
@@ -17,7 +17,7 @@ from merch_agents.tools.firestore_tools import (
 @pytest.fixture
 def mock_db():
     """Mock Firestore client."""
-    with patch("merch_agents.tools.firestore_tools.get_firestore_client") as mock:
+    with patch("alchemist_agents.tools.firestore_tools.get_firestore_client") as mock:
         client = MagicMock()
         mock.return_value = client
         yield client

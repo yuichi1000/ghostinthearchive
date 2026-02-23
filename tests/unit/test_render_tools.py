@@ -1,9 +1,9 @@
-"""Unit tests for merch_agents/tools/render_tools.py - generate_design_asset."""
+"""Unit tests for alchemist_agents/tools/render_tools.py - generate_design_asset."""
 
 import json
 from unittest.mock import patch
 
-from merch_agents.tools.render_tools import generate_design_asset, PRODUCT_ASPECT_RATIOS
+from alchemist_agents.tools.render_tools import generate_design_asset, PRODUCT_ASPECT_RATIOS
 from tests.fakes import make_tool_context
 
 # generate_image は関数内で遅延 import されるため、import 元をパッチする

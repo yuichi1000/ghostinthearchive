@@ -1,10 +1,10 @@
-"""Merch Design Pipeline - CLI Entry Point
+"""Alchemist Design Pipeline - CLI Entry Point
 
 デザイン企画とレンダリングの2つのモードを提供する。
 
 Usage:
-    python -m merch_agents design <mystery_id> [--instructions "..."]
-    python -m merch_agents render <design_id>
+    python -m alchemist_agents design <mystery_id> [--instructions "..."]
+    python -m alchemist_agents render <design_id>
 
 デザイン企画: Alchemist がブログ記事からデザイン提案を生成
 レンダリング: AlchemistRenderer が Imagen 3 でアセット画像を生成
@@ -119,7 +119,7 @@ async def generate_design(
         # Orchestrator 呼び出し
         result = await run_pipeline(
             agent=alchemist_commander,
-            app_name="ghost_in_the_archive_merch",
+            app_name="ghost_in_the_archive_alchemist",
             user_message=f"以下のブログ記事からプロダクトデザインを作成してください: {title}",
             initial_state={
                 "creative_content": narrative_content,
@@ -223,7 +223,7 @@ async def render_assets(
 
         result = await run_pipeline(
             agent=alchemist_render_commander,
-            app_name="ghost_in_the_archive_merch_render",
+            app_name="ghost_in_the_archive_alchemist_render",
             user_message=f"以下のデザイン提案のアセット画像を生成してください: {design_id}",
             initial_state={
                 "structured_design_proposal": proposal,
@@ -268,15 +268,15 @@ def main():
     """Main entry point."""
     if len(sys.argv) < 2:
         print("Usage:")
-        print('  python -m merch_agents design <mystery_id> [--instructions "..."]')
-        print('  python -m merch_agents render <design_id>')
+        print('  python -m alchemist_agents design <mystery_id> [--instructions "..."]')
+        print('  python -m alchemist_agents render <design_id>')
         sys.exit(1)
 
     command = sys.argv[1]
 
     if command == "design":
         if len(sys.argv) < 3:
-            print("Usage: python -m merch_agents design <mystery_id> [--instructions '...']")
+            print("Usage: python -m alchemist_agents design <mystery_id> [--instructions '...']")
             sys.exit(1)
 
         mystery_id = sys.argv[2]
@@ -292,7 +292,7 @@ def main():
 
     elif command == "render":
         if len(sys.argv) < 3:
-            print("Usage: python -m merch_agents render <design_id>")
+            print("Usage: python -m alchemist_agents render <design_id>")
             sys.exit(1)
 
         design_id = sys.argv[2]

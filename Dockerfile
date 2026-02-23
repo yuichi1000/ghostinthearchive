@@ -1,5 +1,5 @@
 # Cloud Run Dockerfile for Python pipelines and services
-# Supports: mystery pipeline, podcast pipeline, curator service
+# Supports: mystery pipeline, podcast pipeline, curator service, alchemist pipeline
 
 FROM python:3.12-slim
 
@@ -21,6 +21,7 @@ COPY shared/ ./shared/
 COPY mystery_agents/ ./mystery_agents/
 COPY curator_agents/ ./curator_agents/
 COPY podcast_agents/ ./podcast_agents/
+COPY alchemist_agents/ ./alchemist_agents/
 COPY services/ ./services/
 
 # Environment variables
