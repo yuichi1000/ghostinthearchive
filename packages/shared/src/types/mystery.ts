@@ -389,6 +389,92 @@ export const CONFIDENCE_LEVEL_LABELS: Record<ConfidenceLevel, string> = {
   low: "低",
 };
 
+/** プロダクトデザイン生成ステータス */
+export type DesignStatus = "designing" | "design_ready" | "rendering" | "render_ready" | "error";
+
+/** プロダクトタイプ */
+export type ProductType = "tshirt" | "mug";
+
+/** デザインスタイルリファレンス */
+export type DesignStyleReference = "fact" | "folklore";
+
+/** Imagen プロンプト */
+export interface ImagenPrompts {
+  /** メインビジュアルプロンプト */
+  background: string;
+  /** 装飾要素プロンプト（オプション） */
+  decorative?: string;
+}
+
+/** 単一製品のデザイン提案 */
+export interface ProductDesignProposal {
+  /** 製品タイプ */
+  product_type: ProductType;
+  /** アスペクト比 */
+  aspect_ratio: "1:1" | "16:9";
+  /** キャッチフレーズ（英語） */
+  catchphrase_en: string;
+  /** キャッチフレーズ（日本語） */
+  catchphrase_ja: string;
+  /** カラーパレット（hex コード配列） */
+  color_palette: string[];
+  /** フォント提案 */
+  font_suggestion: string;
+  /** 構図の説明 */
+  composition: string;
+  /** Imagen プロンプト */
+  imagen_prompts: ImagenPrompts;
+  /** スタイルリファレンス */
+  style_reference: DesignStyleReference;
+  /** ネガティブプロンプト */
+  negative_prompt?: string;
+}
+
+/** 生成されたデザインアセット */
+export interface DesignAsset {
+  /** 製品タイプ */
+  product_type: ProductType;
+  /** レイヤー（background / decorative） */
+  layer: string;
+  /** GCS パス */
+  gcs_path: string;
+  /** 公開 URL */
+  public_url: string;
+  /** アスペクト比 */
+  aspect_ratio: string;
+}
+
+/**
+ * デザインドキュメント（product_designs コレクション）
+ * mystery_id でミステリー記事とリンク
+ */
+export interface FirestoreDesign {
+  /** Design ドキュメント ID */
+  design_id: string;
+  /** リンク先ミステリー記事 ID */
+  mystery_id: string;
+  /** 記事タイトル（非正規化、表示用） */
+  mystery_title: string;
+  /** リージョン（国コード） */
+  region: string;
+  /** 生成ステータス */
+  status: DesignStatus;
+  /** 管理者のカスタム指示 */
+  custom_instructions?: string;
+  /** デザイン提案 */
+  proposal?: { products: ProductDesignProposal[] };
+  /** 生成されたアセット */
+  assets?: DesignAsset[];
+  /** パイプライン実行 ID */
+  pipeline_run_id?: string;
+  /** 作成日時 */
+  created_at: Date;
+  /** 更新日時 */
+  updated_at: Date;
+  /** エラーメッセージ */
+  error_message?: string | null;
+}
+
 /**
  * パイプライン実行ステータス
  */
@@ -397,7 +483,7 @@ export type PipelineRunStatus = "running" | "completed" | "error";
 /**
  * パイプライン種別
  */
-export type PipelineRunType = "blog" | "translate" | "podcast";
+export type PipelineRunType = "blog" | "translate" | "podcast" | "design" | "design_render";
 
 /**
  * パイプライン実行ドキュメント
@@ -459,4 +545,6 @@ export const AGENT_NAME_LABELS: Record<string, string> = {
   illustrator: "画像生成",
   producer: "音声生成",
   publisher: "公開処理",
+  alchemist: "デザイン企画",
+  alchemist_renderer: "デザインレンダリング",
 };

@@ -155,4 +155,5 @@ export const COLLECTIONS = {
   MYSTERIES: "mysteries",
   PIPELINE_RUNS: "pipeline_runs",
   PODCASTS: "podcasts",
+  PRODUCT_DESIGNS: "product_designs",
 } as const;

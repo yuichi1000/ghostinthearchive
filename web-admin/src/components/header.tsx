@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Archive, Mic } from "lucide-react"
+import { Archive, Mic, Palette } from "lucide-react"
 import { cn } from "@ghost/shared/src/lib/utils"
 import { HeaderLanguageSelector } from "@/components/header-language-selector"
 
@@ -49,6 +49,18 @@ export function Header() {
               >
                 <Mic className="w-3.5 h-3.5" />
                 Podcast
+              </Link>
+              <Link
+                href="/designs"
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono uppercase tracking-wider rounded-sm transition-colors no-underline",
+                  pathname.startsWith("/designs")
+                    ? "text-gold bg-gold/10"
+                    : "text-muted-foreground hover:text-parchment"
+                )}
+              >
+                <Palette className="w-3.5 h-3.5" />
+                Designs
               </Link>
             </nav>
           </div>

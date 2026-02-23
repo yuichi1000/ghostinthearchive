@@ -1,4 +1,4 @@
-"""Pipeline Server - FastAPI HTTP wrapper for Blog/Podcast pipelines.
+"""Pipeline Server - FastAPI HTTP wrapper for Blog/Podcast/Design pipelines.
 
 Exposes the long-running pipelines as HTTP endpoints using a
 fire-and-forget pattern: each request creates a pipeline_run document,
@@ -17,6 +17,8 @@ Endpoints:
     POST /investigate              - Start blog creation pipeline
     POST /podcast/generate-script  - Start podcast script generation
     POST /podcast/generate-audio   - Start podcast audio generation
+    POST /design/generate          - Start design proposal generation
+    POST /design/render-assets     - Start design asset rendering
     GET  /health                   - Health check
 """
 
@@ -74,6 +76,15 @@ class GenerateAudioRequest(BaseModel):
     podcast_id: str
     script: dict | None = None  # 管理者が編集した脚本
     voice_name: str = "en-US-Chirp3-HD-Enceladus"
+
+
+class GenerateDesignRequest(BaseModel):
+    mystery_id: str
+    custom_instructions: str = ""
+
+
+class RenderAssetsRequest(BaseModel):
+    design_id: str
 
 
 async def _run_investigate(query: str, run_id: str) -> None:
@@ -205,6 +216,103 @@ async def generate_audio_endpoint(body: GenerateAudioRequest):
         return JSONResponse(
             status_code=500,
             content={"error": "Failed to start podcast audio generation", "detail": str(e)},
+        )
+
+
+async def _run_generate_design(
+    mystery_id: str, custom_instructions: str, run_id: str, design_id: str
+) -> None:
+    """Background task wrapper for design proposal generation."""
+    try:
+        from merch_agents.cli import generate_design
+
+        await generate_design(
+            mystery_id, custom_instructions, run_id=run_id, design_id=design_id
+        )
+    except Exception as e:
+        logger.exception("Design generation failed: %s", e)
+        error_pipeline_run(run_id, str(e))
+        from merch_agents.tools.firestore_tools import set_design_status
+        set_design_status(design_id, "error", str(e))
+
+
+async def _run_render_assets(design_id: str, run_id: str) -> None:
+    """Background task wrapper for design asset rendering."""
+    try:
+        from merch_agents.cli import render_assets
+
+        await render_assets(design_id, run_id=run_id)
+    except Exception as e:
+        logger.exception("Design rendering failed: %s", e)
+        error_pipeline_run(run_id, str(e))
+        from merch_agents.tools.firestore_tools import set_design_status
+        set_design_status(design_id, "error", str(e))
+
+
+@app.post("/design/generate")
+async def generate_design_endpoint(body: GenerateDesignRequest):
+    """デザイン提案を生成（fire-and-forget）
+
+    design_id を同期的に作成してレスポンスに含める。
+    フロントエンドが即座に /designs/{design_id} に遷移できるようにする。
+    """
+    try:
+        from merch_agents.tools.firestore_tools import create_design
+
+        run_id = create_pipeline_run("design", mystery_id=body.mystery_id)
+        design_id = create_design(
+            body.mystery_id, body.custom_instructions, pipeline_run_id=run_id
+        )
+        asyncio.create_task(
+            _run_generate_design(
+                body.mystery_id, body.custom_instructions, run_id, design_id
+            )
+        )
+        return JSONResponse(
+            content={
+                "status": "accepted",
+                "run_id": run_id,
+                "design_id": design_id,
+            }
+        )
+    except Exception as e:
+        logger.exception("Failed to start design generation: %s", e)
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Failed to start design generation", "detail": str(e)},
+        )
+
+
+@app.post("/design/render-assets")
+async def render_assets_endpoint(body: RenderAssetsRequest):
+    """デザインアセットをレンダリング（fire-and-forget）"""
+    try:
+        from merch_agents.tools.firestore_tools import get_design
+
+        design = get_design(body.design_id)
+        if not design:
+            return JSONResponse(
+                status_code=404,
+                content={"error": f"Design '{body.design_id}' not found"},
+            )
+
+        mystery_id = design.get("mystery_id", "")
+        run_id = create_pipeline_run("design_render", mystery_id=mystery_id)
+        asyncio.create_task(
+            _run_render_assets(body.design_id, run_id)
+        )
+        return JSONResponse(
+            content={
+                "status": "accepted",
+                "run_id": run_id,
+                "design_id": body.design_id,
+            }
+        )
+    except Exception as e:
+        logger.exception("Failed to start design rendering: %s", e)
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Failed to start design rendering", "detail": str(e)},
         )
 
 
