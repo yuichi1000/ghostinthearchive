@@ -54,6 +54,7 @@ export function NarrativeSection({ narrativeContent, summary, lang = "en" }: Nar
   if (narrativeContent) {
     // 重複スラグを追跡するクロージャ（レンダーごとにリセット）
     const slugCounts = new Map<string, number>()
+    let headingIndex = 0
 
     const markdownComponents: Components = {
       blockquote: ({ children }) => (
@@ -61,10 +62,12 @@ export function NarrativeSection({ narrativeContent, summary, lang = "en" }: Nar
       ),
       h2: ({ children }) => {
         const text = getTextContent(children)
-        const baseSlug = slugify(text)
+        // 空スラグのフォールバック（Unicode 対応で解消済みだが安全策）
+        const baseSlug = slugify(text) || `heading-${headingIndex}`
         const count = slugCounts.get(baseSlug) || 0
         const id = count > 0 ? `${baseSlug}-${count}` : baseSlug
         slugCounts.set(baseSlug, count + 1)
+        headingIndex++
         return <h2 id={id} className="scroll-mt-24">{children}</h2>
       },
     }
