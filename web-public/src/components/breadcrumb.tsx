@@ -12,8 +12,8 @@ interface BreadcrumbProps {
 
 export function Breadcrumb({ lang, title, labels }: BreadcrumbProps) {
   const items = [
-    { label: labels.home, href: `/${lang}` },
-    { label: labels.archive, href: `/${lang}/archive` },
+    { label: labels.home, href: `/${lang}/` },
+    { label: labels.archive, href: `/${lang}/archive/` },
   ]
 
   // JSON-LD 構造化データ（SSG 環境でドメイン非依存のパスのみ）

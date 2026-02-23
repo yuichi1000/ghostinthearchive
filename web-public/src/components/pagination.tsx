@@ -41,7 +41,7 @@ function getPageNumbers(current: number, total: number): (number | "ellipsis")[]
 }
 
 function pageHref(basePath: string, page: number): string {
-  return page === 1 ? basePath : `${basePath}/${page}`
+  return page === 1 ? `${basePath}/` : `${basePath}/${page}/`
 }
 
 export function Pagination({ currentPage, totalPages, basePath, labels }: PaginationProps) {

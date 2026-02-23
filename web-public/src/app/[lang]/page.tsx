@@ -140,7 +140,7 @@ export default async function HomePage({
         <section className="pb-16">
           <div className="container mx-auto px-4 text-center">
             <Link
-              href={`/${lang}/archive`}
+              href={`/${lang}/archive/`}
               className="inline-block text-sm font-mono text-muted-foreground hover:text-gold transition-colors no-underline"
             >
               <span className="redacted">████</span> {dict.home.viewAllArticles} → <span className="redacted">████</span>

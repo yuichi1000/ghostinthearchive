@@ -33,7 +33,7 @@ export function buildOgpMetadata(
   }
 ): Pick<Metadata, "openGraph" | "twitter"> {
   const { title, description, path, type = "website", images } = options
-  const pageUrl = `${getSiteUrl()}/${lang}${path ? `/${path}` : ""}`
+  const pageUrl = `${getSiteUrl()}/${lang}${path ? `/${path}` : ""}/`
   const ogLocale = OG_LOCALE_MAP[lang]
   const alternateLocales = SUPPORTED_LANGS
     .filter((l) => l !== lang)
@@ -67,9 +67,9 @@ export function buildAlternates(
   return {
     languages: {
       ...Object.fromEntries(
-        SUPPORTED_LANGS.map((l) => [l, `/${l}${prefix}`])
+        SUPPORTED_LANGS.map((l) => [l, `/${l}${prefix}/`])
       ),
-      "x-default": `/${DEFAULT_LANG}${prefix}`,
+      "x-default": `/${DEFAULT_LANG}${prefix}/`,
     },
   }
 }

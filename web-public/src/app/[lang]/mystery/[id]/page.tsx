@@ -63,7 +63,7 @@ export async function generateMetadata({
 
   const { title, summary } = localizeMystery(mystery, lang)
 
-  const pageUrl = `${getSiteUrl()}/${lang}/mystery/${id}`
+  const pageUrl = `${getSiteUrl()}/${lang}/mystery/${id}/`
 
   // hero 画像がある場合のみ images を設定
   const heroUrl = mystery.images?.hero
@@ -132,7 +132,7 @@ export default async function MysteryDetailPage({
   ]
 
   // シェアボタン用の URL
-  const shareUrl = `${getSiteUrl()}/${lang}/mystery/${id}`
+  const shareUrl = `${getSiteUrl()}/${lang}/mystery/${id}/`
 
   // 関連記事の取得（SSG ビルド時は React.cache で共有済み）
   const relatedArticles = findRelatedArticles(
