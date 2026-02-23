@@ -68,10 +68,16 @@ class PublisherAgent(BaseAgent):
         )
 
 
-publisher_agent = PublisherAgent(
-    name="publisher",
-    description=(
-        "Content manager agent that saves all assets to Firestore. "
-        "Deterministic execution without LLM — reads session state directly."
-    ),
-)
+def create_publisher() -> PublisherAgent:
+    """Publisher エージェントを新規生成する。"""
+    return PublisherAgent(
+        name="publisher",
+        description=(
+            "Content manager agent that saves all assets to Firestore. "
+            "Deterministic execution without LLM — reads session state directly."
+        ),
+    )
+
+
+# 後方互換: デフォルトシングルトン
+publisher_agent = create_publisher()

@@ -147,3 +147,25 @@ class TestBuildPipeline:
 
         with pytest.raises(ValueError, match="Unknown storyteller"):
             build_pipeline("nonexistent")
+
+    def test_multiple_build_pipeline_no_parent_conflict(self):
+        """build_pipeline() を複数回呼び出しても ADK 親重複エラーが発生しないこと。
+
+        回帰テスト: 旧実装ではモジュールレベルのシングルトンを再利用していたため、
+        2回目の呼び出しで「Agent already has a parent agent」エラーが発生していた。
+        """
+        from mystery_agents.agent import build_pipeline
+
+        pipeline1 = build_pipeline()
+        pipeline2 = build_pipeline("gemini")
+        # 両方とも正常に構築され、異なるインスタンスであること
+        assert pipeline1 is not pipeline2
+
+    def test_build_pipeline_returns_independent_instances(self):
+        """build_pipeline() が毎回独立したエージェントインスタンスを返すこと。"""
+        from mystery_agents.agent import build_pipeline
+
+        pipeline1 = build_pipeline()
+        pipeline2 = build_pipeline()
+        # sub_agents が異なるインスタンスであること
+        assert pipeline1.sub_agents[0] is not pipeline2.sub_agents[0]

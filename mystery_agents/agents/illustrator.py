@@ -277,16 +277,22 @@ Do NOT include any text other than the JSON (no explanations, comments, etc.).
 - If {creative_content} contains "NO_CONTENT", do not generate an image and report accordingly
 """
 
-illustrator_agent = LlmAgent(
-    name="illustrator",
-    model=create_pro_model(),
-    description=(
-        "Reads the Storyteller's blog article and generates a single hero image using Imagen 3. "
-        "Uses region-specific art styles (11 regions × 2 types = 22 styles) based on the article's country. "
-        "Validates generated images against article content for consistency."
-    ),
-    instruction=ILLUSTRATOR_INSTRUCTION,
-    tools=[generate_image, validate_image],
-    output_key="visual_assets",
-    before_tool_callback=_limit_tool_calls,
-)
+def create_illustrator() -> LlmAgent:
+    """Illustrator エージェントを新規生成する。"""
+    return LlmAgent(
+        name="illustrator",
+        model=create_pro_model(),
+        description=(
+            "Reads the Storyteller's blog article and generates a single hero image using Imagen 3. "
+            "Uses region-specific art styles (11 regions × 2 types = 22 styles) based on the article's country. "
+            "Validates generated images against article content for consistency."
+        ),
+        instruction=ILLUSTRATOR_INSTRUCTION,
+        tools=[generate_image, validate_image],
+        output_key="visual_assets",
+        before_tool_callback=_limit_tool_calls,
+    )
+
+
+# 後方互換: デフォルトシングルトン
+illustrator_agent = create_illustrator()
