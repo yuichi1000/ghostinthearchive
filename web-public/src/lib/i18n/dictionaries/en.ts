@@ -157,10 +157,7 @@ const dict: Dictionary = {
   },
   sourceCoverage: {
     heading: "Investigation Scope",
-    languagesAnalyzed: "Languages Analyzed",
-    apisSearched: "Archives Searched",
     academicPapers: "Academic Papers",
-    coverageNote: "This analysis is based on materials available through the digital archive APIs listed above.",
     confidenceRationale: "Assessment Rationale",
   },
   seo: {
