@@ -1,8 +1,12 @@
 """LLM モデル設定ユーティリティ。
 
-全エージェントで使用する Gemini / Claude モデルアダプタを一元管理する。
+全エージェントで使用する Gemini モデルアダプタを一元管理する。
 HTTP 429 (RESOURCE_EXHAUSTED) エラーに対する指数バックオフ付きリトライを設定し、
 並列エージェント実行時のレート制限エラーを自動的に回復する。
+
+Storyteller 用のストーリーテラーモデルは STORYTELLER_MODELS レジストリで管理し、
+Gemini 以外のモデル（Claude, GPT, Llama, DeepSeek, Mistral）は
+OpenRouter 経由で LiteLLM アダプタを使用する。
 
 ADK はデフォルトで retry_options=None（リトライ0回）のため、
 明示的に HttpRetryOptions を設定しないと 429 で即クラッシュする。
@@ -16,74 +20,50 @@ from google.genai.types import HttpRetryOptions
 
 logger = logging.getLogger(__name__)
 
-# === 日本語訳 ===
-# Claude (Anthropic API) のリトライ回数上限。
-# Anthropic SDK のデフォルトは 2回だが、429 レート制限に対応するため 3回に設定する。
-# 指数バックオフは SDK が自動適用する。
-# === End 日本語訳 ===
-_CLAUDE_MAX_RETRIES = 3
-
-# _ClaudeWithRetry クラスの参照（try ブロック外に sentinel 定義）
-# anthropic パッケージが未インストールの場合は None のまま
-_claude_with_retry_cls = None
-
-# Claude モデルの LLMRegistry 登録（Anthropic API 直接利用）
-# anthropic パッケージが未インストールの場合はスキップ（テスト環境等）
-# TODO: 本番環境（Cloud Run）では ANTHROPIC_API_KEY を Secret Manager に登録し、
-#       サービスの環境変数として注入すること
-try:
-    import os
-    from functools import cached_property
-
-    from anthropic import AsyncAnthropic
-    from google.adk.models.anthropic_llm import AnthropicLlm
-    from google.adk.models.registry import LLMRegistry
-
-    class _ClaudeWithRetry(AnthropicLlm):
-        """Anthropic API 429 レート制限に対応するリトライ強化版 Claude。
-
-        ADK の AnthropicLlm クラスは AsyncAnthropic に max_retries を渡さないため、
-        Anthropic SDK のデフォルト（2回）しかリトライされない。
-        このサブクラスで max_retries=_CLAUDE_MAX_RETRIES を明示的に設定する。
-        """
-
-        @cached_property
-        def _anthropic_client(self) -> AsyncAnthropic:
-            api_key = os.environ.get("ANTHROPIC_API_KEY")
-            if not api_key:
-                raise ValueError(
-                    "ANTHROPIC_API_KEY environment variable must be set."
-                )
-            try:
-                from google.adk.utils._google_client_headers import (
-                    get_tracking_headers,
-                )
-
-                headers = get_tracking_headers()
-            except ImportError:
-                headers = {}
-            logger.info(
-                "AsyncAnthropic 初期化: max_retries=%d",
-                _CLAUDE_MAX_RETRIES,
-            )
-            return AsyncAnthropic(
-                api_key=api_key,
-                default_headers=headers,
-                max_retries=_CLAUDE_MAX_RETRIES,
-            )
-
-    _claude_with_retry_cls = _ClaudeWithRetry
-    LLMRegistry.register(_ClaudeWithRetry)
-    # ADK が自動登録した AnthropicLlm の LRU キャッシュを無効化し、
-    # _ClaudeWithRetry が resolve() で返されるようにする
-    LLMRegistry.resolve.cache_clear()
-except ImportError:
-    pass
-
 # モデル名定数
 MODEL_PRO = "gemini-3-pro-preview"
 MODEL_FLASH = "gemini-2.5-flash"
-MODEL_CLAUDE_SONNET = "claude-sonnet-4-5-20250929"
+
+# === 日本語訳 ===
+# ストーリーテラーモデルレジストリ。
+# Storyteller エージェントが使用する LLM を「語り部（ストーリーテラー）」として選択可能にする。
+# - native_gemini: 既存の Gemini Pro（Vertex AI）を使用
+# - litellm: OpenRouter 経由で各プロバイダーのモデルにアクセス（API キー: OPENROUTER_API_KEY 1つで一元管理）
+# === End 日本語訳 ===
+STORYTELLER_MODELS: dict[str, dict] = {
+    "claude": {
+        "model_id": "openrouter/anthropic/claude-sonnet-4.5",
+        "provider": "litellm",
+        "display_name": "Claude",
+    },
+    "gemini": {
+        "model_id": MODEL_PRO,
+        "provider": "native_gemini",
+        "display_name": "Gemini",
+    },
+    "gpt": {
+        "model_id": "openrouter/openai/gpt-4o",
+        "provider": "litellm",
+        "display_name": "GPT",
+    },
+    "llama": {
+        "model_id": "openrouter/meta-llama/llama-4-maverick",
+        "provider": "litellm",
+        "display_name": "Llama",
+    },
+    "deepseek": {
+        "model_id": "openrouter/deepseek/deepseek-chat",
+        "provider": "litellm",
+        "display_name": "DeepSeek",
+    },
+    "mistral": {
+        "model_id": "openrouter/mistralai/mistral-large-2512",
+        "provider": "litellm",
+        "display_name": "Mistral",
+    },
+}
+
+DEFAULT_STORYTELLER = "claude"
 
 # === 日本語訳 ===
 # Pro モデル用リトライ設定（レート制限が厳しい）
@@ -128,14 +108,29 @@ def create_flash_model() -> Gemini:
     return Gemini(model=MODEL_FLASH, retry_options=_FLASH_RETRY_OPTIONS)
 
 
-def create_claude_sonnet_model():
-    """Claude Sonnet 4.5 (Anthropic API) のモデルを返す。
+def create_storyteller_model(storyteller: str = DEFAULT_STORYTELLER):
+    """ストーリーテラー名から Storyteller 用モデルアダプタを生成する。
 
-    _ClaudeWithRetry が利用可能な場合はインスタンスを直接返す。
-    LlmAgent(model=BaseLlm_instance) は LLMRegistry.resolve() を完全にバイパスするため、
-    ADK 自動登録 AnthropicLlm の LRU キャッシュ問題を根本解決する。
-    利用不可能な場合はモデル文字列にフォールバック。
+    Args:
+        storyteller: ストーリーテラー名（STORYTELLER_MODELS のキー）
+
+    Returns:
+        ADK モデルアダプタ（Gemini または LiteLlm インスタンス）
+
+    Raises:
+        ValueError: 不正なストーリーテラー名が指定された場合
     """
-    if _claude_with_retry_cls is not None:
-        return _claude_with_retry_cls(model=MODEL_CLAUDE_SONNET)
-    return MODEL_CLAUDE_SONNET
+    if storyteller not in STORYTELLER_MODELS:
+        valid = ", ".join(STORYTELLER_MODELS.keys())
+        raise ValueError(f"Unknown storyteller '{storyteller}'. Valid storytellers: {valid}")
+
+    config = STORYTELLER_MODELS[storyteller]
+    provider = config["provider"]
+
+    if provider == "native_gemini":
+        return create_pro_model()
+
+    # OpenRouter 経由（LiteLLM アダプタ）
+    from google.adk.models.lite_llm import LiteLlm
+
+    return LiteLlm(model=config["model_id"])

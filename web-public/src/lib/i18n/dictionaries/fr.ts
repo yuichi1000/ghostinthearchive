@@ -76,6 +76,11 @@ const dict: Dictionary = {
       coda:
         "Et un principe non écrit : n'oubliez jamais la plaisanterie. Les archives sont déjà assez sépulcrales.",
     },
+    storytellers: {
+      heading: "Nos Conteurs",
+      intro:
+        "Chaque article de ces archives est rédigé par un modèle de langage IA différent — nos conteurs. Différents modèles apportent des perspectives analytiques différentes aux mêmes preuves archivistiques.",
+    },
   },
   detail: {
     returnToArchive: "Retour aux archives",
@@ -102,6 +107,7 @@ const dict: Dictionary = {
     tocHypothesis: "Hypothèse",
     tocHistoricalContext: "Contexte historique",
     relatedArticles: "Dossiers connexes",
+    storytoldBy: "Raconté par",
   },
   evidence: {
     source: "Source",

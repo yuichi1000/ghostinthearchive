@@ -271,6 +271,8 @@ export interface FirestorePodcast {
 export interface FirestoreMystery extends MysteryReport {
   /** スキーマバージョン: 1 = legacy (*_ja/*_en), 2 = translations map */
   schema_version?: number;
+  /** 記事を執筆したストーリーテラー（LLM）の識別子 */
+  storyteller?: string;
   /** ステータス: pending, translating, published, archived */
   status: MysteryStatus;
   /** 作成日時（Firestoreタイムスタンプ） */
@@ -547,4 +549,16 @@ export const AGENT_NAME_LABELS: Record<string, string> = {
   publisher: "公開処理",
   alchemist: "デザイン企画",
   alchemist_renderer: "デザインレンダリング",
+};
+
+/**
+ * ストーリーテラー（LLM）の表示名マッピング
+ */
+export const STORYTELLER_DISPLAY_NAMES: Record<string, string> = {
+  claude: "Claude",
+  gemini: "Gemini",
+  gpt: "GPT",
+  llama: "Llama",
+  deepseek: "DeepSeek",
+  mistral: "Mistral",
 };

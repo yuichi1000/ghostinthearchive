@@ -65,6 +65,7 @@ app = FastAPI()
 
 class InvestigateRequest(BaseModel):
     query: str
+    storyteller: str = "claude"
 
 
 class GenerateScriptRequest(BaseModel):
@@ -87,20 +88,23 @@ class RenderAssetsRequest(BaseModel):
     design_id: str
 
 
-async def _run_investigate(query: str, run_id: str) -> None:
+async def _run_investigate(query: str, run_id: str, storyteller: str = "claude") -> None:
     """Background task wrapper for the blog pipeline.
 
     CLI を経由せず Orchestrator を直接呼ぶことで、stdout ノイズを除去する。
     """
     try:
         from shared.orchestrator import run_pipeline
-        from mystery_agents.agent import ghost_commander, SKIP_AUTHORS
+        from mystery_agents.agent import ghost_commander, build_pipeline, SKIP_AUTHORS
+        from shared.model_config import DEFAULT_STORYTELLER
+
+        agent = build_pipeline(storyteller) if storyteller != DEFAULT_STORYTELLER else ghost_commander
 
         await run_pipeline(
-            agent=ghost_commander,
+            agent=agent,
             app_name="ghost_in_the_archive",
             user_message=query,
-            initial_state={"investigation_query": query},
+            initial_state={"investigation_query": query, "storyteller": storyteller},
             run_id=run_id,
             run_type="blog",
             skip_authors=SKIP_AUTHORS,
@@ -157,7 +161,7 @@ async def health():
 async def investigate_endpoint(body: InvestigateRequest):
     try:
         run_id = create_pipeline_run("blog", query=body.query)
-        asyncio.create_task(_run_investigate(body.query, run_id))
+        asyncio.create_task(_run_investigate(body.query, run_id, storyteller=body.storyteller))
         return JSONResponse(content={"status": "accepted", "run_id": run_id})
     except Exception as e:
         logger.exception("Failed to start blog pipeline: %s", e)

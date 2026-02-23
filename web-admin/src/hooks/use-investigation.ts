@@ -18,6 +18,7 @@ export function useInvestigation({ onPipelineStarted }: UseInvestigationOptions)
   const [themeInput, setThemeInput] = useState("")
   const [suggestions, setSuggestions] = useState<ThemeSuggestion[]>([])
   const [suggestLoading, setSuggestLoading] = useState(false)
+  const [storyteller, setStoryteller] = useState("claude")
   const [pipelineLoading, setPipelineLoading] = useState(false)
   const feedback = useActionFeedback()
 
@@ -32,7 +33,7 @@ export function useInvestigation({ onPipelineStarted }: UseInvestigationOptions)
       const res = await fetch("/api/mysteries/investigate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: themeInput.trim() }),
+        body: JSON.stringify({ query: themeInput.trim(), storyteller }),
       })
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}))
@@ -52,7 +53,7 @@ export function useInvestigation({ onPipelineStarted }: UseInvestigationOptions)
     } finally {
       setPipelineLoading(false)
     }
-  }, [themeInput, feedback, onPipelineStarted])
+  }, [themeInput, storyteller, feedback, onPipelineStarted])
 
   const handleSuggestThemes = useCallback(async () => {
     setSuggestLoading(true)
@@ -80,6 +81,8 @@ export function useInvestigation({ onPipelineStarted }: UseInvestigationOptions)
   return {
     themeInput,
     setThemeInput,
+    storyteller,
+    setStoryteller,
     suggestions,
     clearSuggestions,
     suggestLoading,

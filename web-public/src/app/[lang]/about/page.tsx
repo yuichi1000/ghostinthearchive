@@ -2,7 +2,8 @@ import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { PublicFooter } from "@/components/public-footer"
 import { Hero } from "@/components/hero"
-import { BookOpen, ShieldAlert } from "lucide-react"
+import { BookOpen, Pen, ShieldAlert } from "lucide-react"
+import { STORYTELLER_DISPLAY_NAMES } from "@ghost/shared/src/types/mystery"
 import { isValidLang } from "@/lib/i18n/config"
 import { SUPPORTED_LANGS } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/dictionaries"
@@ -116,6 +117,38 @@ export default async function AboutPage({
               <p className="text-sm text-muted-foreground/70 leading-relaxed">
                 {dict.about.concept.coda}
               </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Our Storytellers */}
+        <section className="py-16 border-t border-border/50">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-center gap-3 mb-8 justify-center">
+                <Pen className="w-5 h-5 text-gold" aria-hidden="true" />
+                <h2 className="font-serif text-2xl text-parchment">
+                  {dict.about.storytellers.heading}
+                </h2>
+              </div>
+
+              <p className="text-base text-muted-foreground leading-relaxed mb-8 text-center">
+                {dict.about.storytellers.intro}
+              </p>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {Object.entries(STORYTELLER_DISPLAY_NAMES).map(([key, name]) => (
+                  <div
+                    key={key}
+                    className="border border-border/50 rounded-sm p-4 text-center hover:border-gold/30 transition-colors"
+                  >
+                    <p className="font-serif text-lg text-parchment">{name}</p>
+                    <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground mt-1">
+                      {key}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>

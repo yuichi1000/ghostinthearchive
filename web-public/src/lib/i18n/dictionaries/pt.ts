@@ -76,6 +76,11 @@ const dict: Dictionary = {
       coda:
         "E um princípio não escrito: nunca esqueça a piada. Os arquivos já são sepulcrais o bastante.",
     },
+    storytellers: {
+      heading: "Nossos Narradores",
+      intro:
+        "Cada artigo neste arquivo é escrito por um modelo de linguagem de IA diferente — nossos narradores. Diferentes modelos trazem diferentes perspectivas analíticas para as mesmas evidências arquivísticas.",
+    },
   },
   detail: {
     returnToArchive: "Voltar ao arquivo",
@@ -102,6 +107,7 @@ const dict: Dictionary = {
     tocHypothesis: "Hipótese",
     tocHistoricalContext: "Contexto histórico",
     relatedArticles: "Dossiês relacionados",
+    storytoldBy: "Narrado por",
   },
   evidence: {
     source: "Fonte",
