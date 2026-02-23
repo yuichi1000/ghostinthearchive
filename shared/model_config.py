@@ -34,32 +34,32 @@ STORYTELLER_MODELS: dict[str, dict] = {
     "claude": {
         "model_id": "openrouter/anthropic/claude-sonnet-4.5",
         "provider": "litellm",
-        "display_name": "Claude",
+        "display_name": "Claude Sonnet 4.5",
     },
     "gemini": {
         "model_id": MODEL_PRO,
         "provider": "native_gemini",
-        "display_name": "Gemini",
+        "display_name": "Gemini 3 Pro",
     },
     "gpt": {
         "model_id": "openrouter/openai/gpt-4o",
         "provider": "litellm",
-        "display_name": "GPT",
+        "display_name": "GPT-4o",
     },
     "llama": {
         "model_id": "openrouter/meta-llama/llama-4-maverick",
         "provider": "litellm",
-        "display_name": "Llama",
+        "display_name": "Llama 4 Maverick",
     },
     "deepseek": {
         "model_id": "openrouter/deepseek/deepseek-chat",
         "provider": "litellm",
-        "display_name": "DeepSeek",
+        "display_name": "DeepSeek V3",
     },
     "mistral": {
         "model_id": "openrouter/mistralai/mistral-large-2512",
         "provider": "litellm",
-        "display_name": "Mistral",
+        "display_name": "Mistral Large",
     },
 }
 
