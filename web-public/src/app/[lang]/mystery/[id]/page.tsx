@@ -292,7 +292,6 @@ export default async function MysteryDetailPage({
                 storyAngles: dict.detail.storyAngles,
                 classificationNotice: dict.detail.classificationNotice,
               }}
-              academicCoverage={mystery.academic_coverage}
               confidenceRationale={confidenceRationale}
               sourceCoverageLabels={dict.sourceCoverage}
             >

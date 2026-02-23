@@ -1,4 +1,3 @@
-import type { AcademicCoverage } from "@ghost/shared/src/types/mystery"
 import type { Dictionary } from "@/lib/i18n/dictionaries"
 import { SourceCoverageCard } from "@/components/mystery/source-coverage-card"
 
@@ -10,7 +9,6 @@ interface DetailSidebarLabels {
 interface DetailSidebarProps {
   storyHooks: string[]
   labels?: DetailSidebarLabels
-  academicCoverage?: AcademicCoverage
   confidenceRationale?: string
   sourceCoverageLabels?: Dictionary["sourceCoverage"]
   children?: React.ReactNode
@@ -19,7 +17,6 @@ interface DetailSidebarProps {
 export function DetailSidebar({
   storyHooks,
   labels,
-  academicCoverage,
   confidenceRationale,
   sourceCoverageLabels,
   children,
@@ -49,10 +46,9 @@ export function DetailSidebar({
           </div>
         )}
 
-        {/* Source coverage（schema_version=2 の記事のみ表示） */}
-        {sourceCoverageLabels && (academicCoverage || confidenceRationale) && (
+        {/* Ghost 評価（判定根拠がある記事のみ表示） */}
+        {sourceCoverageLabels && confidenceRationale && (
           <SourceCoverageCard
-            academicCoverage={academicCoverage}
             confidenceRationale={confidenceRationale}
             labels={sourceCoverageLabels}
           />

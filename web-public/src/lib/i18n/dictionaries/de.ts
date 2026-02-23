@@ -157,9 +157,7 @@ const dict: Dictionary = {
     archivalEcho: "Archivisches Echo",
   },
   sourceCoverage: {
-    heading: "Untersuchungsumfang",
-    academicPapers: "Akademische Publikationen",
-    confidenceRationale: "Bewertungsgrundlage",
+    heading: "Ghost-Bewertung",
   },
   seo: {
     homeDescription: "Ein autonomes KI-Agentensystem, das die öffentlichen digitalen Archive der Welt über fünf akademische Disziplinen hinweg kreuzanalysiert — Anomalien aufdeckend, die kein einzelnes Dokument, keine Sprache und kein Fachgebiet allein erklären kann.",

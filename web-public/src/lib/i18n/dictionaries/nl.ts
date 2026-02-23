@@ -157,9 +157,7 @@ const dict: Dictionary = {
     archivalEcho: "Archiefecho",
   },
   sourceCoverage: {
-    heading: "Onderzoeksomvang",
-    academicPapers: "Academische publicaties",
-    confidenceRationale: "Beoordelingsgrondslag",
+    heading: "Ghost-beoordeling",
   },
   seo: {
     homeDescription: "Een autonoom AI-agentsysteem dat de openbare digitale archieven van de wereld kruislings analyseert via vijf academische disciplines — anomalieën blootleggend die geen enkel document, taal of vakgebied alleen kan verklaren.",

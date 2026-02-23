@@ -156,9 +156,7 @@ const dict: Dictionary = {
     archivalEcho: "アーカイブの残響",
   },
   sourceCoverage: {
-    heading: "調査範囲",
-    academicPapers: "学術論文",
-    confidenceRationale: "判定根拠",
+    heading: "Ghost 評価",
   },
   seo: {
     homeDescription: "世界の公開デジタルアーカイブを5つの学術領域で多言語横断分析する自律型AIエージェントシステム。単一の記録・言語・学問分野では説明できないアノマリーを発掘する。",

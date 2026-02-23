@@ -156,9 +156,7 @@ const dict: Dictionary = {
     archivalEcho: "Archival Echo",
   },
   sourceCoverage: {
-    heading: "Investigation Scope",
-    academicPapers: "Academic Papers",
-    confidenceRationale: "Assessment Rationale",
+    heading: "Ghost Assessment",
   },
   seo: {
     homeDescription: "An autonomous AI agent system cross-analyzing the world's public digital archives through five academic disciplines — unearthing anomalies that no single record, language, or field can explain.",
