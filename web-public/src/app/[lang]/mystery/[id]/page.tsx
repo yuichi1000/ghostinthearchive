@@ -174,6 +174,8 @@ export default async function MysteryDetailPage({
             publishedLabel={dict.detail.published}
             confidenceLevel={mystery.confidence_level}
             confidenceLabels={dict.confidence}
+            reporter={mystery.reporter}
+            reporterBylineLabel={dict.detail.reportedBy}
           />
 
           {/* シェアボタン（compact） */}

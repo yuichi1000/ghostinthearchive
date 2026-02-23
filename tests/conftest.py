@@ -29,15 +29,10 @@ mock_adk.utils.context_utils = MagicMock()
 mock_adk.models = MagicMock()
 mock_adk.models.google_llm = MagicMock()
 mock_adk.models.llm_response = MagicMock()
-# _ClaudeWithRetry のサブクラス化 + インスタンス化に必要な実クラス
-class _MockAnthropicLlm:
-    """テスト用 AnthropicLlm スタブ。model_config._ClaudeWithRetry の親クラスとして使用。"""
-    def __init__(self, *, model=None, **kwargs):
-        self.model = model
-
 mock_adk.models.anthropic_llm = MagicMock()
-mock_adk.models.anthropic_llm.AnthropicLlm = _MockAnthropicLlm
 mock_adk.models.registry = MagicMock()
+# LiteLLM アダプタ（OpenRouter 経由のモデル用）
+mock_adk.models.lite_llm = MagicMock()
 mock_adk.runners = MagicMock()
 mock_adk.sessions = MagicMock()
 sys.modules["google.adk"] = mock_adk
@@ -56,13 +51,10 @@ sys.modules["google.adk.models.google_llm"] = mock_adk.models.google_llm
 sys.modules["google.adk.models.llm_response"] = mock_adk.models.llm_response
 sys.modules["google.adk.models.anthropic_llm"] = mock_adk.models.anthropic_llm
 sys.modules["google.adk.models.registry"] = mock_adk.models.registry
+sys.modules["google.adk.models.lite_llm"] = mock_adk.models.lite_llm
 sys.modules["google.adk.tools"] = mock_adk.tools
 sys.modules["google.adk.tools.base_tool"] = mock_adk.tools.base_tool
 sys.modules["google.adk.tools.tool_context"] = mock_adk.tools.tool_context
-
-# Mock anthropic (used by shared/model_config.py for _ClaudeWithRetry)
-mock_anthropic = MagicMock()
-sys.modules["anthropic"] = mock_anthropic
 
 mock_genai = MagicMock()
 mock_genai.Client = MagicMock

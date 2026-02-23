@@ -28,7 +28,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { query } = body;
+    const { query, reporter } = body;
 
     if (!query || typeof query !== "string") {
       return NextResponse.json(
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
         ...authHeaders,
       },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query, reporter: reporter || "claude" }),
       signal: AbortSignal.timeout(30000),
     });
 

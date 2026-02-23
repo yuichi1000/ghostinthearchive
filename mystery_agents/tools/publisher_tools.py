@@ -436,6 +436,12 @@ def publish_mystery(
 
         now = datetime.now(timezone.utc)
 
+        # レポーター（記事を執筆した LLM）をセッション状態から取得
+        if tool_context is not None:
+            data["reporter"] = tool_context.state.get("reporter", "claude")
+        else:
+            data.setdefault("reporter", "claude")
+
         # スキーマバージョン（ドキュメント構造の世代管理）
         data["schema_version"] = SCHEMA_VERSION
 

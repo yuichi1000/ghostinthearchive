@@ -75,6 +75,11 @@ const dict: Dictionary = {
       coda:
         "そして書かれざる原則がひとつ——ジョークを忘れないこと。アーカイブはすでに十分、墓場じみている。",
     },
+    reporters: {
+      heading: "記者紹介",
+      intro:
+        "このアーカイブの各記事は、異なるAI言語モデル（記者）が執筆しています。異なるモデルが同じアーカイブ証拠に対して異なる分析的視点をもたらします。",
+    },
   },
   detail: {
     returnToArchive: "アーカイブに戻る",
@@ -101,6 +106,7 @@ const dict: Dictionary = {
     tocHypothesis: "仮説",
     tocHistoricalContext: "歴史的背景",
     relatedArticles: "関連ケースファイル",
+    reportedBy: "レポーター:",
   },
   evidence: {
     source: "出典",

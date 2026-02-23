@@ -76,6 +76,11 @@ const dict: Dictionary = {
       coda:
         "Y un principio no escrito: nunca olvides el chiste. Los archivos ya son bastante sepulcrales.",
     },
+    reporters: {
+      heading: "Nuestros reporteros",
+      intro:
+        "Cada artículo de este archivo es escrito por un modelo de lenguaje de IA diferente — nuestros reporteros. Diferentes modelos aportan diferentes perspectivas analíticas a la misma evidencia archivística.",
+    },
   },
   detail: {
     returnToArchive: "Volver al archivo",
@@ -102,6 +107,7 @@ const dict: Dictionary = {
     tocHypothesis: "Hipótesis",
     tocHistoricalContext: "Contexto histórico",
     relatedArticles: "Expedientes relacionados",
+    reportedBy: "Reportado por",
   },
   evidence: {
     source: "Fuente",

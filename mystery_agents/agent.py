@@ -31,9 +31,10 @@ from .agents.pipeline_gate import (
     make_storyteller_gate,
 )
 from .agents.publisher import publisher_agent
-from .agents.storyteller import storyteller_agent
+from .agents.storyteller import create_storyteller, storyteller_agent
 from .agents.theme_analyzer import theme_analyzer_agent
 from .agents.translator import create_all_translators
+from shared.model_config import DEFAULT_REPORTER
 
 # 言語別エージェントを生成
 all_librarians = create_all_librarians()
@@ -157,3 +158,50 @@ SKIP_AUTHORS = {
 }
 
 root_agent = ghost_commander
+
+
+def build_pipeline(reporter: str = DEFAULT_REPORTER) -> SequentialAgent:
+    """レポーター指定でパイプラインを構築する。
+
+    デフォルトレポーター以外が指定された場合のみ Storyteller を再生成する。
+    Storyteller 以外のエージェントはステートレスなので共有再利用する。
+
+    Args:
+        reporter: レポーター名（REPORTER_MODELS のキー）
+
+    Returns:
+        構築済みパイプライン（SequentialAgent）
+    """
+    st = create_storyteller(reporter) if reporter != DEFAULT_REPORTER else storyteller_agent
+
+    custom_storyteller_block = SequentialAgent(
+        name="storyteller_block",
+        sub_agents=[st],
+        before_agent_callback=make_storyteller_gate(),
+    )
+
+    custom_post_story_block = SequentialAgent(
+        name="post_story_block",
+        sub_agents=[
+            post_story_parallel,
+            publisher_agent,
+        ],
+        before_agent_callback=make_post_story_gate(),
+    )
+
+    return SequentialAgent(
+        name="ghost_commander",
+        description=ghost_commander.description,
+        sub_agents=[
+            theme_analyzer_agent,
+            ParallelAgent(
+                name="parallel_librarians",
+                sub_agents=list(all_librarians.values()),
+            ),
+            scholar_block,
+            debate_loop,
+            polymath_block,
+            custom_storyteller_block,
+            custom_post_story_block,
+        ],
+    )

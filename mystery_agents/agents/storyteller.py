@@ -19,7 +19,7 @@ from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models.llm_response import LlmResponse
 
-from shared.model_config import create_claude_sonnet_model
+from shared.model_config import DEFAULT_REPORTER, create_storyteller_model
 
 logger = logging.getLogger(__name__)
 
@@ -372,15 +372,28 @@ def _storyteller_after_model(
     return None
 
 
-storyteller_agent = LlmAgent(
-    name="storyteller",
-    model=create_claude_sonnet_model(),
-    description=(
-        "Creative agent that weaves narratives fusing historical rigor with eerie atmosphere. "
-        "Receives the Mystery Report (including Folkloric Context) and generates "
-        "an English blog article that interweaves fact and legend."
-    ),
-    instruction=STORYTELLER_INSTRUCTION,
-    output_key="creative_content",
-    after_model_callback=_storyteller_after_model,
-)
+def create_storyteller(reporter: str = DEFAULT_REPORTER) -> LlmAgent:
+    """指定レポーターで Storyteller エージェントを生成する。
+
+    Args:
+        reporter: レポーター名（REPORTER_MODELS のキー）
+
+    Returns:
+        Storyteller LlmAgent インスタンス
+    """
+    return LlmAgent(
+        name="storyteller",
+        model=create_storyteller_model(reporter),
+        description=(
+            "Creative agent that weaves narratives fusing historical rigor with eerie atmosphere. "
+            "Receives the Mystery Report (including Folkloric Context) and generates "
+            "an English blog article that interweaves fact and legend."
+        ),
+        instruction=STORYTELLER_INSTRUCTION,
+        output_key="creative_content",
+        after_model_callback=_storyteller_after_model,
+    )
+
+
+# 後方互換: デフォルトシングルトン（ADK CLI / adk web 用）
+storyteller_agent = create_storyteller()

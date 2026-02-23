@@ -75,6 +75,11 @@ const dict: Dictionary = {
       coda:
         "And one unwritten principle: never forget the joke. The archives are grave enough as they are.",
     },
+    reporters: {
+      heading: "Our Reporters",
+      intro:
+        "Each article in this archive is written by a different AI language model — our reporters. Different models bring different analytical perspectives to the same archival evidence.",
+    },
   },
   detail: {
     returnToArchive: "Return to Archive",
@@ -101,6 +106,7 @@ const dict: Dictionary = {
     tocHypothesis: "Hypothesis",
     tocHistoricalContext: "Historical Context",
     relatedArticles: "Related Case Files",
+    reportedBy: "Reported by",
   },
   evidence: {
     source: "Source",

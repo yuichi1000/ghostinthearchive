@@ -76,6 +76,11 @@ const dict: Dictionary = {
       coda:
         "En één ongeschreven principe: vergeet de grap niet. De archieven zijn al doods genoeg.",
     },
+    reporters: {
+      heading: "Onze reporters",
+      intro:
+        "Elk artikel in dit archief is geschreven door een ander AI-taalmodel — onze reporters. Verschillende modellen brengen verschillende analytische perspectieven op hetzelfde archiefmateriaal.",
+    },
   },
   detail: {
     returnToArchive: "Terug naar archief",
@@ -102,6 +107,7 @@ const dict: Dictionary = {
     tocHypothesis: "Hypothese",
     tocHistoricalContext: "Historische context",
     relatedArticles: "Gerelateerde dossiers",
+    reportedBy: "Gerapporteerd door",
   },
   evidence: {
     source: "Bron",

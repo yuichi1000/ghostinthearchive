@@ -76,6 +76,11 @@ const dict: Dictionary = {
       coda:
         "Und ein ungeschriebenes Prinzip: Vergiss den Witz nicht. Die Archive sind schon Gräber genug.",
     },
+    reporters: {
+      heading: "Unsere Reporter",
+      intro:
+        "Jeder Artikel in diesem Archiv wird von einem anderen KI-Sprachmodell verfasst — unseren Reportern. Verschiedene Modelle bringen unterschiedliche analytische Perspektiven zu denselben Archivbelegen ein.",
+    },
   },
   detail: {
     returnToArchive: "Zurück zum Archiv",
@@ -102,6 +107,7 @@ const dict: Dictionary = {
     tocHypothesis: "Hypothese",
     tocHistoricalContext: "Historischer Kontext",
     relatedArticles: "Verwandte Fallakten",
+    reportedBy: "Berichtet von",
   },
   evidence: {
     source: "Quelle",
