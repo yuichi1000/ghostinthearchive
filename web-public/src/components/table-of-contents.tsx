@@ -54,6 +54,21 @@ function TocLinks({
 export function TableOfContents({ sections, heading, variant }: TableOfContentsProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
 
+  // 初期表示時: 現在スクロール位置に基づいて activeId を設定
+  useEffect(() => {
+    const findActiveSection = () => {
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const el = document.getElementById(sections[i].id)
+        if (el && el.getBoundingClientRect().top <= window.innerHeight * 0.3) {
+          setActiveId(sections[i].id)
+          return
+        }
+      }
+      if (sections.length > 0) setActiveId(sections[0].id)
+    }
+    findActiveSection()
+  }, [sections])
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -63,7 +78,7 @@ export function TableOfContents({ sections, heading, variant }: TableOfContentsP
           }
         }
       },
-      { rootMargin: "-20% 0px -70% 0px" }
+      { rootMargin: "-10% 0px -60% 0px", threshold: 0 }
     )
 
     for (const section of sections) {
@@ -76,7 +91,10 @@ export function TableOfContents({ sections, heading, variant }: TableOfContentsP
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id)
-    if (el) el.scrollIntoView({ behavior: "smooth" })
+    if (el) {
+      setActiveId(id)
+      el.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
   }
 
   if (variant === "desktop") {

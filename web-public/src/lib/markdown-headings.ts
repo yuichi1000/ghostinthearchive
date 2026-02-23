@@ -11,13 +11,14 @@ export interface MarkdownHeading {
 
 /**
  * テキストを URL フレンドリーなスラグに変換する。
- * - 小文字化、空白をハイフン化、英数字とハイフンのみ残す
+ * - 小文字化、空白をハイフン化、Unicode 文字・数字・ハイフンを保持
+ * - \p{L}（全 Unicode 文字）対応で日本語・アクセント付き文字も保持
  */
 export function slugify(text: string): string {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, "")
+    .replace(/[^\p{L}\p{N}\s-]/gu, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
@@ -48,16 +49,19 @@ export function extractHeadings(markdown: string): MarkdownHeading[] {
 
   const regex = /^##\s+(.+)$/gm
   let match: RegExpExecArray | null
+  let index = 0
   while ((match = regex.exec(markdown)) !== null) {
     const rawText = match[1].trim()
     const text = stripInlineMarkdown(rawText)
-    const baseSlug = slugify(text)
+    // 空スラグのフォールバック（日本語等で slugify が空になるケースは Unicode 対応で解消済みだが安全策）
+    const baseSlug = slugify(text) || `heading-${index}`
 
     const count = slugCounts.get(baseSlug) || 0
     const id = count > 0 ? `${baseSlug}-${count}` : baseSlug
     slugCounts.set(baseSlug, count + 1)
 
     headings.push({ id, text, level: 2 })
+    index++
   }
 
   return headings
