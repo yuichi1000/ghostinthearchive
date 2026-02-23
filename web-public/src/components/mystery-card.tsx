@@ -5,6 +5,7 @@ import type { FirestoreMystery } from "@ghost/shared/src/types/mystery"
 import { cn } from "@ghost/shared/src/lib/utils"
 import { localizeMystery } from "@ghost/shared/src/lib/localize"
 import { ClassificationBadge } from "@/components/classification-badge"
+import { GhostConfidenceBadge } from "@/components/ghost-confidence-badge"
 import type { SupportedLang } from "@/lib/i18n/config"
 import type { Dictionary } from "@/lib/i18n/dictionaries"
 
@@ -12,10 +13,11 @@ interface MysteryCardProps {
   mystery: FirestoreMystery
   lang?: SupportedLang
   classificationLabels: Dictionary["classification"]
+  confidenceLabels: Dictionary["confidence"]
   className?: string
 }
 
-export function MysteryCard({ mystery, lang = "en", classificationLabels, className }: MysteryCardProps) {
+export function MysteryCard({ mystery, lang = "en", classificationLabels, confidenceLabels, className }: MysteryCardProps) {
   const { title, summary } = localizeMystery(mystery, lang)
 
   const locations = mystery.historical_context?.geographic_scope || []
@@ -53,9 +55,12 @@ export function MysteryCard({ mystery, lang = "en", classificationLabels, classN
               </time>
             </div>
 
-            {/* 分類バッジ */}
-            <div className="mb-3">
+            {/* 分類バッジ + ゴーストレベル */}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
               <ClassificationBadge mysteryId={mystery.mystery_id} labels={classificationLabels} />
+              {mystery.confidence_level && (
+                <GhostConfidenceBadge level={mystery.confidence_level} labels={confidenceLabels} />
+              )}
             </div>
 
             {/* Title */}

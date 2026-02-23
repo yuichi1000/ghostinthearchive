@@ -92,6 +92,7 @@ export default async function ArchivePage({
     return {
       id: m.mystery_id,
       classification: m.mystery_id.slice(0, 3).toUpperCase(),
+      confidenceLevel: m.confidence_level,
       thumbnail: m.images?.thumbnail ?? null,
       publishedAt: m.publishedAt?.toISOString() ?? "",
       i18n,
@@ -142,6 +143,7 @@ export default async function ArchivePage({
                         mystery={mystery}
                         lang={lang as SupportedLang}
                         classificationLabels={dict.classification}
+                        confidenceLabels={dict.confidence}
                       />
                     ))}
                   </div>

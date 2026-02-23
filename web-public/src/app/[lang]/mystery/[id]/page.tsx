@@ -174,6 +174,7 @@ export default async function MysteryDetailPage({
             publishedLabel={dict.detail.published}
             confidenceLevel={mystery.confidence_level}
             confidenceLabels={dict.confidence}
+            classificationLabels={dict.classification}
             storyteller={mystery.storyteller}
             storytellerBylineLabel={dict.detail.storytoldBy}
           />
@@ -306,6 +307,7 @@ export default async function MysteryDetailPage({
             lang={lang as SupportedLang}
             heading={dict.detail.relatedArticles}
             classificationLabels={dict.classification}
+            confidenceLabels={dict.confidence}
           />
         </div>
       </main>

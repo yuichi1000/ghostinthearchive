@@ -8,9 +8,10 @@ interface RelatedArticlesProps {
   lang: SupportedLang
   heading: string
   classificationLabels: Dictionary["classification"]
+  confidenceLabels: Dictionary["confidence"]
 }
 
-export function RelatedArticles({ articles, lang, heading, classificationLabels }: RelatedArticlesProps) {
+export function RelatedArticles({ articles, lang, heading, classificationLabels, confidenceLabels }: RelatedArticlesProps) {
   if (articles.length === 0) return null
 
   return (
@@ -23,6 +24,7 @@ export function RelatedArticles({ articles, lang, heading, classificationLabels 
             mystery={article}
             lang={lang}
             classificationLabels={classificationLabels}
+            confidenceLabels={confidenceLabels}
           />
         ))}
       </div>

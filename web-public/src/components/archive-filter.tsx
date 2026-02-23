@@ -4,8 +4,9 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { useMemo } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { FileText, X, Filter } from "lucide-react"
+import { FileText, X, Filter, Ghost } from "lucide-react"
 import { cn } from "@ghost/shared/src/lib/utils"
+import type { ConfidenceLevel } from "@ghost/shared/src/types/mystery"
 import type { SupportedLang } from "@/lib/i18n/config"
 import type { Dictionary } from "@/lib/i18n/dictionaries"
 
@@ -24,6 +25,18 @@ const badgeColorMap: Record<ClassificationCode, string> = {
   LOC: "bg-emerald-900/30 text-emerald-400",
 }
 
+const confidenceColorMap: Record<ConfidenceLevel, string> = {
+  high: "bg-emerald-900/30 text-emerald-400",
+  medium: "bg-amber-900/30 text-amber-400",
+  low: "bg-zinc-700/30 text-zinc-400",
+}
+
+const confidenceLabelMap: Record<ConfidenceLevel, keyof Dictionary["confidence"]> = {
+  high: "confirmedGhost",
+  medium: "suspectedGhost",
+  low: "archivalEcho",
+}
+
 export interface MysteryI18n {
   title: string
   summary: string
@@ -32,6 +45,7 @@ export interface MysteryI18n {
 export interface MysteryEntry {
   id: string
   classification: string
+  confidenceLevel?: ConfidenceLevel
   thumbnail: string | null
   publishedAt: string
   i18n: Record<string, MysteryI18n>
@@ -110,6 +124,7 @@ export function ArchiveFilter({ lang, dict, mysteries }: ArchiveFilterProps) {
               mystery={mystery}
               lang={lang}
               classificationLabels={dict.classification}
+              confidenceLabels={dict.confidence}
             />
           ))}
         </div>
@@ -126,10 +141,12 @@ function FilteredMysteryCard({
   mystery,
   lang,
   classificationLabels,
+  confidenceLabels,
 }: {
   mystery: MysteryEntry
   lang: SupportedLang
   classificationLabels: Dictionary["classification"]
+  confidenceLabels: Dictionary["confidence"]
 }) {
   const i18n = mystery.i18n[lang] || mystery.i18n["en"]
   if (!i18n) return null
@@ -170,9 +187,9 @@ function FilteredMysteryCard({
               )}
             </div>
 
-            {/* 分類バッジ */}
-            {VALID_CODES.has(code) && (
-              <div className="mb-3">
+            {/* 分類バッジ + ゴーストレベル */}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              {VALID_CODES.has(code) && (
                 <span
                   className={cn(
                     "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider",
@@ -181,8 +198,19 @@ function FilteredMysteryCard({
                 >
                   {classificationLabels[code]}
                 </span>
-              </div>
-            )}
+              )}
+              {mystery.confidenceLevel && (
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider",
+                    confidenceColorMap[mystery.confidenceLevel]
+                  )}
+                >
+                  <Ghost className="w-3 h-3" />
+                  {confidenceLabels[confidenceLabelMap[mystery.confidenceLevel]]}
+                </span>
+              )}
+            </div>
 
             {/* タイトル */}
             <h3 className="font-serif text-lg text-parchment mb-1 leading-tight group-hover:text-gold transition-colors text-balance">

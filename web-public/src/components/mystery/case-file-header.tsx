@@ -2,6 +2,7 @@ import { MapPin, Clock, Calendar, FileText, Pen } from "lucide-react"
 import type { ConfidenceLevel } from "@ghost/shared/src/types/mystery"
 import { STORYTELLER_DISPLAY_NAMES } from "@ghost/shared/src/types/mystery"
 import type { Dictionary } from "@/lib/i18n/dictionaries"
+import { ClassificationBadge } from "@/components/classification-badge"
 import { GhostConfidenceBadge } from "@/components/ghost-confidence-badge"
 
 interface CaseFileHeaderProps {
@@ -13,6 +14,7 @@ interface CaseFileHeaderProps {
   publishedLabel?: string
   confidenceLevel?: ConfidenceLevel
   confidenceLabels?: Dictionary["confidence"]
+  classificationLabels?: Dictionary["classification"]
   storyteller?: string
   storytellerBylineLabel?: string
 }
@@ -26,6 +28,7 @@ export function CaseFileHeader({
   publishedLabel = "Published:",
   confidenceLevel,
   confidenceLabels,
+  classificationLabels,
   storyteller,
   storytellerBylineLabel = "Storytold by",
 }: CaseFileHeaderProps) {
@@ -71,6 +74,9 @@ export function CaseFileHeader({
             <Pen className="w-4 h-4 text-gold" />
             {storytellerBylineLabel} {storytellerDisplayName}
           </span>
+        )}
+        {classificationLabels && (
+          <ClassificationBadge mysteryId={mysteryId} labels={classificationLabels} />
         )}
         {confidenceLevel && confidenceLabels && (
           <GhostConfidenceBadge level={confidenceLevel} labels={confidenceLabels} />
