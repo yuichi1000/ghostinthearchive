@@ -16,6 +16,12 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // product_designs: web-admin からの読み書き許可
+    match /product_designs/{designId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // pipeline_runs: web-admin から読み取りのみ（進捗表示用）
     match /pipeline_runs/{runId} {
       allow read: if true;
