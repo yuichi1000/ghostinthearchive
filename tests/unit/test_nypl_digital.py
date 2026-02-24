@@ -1,7 +1,5 @@
 """Unit tests for NYPL Digital Collections API tool."""
 
-import os
-
 import responses
 
 from mystery_agents.tools.nypl_digital import (
@@ -10,9 +8,6 @@ from mystery_agents.tools.nypl_digital import (
     _PLAIN_TEXT_URL,
     _fetch_plain_text,
 )
-
-# テスト用 API トークン
-_TEST_TOKEN = "test-token-12345"
 
 # モック検索レスポンス
 _MOCK_SEARCH_RESPONSE = {
@@ -55,19 +50,17 @@ class TestNYPLSource:
         assert source.source_name == "NYPL Digital Collections"
         assert source.supported_languages == {"en"}
         assert source.is_newspaper_source is False
-        assert source.env_var_key == "NYPL_API_TOKEN"
+        assert source.env_var_key is None
 
-    def test_empty_keywords(self, monkeypatch):
+    def test_empty_keywords(self):
         """空のキーワードでエラーを返す。"""
-        monkeypatch.setenv("NYPL_API_TOKEN", _TEST_TOKEN)
         source = NYPLSource()
         result = source.search(keywords=[])
         assert result.error == "No keywords provided"
 
     @responses.activate
-    def test_successful_search(self, monkeypatch):
+    def test_successful_search(self):
         """正常なレスポンスで ArchiveDocument を生成する。"""
-        monkeypatch.setenv("NYPL_API_TOKEN", _TEST_TOKEN)
         responses.add(responses.GET, BASE_URL, json=_MOCK_SEARCH_RESPONSE, status=200)
 
         source = NYPLSource()
@@ -85,9 +78,8 @@ class TestNYPLSource:
         assert "uuid-aaa-111" in doc.source_url
 
     @responses.activate
-    def test_api_error_handling(self, monkeypatch):
+    def test_api_error_handling(self):
         """500 エラー時はエラーメッセージを返す。"""
-        monkeypatch.setenv("NYPL_API_TOKEN", _TEST_TOKEN)
         responses.add(responses.GET, BASE_URL, body="Server Error", status=500)
 
         source = NYPLSource()
@@ -97,9 +89,8 @@ class TestNYPLSource:
         assert "API error" in result.error
 
     @responses.activate
-    def test_empty_results(self, monkeypatch):
+    def test_empty_results(self):
         """0件レスポンス。"""
-        monkeypatch.setenv("NYPL_API_TOKEN", _TEST_TOKEN)
         responses.add(responses.GET, BASE_URL, json=_MOCK_EMPTY_RESPONSE, status=200)
 
         source = NYPLSource()
@@ -108,13 +99,6 @@ class TestNYPLSource:
         assert result.total_hits == 0
         assert result.documents == []
         assert result.error is None
-
-    def test_missing_api_token(self, monkeypatch):
-        """API トークン未設定でエラーを返す。"""
-        monkeypatch.delenv("NYPL_API_TOKEN", raising=False)
-        source = NYPLSource()
-        result = source.search(keywords=["test"])
-        assert result.error == "NYPL_API_TOKEN not set"
 
 
 class TestFetchPlainText:
@@ -136,7 +120,7 @@ class TestFetchPlainText:
         from shared.http_retry import create_retry_session
 
         session = create_retry_session()
-        text = _fetch_plain_text(session, "uuid-aaa-111", _TEST_TOKEN)
+        text = _fetch_plain_text(session, "uuid-aaa-111")
 
         assert text is not None
         assert "Salem witch trial" in text
@@ -150,7 +134,7 @@ class TestFetchPlainText:
         from shared.http_retry import create_retry_session
 
         session = create_retry_session()
-        assert _fetch_plain_text(session, "uuid-missing", _TEST_TOKEN) is None
+        assert _fetch_plain_text(session, "uuid-missing") is None
 
     @responses.activate
     def test_403_returns_none(self):
@@ -161,7 +145,7 @@ class TestFetchPlainText:
         from shared.http_retry import create_retry_session
 
         session = create_retry_session()
-        assert _fetch_plain_text(session, "uuid-forbidden", _TEST_TOKEN) is None
+        assert _fetch_plain_text(session, "uuid-forbidden") is None
 
     @responses.activate
     def test_timeout_returns_none(self):
@@ -174,7 +158,7 @@ class TestFetchPlainText:
         from shared.http_retry import create_retry_session
 
         session = create_retry_session()
-        assert _fetch_plain_text(session, "uuid-timeout", _TEST_TOKEN) is None
+        assert _fetch_plain_text(session, "uuid-timeout") is None
 
     @responses.activate
     def test_truncated_at_5000(self):
@@ -187,7 +171,7 @@ class TestFetchPlainText:
         from shared.http_retry import create_retry_session
 
         session = create_retry_session()
-        text = _fetch_plain_text(session, "uuid-long", _TEST_TOKEN)
+        text = _fetch_plain_text(session, "uuid-long")
 
         assert text is not None
         assert len(text) == 5000
@@ -197,10 +181,8 @@ class TestNYPLFulltextEnrichment:
     """検索 + 全文エンリッチメント統合テスト。"""
 
     @responses.activate
-    def test_search_with_fulltext_enrichment(self, monkeypatch):
+    def test_search_with_fulltext_enrichment(self):
         """UUID ありの結果に全文テキストが付与される。"""
-        monkeypatch.setenv("NYPL_API_TOKEN", _TEST_TOKEN)
-
         # 検索 API
         responses.add(responses.GET, BASE_URL, json=_MOCK_SEARCH_RESPONSE, status=200)
 
@@ -220,10 +202,8 @@ class TestNYPLFulltextEnrichment:
         assert result.documents[1].raw_text == "Full text for uuid-bbb-222"
 
     @responses.activate
-    def test_fulltext_failure_preserves_document(self, monkeypatch):
+    def test_fulltext_failure_preserves_document(self):
         """全文取得失敗でもドキュメントは保持される（raw_text=None）。"""
-        monkeypatch.setenv("NYPL_API_TOKEN", _TEST_TOKEN)
-
         responses.add(responses.GET, BASE_URL, json=_MOCK_SEARCH_RESPONSE, status=200)
 
         # 全 plain_text リクエストが 500

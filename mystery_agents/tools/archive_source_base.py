@@ -11,9 +11,15 @@ import re
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 
+from dotenv import load_dotenv
+
 from shared.http_retry import create_retry_session
+
+# pipeline_server.py 経由の実行でも .env が確実に読み込まれるようにする
+load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 from ..schemas.document import ArchiveDocument
 
