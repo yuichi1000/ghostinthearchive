@@ -3,8 +3,6 @@
 DPLA の集約コレクション（全米の図書館・アーカイブ・博物館）を検索する。
 """
 
-from typing import Optional
-
 import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage
@@ -36,7 +34,7 @@ class DPLASource(ArchiveSource):
     supports_language_filter = True
     is_newspaper_source = False
     expected_domains = []  # パートナー機関ドメインが多様
-    env_var_key = "DPLA_API_KEY"
+    env_var_key = None
 
     def _search_impl(
         self,
@@ -46,17 +44,12 @@ class DPLASource(ArchiveSource):
         max_results: int,
         language: str | None,
     ) -> ArchiveSearchResult:
-        import os
-
-        api_key = os.environ.get("DPLA_API_KEY", "")
-
         search_text = build_search_query(keywords)
         if not search_text:
             return ArchiveSearchResult(error="No keywords provided")
 
         params = {
             "q": search_text,
-            "api_key": api_key,
             "page_size": min(max_results, 100),
         }
 
