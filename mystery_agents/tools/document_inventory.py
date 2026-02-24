@@ -133,6 +133,9 @@ def get_document_inventory(tool_context: Optional[ToolContext] = None) -> str:
     summary_parts = [f"{name}: {len(docs)} docs" for name, docs in archive_counts]
     archive_summary = ", ".join(summary_parts)
 
+    # inventory 参照済みフラグをセット（save_structured_report が確認する）
+    tool_context.state["_inventory_consulted"] = True
+
     response = {
         "status": "ok",
         "total_documents": total,

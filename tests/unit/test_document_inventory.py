@@ -216,3 +216,28 @@ class TestGetDocumentInventory:
         result = json.loads(get_document_inventory(ctx))
 
         assert result["total_documents"] == 1
+
+    def test_sets_inventory_consulted_flag(self):
+        """正常実行後に _inventory_consulted フラグがセットされる。"""
+        ctx = make_tool_context(state={
+            "raw_search_results_en": [{
+                "documents": [{
+                    "title": "Doc",
+                    "source_url": "https://loc.gov/1",
+                    "source_type": "loc_digital",
+                    "language": "en",
+                }],
+            }],
+        })
+
+        get_document_inventory(ctx)
+
+        assert ctx.state["_inventory_consulted"] is True
+
+    def test_no_data_does_not_set_flag(self):
+        """no_data の場合はフラグがセットされない。"""
+        ctx = make_tool_context(state={})
+
+        get_document_inventory(ctx)
+
+        assert "_inventory_consulted" not in ctx.state

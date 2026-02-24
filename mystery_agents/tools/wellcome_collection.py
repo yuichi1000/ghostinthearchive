@@ -43,17 +43,22 @@ _LANG_1_TO_3: dict[str, str] = {
 }
 
 
-def _strip_html(text: str | None) -> str:
+def _strip_html(text: str | list | None) -> str:
     """HTML タグを除去する。
 
     Args:
-        text: HTML を含む可能性のあるテキスト
+        text: HTML を含む可能性のあるテキスト。
+              Wellcome API の notes[].contents は list[str] の場合がある。
 
     Returns:
         タグ除去済みのプレーンテキスト。None の場合は空文字列。
     """
     if not text:
         return ""
+    if isinstance(text, list):
+        text = " ".join(str(item) for item in text if item)
+    if not isinstance(text, str):
+        return str(text)
     return re.sub(r"<[^>]+>", "", text).strip()
 
 

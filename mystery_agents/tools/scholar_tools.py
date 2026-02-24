@@ -481,6 +481,100 @@ def _validate_evidence(evidence: dict, label: str) -> list[str]:
     return warnings
 
 
+def _build_url_index(tool_context: ToolContext) -> dict[str, dict[str, Any]]:
+    """raw_search_results から URL→文書メタデータのマッピングを構築する。
+
+    raw_search_results と raw_search_results_{lang} の両方から文書を収集し、
+    source_url をキーとする辞書を返す。
+    """
+    url_index: dict[str, dict[str, Any]] = {}
+    state = tool_context.state
+
+    # ベースキー
+    base = state.get("raw_search_results")
+    if base and isinstance(base, list):
+        for result in base:
+            if isinstance(result, dict):
+                for doc in result.get("documents", []):
+                    url = doc.get("source_url", "")
+                    if url:
+                        url_index[url] = doc
+
+    # 言語別キー
+    state_dict = state.to_dict() if hasattr(state, "to_dict") else state
+    for key in list(state_dict.keys()):
+        if key.startswith("raw_search_results_") and key != "raw_search_results":
+            lang_results = state.get(key)
+            if lang_results and isinstance(lang_results, list):
+                for result in lang_results:
+                    if isinstance(result, dict):
+                        for doc in result.get("documents", []):
+                            url = doc.get("source_url", "")
+                            if url:
+                                url_index[url] = doc
+
+    return url_index
+
+
+def _validate_evidence_grounding(
+    report_data: dict, tool_context: ToolContext
+) -> list[str]:
+    """証拠を raw_search_results と照合し、正確性を検証・修正する。
+
+    1. URL 照合: evidence の source_url が raw_search_results に存在するか確認
+       → 不在なら warning（ハルシネーションの可能性）
+    2. メタデータ修正: URL 一致した場合、raw_search_results の title / date で
+       evidence の source_title / source_date を上書き（LLM の転記ミスを修正）
+    3. ソース識別: raw_search_results の source_type を evidence に
+       archive_source として付与（ログ・デバッグ用）
+
+    Returns: warning メッセージのリスト
+    """
+    url_index = _build_url_index(tool_context)
+    if not url_index:
+        return []
+
+    warnings: list[str] = []
+
+    # 検証対象の evidence 項目を収集
+    evidence_items: list[tuple[str, dict]] = []
+    for key in ("evidence_a", "evidence_b"):
+        ev = report_data.get(key)
+        if ev and isinstance(ev, dict):
+            evidence_items.append((key, ev))
+
+    additional = report_data.get("additional_evidence")
+    if additional and isinstance(additional, list):
+        for i, ev in enumerate(additional):
+            if isinstance(ev, dict):
+                evidence_items.append((f"additional_evidence[{i}]", ev))
+
+    for label, ev in evidence_items:
+        source_url = ev.get("source_url", "")
+        if not source_url:
+            continue
+
+        raw_doc = url_index.get(source_url)
+        if raw_doc:
+            # メタデータを raw データで上書き（LLM 転記ミス修正）
+            raw_title = raw_doc.get("title")
+            if raw_title:
+                ev["source_title"] = raw_title
+            raw_date = raw_doc.get("date")
+            if raw_date:
+                ev["source_date"] = raw_date
+            # ソース種別を付与
+            raw_source_type = raw_doc.get("source_type")
+            if raw_source_type:
+                ev["archive_source"] = raw_source_type
+        else:
+            warnings.append(
+                f"{label}: source_url not found in collected documents"
+            )
+
+    return warnings
+
+
 def save_structured_report(
     report_json: str,
     tool_context: ToolContext,
@@ -491,9 +585,16 @@ def save_structured_report(
     structured data (evidence, hypothesis, etc.) directly in session
     state, bypassing LLM text interpretation for downstream agents.
 
+    前提条件:
+    - get_document_inventory が事前に呼ばれていること（_inventory_consulted フラグ）
+
     evidence バリデーション:
     - evidence_a / evidence_b: 空 excerpt は警告のみ（構造上必須のため除外しない）
     - additional_evidence: 空 excerpt の項目はフィルタリング（除外）
+
+    証拠グラウンディング:
+    - raw_search_results と照合し、メタデータを自動修正
+    - URL 不一致の場合は警告
 
     Args:
         report_json: JSON string containing the structured report with fields:
@@ -518,6 +619,17 @@ def save_structured_report(
     Returns:
         JSON string with save status and warnings.
     """
+    # inventory 参照チェック
+    if not tool_context.state.get("_inventory_consulted"):
+        return json.dumps(
+            {
+                "status": "error",
+                "error": "get_document_inventory must be called before saving the report. "
+                "Review ALL available documents across ALL archives before selecting evidence.",
+            },
+            ensure_ascii=False,
+        )
+
     try:
         report_data = json.loads(report_json)
     except json.JSONDecodeError as e:
@@ -550,6 +662,10 @@ def save_structured_report(
                     f"additional_evidence[{i}]: removed (empty relevant_excerpt)"
                 )
         report_data["additional_evidence"] = filtered
+
+    # 証拠グラウンディング検証（URL 照合 + メタデータ修正）
+    grounding_warnings = _validate_evidence_grounding(report_data, tool_context)
+    warnings.extend(grounding_warnings)
 
     # Store structured report in session state
     tool_context.state["structured_report"] = report_data

@@ -278,6 +278,18 @@ class TestHelperFunctions:
         """タグなしテキストはそのまま返す。"""
         assert _strip_html("plain text") == "plain text"
 
+    def test_strip_html_list_input(self):
+        """list 型入力（実 Wellcome API の notes[].contents 形式）を処理する。"""
+        assert _strip_html(["<p>text</p>", "more"]) == "text more"
+
+    def test_strip_html_list_with_none_items(self):
+        """list 内の None 項目をスキップする。"""
+        assert _strip_html(["first", None, "third"]) == "first third"
+
+    def test_strip_html_empty_list(self):
+        """空リストの場合は空文字列を返す。"""
+        assert _strip_html([]) == ""
+
     def test_detect_language_english(self):
         """英語の検出。"""
         work = {"languages": [{"id": "eng", "label": "English"}]}
@@ -338,7 +350,7 @@ class TestNotesToRawText:
     """notes → raw_text 変換のテスト。"""
 
     def test_notes_to_raw_text(self):
-        """notes フィールドが raw_text に反映される。"""
+        """notes フィールドが raw_text に反映される（実 API は contents が list）。"""
         data = {
             "totalResults": 1,
             "results": [
@@ -347,8 +359,8 @@ class TestNotesToRawText:
                     "title": "Test Work",
                     "description": None,
                     "notes": [
-                        {"contents": "First note about the manuscript."},
-                        {"contents": "<p>Second note with <b>HTML</b>.</p>"},
+                        {"contents": ["First note about the manuscript."]},
+                        {"contents": ["<p>Second note with <b>HTML</b>.</p>"]},
                     ],
                     "production": [],
                     "languages": [{"id": "eng"}],
@@ -369,7 +381,7 @@ class TestNotesToRawText:
                     "title": "Combined Work",
                     "description": "A detailed description.",
                     "notes": [
-                        {"contents": "Additional context from notes."},
+                        {"contents": ["Additional context from notes."]},
                     ],
                     "production": [],
                     "languages": [{"id": "eng"}],
@@ -426,7 +438,7 @@ class TestNotesToRawText:
                     "id": "long1",
                     "title": "Long Work",
                     "description": None,
-                    "notes": [{"contents": long_note}],
+                    "notes": [{"contents": [long_note]}],
                     "production": [],
                     "languages": [{"id": "eng"}],
                 }
