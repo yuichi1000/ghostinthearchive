@@ -4,6 +4,7 @@ import { FileText } from "lucide-react"
 import { stripLeadingH1 } from "@ghost/shared/src/lib/utils"
 import { slugify } from "@/lib/markdown-headings"
 import type { ReactNode } from "react"
+import { ArchiveImage } from "./archive-image"
 
 // 7言語のアーカイブ引用ラベル
 const ARCHIVE_LABEL: Record<string, string> = {
@@ -59,6 +60,9 @@ export function NarrativeSection({ narrativeContent, summary, lang = "en" }: Nar
     const markdownComponents: Components = {
       blockquote: ({ children }) => (
         <ArchiveBlockquote lang={lang}>{children}</ArchiveBlockquote>
+      ),
+      img: ({ src, alt }) => (
+        <ArchiveImage src={src} alt={alt} lang={lang} />
       ),
       h2: ({ children }) => {
         const text = getTextContent(children)

@@ -144,6 +144,14 @@ class NYPLSource(ArchiveSource):
 
             date_str = item.get("dateDigitized", "")
 
+            # サムネイル URL 構築（imageID から）
+            image_id = item.get("imageID", "")
+            thumbnail_url = (
+                f"https://images.nypl.org/index.php?id={image_id}&t=w"
+                if image_id
+                else None
+            )
+
             doc = ArchiveDocument(
                 title=str(title)[:500],
                 date=self.parse_year(str(date_str)),
@@ -153,6 +161,7 @@ class NYPLSource(ArchiveSource):
                 location="New York",
                 source_type=self.source_type,
                 raw_text=None,
+                thumbnail_url=thumbnail_url,
                 keywords_matched=[
                     kw for kw in keywords if kw.lower() in str(title).lower()
                 ],

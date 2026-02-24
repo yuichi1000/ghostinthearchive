@@ -132,6 +132,12 @@ class EuropeanaSource(ArchiveSource):
             combined = f"{title} {description}".lower()
             matched = [kw for kw in keywords if kw.lower() in combined]
 
+            # サムネイル / フル画像URL抽出
+            edm_preview = item.get("edmPreview", [])
+            thumbnail = edm_preview[0] if isinstance(edm_preview, list) and edm_preview else None
+            edm_shown_by = item.get("edmIsShownBy", [])
+            full_image = edm_shown_by[0] if isinstance(edm_shown_by, list) and edm_shown_by else None
+
             doc = ArchiveDocument(
                 title=str(title)[:500],
                 date=self.parse_year(str(date_str), min_century=13),
@@ -141,6 +147,8 @@ class EuropeanaSource(ArchiveSource):
                 location=str(location)[:200],
                 source_type=self.source_type,
                 raw_text=str(description)[:5000] if description else None,
+                thumbnail_url=thumbnail,
+                image_url=full_image,
                 keywords_matched=matched,
             )
             documents.append(doc)

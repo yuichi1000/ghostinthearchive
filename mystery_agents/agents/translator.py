@@ -204,6 +204,7 @@ TRANSLATOR_CONFIGS: dict[str, dict[str, str]] = {
 # - 太字（**bold**）、斜体（*italic*）を保持
 # - 引用符（>）を保持
 # - リンク形式を保持
+# - 画像構文 ![キャプション](url) を保持 — [...] 内のキャプションテキストは翻訳するが、(...) 内の URL は変更しない
 #
 # ### 翻訳の正確性
 # - 事実と出典を正確に翻訳
@@ -301,6 +302,7 @@ NO_TRANSLATION: No content to translate. Translation aborted.
 - Preserve bold (**bold**) and italic (*italic*)
 - Preserve blockquotes (>)
 - Preserve link format
+- Preserve image syntax ![caption](url) — translate the caption text inside [...] but keep the URL in (...) unchanged
 
 ### Translation Accuracy
 - Translate facts and sources accurately

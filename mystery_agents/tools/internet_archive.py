@@ -119,6 +119,11 @@ class InternetArchiveSource(ArchiveSource):
             combined = f"{title} {description}".lower()
             matched = [kw for kw in keywords if kw.lower() in combined]
 
+            # サムネイル URL（identifier から構築）
+            thumbnail_url = (
+                f"https://archive.org/services/img/{identifier}" if identifier else None
+            )
+
             doc = ArchiveDocument(
                 title=str(title)[:500],
                 date=self.parse_year(str(date_str), min_century=13),
@@ -128,6 +133,7 @@ class InternetArchiveSource(ArchiveSource):
                 location="Unknown",
                 source_type=self.source_type,
                 raw_text=str(description)[:5000] if description else None,
+                thumbnail_url=thumbnail_url,
                 keywords_matched=matched,
             )
             documents.append(doc)

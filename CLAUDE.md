@@ -346,6 +346,7 @@ tool_context.state ベース（構造化データ、LLM を経由しない正確
 - `debate_whiteboard` - Scholar（討論モード）が `append_to_whiteboard` で累積書き込みする討論記録（`""` で初期化）
 - `structured_report` - Armchair Polymath の `save_structured_report` ツールが書き込む構造化分析JSON
 - `image_metadata` - Illustrator の `generate_image` ツールが書き込む画像メタデータ
+- `archive_images` - Librarian ツールが蓄積するアーカイブ資料画像リスト（title, source_url, thumbnail_url, image_url, source_type, date）
 
 **Podcast パイプライン（`podcast_agents`）:**
 
