@@ -21,7 +21,7 @@ const PRIMARY_SOURCES = [
   { label: "Digital Public Library of America", href: "https://dp.la/" },
   { label: "NYPL Digital Collections", href: "https://digitalcollections.nypl.org/" },
   // 欧州
-  { label: "Europeana", href: "https://www.europeana.eu/", pending: true },
+  { label: "Europeana", href: "https://www.europeana.eu/" },
   { label: "Deutsche Digitale Bibliothek", href: "https://www.deutsche-digitale-bibliothek.de/" },
   { label: "Delpher (KB)", href: "https://www.delpher.nl/" },
   { label: "Wellcome Collection", href: "https://wellcomecollection.org/" },
