@@ -33,6 +33,18 @@ class TestStorytellerModelsRegistry:
         expected = {"claude", "gemini", "gpt", "llama", "deepseek", "mistral"}
         assert set(STORYTELLER_MODELS.keys()) == expected
 
+    def test_openrouter_models_have_provider_order(self):
+        """OpenRouter 経由の全ストーリーテラーに openrouter_provider_order が設定されていること。"""
+        for name, config in STORYTELLER_MODELS.items():
+            if config["provider"] == "litellm":
+                assert "openrouter_provider_order" in config, (
+                    f"{name} に openrouter_provider_order がない"
+                )
+                order = config["openrouter_provider_order"]
+                assert isinstance(order, list) and len(order) > 0, (
+                    f"{name} の openrouter_provider_order が空"
+                )
+
 
 class TestCreateStorytellerModel:
     """create_storyteller_model() のテスト。"""
@@ -94,6 +106,35 @@ class TestCreateStorytellerModel:
         last_call = LiteLlm.call_args
         assert last_call is not None
         assert last_call.kwargs.get("model") == "openrouter/mistralai/mistral-large-2512"
+
+    def test_openrouter_models_pass_provider_routing(self):
+        """OpenRouter 経由モデルが extra_body にプロバイダルーティング設定を渡すこと。"""
+        from google.adk.models.lite_llm import LiteLlm
+
+        for name, config in STORYTELLER_MODELS.items():
+            if config["provider"] != "litellm":
+                continue
+            LiteLlm.reset_mock()
+            create_storyteller_model(name)
+            last_call = LiteLlm.call_args
+            assert last_call is not None, f"{name} の LiteLlm 呼び出しがない"
+            extra_body = last_call.kwargs.get("extra_body")
+            assert extra_body is not None, f"{name} に extra_body がない"
+            provider = extra_body.get("provider")
+            assert provider is not None, f"{name} の extra_body に provider がない"
+            assert "order" in provider, f"{name} の provider に order がない"
+            assert provider["order"] == config["openrouter_provider_order"]
+            assert provider["allow_fallbacks"] is True
+
+    def test_gemini_does_not_pass_extra_body(self):
+        """Gemini（native）モデルは extra_body を渡さないこと。"""
+        from google.adk.models.google_llm import Gemini
+
+        Gemini.reset_mock()
+        create_storyteller_model("gemini")
+        last_call = Gemini.call_args
+        assert last_call is not None
+        assert "extra_body" not in last_call.kwargs
 
     def test_unknown_storyteller_raises_value_error(self):
         """不正なストーリーテラー名で ValueError が発生すること。"""

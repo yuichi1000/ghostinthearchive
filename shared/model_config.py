@@ -29,12 +29,15 @@ MODEL_FLASH = "gemini-2.5-flash"
 # Storyteller エージェントが使用する LLM を「語り部（ストーリーテラー）」として選択可能にする。
 # - native_gemini: 既存の Gemini Pro（Vertex AI）を使用
 # - litellm: OpenRouter 経由で各プロバイダーのモデルにアクセス（API キー: OPENROUTER_API_KEY 1つで一元管理）
+# - openrouter_provider_order: OpenRouter のプロバイダルーティング優先順位（小文字スラッグ）
+#   32K コンテキスト制限のサードパーティバックエンドへのルーティングを防止する
 # === End 日本語訳 ===
 STORYTELLER_MODELS: dict[str, dict] = {
     "claude": {
         "model_id": "openrouter/anthropic/claude-sonnet-4.5",
         "provider": "litellm",
         "display_name": "Claude Sonnet 4.5",
+        "openrouter_provider_order": ["anthropic"],
     },
     "gemini": {
         "model_id": MODEL_PRO,
@@ -45,21 +48,25 @@ STORYTELLER_MODELS: dict[str, dict] = {
         "model_id": "openrouter/openai/gpt-4o",
         "provider": "litellm",
         "display_name": "GPT-4o",
+        "openrouter_provider_order": ["openai"],
     },
     "llama": {
         "model_id": "openrouter/meta-llama/llama-4-maverick",
         "provider": "litellm",
         "display_name": "Llama 4 Maverick",
+        "openrouter_provider_order": ["deepinfra"],
     },
     "deepseek": {
         "model_id": "openrouter/deepseek/deepseek-chat",
         "provider": "litellm",
         "display_name": "DeepSeek V3",
+        "openrouter_provider_order": ["deepinfra"],
     },
     "mistral": {
         "model_id": "openrouter/mistralai/mistral-large-2512",
         "provider": "litellm",
         "display_name": "Mistral Large",
+        "openrouter_provider_order": ["mistral"],
     },
 }
 
@@ -133,4 +140,16 @@ def create_storyteller_model(storyteller: str = DEFAULT_STORYTELLER):
     # OpenRouter 経由（LiteLLM アダプタ）
     from google.adk.models.lite_llm import LiteLlm
 
-    return LiteLlm(model=config["model_id"])
+    kwargs = {}
+    provider_order = config.get("openrouter_provider_order")
+    if provider_order:
+        # OpenRouter のプロバイダルーティングで公式プロバイダを優先指定し、
+        # 32K コンテキスト制限のサードパーティバックエンドへのルーティングを防止する
+        kwargs["extra_body"] = {
+            "provider": {
+                "order": provider_order,
+                "allow_fallbacks": True,
+            }
+        }
+
+    return LiteLlm(model=config["model_id"], **kwargs)
