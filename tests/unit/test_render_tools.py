@@ -7,6 +7,8 @@ from alchemist_agents.tools.render_tools import (
     generate_design_asset,
     _remove_background,
     PRODUCT_ASPECT_RATIOS,
+    CHROMA_COLORS,
+    STYLE_CHROMA_ORDER,
 )
 from tests.fakes import make_tool_context
 
@@ -277,7 +279,7 @@ class TestRemoveBackground:
 
     @patch("google.genai.Client")
     def test_returns_original_on_empty_response(self, mock_client_cls, tmp_path):
-        """Edit API が空レスポンスを返した場合、元画像を維持する。"""
+        """Edit API が全色で空レスポンスを返した場合、元画像を維持する。"""
         from PIL import Image as PILImage
 
         filepath = str(tmp_path / "test.png")
@@ -294,11 +296,13 @@ class TestRemoveBackground:
 
         assert path == filepath
         assert success is False
+        # 空レスポンスでも2色分試行する
+        assert mock_client.models.edit_image.call_count == 2
 
     @patch(_PATCH_GENERATE_IMAGE)
     @patch("alchemist_agents.tools.render_tools._remove_background")
     def test_generate_calls_remove_background_on_success(self, mock_remove_bg, mock_gen):
-        """generate_design_asset が成功時に _remove_background を呼び出す。"""
+        """generate_design_asset が成功時に _remove_background を style/region 付きで呼び出す。"""
         mock_gen.return_value = json.dumps({
             "status": "success",
             "filepath": "/tmp/test.png",
@@ -310,7 +314,7 @@ class TestRemoveBackground:
         )
         result = json.loads(result_json)
 
-        mock_remove_bg.assert_called_once_with("/tmp/test.png")
+        mock_remove_bg.assert_called_once_with("/tmp/test.png", style="auto", region="EU")
         assert result["transparent_background"] is True
 
     @patch(_PATCH_GENERATE_IMAGE)
@@ -341,21 +345,21 @@ class TestRemoveBackground:
         )
         result = json.loads(result_json)
 
-        mock_remove_bg.assert_called_once_with("/tmp/test.png")
+        mock_remove_bg.assert_called_once_with("/tmp/test.png", style="auto", region="EU")
         assert result["transparent_background"] is False
 
     @patch("google.genai.Client")
     def test_returns_false_when_no_transparent_pixels(self, mock_client_cls, tmp_path):
-        """マゼンタなし画像では透過ピクセルが0で False を返す。"""
+        """全色でクロマキー検出が0ピクセルの場合 False を返す（2色リトライ後に失敗）。"""
         from PIL import Image as PILImage
         import io
 
-        # マゼンタを含まない画像（全面赤）
+        # クロマキー色を含まない画像（全面赤）
         img = PILImage.new("RGB", (10, 10), (255, 0, 0))
-        filepath = str(tmp_path / "no_magenta.png")
+        filepath = str(tmp_path / "no_chroma.png")
         img.save(filepath, "PNG")
 
-        # Edit API が返す画像もマゼンタなし（同じ赤画像）
+        # Edit API が返す画像もクロマキー色なし（同じ赤画像）
         buf = io.BytesIO()
         img.save(buf, "PNG")
         edited_bytes = buf.getvalue()
@@ -374,3 +378,111 @@ class TestRemoveBackground:
 
         assert path == filepath
         assert success is False
+        # デフォルト(auto)は2色試行するため、edit_image が2回呼ばれる
+        assert mock_client.models.edit_image.call_count == 2
+
+    @patch("google.genai.Client")
+    def test_folklore_style_uses_green_prompt(self, mock_client_cls, tmp_path):
+        """style="folklore" で Imagen API がグリーンバックプロンプトで呼ばれる。"""
+        from PIL import Image as PILImage
+        import numpy as np
+        import io
+
+        # グリーン背景 + 赤い前景のテスト画像を作成
+        img = PILImage.new("RGB", (10, 10), (0, 255, 0))  # 全面グリーン
+        for x in range(4, 6):
+            for y in range(4, 6):
+                img.putpixel((x, y), (255, 0, 0))
+        filepath = str(tmp_path / "folklore.png")
+        img.save(filepath, "PNG")
+
+        buf = io.BytesIO()
+        img.save(buf, "PNG")
+        edited_bytes = buf.getvalue()
+
+        mock_image = MagicMock()
+        mock_image.image_bytes = edited_bytes
+
+        mock_response = MagicMock()
+        mock_response.generated_images = [MagicMock(image=mock_image)]
+
+        mock_client = MagicMock()
+        mock_client.models.edit_image.return_value = mock_response
+        mock_client_cls.return_value = mock_client
+
+        path, success = _remove_background(filepath, style="folklore")
+
+        assert success is True
+        # 1回目の呼び出しがグリーンバックプロンプト
+        first_call = mock_client.models.edit_image.call_args_list[0]
+        assert "green screen" in first_call[1]["prompt"]
+        assert "chroma key green" in first_call[1]["prompt"]
+
+    @patch("google.genai.Client")
+    def test_retries_with_next_color_on_zero_transparent(self, mock_client_cls, tmp_path):
+        """1色目が透過0ピクセルで失敗し、2色目で成功する。"""
+        from PIL import Image as PILImage
+        import io
+
+        filepath = str(tmp_path / "retry.png")
+        PILImage.new("RGB", (10, 10), (128, 128, 128)).save(filepath, "PNG")
+
+        # 1回目: マゼンタなし画像（全面赤 → 透過0ピクセル）
+        img_red = PILImage.new("RGB", (10, 10), (255, 0, 0))
+        buf1 = io.BytesIO()
+        img_red.save(buf1, "PNG")
+
+        # 2回目: グリーン画像（全面グリーン → 透過成功）
+        img_green = PILImage.new("RGB", (10, 10), (0, 255, 0))
+        buf2 = io.BytesIO()
+        img_green.save(buf2, "PNG")
+
+        mock_img1 = MagicMock()
+        mock_img1.image_bytes = buf1.getvalue()
+        mock_resp1 = MagicMock()
+        mock_resp1.generated_images = [MagicMock(image=mock_img1)]
+
+        mock_img2 = MagicMock()
+        mock_img2.image_bytes = buf2.getvalue()
+        mock_resp2 = MagicMock()
+        mock_resp2.generated_images = [MagicMock(image=mock_img2)]
+
+        mock_client = MagicMock()
+        # style="auto" → ["magenta", "green"]: 1回目マゼンタ失敗、2回目グリーン成功
+        mock_client.models.edit_image.side_effect = [mock_resp1, mock_resp2]
+        mock_client_cls.return_value = mock_client
+
+        path, success = _remove_background(filepath, style="auto")
+
+        assert success is True
+        assert mock_client.models.edit_image.call_count == 2
+
+    @patch("google.genai.Client")
+    def test_returns_false_after_all_retries_exhausted(self, mock_client_cls, tmp_path):
+        """全色でリトライしても透過0ピクセルの場合 (filepath, False) を返す。"""
+        from PIL import Image as PILImage
+        import io
+
+        filepath = str(tmp_path / "exhausted.png")
+        PILImage.new("RGB", (10, 10), (128, 128, 128)).save(filepath, "PNG")
+
+        # 全回: 赤画像（どのクロマキー色にもマッチしない）
+        img_red = PILImage.new("RGB", (10, 10), (255, 0, 0))
+        buf = io.BytesIO()
+        img_red.save(buf, "PNG")
+
+        mock_image = MagicMock()
+        mock_image.image_bytes = buf.getvalue()
+        mock_response = MagicMock()
+        mock_response.generated_images = [MagicMock(image=mock_image)]
+
+        mock_client = MagicMock()
+        mock_client.models.edit_image.return_value = mock_response
+        mock_client_cls.return_value = mock_client
+
+        path, success = _remove_background(filepath, style="folklore")
+
+        assert path == filepath
+        assert success is False
+        # folklore は ["green", "blue"] の2色
+        assert mock_client.models.edit_image.call_count == 2

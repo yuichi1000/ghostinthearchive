@@ -17,6 +17,29 @@ from google.adk.tools.tool_context import ToolContext
 
 logger = logging.getLogger(__name__)
 
+# クロマキー色定義
+CHROMA_COLORS = {
+    "green": {
+        "prompt": "solid bright green screen background #00FF00, chroma key green, uniform flat color",
+        "detect": lambda r, g, b: (r < 50) & (g > 200) & (b < 50),
+    },
+    "blue": {
+        "prompt": "solid bright blue screen background #0000FF, chroma key blue, uniform flat color",
+        "detect": lambda r, g, b: (r < 50) & (g < 50) & (b > 200),
+    },
+    "magenta": {
+        "prompt": "solid pure magenta #FF00FF background, uniform flat color",
+        "detect": lambda r, g, b: (r > 200) & (g < 50) & (b > 200),
+    },
+}
+
+# スタイル → クロマキー色の優先順（最大2回試行）
+STYLE_CHROMA_ORDER = {
+    "folklore": ["green", "blue"],     # 木版画・イラスト系はグリーンバック優先
+    "fact": ["magenta", "green"],      # 写真・アーカイブ系はマゼンタ優先
+    "auto": ["magenta", "green"],      # デフォルト
+}
+
 # product_type → aspect_ratio のマッピング
 PRODUCT_ASPECT_RATIOS = {
     "tshirt": "1:1",
@@ -24,19 +47,25 @@ PRODUCT_ASPECT_RATIOS = {
 }
 
 
-def _remove_background(filepath: str) -> tuple[str, bool]:
-    """Imagen Edit API でマゼンタ背景置換 → PIL クロマキーで透過 PNG に変換する。
+def _remove_background(filepath: str, style: str = "auto", region: str = "EU") -> tuple[str, bool]:
+    """Imagen Edit API でクロマキー背景置換 → PIL で透過 PNG に変換する。
+
+    スタイルに応じてクロマキー色を選択し、最大2色まで試行する。
 
     処理フロー:
-    1. Imagen Edit API (MASK_MODE_BACKGROUND + EDIT_MODE_BGSWAP) で背景をマゼンタに置換
-    2. PIL で マゼンタ (#FF00FF) ピクセルを透明化（閾値処理でアンチエイリアス保全）
-    3. 透過 PNG を上書き保存
-    4. 透過ピクセルが実際に存在するか検証
+    1. スタイルからクロマキー色の優先順を決定
+    2. 各色について:
+       a. Imagen Edit API (MASK_MODE_BACKGROUND + EDIT_MODE_BGSWAP) で背景を置換
+       b. PIL でクロマキー色ピクセルを透明化（閾値処理でアンチエイリアス保全）
+       c. 透過ピクセルが存在すれば成功、なければ次の色へリトライ
+    3. 全色失敗 → 元画像を維持
 
     エラー時は元の不透過画像パスをそのまま返す（フェイルオープン）。
 
     Args:
         filepath: 元画像の絶対パス。
+        style: 画像スタイル — "folklore" / "fact" / "auto"。
+        region: ISO 3166-1 alpha-2 国コード（未使用、将来拡張用）。
 
     Returns:
         (パス, 透過成功フラグ) のタプル。成功時は (filepath, True)、失敗時は (filepath, False)。
@@ -46,6 +75,7 @@ def _remove_background(filepath: str) -> tuple[str, bool]:
         from google.genai import types
         from PIL import Image as PILImage
         import numpy as np
+        import io
 
         # genai クライアント取得（illustrator_tools と同じロジック）
         if os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").upper() == "TRUE":
@@ -77,45 +107,60 @@ def _remove_background(filepath: str) -> tuple[str, bool]:
             ),
         )
 
-        # Imagen Edit API で背景をマゼンタに置換
-        response = client.models.edit_image(
-            model="imagen-3.0-capability-001",
-            prompt="solid pure magenta #FF00FF background, uniform flat color",
-            reference_images=[raw_ref, mask_ref],
-            config=types.EditImageConfig(
-                edit_mode="EDIT_MODE_BGSWAP",
-            ),
-        )
+        # スタイルに応じたクロマキー色の優先順を取得
+        chroma_order = STYLE_CHROMA_ORDER.get(style, STYLE_CHROMA_ORDER["auto"])
 
-        if not response.generated_images:
-            logger.warning("背景置換: 生成画像なし、元画像を維持: %s", filepath)
-            return filepath, False
+        for color_name in chroma_order:
+            chroma = CHROMA_COLORS[color_name]
 
-        # 生成画像を取得
-        edited_bytes = response.generated_images[0].image.image_bytes
+            # Imagen Edit API で背景をクロマキー色に置換
+            response = client.models.edit_image(
+                model="imagen-3.0-capability-001",
+                prompt=chroma["prompt"],
+                reference_images=[raw_ref, mask_ref],
+                config=types.EditImageConfig(
+                    edit_mode="EDIT_MODE_BGSWAP",
+                ),
+            )
 
-        # PIL でマゼンタ → 透明に変換
-        import io
-        img = PILImage.open(io.BytesIO(edited_bytes)).convert("RGBA")
-        data = np.array(img)
+            if not response.generated_images:
+                logger.warning(
+                    "背景置換(%s): 生成画像なし、次の色へ: %s", color_name, filepath,
+                )
+                continue
 
-        # マゼンタ (#FF00FF) の許容範囲検出（アンチエイリアス対応）
-        r, g, b = data[:, :, 0], data[:, :, 1], data[:, :, 2]
-        magenta_mask = (r > 200) & (g < 50) & (b > 200)
+            # 生成画像を取得
+            edited_bytes = response.generated_images[0].image.image_bytes
 
-        # 透明化
-        data[magenta_mask, 3] = 0
-        result = PILImage.fromarray(data)
-        result.save(filepath, "PNG")
+            # PIL でクロマキー色 → 透明に変換
+            img = PILImage.open(io.BytesIO(edited_bytes)).convert("RGBA")
+            data = np.array(img)
 
-        # 透過ピクセルが実際に存在するか検証
-        transparent_count = int(np.sum(data[:, :, 3] == 0))
-        if transparent_count == 0:
-            logger.warning("背景透過: 透過ピクセルなし、背景除去は無効: %s", filepath)
-            return filepath, False
+            # クロマキー色の許容範囲検出（アンチエイリアス対応）
+            r, g, b = data[:, :, 0], data[:, :, 1], data[:, :, 2]
+            color_mask = chroma["detect"](r, g, b)
 
-        logger.info("背景透過完了: %s (透過ピクセル数: %d)", filepath, transparent_count)
-        return filepath, True
+            # 透明化
+            data[color_mask, 3] = 0
+            result = PILImage.fromarray(data)
+            result.save(filepath, "PNG")
+
+            # 透過ピクセルが実際に存在するか検証
+            transparent_count = int(np.sum(data[:, :, 3] == 0))
+            if transparent_count > 0:
+                logger.info(
+                    "背景透過完了(%s): %s (透過ピクセル数: %d)",
+                    color_name, filepath, transparent_count,
+                )
+                return filepath, True
+
+            logger.warning(
+                "背景透過(%s): 透過ピクセルなし、次の色へ: %s", color_name, filepath,
+            )
+
+        # 全色失敗
+        logger.warning("背景透過: 全色で失敗、元画像を維持: %s", filepath)
+        return filepath, False
 
     except Exception as e:
         logger.warning("背景透過処理に失敗、元画像を維持: %s — %s", filepath, e)
@@ -195,7 +240,7 @@ def generate_design_asset(
     # 背景透過処理（生成成功時のみ）
     if result.get("status") == "success" and result.get("filepath"):
         original_path = result["filepath"]
-        result["filepath"], bg_removed = _remove_background(original_path)
+        result["filepath"], bg_removed = _remove_background(original_path, style=style, region=region)
         result["transparent_background"] = bg_removed
 
     # セッション状態に累積保存
