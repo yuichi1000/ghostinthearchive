@@ -7,6 +7,7 @@
 import concurrent.futures
 import json
 import logging
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -349,11 +350,31 @@ def _search_single_source(
 def _rank_documents(
     docs: list[ArchiveDocument],
 ) -> list[ArchiveDocument]:
-    """keywords_matched 数でドキュメントをランキングする。
+    """ソースインターリーブでドキュメントをランキングする。
 
-    同点の場合は元の順序（API 応答順）を維持する。
+    各ソース（source_type）ごとに keywords_matched 数でソートした後、
+    ラウンドロビンで各ソースから1件ずつ取り出して最終リストを構築する。
+    これにより、メタデータ豊富な特定ソースが上位を独占するのを防ぐ。
     """
-    return sorted(docs, key=lambda d: len(d.keywords_matched), reverse=True)
+    # ソースごとにグループ化して各グループ内でランキング
+    by_source: dict[str, list[ArchiveDocument]] = defaultdict(list)
+    for doc in docs:
+        by_source[doc.source_type].append(doc)
+    for key in by_source:
+        by_source[key].sort(key=lambda d: len(d.keywords_matched), reverse=True)
+
+    # ラウンドロビンインターリーブ
+    result: list[ArchiveDocument] = []
+    source_iters = [iter(v) for v in by_source.values()]
+    while source_iters:
+        next_round = []
+        for it in source_iters:
+            doc = next(it, None)
+            if doc is not None:
+                result.append(doc)
+                next_round.append(it)
+        source_iters = next_round
+    return result
 
 
 def search_archives(
