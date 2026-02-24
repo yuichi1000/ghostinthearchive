@@ -34,7 +34,6 @@ class SourceType(str, Enum):
     DELPHER = "delpher"
     NDL = "ndl"
     WELLCOME = "wellcome"
-    DIGITALNZ = "digitalnz"
 
 
 class ArchiveDocument(BaseModel):

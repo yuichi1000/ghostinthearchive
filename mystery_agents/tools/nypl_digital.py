@@ -2,10 +2,12 @@
 
 ニューヨーク公共図書館のデジタル化コレクション（写本、地図、写真、
 希少資料）を検索する。
+
+plain_text エンドポイントによる OCR 全文テキスト取得にも対応。
 """
 
+import logging
 import os
-from typing import Optional
 
 import requests
 
@@ -14,7 +16,57 @@ from .archive_source_base import ArchiveSearchResult, ArchiveSource
 from .search_utils import build_search_query
 from .source_registry import register_source
 
+logger = logging.getLogger(__name__)
+
 BASE_URL = "https://api.repo.nypl.org/api/v2/items/search"
+_PLAIN_TEXT_URL = "https://api.repo.nypl.org/api/v2/items/plain_text/{uuid}"
+
+# 全文取得の上限設定
+_MAX_FULLTEXT_FETCHES = 5
+_FULLTEXT_TIMEOUT = 15
+_MAX_TEXT_LENGTH = 5000
+
+
+def _fetch_plain_text(
+    session: requests.Session, uuid: str, api_token: str
+) -> str | None:
+    """NYPL plain_text エンドポイントから OCR テキストを取得する。
+
+    Args:
+        session: HTTP セッション
+        uuid: NYPL アイテムの UUID
+        api_token: NYPL API トークン
+
+    Returns:
+        OCR テキスト（最大5000文字）。取得失敗時は None。
+    """
+    try:
+        resp = session.get(
+            _PLAIN_TEXT_URL.format(uuid=uuid),
+            timeout=_FULLTEXT_TIMEOUT,
+            headers={
+                "Authorization": f'Token token="{api_token}"',
+                "User-Agent": "GhostInTheArchive/1.0",
+            },
+        )
+        if resp.status_code != 200:
+            logger.debug("NYPL plain_text %d for UUID %s", resp.status_code, uuid)
+            return None
+
+        data = resp.json()
+        # レスポンス構造: nyplAPI.response.text (文字列)
+        text = (
+            data.get("nyplAPI", {})
+            .get("response", {})
+            .get("text", "")
+        )
+        if not text or not isinstance(text, str):
+            return None
+        return text.strip()[:_MAX_TEXT_LENGTH]
+
+    except (requests.RequestException, ValueError, KeyError) as e:
+        logger.debug("NYPL plain_text 取得失敗 (UUID %s): %s", uuid, e)
+        return None
 
 
 class NYPLSource(ArchiveSource):
@@ -72,6 +124,9 @@ class NYPLSource(ArchiveSource):
         data = response.json()
 
         documents = []
+        # 全文取得対象の (index, uuid) ペア
+        fulltext_targets: list[tuple[int, str]] = []
+
         nypl_response = data.get("nyplAPI", {}).get("response", {})
         results = nypl_response.get("result", [])
         if not isinstance(results, list):
@@ -103,6 +158,17 @@ class NYPLSource(ArchiveSource):
                 ],
             )
             documents.append(doc)
+
+            # UUID が存在する場合は全文取得候補に追加（上位5件まで）
+            if uuid and len(fulltext_targets) < _MAX_FULLTEXT_FETCHES:
+                fulltext_targets.append((len(documents) - 1, uuid))
+
+        # 全文テキストエンリッチメント（ベストエフォート）
+        for idx, uuid in fulltext_targets:
+            self._rate_limit()
+            text = _fetch_plain_text(self._session, uuid, api_token)
+            if text:
+                documents[idx].raw_text = text
 
         total_hits = int(nypl_response.get("numResults", 0))
         return ArchiveSearchResult(documents=documents, total_hits=total_hits)

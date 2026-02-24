@@ -30,6 +30,13 @@ from .language_gate import make_debate_gate, make_language_gate
 # ## 分析視点
 # {cultural_perspective}
 #
+# ## 分析フレームワーク 0: 一次資料テキスト分析（raw_text がある場合は必須）
+# - ドキュメントに `raw_text`（OCR 全文テキスト）が含まれている場合、必ず精読・分析すること
+# - 調査テーマを裏付けるまたは矛盾する直接引用を抽出する
+# - ドキュメント間の具体的な記述を比較し、テキストレベルの不一致を特定する
+# - 解釈に影響する OCR アーティファクトや判読不能箇所に注意する
+# - `raw_text` がないドキュメント（メタデータのみ）でも、タイトル・サマリー・日付から分析可能
+#
 # ## 分析フレームワーク 5: ソースカバレッジ評価
 # - デジタル化範囲: この時代・地域の {language_name} 語資料のうちデジタル化済みの割合
 # - OCR 品質: 当該時代の文書のOCR信頼性（活字体変遷、印刷品質、手書き文書）
@@ -65,6 +72,13 @@ INSUFFICIENT_DATA: No {language_name}-language documents available for analysis.
 {cultural_perspective}
 
 ## Analysis Framework
+
+### 0. Primary Source Text Analysis (MANDATORY when raw_text is available)
+- When a document includes `raw_text` (full OCR text), you MUST read and analyze it thoroughly
+- Extract direct quotes that support or contradict the investigation theme
+- Compare specific passages across documents to identify textual discrepancies
+- Note OCR artifacts or illegible sections that may affect interpretation
+- Documents without `raw_text` (metadata only) can still be analyzed via title, summary, and date
 
 ### 1. Source Analysis
 - Analyze {language_name}-language sources for their unique perspective on the investigation theme

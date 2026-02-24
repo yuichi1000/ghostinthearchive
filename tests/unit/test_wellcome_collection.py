@@ -90,7 +90,8 @@ class TestWellcomeSource:
         assert doc.location == "London"
         # HTML が除去されたサマリー
         assert doc.summary == "An early modern text on witchcraft beliefs."
-        assert doc.raw_text is None
+        # description がある場合、raw_text に設定される
+        assert doc.raw_text == "An early modern text on witchcraft beliefs."
 
     @responses.activate
     def test_html_stripped_from_description(self):
@@ -331,3 +332,106 @@ class TestHelperFunctions:
     def test_extract_location_empty_places(self):
         """places が空リストの場合はデフォルト。"""
         assert _extract_location({"production": [{"places": []}]}) == "United Kingdom"
+
+
+class TestNotesToRawText:
+    """notes → raw_text 変換のテスト。"""
+
+    def test_notes_to_raw_text(self):
+        """notes フィールドが raw_text に反映される。"""
+        data = {
+            "totalResults": 1,
+            "results": [
+                {
+                    "id": "note1",
+                    "title": "Test Work",
+                    "description": None,
+                    "notes": [
+                        {"contents": "First note about the manuscript."},
+                        {"contents": "<p>Second note with <b>HTML</b>.</p>"},
+                    ],
+                    "production": [],
+                    "languages": [{"id": "eng"}],
+                }
+            ],
+        }
+        result = _parse_wellcome_response(data, keywords=["test"])
+        doc = result.documents[0]
+        assert doc.raw_text == "First note about the manuscript. Second note with HTML."
+
+    def test_description_and_notes_combined(self):
+        """description と notes が結合されて raw_text になる。"""
+        data = {
+            "totalResults": 1,
+            "results": [
+                {
+                    "id": "combo1",
+                    "title": "Combined Work",
+                    "description": "A detailed description.",
+                    "notes": [
+                        {"contents": "Additional context from notes."},
+                    ],
+                    "production": [],
+                    "languages": [{"id": "eng"}],
+                }
+            ],
+        }
+        result = _parse_wellcome_response(data, keywords=["test"])
+        doc = result.documents[0]
+        assert doc.raw_text == "A detailed description. Additional context from notes."
+
+    def test_no_notes_backward_compat(self):
+        """notes がない場合は description のみで raw_text が設定される。"""
+        data = {
+            "totalResults": 1,
+            "results": [
+                {
+                    "id": "nonote1",
+                    "title": "No Notes Work",
+                    "description": "Only description here.",
+                    "production": [],
+                    "languages": [{"id": "eng"}],
+                }
+            ],
+        }
+        result = _parse_wellcome_response(data, keywords=["test"])
+        doc = result.documents[0]
+        assert doc.raw_text == "Only description here."
+
+    def test_no_description_no_notes(self):
+        """description も notes もない場合は raw_text が None。"""
+        data = {
+            "totalResults": 1,
+            "results": [
+                {
+                    "id": "empty1",
+                    "title": "Empty Work",
+                    "description": None,
+                    "production": [],
+                    "languages": [{"id": "eng"}],
+                }
+            ],
+        }
+        result = _parse_wellcome_response(data, keywords=["test"])
+        doc = result.documents[0]
+        assert doc.raw_text is None
+
+    def test_raw_text_truncated_at_5000(self):
+        """raw_text が5000文字で切り詰められる。"""
+        long_note = "A" * 6000
+        data = {
+            "totalResults": 1,
+            "results": [
+                {
+                    "id": "long1",
+                    "title": "Long Work",
+                    "description": None,
+                    "notes": [{"contents": long_note}],
+                    "production": [],
+                    "languages": [{"id": "eng"}],
+                }
+            ],
+        }
+        result = _parse_wellcome_response(data, keywords=["test"])
+        doc = result.documents[0]
+        assert len(doc.raw_text) == 5000

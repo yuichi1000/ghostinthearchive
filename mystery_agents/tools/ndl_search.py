@@ -3,16 +3,29 @@
 国立国会図書館サーチの OpenSearch API を使用して
 日本語の書籍・雑誌・写本等を検索する。
 認証不要、RSS 2.0 XML レスポンス。
+
+NDL Lab API（https://lab.ndl.go.jp/）による OCR 全文テキスト取得にも対応。
 """
 
+import logging
 import re
 import xml.etree.ElementTree as ET
+
+import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
 from .source_registry import register_source
 
+logger = logging.getLogger(__name__)
+
 BASE_URL = "https://ndlsearch.ndl.go.jp/api/opensearch"
+_NDL_LAB_URL = "https://lab.ndl.go.jp/dl/api/book/layouttext/{pid}"
+
+# 全文取得の上限設定
+_MAX_FULLTEXT_FETCHES = 5
+_FULLTEXT_TIMEOUT = 15
+_MAX_TEXT_LENGTH = 5000
 
 # RSS 2.0 + Dublin Core 等の XML 名前空間
 _NS = {
@@ -27,6 +40,60 @@ _NS = {
 def _strip_html(text: str) -> str:
     """HTML タグを除去する。"""
     return re.sub(r"<[^>]+>", "", text)
+
+
+def _extract_pid(url: str) -> str | None:
+    """NDL デジタルコレクション URL から PID を抽出する。
+
+    Args:
+        url: dl.ndl.go.jp/pid/12345 形式の URL
+
+    Returns:
+        PID 文字列。抽出できない場合は None。
+    """
+    match = re.search(r"dl\.ndl\.go\.jp/pid/(\d+)", url)
+    return match.group(1) if match else None
+
+
+def _fetch_fulltext(session: requests.Session, pid: str) -> str | None:
+    """NDL Lab API で OCR 全文テキストを取得する。
+
+    NDL Lab の layouttext API は pages/blocks/lines 構造の JSON を返す。
+    各ページの各ブロックの各行からテキストを抽出して結合する。
+
+    Args:
+        session: HTTP セッション
+        pid: NDL デジタルコレクションの PID
+
+    Returns:
+        OCR テキスト（最大5000文字）。取得失敗時は None。
+    """
+    try:
+        resp = session.get(
+            _NDL_LAB_URL.format(pid=pid),
+            timeout=_FULLTEXT_TIMEOUT,
+            headers={"User-Agent": "GhostInTheArchive/1.0"},
+        )
+        if resp.status_code != 200:
+            logger.debug("NDL Lab API %d for PID %s", resp.status_code, pid)
+            return None
+
+        data = resp.json()
+        lines: list[str] = []
+        for page in data if isinstance(data, list) else [data]:
+            for block in page.get("blocks", []):
+                for line in block.get("lines", []):
+                    text = line.get("text", "")
+                    if text:
+                        lines.append(text)
+
+        if not lines:
+            return None
+        return "\n".join(lines)[:_MAX_TEXT_LENGTH]
+
+    except (requests.RequestException, ValueError, KeyError) as e:
+        logger.debug("NDL Lab 全文取得失敗 (PID %s): %s", pid, e)
+        return None
 
 
 class NDLSearchSource(ArchiveSource):
@@ -85,6 +152,9 @@ class NDLSearchSource(ArchiveSource):
         total_hits = int(total_el.text) if total_el is not None and total_el.text else 0
 
         documents = []
+        # 全文取得対象の (index, pid) ペア
+        fulltext_targets: list[tuple[int, str]] = []
+
         for item in channel.findall("item"):
             title_el = item.find("title")
             title = title_el.text if title_el is not None and title_el.text else "Unknown Title"
@@ -126,10 +196,22 @@ class NDLSearchSource(ArchiveSource):
                 language=SourceLanguage.JA,
                 location=str(location)[:200],
                 source_type=self.source_type,
-                raw_text=None,  # NDL は全文テキスト提供なし
+                raw_text=None,
                 keywords_matched=matched,
             )
             documents.append(doc)
+
+            # PID が抽出できる場合は全文取得候補に追加（上位5件まで）
+            pid = _extract_pid(source_url)
+            if pid and len(fulltext_targets) < _MAX_FULLTEXT_FETCHES:
+                fulltext_targets.append((len(documents) - 1, pid))
+
+        # 全文テキストエンリッチメント（ベストエフォート）
+        for idx, pid in fulltext_targets:
+            self._rate_limit()
+            text = _fetch_fulltext(self._session, pid)
+            if text:
+                documents[idx].raw_text = text
 
         return ArchiveSearchResult(documents=documents, total_hits=total_hits)
 
