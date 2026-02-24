@@ -225,9 +225,10 @@ class TestRemoveBackground:
     """Tests for _remove_background()."""
 
     def test_returns_original_path_on_error(self):
-        """ファイルが存在しない場合、元のパスをフォールバックで返す。"""
-        result = _remove_background("/nonexistent/path.png")
-        assert result == "/nonexistent/path.png"
+        """ファイルが存在しない場合、元のパスと False をフォールバックで返す。"""
+        path, success = _remove_background("/nonexistent/path.png")
+        assert path == "/nonexistent/path.png"
+        assert success is False
 
     @patch("google.genai.Client")
     def test_replaces_magenta_with_transparency(self, mock_client_cls, tmp_path):
@@ -260,9 +261,10 @@ class TestRemoveBackground:
         mock_client.models.edit_image.return_value = mock_response
         mock_client_cls.return_value = mock_client
 
-        result = _remove_background(filepath)
+        path, success = _remove_background(filepath)
 
-        assert result == filepath
+        assert path == filepath
+        assert success is True
 
         # 結果画像を検証
         result_img = PILImage.open(filepath).convert("RGBA")
@@ -288,9 +290,10 @@ class TestRemoveBackground:
         mock_client.models.edit_image.return_value = mock_response
         mock_client_cls.return_value = mock_client
 
-        result = _remove_background(filepath)
+        path, success = _remove_background(filepath)
 
-        assert result == filepath
+        assert path == filepath
+        assert success is False
 
     @patch(_PATCH_GENERATE_IMAGE)
     @patch("alchemist_agents.tools.render_tools._remove_background")
@@ -300,7 +303,7 @@ class TestRemoveBackground:
             "status": "success",
             "filepath": "/tmp/test.png",
         })
-        mock_remove_bg.return_value = "/tmp/test.png"
+        mock_remove_bg.return_value = ("/tmp/test.png", True)
 
         result_json = generate_design_asset(
             prompt="Test", product_type="tshirt",
@@ -322,3 +325,52 @@ class TestRemoveBackground:
         generate_design_asset(prompt="Test", product_type="tshirt")
 
         mock_remove_bg.assert_not_called()
+
+    @patch(_PATCH_GENERATE_IMAGE)
+    @patch("alchemist_agents.tools.render_tools._remove_background")
+    def test_transparent_background_false_when_removal_fails(self, mock_remove_bg, mock_gen):
+        """背景透過に失敗した場合、transparent_background が False になる。"""
+        mock_gen.return_value = json.dumps({
+            "status": "success",
+            "filepath": "/tmp/test.png",
+        })
+        mock_remove_bg.return_value = ("/tmp/test.png", False)
+
+        result_json = generate_design_asset(
+            prompt="Test", product_type="tshirt",
+        )
+        result = json.loads(result_json)
+
+        mock_remove_bg.assert_called_once_with("/tmp/test.png")
+        assert result["transparent_background"] is False
+
+    @patch("google.genai.Client")
+    def test_returns_false_when_no_transparent_pixels(self, mock_client_cls, tmp_path):
+        """マゼンタなし画像では透過ピクセルが0で False を返す。"""
+        from PIL import Image as PILImage
+        import io
+
+        # マゼンタを含まない画像（全面赤）
+        img = PILImage.new("RGB", (10, 10), (255, 0, 0))
+        filepath = str(tmp_path / "no_magenta.png")
+        img.save(filepath, "PNG")
+
+        # Edit API が返す画像もマゼンタなし（同じ赤画像）
+        buf = io.BytesIO()
+        img.save(buf, "PNG")
+        edited_bytes = buf.getvalue()
+
+        mock_image = MagicMock()
+        mock_image.image_bytes = edited_bytes
+
+        mock_response = MagicMock()
+        mock_response.generated_images = [MagicMock(image=mock_image)]
+
+        mock_client = MagicMock()
+        mock_client.models.edit_image.return_value = mock_response
+        mock_client_cls.return_value = mock_client
+
+        path, success = _remove_background(filepath)
+
+        assert path == filepath
+        assert success is False
