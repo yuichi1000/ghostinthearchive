@@ -27,14 +27,14 @@ export function ArchiveImage({ src, alt, lang }: ArchiveImageProps) {
   const label = IMAGE_LABEL[lang] || IMAGE_LABEL.en
 
   return (
-    <figure className="not-prose my-8 mx-auto max-w-xl">
+    <figure className="not-prose my-8 mx-auto w-fit max-w-3xl">
       <div className="aged-card letterpress-border rounded-sm overflow-hidden">
         <img
           src={src}
           alt={alt || label}
           loading="lazy"
           onError={() => setHasError(true)}
-          className="w-full h-auto"
+          className="h-auto max-w-full"
         />
       </div>
       {alt && (

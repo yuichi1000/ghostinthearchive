@@ -40,14 +40,14 @@ function PreviewArchiveImage({ src, alt }: { src?: string; alt?: string }) {
   const [hasError, setHasError] = useState(false)
   if (!src || hasError) return null
   return (
-    <figure className="not-prose my-8 mx-auto max-w-xl">
+    <figure className="not-prose my-8 mx-auto w-fit max-w-3xl">
       <div className="aged-card letterpress-border rounded-sm overflow-hidden">
         <img
           src={src}
           alt={alt || "Archival Image"}
           loading="lazy"
           onError={() => setHasError(true)}
-          className="w-full h-auto"
+          className="h-auto max-w-full"
         />
       </div>
       {alt && (
