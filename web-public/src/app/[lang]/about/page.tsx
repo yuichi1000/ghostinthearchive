@@ -56,21 +56,25 @@ export default async function AboutPage({
         <Hero dict={dict} />
 
         {/* ヒーロー画像バナー */}
-        <section className="relative overflow-hidden max-h-[400px]">
-          <picture>
-            <source media="(max-width: 640px)" srcSet="/images/hero-bg_sm.webp" type="image/webp" />
-            <source media="(max-width: 828px)" srcSet="/images/hero-bg_md.webp" type="image/webp" />
-            <source media="(max-width: 1200px)" srcSet="/images/hero-bg_lg.webp" type="image/webp" />
-            <source media="(min-width: 1201px)" srcSet="/images/hero-bg_xl.webp" type="image/webp" />
-            <img
-              src="/images/hero-bg_xl.webp"
-              alt="Ghost in the Archive"
-              className="w-full h-full object-cover"
-              fetchPriority="high"
-            />
-          </picture>
-
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
+        <section className="py-4">
+          <div className="container mx-auto px-4">
+            <div className="relative max-w-4xl mx-auto rounded-sm overflow-hidden border border-border/50">
+              <picture>
+                <source media="(max-width: 640px)" srcSet="/images/hero-bg_sm.webp" type="image/webp" />
+                <source media="(max-width: 828px)" srcSet="/images/hero-bg_md.webp" type="image/webp" />
+                <source media="(max-width: 1200px)" srcSet="/images/hero-bg_lg.webp" type="image/webp" />
+                <source media="(min-width: 1201px)" srcSet="/images/hero-bg_xl.webp" type="image/webp" />
+                <img
+                  src="/images/hero-bg_xl.webp"
+                  alt="Ghost in the Archive"
+                  className="w-full h-auto"
+                  fetchPriority="high"
+                />
+              </picture>
+              <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-background to-transparent pointer-events-none" />
+            </div>
+          </div>
         </section>
 
         {/* Concept */}

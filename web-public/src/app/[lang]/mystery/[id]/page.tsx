@@ -194,17 +194,19 @@ export default async function MysteryDetailPage({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Main content */}
             <div className="lg:col-span-2 space-y-12">
-              {/* Hero image — グリッド内に配置して PC 時は高さ制限 */}
+              {/* Hero image — 学術書の図版のようなフレーミング */}
               {mystery.images?.hero && (
-                <div className="rounded-sm overflow-hidden border border-border lg:max-h-[400px]">
-                  <ResponsiveHeroImage
-                    hero={mystery.images.hero}
-                    variants={mystery.images.variants}
-                    alt={title}
-                    priority
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                <figure className="mx-auto max-w-2xl">
+                  <div className="aged-card letterpress-border rounded-sm overflow-hidden">
+                    <ResponsiveHeroImage
+                      hero={mystery.images.hero}
+                      variants={mystery.images.variants}
+                      alt={title}
+                      priority
+                      className="w-full h-auto"
+                    />
+                  </div>
+                </figure>
               )}
 
               <NarrativeSection narrativeContent={narrativeContent} summary={summary} lang={lang} />
