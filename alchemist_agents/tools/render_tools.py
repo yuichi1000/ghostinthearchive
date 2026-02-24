@@ -24,13 +24,14 @@ PRODUCT_ASPECT_RATIOS = {
 }
 
 
-def _remove_background(filepath: str) -> str:
+def _remove_background(filepath: str) -> tuple[str, bool]:
     """Imagen Edit API でマゼンタ背景置換 → PIL クロマキーで透過 PNG に変換する。
 
     処理フロー:
     1. Imagen Edit API (MASK_MODE_BACKGROUND + EDIT_MODE_BGSWAP) で背景をマゼンタに置換
     2. PIL で マゼンタ (#FF00FF) ピクセルを透明化（閾値処理でアンチエイリアス保全）
     3. 透過 PNG を上書き保存
+    4. 透過ピクセルが実際に存在するか検証
 
     エラー時は元の不透過画像パスをそのまま返す（フェイルオープン）。
 
@@ -38,7 +39,7 @@ def _remove_background(filepath: str) -> str:
         filepath: 元画像の絶対パス。
 
     Returns:
-        透過 PNG のパス（成功時は同じパス、失敗時も同じパス）。
+        (パス, 透過成功フラグ) のタプル。成功時は (filepath, True)、失敗時は (filepath, False)。
     """
     try:
         from google import genai
@@ -88,7 +89,7 @@ def _remove_background(filepath: str) -> str:
 
         if not response.generated_images:
             logger.warning("背景置換: 生成画像なし、元画像を維持: %s", filepath)
-            return filepath
+            return filepath, False
 
         # 生成画像を取得
         edited_bytes = response.generated_images[0].image.image_bytes
@@ -107,12 +108,18 @@ def _remove_background(filepath: str) -> str:
         result = PILImage.fromarray(data)
         result.save(filepath, "PNG")
 
-        logger.info("背景透過完了: %s", filepath)
-        return filepath
+        # 透過ピクセルが実際に存在するか検証
+        transparent_count = int(np.sum(data[:, :, 3] == 0))
+        if transparent_count == 0:
+            logger.warning("背景透過: 透過ピクセルなし、背景除去は無効: %s", filepath)
+            return filepath, False
+
+        logger.info("背景透過完了: %s (透過ピクセル数: %d)", filepath, transparent_count)
+        return filepath, True
 
     except Exception as e:
         logger.warning("背景透過処理に失敗、元画像を維持: %s — %s", filepath, e)
-        return filepath
+        return filepath, False
 
 
 def generate_design_asset(
@@ -188,8 +195,8 @@ def generate_design_asset(
     # 背景透過処理（生成成功時のみ）
     if result.get("status") == "success" and result.get("filepath"):
         original_path = result["filepath"]
-        result["filepath"] = _remove_background(original_path)
-        result["transparent_background"] = True
+        result["filepath"], bg_removed = _remove_background(original_path)
+        result["transparent_background"] = bg_removed
 
     # セッション状態に累積保存
     if tool_context is not None:
