@@ -28,8 +28,9 @@ import { extractHeadings } from "@/lib/markdown-headings"
 import { stripLeadingH1 } from "@ghost/shared/src/lib/utils"
 import type { TocSection } from "@/lib/toc-config"
 
-// SSG: ビルド時に生成されたページ以外は 404
-export const dynamicParams = false
+// SSG: 本番ビルドではビルド時に生成されたページ以外は 404
+// dev モードでは Firestore 初回接続遅延による 404 を防ぐため動的レンダリングを許可
+export const dynamicParams = process.env.NODE_ENV === "production" ? false : true
 
 export async function generateStaticParams() {
   let ids: string[]
