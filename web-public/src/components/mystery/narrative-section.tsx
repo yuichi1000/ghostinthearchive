@@ -64,6 +64,12 @@ export function NarrativeSection({ narrativeContent, summary, lang = "en" }: Nar
       img: ({ src, alt }) => (
         <ArchiveImage src={src} alt={alt} lang={lang} />
       ),
+      p: ({ children, node }) => {
+        const hasImage = node?.children?.some(
+          (child: any) => child.type === "element" && child.tagName === "img"
+        )
+        return hasImage ? <>{children}</> : <p>{children}</p>
+      },
       h2: ({ children }) => {
         const text = getTextContent(children)
         // 空スラグのフォールバック（Unicode 対応で解消済みだが安全策）
