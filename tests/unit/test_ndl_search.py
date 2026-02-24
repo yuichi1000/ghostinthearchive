@@ -2,7 +2,14 @@
 
 import responses
 
-from mystery_agents.tools.ndl_search import BASE_URL, NDLSearchSource, _strip_html
+from mystery_agents.tools.ndl_search import (
+    BASE_URL,
+    NDLSearchSource,
+    _NDL_LAB_URL,
+    _extract_pid,
+    _fetch_fulltext,
+    _strip_html,
+)
 
 
 # NDL OpenSearch API の RSS 2.0 レスポンス（テスト用）
@@ -189,6 +196,194 @@ class TestNDLSearchSource:
         assert source.is_newspaper_source is False
         assert source.env_var_key is None
         assert source.min_request_delay == 1.0
+
+
+class TestExtractPid:
+    """Tests for _extract_pid helper."""
+
+    def test_extracts_from_dl_url(self):
+        """dl.ndl.go.jp URL から PID を抽出する。"""
+        assert _extract_pid("https://dl.ndl.go.jp/pid/12345") == "12345"
+
+    def test_extracts_from_url_with_suffix(self):
+        """PID 後にパスが続く場合も抽出可能。"""
+        assert _extract_pid("https://dl.ndl.go.jp/pid/99999/1/1") == "99999"
+
+    def test_returns_none_for_catalog_url(self):
+        """カタログ URL からは PID を抽出できない。"""
+        assert _extract_pid("https://ndlsearch.ndl.go.jp/books/R100000002-I000") is None
+
+    def test_returns_none_for_empty(self):
+        """空文字列は None。"""
+        assert _extract_pid("") is None
+
+    def test_returns_none_for_unrelated_url(self):
+        """無関係な URL は None。"""
+        assert _extract_pid("https://example.com/pid/12345") is None
+
+
+class TestFetchFulltext:
+    """Tests for _fetch_fulltext."""
+
+    @responses.activate
+    def test_successful_fetch(self):
+        """正常な layouttext レスポンスからテキストを抽出する。"""
+        lab_url = _NDL_LAB_URL.format(pid="12345")
+        mock_data = [
+            {
+                "blocks": [
+                    {
+                        "lines": [
+                            {"text": "怪談牡丹燈籠"},
+                            {"text": "三遊亭圓朝"},
+                        ]
+                    }
+                ]
+            },
+            {
+                "blocks": [
+                    {
+                        "lines": [
+                            {"text": "第一話"},
+                        ]
+                    }
+                ]
+            },
+        ]
+        responses.add(responses.GET, lab_url, json=mock_data, status=200)
+
+        from shared.http_retry import create_retry_session
+
+        session = create_retry_session()
+        text = _fetch_fulltext(session, "12345")
+
+        assert text is not None
+        assert "怪談牡丹燈籠" in text
+        assert "三遊亭圓朝" in text
+        assert "第一話" in text
+
+    @responses.activate
+    def test_404_returns_none(self):
+        """404 レスポンスは None を返す。"""
+        lab_url = _NDL_LAB_URL.format(pid="99999")
+        responses.add(responses.GET, lab_url, body="Not Found", status=404)
+
+        from shared.http_retry import create_retry_session
+
+        session = create_retry_session()
+        assert _fetch_fulltext(session, "99999") is None
+
+    @responses.activate
+    def test_timeout_returns_none(self):
+        """タイムアウトは None を返す。"""
+        import requests as req
+
+        lab_url = _NDL_LAB_URL.format(pid="11111")
+        responses.add(
+            responses.GET, lab_url, body=req.exceptions.Timeout("timeout")
+        )
+
+        from shared.http_retry import create_retry_session
+
+        session = create_retry_session()
+        assert _fetch_fulltext(session, "11111") is None
+
+    @responses.activate
+    def test_truncated_at_5000(self):
+        """テキストが5000文字で切り詰められる。"""
+        lab_url = _NDL_LAB_URL.format(pid="22222")
+        # 6000文字のテキストを含む1行
+        long_text = "あ" * 6000
+        mock_data = [{"blocks": [{"lines": [{"text": long_text}]}]}]
+        responses.add(responses.GET, lab_url, json=mock_data, status=200)
+
+        from shared.http_retry import create_retry_session
+
+        session = create_retry_session()
+        text = _fetch_fulltext(session, "22222")
+
+        assert text is not None
+        assert len(text) == 5000
+
+
+class TestNDLFulltextEnrichment:
+    """検索 + 全文エンリッチメント統合テスト。"""
+
+    @responses.activate
+    def test_search_with_fulltext_enrichment(self):
+        """PID ありの結果に全文テキストが付与される。"""
+        # 検索 API
+        responses.add(responses.GET, BASE_URL, body=_SAMPLE_RSS, status=200)
+        # Lab API（PID 12345）
+        lab_url = _NDL_LAB_URL.format(pid="12345")
+        mock_data = [{"blocks": [{"lines": [{"text": "OCR全文テキスト"}]}]}]
+        responses.add(responses.GET, lab_url, json=mock_data, status=200)
+
+        source = NDLSearchSource()
+        result = source.search(keywords=["怪談"])
+
+        assert len(result.documents) == 1
+        assert result.documents[0].raw_text == "OCR全文テキスト"
+
+    @responses.activate
+    def test_fulltext_failure_preserves_document(self):
+        """全文取得失敗でもドキュメントは保持される（raw_text=None）。"""
+        responses.add(responses.GET, BASE_URL, body=_SAMPLE_RSS, status=200)
+        lab_url = _NDL_LAB_URL.format(pid="12345")
+        responses.add(responses.GET, lab_url, body="Error", status=500)
+
+        source = NDLSearchSource()
+        result = source.search(keywords=["怪談"])
+
+        assert len(result.documents) == 1
+        assert result.documents[0].raw_text is None
+
+    @responses.activate
+    def test_max_5_fulltext_fetches(self):
+        """全文取得は最大5件まで。"""
+        # 7件のアイテムを含む RSS を作成（全て PID あり）
+        items = ""
+        for i in range(7):
+            items += f"""
+            <item>
+              <title>書籍{i}</title>
+              <rdfs:seeAlso rdf:resource="https://dl.ndl.go.jp/pid/{10000 + i}" />
+              <dc:date>1900</dc:date>
+              <dc:description>説明{i}</dc:description>
+            </item>"""
+
+        rss = f"""<?xml version="1.0" encoding="UTF-8"?>
+        <rss version="2.0"
+          xmlns:dc="http://purl.org/dc/elements/1.1/"
+          xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
+          xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+          xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+          <channel>
+            <openSearch:totalResults>7</openSearch:totalResults>
+            {items}
+          </channel>
+        </rss>"""
+
+        responses.add(responses.GET, BASE_URL, body=rss, status=200)
+
+        # Lab API（全件成功）
+        for i in range(7):
+            lab_url = _NDL_LAB_URL.format(pid=str(10000 + i))
+            mock_data = [{"blocks": [{"lines": [{"text": f"テキスト{i}"}]}]}]
+            responses.add(responses.GET, lab_url, json=mock_data, status=200)
+
+        source = NDLSearchSource()
+        result = source.search(keywords=["書籍"])
+
+        assert len(result.documents) == 7
+        # 上位5件のみ全文取得（Lab API へのリクエスト数で確認）
+        # 検索1回 + Lab 5回 = 6回
+        assert len(responses.calls) == 6
+        # 5件目までは raw_text あり、6-7件目は None
+        for i in range(5):
+            assert result.documents[i].raw_text is not None
+        for i in range(5, 7):
+            assert result.documents[i].raw_text is None
 
 
 class TestStripHtml:

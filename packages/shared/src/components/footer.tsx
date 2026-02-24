@@ -28,7 +28,6 @@ const PRIMARY_SOURCES = [
   // アジア太平洋
   { label: "NDL Search（国立国会図書館）", href: "https://ndlsearch.ndl.go.jp/" },
   { label: "Trove", href: "https://trove.nla.gov.au/", pending: true },
-  { label: "DigitalNZ", href: "https://digitalnz.org/" },
   // グローバル
   { label: "Internet Archive", href: "https://archive.org/" },
 ] as const

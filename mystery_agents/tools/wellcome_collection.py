@@ -130,7 +130,20 @@ def _parse_wellcome_response(
 
         title = work.get("title", "Unknown Title")
         description = _strip_html(work.get("description"))
+
+        # notes フィールドから補足テキストを抽出
+        notes_parts: list[str] = []
+        for note in work.get("notes", []):
+            note_text = _strip_html(note.get("contents", ""))
+            if note_text:
+                notes_parts.append(note_text)
+        notes_text = " ".join(notes_parts)
+
         summary_text = description or title
+
+        # description + notes を結合して raw_text に設定
+        raw_text_parts = [p for p in [description, notes_text] if p]
+        raw_text = " ".join(raw_text_parts)[:5000] if raw_text_parts else None
 
         date_label = _extract_date_label(work)
         parsed_date = ArchiveSource.parse_year(date_label) if date_label else None
@@ -151,7 +164,7 @@ def _parse_wellcome_response(
             language=language,
             location=str(location)[:200],
             source_type="wellcome",
-            raw_text=None,  # Catalogue API は全文テキスト非提供
+            raw_text=raw_text,
             keywords_matched=matched,
         )
         documents.append(doc)
@@ -187,7 +200,7 @@ class WellcomeSource(ArchiveSource):
         params: dict[str, str | int] = {
             "query": search_text,
             "pageSize": min(max_results, 100),
-            "include": "subjects,genres,contributors,production,languages",
+            "include": "subjects,genres,contributors,production,languages,notes",
         }
 
         # 日付フィルタ（YYYY-MM-DD 形式）
