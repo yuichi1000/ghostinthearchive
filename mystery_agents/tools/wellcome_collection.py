@@ -209,6 +209,7 @@ class WellcomeSource(ArchiveSource):
         }
 
         # 日付フィルタ（YYYY-MM-DD 形式）
+        has_date_filter = bool(date_start or date_end)
         if date_start:
             params["production.dates.from"] = f"{date_start[:4]}-01-01"
         if date_end:
@@ -231,7 +232,32 @@ class WellcomeSource(ArchiveSource):
         )
         response.raise_for_status()
 
-        return _parse_wellcome_response(response.json(), keywords)
+        result = _parse_wellcome_response(response.json(), keywords)
+
+        # 日付フィルタ付きで 0 件の場合、日付フィルタなしで再検索する
+        # Wellcome の歴史資料は日付メタデータが不完全なことが多い
+        if not result.documents and has_date_filter:
+            logger.info(
+                "Wellcome 日付フィルタフォールバック: 日付フィルタ(%s〜%s)で 0 件 → 日付なしで再検索",
+                date_start,
+                date_end,
+            )
+            params_no_date = {
+                k: v
+                for k, v in params.items()
+                if k not in ("production.dates.from", "production.dates.to")
+            }
+            self._rate_limit()
+            response = self._session.get(
+                BASE_URL,
+                params=params_no_date,
+                headers=headers,
+                timeout=30,
+            )
+            response.raise_for_status()
+            result = _parse_wellcome_response(response.json(), keywords)
+
+        return result
 
 
 # レジストリに自動登録

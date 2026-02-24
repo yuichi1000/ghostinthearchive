@@ -435,3 +435,114 @@ class TestNotesToRawText:
         result = _parse_wellcome_response(data, keywords=["test"])
         doc = result.documents[0]
         assert len(doc.raw_text) == 5000
+
+
+class TestDateFilterFallback:
+    """日付フィルタのフォールバック機構テスト。"""
+
+    @responses.activate
+    def test_date_filter_fallback_on_zero_results(self):
+        """日付フィルタ付きで 0 件 → 日付フィルタなしで再検索する。"""
+        # 1 回目: 日付フィルタ付き → 0 件
+        responses.add(
+            responses.GET,
+            BASE_URL,
+            json=MOCK_EMPTY_RESPONSE,
+            status=200,
+        )
+        # 2 回目: 日付フィルタなし → 結果あり
+        responses.add(
+            responses.GET,
+            BASE_URL,
+            json=MOCK_RESPONSE,
+            status=200,
+        )
+
+        source = WellcomeSource()
+        result = source.search(
+            keywords=["witchcraft"],
+            date_start="1650",
+            date_end="1850",
+        )
+
+        # フォールバックで結果が取得される
+        assert len(result.documents) == 2
+        assert result.total_hits == 2
+
+        # 2 回リクエストされた
+        assert len(responses.calls) == 2
+
+        # 1 回目: 日付フィルタあり
+        first_request = responses.calls[0].request
+        assert "production.dates.from=1650-01-01" in first_request.url
+
+        # 2 回目: 日付フィルタなし
+        second_request = responses.calls[1].request
+        assert "production.dates.from" not in second_request.url
+        assert "production.dates.to" not in second_request.url
+
+    @responses.activate
+    def test_no_fallback_when_results_found(self):
+        """日付フィルタ付きで結果がある場合、再検索しない。"""
+        responses.add(
+            responses.GET,
+            BASE_URL,
+            json=MOCK_RESPONSE,
+            status=200,
+        )
+
+        source = WellcomeSource()
+        result = source.search(
+            keywords=["witchcraft"],
+            date_start="1650",
+            date_end="1850",
+        )
+
+        assert len(result.documents) == 2
+        # 1 回のみリクエスト
+        assert len(responses.calls) == 1
+
+    @responses.activate
+    def test_no_fallback_without_date_filter(self):
+        """日付フィルタなしの検索で 0 件でも再検索しない。"""
+        responses.add(
+            responses.GET,
+            BASE_URL,
+            json=MOCK_EMPTY_RESPONSE,
+            status=200,
+        )
+
+        source = WellcomeSource()
+        result = source.search(keywords=["nonexistent"])
+
+        assert len(result.documents) == 0
+        # 1 回のみリクエスト
+        assert len(responses.calls) == 1
+
+    @responses.activate
+    def test_fallback_also_zero_returns_empty(self):
+        """フォールバック検索も 0 件の場合は空を返す。"""
+        # 両方 0 件
+        responses.add(
+            responses.GET,
+            BASE_URL,
+            json=MOCK_EMPTY_RESPONSE,
+            status=200,
+        )
+        responses.add(
+            responses.GET,
+            BASE_URL,
+            json=MOCK_EMPTY_RESPONSE,
+            status=200,
+        )
+
+        source = WellcomeSource()
+        result = source.search(
+            keywords=["obscure_term"],
+            date_start="1650",
+            date_end="1850",
+        )
+
+        assert len(result.documents) == 0
+        # 2 回リクエスト（フォールバック含む）
+        assert len(responses.calls) == 2

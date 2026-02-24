@@ -64,8 +64,8 @@ class TestSearchEuropeana:
         assert "europeana.eu" in doc.source_url
 
     @responses.activate
-    def test_language_filter(self):
-        """language パラメータで qf=LANGUAGE:xx が送信される。"""
+    def test_country_filter(self):
+        """language パラメータで qf=COUNTRY:germany が送信される（LANGUAGE ではなく COUNTRY）。"""
         mock_response = {"success": True, "totalResults": 0, "items": []}
         responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
 
@@ -74,7 +74,36 @@ class TestSearchEuropeana:
             source.search(keywords=["test"], language="de")
 
         request = responses.calls[0].request
-        assert "LANGUAGE%3Ade" in request.url or "LANGUAGE:de" in request.url
+        assert "COUNTRY%3Agermany" in request.url or "COUNTRY:germany" in request.url
+        # LANGUAGE フィルタは送信されないことを確認
+        assert "LANGUAGE" not in request.url
+
+    @responses.activate
+    def test_country_filter_french(self):
+        """フランス語 → COUNTRY:france で送信される。"""
+        mock_response = {"success": True, "totalResults": 0, "items": []}
+        responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
+
+        source = EuropeanaSource()
+        with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
+            source.search(keywords=["test"], language="fr")
+
+        request = responses.calls[0].request
+        assert "COUNTRY%3Afrance" in request.url or "COUNTRY:france" in request.url
+
+    @responses.activate
+    def test_unmapped_language_no_country_filter(self):
+        """マッピングにない言語（en 等）では COUNTRY フィルタが送信されない。"""
+        mock_response = {"success": True, "totalResults": 0, "items": []}
+        responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
+
+        source = EuropeanaSource()
+        with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
+            source.search(keywords=["test"], language="en")
+
+        request = responses.calls[0].request
+        assert "COUNTRY" not in request.url
+        assert "LANGUAGE" not in request.url
 
     @responses.activate
     def test_date_filter(self):
