@@ -17,7 +17,9 @@ export type ConfidenceLevel = "high" | "medium" | "low";
 
 /** ソースタイプ */
 export type SourceType = "newspaper" | "loc_digital" | "dpla" | "nypl"
-  | "pares" | "internet_archive" | "ddb";
+  | "pares" | "internet_archive" | "ddb" | "europeana" | "trove"
+  | "delpher" | "ndl" | "wellcome" | "digitalnz"
+  | "archive" | "book";
 
 /** ソース言語 */
 export type SourceLanguage = "en" | "es" | "de" | "fr" | "nl" | "pt";
