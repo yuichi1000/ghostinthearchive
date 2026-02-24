@@ -19,6 +19,7 @@ dependencies = [
     "google-cloud-texttospeech>=2.16.0",
     "pydub>=0.25.1",
     "litellm>=1.75.5",
+    "rembg[cpu]>=2.0.50",
 ]
 
 [project.optional-dependencies]

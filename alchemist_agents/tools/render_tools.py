@@ -5,12 +5,11 @@ AlchemistRenderer エージェントが使用するツール:
 
 mystery_agents/tools/illustrator_tools.py の generate_image() をラップ。
 product_type から aspect_ratio を自動決定し、セッション状態に累積保存する。
-生成後に Imagen Edit API + PIL クロマキーで背景を透過処理する。
+生成プロンプトで透過背景を指示し、透過されない場合は rembg（U2-NET）でフォールバック処理する。
 """
 
 import json
 import logging
-import os
 from typing import Optional
 
 from google.adk.tools.tool_context import ToolContext
@@ -25,13 +24,17 @@ PRODUCT_ASPECT_RATIOS = {
 
 
 def _remove_background(filepath: str) -> tuple[str, bool]:
-    """Imagen Edit API でマゼンタ背景置換 → PIL クロマキーで透過 PNG に変換する。
+    """画像の背景を透過処理する。
+
+    生成プロンプトで透過背景を指示済みのため、まず既存の透過を確認する。
+    透過ピクセルがなければ rembg（U2-NET）でフォールバック処理する。
 
     処理フロー:
-    1. Imagen Edit API (MASK_MODE_BACKGROUND + EDIT_MODE_BGSWAP) で背景をマゼンタに置換
-    2. PIL で マゼンタ (#FF00FF) ピクセルを透明化（閾値処理でアンチエイリアス保全）
-    3. 透過 PNG を上書き保存
-    4. 透過ピクセルが実際に存在するか検証
+    1. 画像を読み込み、既に透過ピクセルがあるか確認
+    2. 透過済みならそのまま成功を返す（rembg 不要）
+    3. 透過なしなら rembg.remove() で前景セグメンテーション（U2-NET モデル）
+    4. 透過 PNG を上書き保存
+    5. 透過ピクセルが実際に存在するか検証
 
     エラー時は元の不透過画像パスをそのまま返す（フェイルオープン）。
 
@@ -42,79 +45,41 @@ def _remove_background(filepath: str) -> tuple[str, bool]:
         (パス, 透過成功フラグ) のタプル。成功時は (filepath, True)、失敗時は (filepath, False)。
     """
     try:
-        from google import genai
-        from google.genai import types
         from PIL import Image as PILImage
         import numpy as np
 
-        # genai クライアント取得（illustrator_tools と同じロジック）
-        if os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").upper() == "TRUE":
-            client = genai.Client(
-                vertexai=True,
-                project=os.environ.get("GOOGLE_CLOUD_PROJECT"),
-                location=os.environ.get("GOOGLE_CLOUD_LOCATION", "asia-northeast1"),
-            )
-        else:
-            client = genai.Client()
-
         # 元画像を読み込み
-        with open(filepath, "rb") as f:
-            image_bytes = f.read()
+        input_img = PILImage.open(filepath).convert("RGBA")
+        data = np.array(input_img)
 
-        raw_ref = types.RawReferenceImage(
-            reference_image=types.Image(
-                image_bytes=image_bytes,
-                mime_type="image/png",
-            ),
-            reference_id=0,
-        )
+        # 既に透過ピクセルがあるか確認（プロンプト指示で透過済みの場合）
+        existing_transparent = int(np.sum(data[:, :, 3] == 0))
+        if existing_transparent > 0:
+            logger.info(
+                "背景透過: プロンプト指示により透過済み: %s (透過ピクセル数: %d)",
+                filepath, existing_transparent,
+            )
+            return filepath, True
 
-        mask_ref = types.MaskReferenceImage(
-            reference_id=1,
-            config=types.MaskReferenceConfig(
-                mask_mode="MASK_MODE_BACKGROUND",
-                mask_dilation=0.0,
-            ),
-        )
+        # 透過なし → rembg でフォールバック背景除去
+        logger.info("背景透過: 透過なし、rembg でフォールバック処理: %s", filepath)
+        from rembg import remove, new_session
 
-        # Imagen Edit API で背景をマゼンタに置換
-        response = client.models.edit_image(
-            model="imagen-3.0-capability-001",
-            prompt="solid pure magenta #FF00FF background, uniform flat color",
-            reference_images=[raw_ref, mask_ref],
-            config=types.EditImageConfig(
-                edit_mode="EDIT_MODE_BGSWAP",
-            ),
-        )
+        # 軽量モデル u2netp を使用（Docker ではプリダウンロード済み）
+        session = new_session("u2netp")
+        output_img = remove(input_img, session=session)
 
-        if not response.generated_images:
-            logger.warning("背景置換: 生成画像なし、元画像を維持: %s", filepath)
-            return filepath, False
-
-        # 生成画像を取得
-        edited_bytes = response.generated_images[0].image.image_bytes
-
-        # PIL でマゼンタ → 透明に変換
-        import io
-        img = PILImage.open(io.BytesIO(edited_bytes)).convert("RGBA")
-        data = np.array(img)
-
-        # マゼンタ (#FF00FF) の許容範囲検出（アンチエイリアス対応）
-        r, g, b = data[:, :, 0], data[:, :, 1], data[:, :, 2]
-        magenta_mask = (r > 200) & (g < 50) & (b > 200)
-
-        # 透明化
-        data[magenta_mask, 3] = 0
-        result = PILImage.fromarray(data)
-        result.save(filepath, "PNG")
+        # 透過 PNG を上書き保存
+        output_img.save(filepath, "PNG")
 
         # 透過ピクセルが実際に存在するか検証
-        transparent_count = int(np.sum(data[:, :, 3] == 0))
+        result_data = np.array(output_img)
+        transparent_count = int(np.sum(result_data[:, :, 3] == 0))
         if transparent_count == 0:
-            logger.warning("背景透過: 透過ピクセルなし、背景除去は無効: %s", filepath)
+            logger.warning("背景透過: rembg 後も透過ピクセルなし、背景除去は無効: %s", filepath)
             return filepath, False
 
-        logger.info("背景透過完了: %s (透過ピクセル数: %d)", filepath, transparent_count)
+        logger.info("背景透過完了(rembg): %s (透過ピクセル数: %d)", filepath, transparent_count)
         return filepath, True
 
     except Exception as e:
@@ -159,12 +124,15 @@ def generate_design_asset(
     # ファイル名ヒントを構成
     filename_hint = f"merch_{product_type}_{asset_layer}"
 
+    # 生成プロンプトに背景透過指示を追加（Imagen 3 に透過背景を促す）
+    prompt_with_bg = f"{prompt}, isolated on transparent background, no background"
+
     # Illustrator の generate_image を呼び出し
     try:
         from mystery_agents.tools.illustrator_tools import generate_image
 
         result_json = generate_image(
-            prompt=prompt,
+            prompt=prompt_with_bg,
             style=style,
             region=region,
             aspect_ratio=aspect_ratio,

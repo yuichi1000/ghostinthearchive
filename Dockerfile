@@ -16,6 +16,9 @@ COPY pyproject.toml ./
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# rembg U2-NET モデルをプリダウンロード（初回実行時の待ちを回避）
+RUN python -c "from rembg import new_session; new_session('u2netp')"
+
 # Copy source code
 COPY shared/ ./shared/
 COPY mystery_agents/ ./mystery_agents/
