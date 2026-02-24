@@ -1,7 +1,17 @@
 """Unit tests for alchemist_agents/tools/render_tools.py - generate_design_asset."""
 
 import json
+import sys
+import types as stdlib_types
 from unittest.mock import patch, MagicMock
+
+# rembg がインストールされていない環境でもテストを実行できるよう、
+# 未インストール時は mock モジュールを sys.modules に注入する
+if "rembg" not in sys.modules:
+    _mock_rembg = stdlib_types.ModuleType("rembg")
+    _mock_rembg.remove = MagicMock()
+    _mock_rembg.new_session = MagicMock()
+    sys.modules["rembg"] = _mock_rembg
 
 from alchemist_agents.tools.render_tools import (
     generate_design_asset,
@@ -230,65 +240,56 @@ class TestRemoveBackground:
         assert path == "/nonexistent/path.png"
         assert success is False
 
-    @patch("google.genai.Client")
-    def test_replaces_magenta_with_transparency(self, mock_client_cls, tmp_path):
-        """マゼンタ背景がアルファ 0 に変換される。"""
+    @patch("rembg.new_session")
+    @patch("rembg.remove")
+    def test_rembg_removes_background_successfully(self, mock_remove, mock_new_session, tmp_path):
+        """rembg が透過画像を返す正常系。"""
         from PIL import Image as PILImage
         import numpy as np
-        import io
 
-        # マゼンタ背景 + 赤い前景のテスト画像を作成
-        img = PILImage.new("RGB", (10, 10), (255, 0, 255))  # 全面マゼンタ
-        # 中央 4px を赤に（前景）
+        # テスト画像を作成（赤い前景 + 緑の背景）
+        img = PILImage.new("RGBA", (10, 10), (0, 255, 0, 255))
         for x in range(4, 6):
             for y in range(4, 6):
-                img.putpixel((x, y), (255, 0, 0))
+                img.putpixel((x, y), (255, 0, 0, 255))
         filepath = str(tmp_path / "test.png")
         img.save(filepath, "PNG")
 
-        # Edit API が返す画像バイト列（同じ画像 = 背景がマゼンタになった想定）
-        buf = io.BytesIO()
-        img.save(buf, "PNG")
-        edited_bytes = buf.getvalue()
-
-        mock_image = MagicMock()
-        mock_image.image_bytes = edited_bytes
-
-        mock_response = MagicMock()
-        mock_response.generated_images = [MagicMock(image=mock_image)]
-
-        mock_client = MagicMock()
-        mock_client.models.edit_image.return_value = mock_response
-        mock_client_cls.return_value = mock_client
+        # rembg が返す透過済み画像（背景=透明、前景=赤）
+        output_img = PILImage.new("RGBA", (10, 10), (0, 0, 0, 0))
+        for x in range(4, 6):
+            for y in range(4, 6):
+                output_img.putpixel((x, y), (255, 0, 0, 255))
+        mock_remove.return_value = output_img
+        mock_new_session.return_value = MagicMock()
 
         path, success = _remove_background(filepath)
 
         assert path == filepath
         assert success is True
+        mock_new_session.assert_called_once_with("u2netp")
 
         # 結果画像を検証
         result_img = PILImage.open(filepath).convert("RGBA")
         data = np.array(result_img)
+        assert data[0, 0, 3] == 0       # 背景 → 透明
+        assert data[4, 4, 3] == 255     # 前景 → 不透明
 
-        # マゼンタ領域（背景）は透明になっている
-        assert data[0, 0, 3] == 0  # 左上（元マゼンタ）→ 透明
-        # 赤い領域（前景）は不透明のまま
-        assert data[4, 4, 3] == 255  # 中央（赤）→ 不透明
-
-    @patch("google.genai.Client")
-    def test_returns_original_on_empty_response(self, mock_client_cls, tmp_path):
-        """Edit API が空レスポンスを返した場合、元画像を維持する。"""
+    @patch("rembg.new_session")
+    @patch("rembg.remove")
+    def test_rembg_returns_false_when_no_transparent_pixels(self, mock_remove, mock_new_session, tmp_path):
+        """rembg が透過なし画像を返す場合、False を返す。"""
         from PIL import Image as PILImage
 
+        # テスト画像を作成
+        img = PILImage.new("RGBA", (10, 10), (255, 0, 0, 255))
         filepath = str(tmp_path / "test.png")
-        PILImage.new("RGB", (4, 4), (100, 100, 100)).save(filepath, "PNG")
+        img.save(filepath, "PNG")
 
-        mock_response = MagicMock()
-        mock_response.generated_images = []
-
-        mock_client = MagicMock()
-        mock_client.models.edit_image.return_value = mock_response
-        mock_client_cls.return_value = mock_client
+        # rembg が透過ピクセルなしの画像を返す（背景除去に失敗した想定）
+        output_img = PILImage.new("RGBA", (10, 10), (255, 0, 0, 255))
+        mock_remove.return_value = output_img
+        mock_new_session.return_value = MagicMock()
 
         path, success = _remove_background(filepath)
 
@@ -344,33 +345,11 @@ class TestRemoveBackground:
         mock_remove_bg.assert_called_once_with("/tmp/test.png")
         assert result["transparent_background"] is False
 
-    @patch("google.genai.Client")
-    def test_returns_false_when_no_transparent_pixels(self, mock_client_cls, tmp_path):
-        """マゼンタなし画像では透過ピクセルが0で False を返す。"""
-        from PIL import Image as PILImage
-        import io
+    def test_returns_false_on_import_error(self):
+        """rembg 未インストール時のフェイルオープン。"""
+        # rembg モジュールを一時的に無効化して ImportError を発生させる
+        with patch.dict(sys.modules, {"rembg": None}):
+            path, success = _remove_background("/tmp/test.png")
 
-        # マゼンタを含まない画像（全面赤）
-        img = PILImage.new("RGB", (10, 10), (255, 0, 0))
-        filepath = str(tmp_path / "no_magenta.png")
-        img.save(filepath, "PNG")
-
-        # Edit API が返す画像もマゼンタなし（同じ赤画像）
-        buf = io.BytesIO()
-        img.save(buf, "PNG")
-        edited_bytes = buf.getvalue()
-
-        mock_image = MagicMock()
-        mock_image.image_bytes = edited_bytes
-
-        mock_response = MagicMock()
-        mock_response.generated_images = [MagicMock(image=mock_image)]
-
-        mock_client = MagicMock()
-        mock_client.models.edit_image.return_value = mock_response
-        mock_client_cls.return_value = mock_client
-
-        path, success = _remove_background(filepath)
-
-        assert path == filepath
+        assert path == "/tmp/test.png"
         assert success is False
