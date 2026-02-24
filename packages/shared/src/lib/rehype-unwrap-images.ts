@@ -20,23 +20,29 @@ export function rehypeUnwrapImages() {
   return (tree: HastNode) => {
     function walk(node: HastNode) {
       if (!node.children) return
-      for (let i = 0; i < node.children.length; i++) {
-        const child = node.children[i]
+      // 新配列を構築して置換（splice によるインデックスずれを回避）
+      const newChildren: HastNode[] = []
+      for (const child of node.children) {
         if (child.type === "element" && child.tagName === "p") {
           // 空白テキストノードを除外し、意味のあるノードのみ抽出
           const meaningful = (child.children || []).filter(
             (c) => !(c.type === "text" && !c.value?.trim())
           )
+          // 画像のみで構成された段落なら <p> を除去し、画像を直接展開
           if (
-            meaningful.length === 1 &&
-            meaningful[0].type === "element" &&
-            meaningful[0].tagName === "img"
+            meaningful.length >= 1 &&
+            meaningful.every(
+              (c) => c.type === "element" && c.tagName === "img"
+            )
           ) {
-            node.children[i] = meaningful[0]
+            newChildren.push(...meaningful)
+            continue
           }
         }
+        newChildren.push(child)
         walk(child)
       }
+      node.children = newChildren
     }
     walk(tree)
   }
