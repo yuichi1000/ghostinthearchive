@@ -8,8 +8,16 @@ from unittest.mock import MagicMock
 
 from mystery_agents.tools.scholar_tools import (
     _validate_evidence,
+    _validate_evidence_grounding,
     save_structured_report,
 )
+
+
+def _make_ctx(state: dict | None = None) -> MagicMock:
+    """inventory 参照済みフラグ付きのモック ToolContext を作成する。"""
+    ctx = MagicMock()
+    ctx.state = {"_inventory_consulted": True, **(state or {})}
+    return ctx
 
 
 class TestSaveStructuredReport:
@@ -30,8 +38,7 @@ class TestSaveStructuredReport:
         }
         report_json = json.dumps(report_data)
 
-        mock_tool_context = MagicMock()
-        mock_tool_context.state = {}
+        mock_tool_context = _make_ctx()
 
         result = save_structured_report(report_json, mock_tool_context)
         result_data = json.loads(result)
@@ -49,8 +56,7 @@ class TestSaveStructuredReport:
         }
         report_json = json.dumps(report_data)
 
-        mock_tool_context = MagicMock()
-        mock_tool_context.state = {}
+        mock_tool_context = _make_ctx()
 
         result = save_structured_report(report_json, mock_tool_context)
         result_data = json.loads(result)
@@ -59,8 +65,7 @@ class TestSaveStructuredReport:
 
     def test_handles_invalid_json(self):
         """Should return error for invalid JSON input."""
-        mock_tool_context = MagicMock()
-        mock_tool_context.state = {}
+        mock_tool_context = _make_ctx()
 
         result = save_structured_report("not valid json", mock_tool_context)
         result_data = json.loads(result)
@@ -71,10 +76,9 @@ class TestSaveStructuredReport:
 
     def test_overwrites_previous_report(self):
         """Should overwrite any previous structured_report in state."""
-        mock_tool_context = MagicMock()
-        mock_tool_context.state = {
+        mock_tool_context = _make_ctx({
             "structured_report": {"old": "data"},
-        }
+        })
 
         new_report = {"title": "New Report", "hypothesis": "New hypothesis"}
         result = save_structured_report(json.dumps(new_report), mock_tool_context)
@@ -128,8 +132,7 @@ class TestSaveStructuredReport:
         }
         report_json = json.dumps(report_data)
 
-        mock_tool_context = MagicMock()
-        mock_tool_context.state = {}
+        mock_tool_context = _make_ctx()
 
         save_structured_report(report_json, mock_tool_context)
 
@@ -226,8 +229,7 @@ class TestSaveStructuredReportEvidenceValidation:
                 "relevant_excerpt": "Valid excerpt",
             },
         }
-        mock_ctx = MagicMock()
-        mock_ctx.state = {}
+        mock_ctx = _make_ctx()
 
         result = save_structured_report(json.dumps(report_data), mock_ctx)
         result_data = json.loads(result)
@@ -260,8 +262,7 @@ class TestSaveStructuredReportEvidenceValidation:
                 },
             ],
         }
-        mock_ctx = MagicMock()
-        mock_ctx.state = {}
+        mock_ctx = _make_ctx()
 
         result = save_structured_report(json.dumps(report_data), mock_ctx)
         result_data = json.loads(result)
@@ -283,8 +284,7 @@ class TestSaveStructuredReportEvidenceValidation:
                 {"source_url": "https://b.com", "relevant_excerpt": "  "},
             ],
         }
-        mock_ctx = MagicMock()
-        mock_ctx.state = {}
+        mock_ctx = _make_ctx()
 
         result = save_structured_report(json.dumps(report_data), mock_ctx)
         result_data = json.loads(result)
@@ -311,8 +311,7 @@ class TestSaveStructuredReportEvidenceValidation:
                 },
             ],
         }
-        mock_ctx = MagicMock()
-        mock_ctx.state = {}
+        mock_ctx = _make_ctx()
 
         result = save_structured_report(json.dumps(report_data), mock_ctx)
         result_data = json.loads(result)
@@ -336,8 +335,7 @@ class TestSaveStructuredReportNewFields:
                 "coverage_assessment": "About 20% digitized",
             },
         }
-        mock_ctx = MagicMock()
-        mock_ctx.state = {}
+        mock_ctx = _make_ctx()
 
         result = save_structured_report(json.dumps(report_data), mock_ctx)
         result_data = json.loads(result)
@@ -354,8 +352,7 @@ class TestSaveStructuredReportNewFields:
             "title": "Test",
             "confidence_rationale": "Rated LOW because only one source was found via API.",
         }
-        mock_ctx = MagicMock()
-        mock_ctx.state = {}
+        mock_ctx = _make_ctx()
 
         result = save_structured_report(json.dumps(report_data), mock_ctx)
         result_data = json.loads(result)
@@ -363,3 +360,261 @@ class TestSaveStructuredReportNewFields:
         assert result_data["status"] == "success"
         saved = mock_ctx.state["structured_report"]
         assert saved["confidence_rationale"] == "Rated LOW because only one source was found via API."
+
+
+class TestInventoryConsultedCheck:
+    """inventory 参照強制チェックのテスト。"""
+
+    def test_error_when_inventory_not_consulted(self):
+        """inventory 未参照で save_structured_report → エラー。"""
+        mock_ctx = MagicMock()
+        mock_ctx.state = {}  # _inventory_consulted なし
+
+        report_data = {"title": "Test", "hypothesis": "Test"}
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "error"
+        assert "get_document_inventory" in result_data["error"]
+        assert "structured_report" not in mock_ctx.state
+
+    def test_error_when_inventory_consulted_false(self):
+        """_inventory_consulted = False でもエラー。"""
+        mock_ctx = MagicMock()
+        mock_ctx.state = {"_inventory_consulted": False}
+
+        report_data = {"title": "Test"}
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "error"
+
+    def test_success_when_inventory_consulted(self):
+        """_inventory_consulted = True で正常保存。"""
+        mock_ctx = _make_ctx()
+
+        report_data = {"title": "Test"}
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+
+    def test_invalid_json_error_takes_priority_over_inventory(self):
+        """不正 JSON のエラーは inventory チェックより後（inventory チェックが先）。"""
+        mock_ctx = MagicMock()
+        mock_ctx.state = {"_inventory_consulted": True}
+
+        result = save_structured_report("not valid json", mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "error"
+        assert "Invalid JSON" in result_data["error"]
+
+
+class TestEvidenceGrounding:
+    """証拠グラウンディング検証のテスト。"""
+
+    def test_matching_url_overwrites_metadata(self):
+        """URL が raw_search_results と一致 → title/date を上書き。"""
+        mock_ctx = _make_ctx({
+            "raw_search_results_en": [{
+                "documents": [{
+                    "title": "Correct Title From API",
+                    "source_url": "https://loc.gov/item/123",
+                    "date": "1893-01-15",
+                    "source_type": "loc_digital",
+                }],
+            }],
+        })
+
+        report_data = {
+            "title": "Test",
+            "evidence_a": {
+                "source_url": "https://loc.gov/item/123",
+                "source_title": "Wrong Title From LLM",
+                "source_date": "1893",
+                "relevant_excerpt": "Some text",
+            },
+        }
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved_ev = mock_ctx.state["structured_report"]["evidence_a"]
+        # raw データで上書きされている
+        assert saved_ev["source_title"] == "Correct Title From API"
+        assert saved_ev["source_date"] == "1893-01-15"
+        assert saved_ev["archive_source"] == "loc_digital"
+
+    def test_non_matching_url_warns(self):
+        """URL が raw_search_results に不在 → 警告。"""
+        mock_ctx = _make_ctx({
+            "raw_search_results_en": [{
+                "documents": [{
+                    "title": "Real Doc",
+                    "source_url": "https://loc.gov/item/real",
+                    "source_type": "loc_digital",
+                }],
+            }],
+        })
+
+        report_data = {
+            "title": "Test",
+            "evidence_a": {
+                "source_url": "https://loc.gov/item/hallucinated",
+                "relevant_excerpt": "Made up text",
+            },
+        }
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert any("source_url not found" in w for w in result_data["warnings"])
+
+    def test_additional_evidence_grounding(self):
+        """additional_evidence も URL 照合される。"""
+        mock_ctx = _make_ctx({
+            "raw_search_results_en": [{
+                "documents": [
+                    {
+                        "title": "Doc A",
+                        "source_url": "https://archive.org/details/a",
+                        "date": "1900-01-01",
+                        "source_type": "internet_archive",
+                    },
+                    {
+                        "title": "Doc B",
+                        "source_url": "https://loc.gov/item/b",
+                        "date": "1901-06-15",
+                        "source_type": "loc_digital",
+                    },
+                ],
+            }],
+        })
+
+        report_data = {
+            "title": "Test",
+            "evidence_a": {
+                "source_url": "https://archive.org/details/a",
+                "source_title": "Wrong",
+                "relevant_excerpt": "Text",
+            },
+            "evidence_b": {
+                "source_url": "https://loc.gov/item/b",
+                "source_title": "Also Wrong",
+                "relevant_excerpt": "Text",
+            },
+            "additional_evidence": [
+                {
+                    "source_url": "https://not-real.com/fake",
+                    "relevant_excerpt": "Hallucinated",
+                },
+            ],
+        }
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        saved = mock_ctx.state["structured_report"]
+        assert saved["evidence_a"]["source_title"] == "Doc A"
+        assert saved["evidence_a"]["archive_source"] == "internet_archive"
+        assert saved["evidence_b"]["source_title"] == "Doc B"
+        assert saved["evidence_b"]["archive_source"] == "loc_digital"
+        # additional_evidence[0] は URL 不在で警告
+        assert any("additional_evidence[0]" in w for w in result_data["warnings"])
+
+    def test_no_raw_search_results_skips_grounding(self):
+        """raw_search_results がない場合はグラウンディングをスキップ。"""
+        mock_ctx = _make_ctx()  # raw_search_results なし
+
+        report_data = {
+            "title": "Test",
+            "evidence_a": {
+                "source_url": "https://example.com",
+                "relevant_excerpt": "Text",
+            },
+        }
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        # グラウンディング警告はなし（raw data がないのでスキップ）
+        grounding_warnings = [w for w in result_data["warnings"] if "source_url not found" in w]
+        assert grounding_warnings == []
+
+    def test_grounding_uses_base_and_lang_keys(self):
+        """raw_search_results（ベース）と raw_search_results_{lang} の両方を参照する。"""
+        mock_ctx = _make_ctx({
+            "raw_search_results": [{
+                "documents": [{
+                    "title": "Base Doc",
+                    "source_url": "https://example.com/base",
+                    "date": "1800-01-01",
+                    "source_type": "dpla",
+                }],
+            }],
+            "raw_search_results_ja": [{
+                "documents": [{
+                    "title": "JA Doc",
+                    "source_url": "https://ndl.go.jp/ja/1",
+                    "date": "1900-05-01",
+                    "source_type": "ndl",
+                }],
+            }],
+        })
+
+        report_data = {
+            "title": "Test",
+            "evidence_a": {
+                "source_url": "https://example.com/base",
+                "relevant_excerpt": "Text",
+            },
+            "evidence_b": {
+                "source_url": "https://ndl.go.jp/ja/1",
+                "relevant_excerpt": "Text",
+            },
+        }
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        saved = mock_ctx.state["structured_report"]
+        assert saved["evidence_a"]["archive_source"] == "dpla"
+        assert saved["evidence_b"]["archive_source"] == "ndl"
+        assert result_data["warnings"] == []
+
+
+class TestValidateEvidenceGroundingDirect:
+    """_validate_evidence_grounding 関数の直接テスト。"""
+
+    def test_empty_evidence(self):
+        """evidence がない場合は警告なし。"""
+        mock_ctx = _make_ctx({
+            "raw_search_results_en": [{
+                "documents": [{
+                    "title": "Doc",
+                    "source_url": "https://example.com",
+                    "source_type": "loc_digital",
+                }],
+            }],
+        })
+
+        report_data = {"title": "Test"}
+        warnings = _validate_evidence_grounding(report_data, mock_ctx)
+        assert warnings == []
+
+    def test_evidence_without_source_url_skipped(self):
+        """source_url がない evidence はスキップされる。"""
+        mock_ctx = _make_ctx({
+            "raw_search_results_en": [{
+                "documents": [{
+                    "title": "Doc",
+                    "source_url": "https://example.com",
+                    "source_type": "loc_digital",
+                }],
+            }],
+        })
+
+        report_data = {
+            "evidence_a": {"relevant_excerpt": "Text"},
+        }
+        warnings = _validate_evidence_grounding(report_data, mock_ctx)
+        assert warnings == []
