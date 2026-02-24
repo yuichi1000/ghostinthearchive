@@ -196,6 +196,12 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
                     remarkPlugins={[remarkGfm]}
                     components={{
                       img: ({ src, alt }) => <PreviewArchiveImage src={src} alt={alt} />,
+                      p: ({ children, node }) => {
+                        const hasImage = node?.children?.some(
+                          (child: any) => child.type === "element" && child.tagName === "img"
+                        )
+                        return hasImage ? <>{children}</> : <p>{children}</p>
+                      },
                     }}
                   >
                     {stripLeadingH1(narrativeContent).replace(/\*\*(.+?)\*\*/g, ' **$1** ')}
