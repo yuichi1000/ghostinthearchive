@@ -51,13 +51,13 @@ STATE_KEYS: list[StateKey] = [
         name="raw_search_results",
         description="Librarian ツールが直接書き込む検索結果リスト（ベースキー）",
         written_by=("librarian_tools",),
-        read_by=("search_metadata",),
+        read_by=("search_metadata", "search_metrics"),
     ),
     StateKey(
         name="raw_search_results_{lang}",
         description="Librarian ツールが直接書き込む検索結果リスト（言語別）",
         written_by=("librarian_tools",),
-        read_by=("search_metadata",),
+        read_by=("search_metadata", "search_metrics"),
     ),
     StateKey(
         name="scholar_analysis_{lang}",

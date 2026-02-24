@@ -24,6 +24,7 @@ from google.genai import types
 from mystery_agents.agents.pipeline_gate import _is_meaningful
 from mystery_agents.utils.pipeline_logger import PipelineLogger
 from shared.logging_config import PipelineContext, set_pipeline_context
+from shared.search_metrics import extract_search_metrics, save_search_metrics
 from shared.pipeline_run import (
     create_pipeline_run,
     update_agent_started,
@@ -403,6 +404,12 @@ async def run_pipeline(
             # pipeline_log をセッション状態に保存
             if session:
                 session.state["pipeline_log"] = pipeline_logger.get_logs()
+
+            # 検索メトリクスの保存（Librarian の API ソース別統計）
+            # ゲート失敗時でも Librarian は動いた可能性があるので mystery_id 抽出より前に配置
+            if run_type == "blog":
+                search_metrics = extract_search_metrics(session_state)
+                save_search_metrics(run_id, search_metrics)
 
             # mystery_id 抽出（blog パイプラインのみ）
             mystery_id = None
