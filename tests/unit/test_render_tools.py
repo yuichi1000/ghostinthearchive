@@ -155,6 +155,21 @@ class TestGenerateDesignAsset:
         assert "text" in call_kwargs["negative_prompt"]
 
     @patch(_PATCH_GENERATE_IMAGE)
+    def test_appends_transparent_background_to_prompt(self, mock_gen):
+        """生成プロンプトに背景透過指示が追加される。"""
+        mock_gen.return_value = self._mock_generate_success()
+
+        generate_design_asset(
+            prompt="Dark mandala pattern",
+            product_type="tshirt",
+        )
+
+        call_kwargs = mock_gen.call_args[1]
+        assert "transparent background" in call_kwargs["prompt"]
+        assert "no background" in call_kwargs["prompt"]
+        assert call_kwargs["prompt"].startswith("Dark mandala pattern")
+
+    @patch(_PATCH_GENERATE_IMAGE)
     def test_passes_style_and_region(self, mock_gen):
         """style と region を generate_image に渡す。"""
         mock_gen.return_value = self._mock_generate_success()
@@ -240,14 +255,32 @@ class TestRemoveBackground:
         assert path == "/nonexistent/path.png"
         assert success is False
 
-    @patch("rembg.new_session")
-    @patch("rembg.remove")
-    def test_rembg_removes_background_successfully(self, mock_remove, mock_new_session, tmp_path):
-        """rembg が透過画像を返す正常系。"""
+    def test_skips_rembg_when_already_transparent(self, tmp_path):
+        """既に透過ピクセルがある場合、rembg を呼ばずに成功を返す。"""
         from PIL import Image as PILImage
         import numpy as np
 
-        # テスト画像を作成（赤い前景 + 緑の背景）
+        # 透過済み画像（背景=透明、前景=赤）
+        img = PILImage.new("RGBA", (10, 10), (0, 0, 0, 0))
+        for x in range(4, 6):
+            for y in range(4, 6):
+                img.putpixel((x, y), (255, 0, 0, 255))
+        filepath = str(tmp_path / "already_transparent.png")
+        img.save(filepath, "PNG")
+
+        path, success = _remove_background(filepath)
+
+        assert path == filepath
+        assert success is True
+
+    @patch("rembg.new_session")
+    @patch("rembg.remove")
+    def test_rembg_fallback_when_not_transparent(self, mock_remove, mock_new_session, tmp_path):
+        """透過ピクセルがない場合、rembg でフォールバック処理する。"""
+        from PIL import Image as PILImage
+        import numpy as np
+
+        # 不透過画像（赤い前景 + 緑の背景）
         img = PILImage.new("RGBA", (10, 10), (0, 255, 0, 255))
         for x in range(4, 6):
             for y in range(4, 6):
@@ -255,7 +288,7 @@ class TestRemoveBackground:
         filepath = str(tmp_path / "test.png")
         img.save(filepath, "PNG")
 
-        # rembg が返す透過済み画像（背景=透明、前景=赤）
+        # rembg が返す透過済み画像
         output_img = PILImage.new("RGBA", (10, 10), (0, 0, 0, 0))
         for x in range(4, 6):
             for y in range(4, 6):
@@ -281,7 +314,7 @@ class TestRemoveBackground:
         """rembg が透過なし画像を返す場合、False を返す。"""
         from PIL import Image as PILImage
 
-        # テスト画像を作成
+        # 不透過画像
         img = PILImage.new("RGBA", (10, 10), (255, 0, 0, 255))
         filepath = str(tmp_path / "test.png")
         img.save(filepath, "PNG")
