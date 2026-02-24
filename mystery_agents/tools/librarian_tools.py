@@ -395,6 +395,35 @@ def _rank_documents(
     return result
 
 
+def _is_likely_english(keyword: str) -> bool:
+    """キーワードが英語である可能性が高いかを簡易判定する。
+
+    ASCII 文字のみで構成されるキーワードを英語候補とみなす。
+    ドイツ語のウムラウト（ä,ö,ü）、フランス語のアクセント（é,è）等の
+    非 ASCII 文字を含む場合は非英語と判定する。
+    """
+    return all(ord(c) < 128 for c in keyword)
+
+
+def _log_keyword_language_mismatch(
+    keywords: list[str], language: str
+) -> None:
+    """非英語 Librarian が英語キーワードのみで検索していないかログ出力する。"""
+    ascii_only = [kw for kw in keywords if _is_likely_english(kw)]
+    if len(ascii_only) == len(keywords) and keywords:
+        logger.warning(
+            "キーワード言語不一致: language=%s だが全キーワードが ASCII のみ "
+            "(ネイティブ言語キーワード未使用の可能性): %s",
+            language,
+            keywords,
+            extra={
+                "language": language,
+                "keywords": keywords,
+                "all_ascii": True,
+            },
+        )
+
+
 def search_archives(
     keywords: str,
     date_start: Optional[str] = None,
@@ -424,6 +453,10 @@ def search_archives(
         JSON string with merged results from all sources.
     """
     keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
+
+    # キーワード言語診断ログ: 非英語 API に英語キーワードを渡していないか検出する
+    if language and language != "en":
+        _log_keyword_language_mismatch(keyword_list, language)
 
     keyword_groups = [keyword_list]
 

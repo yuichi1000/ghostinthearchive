@@ -27,6 +27,19 @@ _LANG_MAP: dict[str, SourceLanguage] = {
     "pt": SourceLanguage.PT,
 }
 
+# 言語コード → Europeana COUNTRY フィルタ値マッピング
+# LANGUAGE フィルタではなく COUNTRY フィルタを使用する理由:
+# 歴史資料（特に 1650-1850 の医学テキスト等）はラテン語で書かれていることが多く、
+# LANGUAGE:de では捕捉できない。COUNTRY フィルタは提供機関の所在国で絞り込むため、
+# ドイツの機関が保管するラテン語文書もヒットする。
+_LANG_TO_COUNTRY: dict[str, str] = {
+    "de": "germany",
+    "es": "spain",
+    "fr": "france",
+    "nl": "netherlands",
+    "pt": "portugal",
+}
+
 
 class EuropeanaSource(ArchiveSource):
     """Europeana ソース。"""
@@ -67,8 +80,10 @@ class EuropeanaSource(ArchiveSource):
         qf_list: list[str] = []
         if date_start and date_end:
             qf_list.append(f"YEAR:[{date_start} TO {date_end}]")
-        if language:
-            qf_list.append(f"LANGUAGE:{language}")
+        # COUNTRY フィルタ: 提供機関の所在国で絞り込む
+        # LANGUAGE フィルタは歴史資料（ラテン語混在）を見逃すため不使用
+        if language and language in _LANG_TO_COUNTRY:
+            qf_list.append(f"COUNTRY:{_LANG_TO_COUNTRY[language]}")
         if qf_list:
             params["qf"] = qf_list
 

@@ -8,6 +8,8 @@ from mystery_agents.schemas.document import ArchiveDocument, SourceLanguage
 from mystery_agents.tools.archive_source_base import ArchiveSearchResult
 from mystery_agents.tools.librarian_tools import (
     _TOTAL_DOCS_CAP,
+    _is_likely_english,
+    _log_keyword_language_mismatch,
     _rank_documents,
     _search_single_source,
     search_archives,
@@ -722,3 +724,69 @@ class TestNewspaperDispatcher:
 
         # language 未指定でも resolve_newspaper_sources("en") が呼ばれる
         mock_resolve.assert_called_once_with("en")
+
+
+# === キーワード言語診断ログのテスト ===
+
+
+class TestIsLikelyEnglish:
+    """_is_likely_english のテスト"""
+
+    def test_ascii_keyword_is_english(self):
+        """ASCII のみのキーワードは英語と判定される。"""
+        assert _is_likely_english("nightmare") is True
+        assert _is_likely_english("sleep paralysis") is True
+
+    def test_german_keyword_is_not_english(self):
+        """ウムラウト含むキーワードは非英語と判定される。"""
+        assert _is_likely_english("Alpträume") is False
+        assert _is_likely_english("Ärzte") is False
+
+    def test_french_keyword_is_not_english(self):
+        """アクセント含むキーワードは非英語と判定される。"""
+        assert _is_likely_english("cauchemar médical") is False
+
+    def test_dutch_keyword_is_not_english(self):
+        """オランダ語特有のアクセントを含むキーワード。"""
+        assert _is_likely_english("geneeskunde") is True  # ASCII のみだが正しいオランダ語
+        assert _is_likely_english("coöperatie") is False
+
+    def test_empty_string(self):
+        """空文字列は ASCII のみ扱い。"""
+        assert _is_likely_english("") is True
+
+
+class TestLogKeywordLanguageMismatch:
+    """_log_keyword_language_mismatch のテスト"""
+
+    def test_warning_for_all_ascii_keywords_non_english_lang(self, caplog):
+        """非英語言語で全キーワードが ASCII のみの場合に警告が出る。"""
+        import logging
+
+        with caplog.at_level(logging.WARNING):
+            _log_keyword_language_mismatch(
+                ["nightmare", "sleep paralysis"], "de"
+            )
+
+        assert "キーワード言語不一致" in caplog.text
+        assert "de" in caplog.text
+
+    def test_no_warning_for_native_keywords(self, caplog):
+        """ネイティブ言語キーワードが含まれる場合は警告なし。"""
+        import logging
+
+        with caplog.at_level(logging.WARNING):
+            _log_keyword_language_mismatch(
+                ["Alpträume", "nightmare"], "de"
+            )
+
+        assert "キーワード言語不一致" not in caplog.text
+
+    def test_no_warning_for_empty_keywords(self, caplog):
+        """空のキーワードリストでは警告なし。"""
+        import logging
+
+        with caplog.at_level(logging.WARNING):
+            _log_keyword_language_mismatch([], "de")
+
+        assert "キーワード言語不一致" not in caplog.text
