@@ -291,6 +291,14 @@ def publish_mystery(
                 if not any(marker in creative_content for marker in ("NO_CONTENT", "NO_DOCUMENTS_FOUND")):
                     data["narrative_content"] = creative_content
 
+            # narrative_content からアーカイブ画像URLを抽出して images.inserts に保存
+            if data.get("narrative_content"):
+                md_images = re.findall(r'!\[.*?\]\((https?://[^)]+)\)', data["narrative_content"])
+                if md_images:
+                    images_dict = data.get("images", {})
+                    images_dict["inserts"] = md_images
+                    data["images"] = images_dict
+
             # raw_data: collected_documents_en セッション状態から直接読み取り
             collected_docs = tool_context.state.get("collected_documents_en")
             if collected_docs:

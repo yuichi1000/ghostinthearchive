@@ -108,6 +108,12 @@ STATE_KEYS: list[StateKey] = [
         read_by=("publisher_tools",),
     ),
     StateKey(
+        name="archive_images",
+        description="Librarian が収集したアーカイブ資料画像リスト（title, source_url, thumbnail_url, image_url 等）",
+        written_by=("librarian_tools",),
+        read_by=("storyteller",),
+    ),
+    StateKey(
         name="published_episode",
         description="Publisher の公開結果（output_key）",
         written_by=("publisher",),

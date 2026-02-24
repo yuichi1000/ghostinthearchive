@@ -87,6 +87,17 @@ class LOCDigitalSource(ArchiveSource):
             if isinstance(date_str, list) and date_str:
                 date_str = str(date_str[0])
 
+            # サムネイル / フル画像URL抽出
+            image_url_raw = item.get("image_url", [])
+            if isinstance(image_url_raw, list) and image_url_raw:
+                full_image = str(image_url_raw[0])
+            elif isinstance(image_url_raw, str) and image_url_raw:
+                full_image = image_url_raw
+            else:
+                full_image = None
+            thumbnail = item.get("thumbnail", {})
+            thumbnail_url = thumbnail.get("full") if isinstance(thumbnail, dict) else None
+
             doc = ArchiveDocument(
                 title=str(item.get("title", "Unknown Title"))[:500],
                 date=self.parse_year(str(date_str)),
@@ -96,6 +107,8 @@ class LOCDigitalSource(ArchiveSource):
                 location=location,
                 source_type=self.source_type,
                 raw_text=description[:5000] if description else None,
+                thumbnail_url=thumbnail_url,
+                image_url=full_image,
                 keywords_matched=[
                     kw for kw in keywords if kw.lower() in (description or "").lower()
                 ],

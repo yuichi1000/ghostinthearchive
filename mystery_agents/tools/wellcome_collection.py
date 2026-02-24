@@ -156,6 +156,10 @@ def _parse_wellcome_response(
         combined = f"{title} {summary_text}".lower()
         matched = [kw for kw in keywords if kw.lower() in combined]
 
+        # サムネイル URL 抽出
+        thumbnail = work.get("thumbnail", {})
+        thumbnail_url = thumbnail.get("url") if isinstance(thumbnail, dict) else None
+
         doc = ArchiveDocument(
             title=str(title)[:500],
             date=parsed_date,
@@ -165,6 +169,7 @@ def _parse_wellcome_response(
             location=str(location)[:200],
             source_type="wellcome",
             raw_text=raw_text,
+            thumbnail_url=thumbnail_url,
             keywords_matched=matched,
         )
         documents.append(doc)

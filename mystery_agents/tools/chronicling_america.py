@@ -104,6 +104,17 @@ class ChroniclingAmericaSource(ArchiveSource):
             if not url:
                 continue
 
+            # サムネイル / フル画像URL抽出（LOC 新聞ページスキャン）
+            image_url_raw = item.get("image_url", [])
+            if isinstance(image_url_raw, list) and image_url_raw:
+                full_image = str(image_url_raw[0])
+            elif isinstance(image_url_raw, str) and image_url_raw:
+                full_image = image_url_raw
+            else:
+                full_image = None
+            thumbnail_raw = item.get("thumbnail", {})
+            thumbnail_url = thumbnail_raw.get("full") if isinstance(thumbnail_raw, dict) else None
+
             doc = ArchiveDocument(
                 title=str(item.get("title", "Unknown Title"))[:500],
                 date=_parse_newspaper_date(str(date_str)),
@@ -115,6 +126,8 @@ class ChroniclingAmericaSource(ArchiveSource):
                 location=location[:200],
                 source_type=self.source_type,
                 raw_text=description[:5000] if description else None,
+                thumbnail_url=thumbnail_url,
+                image_url=full_image,
                 keywords_matched=_find_matched_keywords(
                     description or str(item.get("title", "")), keywords
                 ),

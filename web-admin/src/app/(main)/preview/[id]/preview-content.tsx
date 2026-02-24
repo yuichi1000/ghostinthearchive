@@ -19,9 +19,10 @@ import {
   Lightbulb,
   Eye
 } from "lucide-react"
-import Markdown from "react-markdown"
+import Markdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { stripLeadingH1 } from "@ghost/shared/src/lib/utils"
+import { useState } from "react"
 
 /**
  * Date は Server→Client シリアライズで string になるため、
@@ -31,6 +32,31 @@ function formatDate(d: Date | string | undefined): string {
   if (!d) return ""
   const date = typeof d === "string" ? new Date(d) : d
   return date.toLocaleDateString()
+}
+
+function PreviewArchiveImage({ src, alt }: { src?: string; alt?: string }) {
+  const [hasError, setHasError] = useState(false)
+  if (!src || hasError) return null
+  return (
+    <figure className="not-prose my-8 mx-auto max-w-xl">
+      <div className="aged-card letterpress-border rounded-sm overflow-hidden">
+        <img
+          src={src}
+          alt={alt || "Archival Image"}
+          loading="lazy"
+          onError={() => setHasError(true)}
+          className="w-full h-auto"
+        />
+      </div>
+      {alt && (
+        <figcaption className="mt-2 text-center text-xs font-mono text-muted-foreground/70 leading-relaxed">
+          <span className="uppercase tracking-wider text-gold/60">Archival Image</span>
+          {" — "}
+          {alt}
+        </figcaption>
+      )}
+    </figure>
+  )
 }
 
 interface PreviewContentProps {
@@ -166,7 +192,12 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
               {/* Narrative Content (primary) */}
               {narrativeContent ? (
                 <section className="prose prose-lg prose-invert max-w-none prose-headings:font-serif prose-headings:text-parchment prose-headings:mt-12 prose-headings:mb-4 prose-p:text-foreground/90 prose-p:leading-loose prose-p:mb-6 prose-a:text-gold prose-blockquote:border-gold/30 prose-blockquote:bg-card prose-blockquote:px-6 prose-blockquote:py-4 prose-blockquote:rounded-sm prose-blockquote:text-foreground/70 prose-blockquote:italic prose-blockquote:font-serif prose-strong:text-parchment prose-hr:border-border">
-                  <Markdown remarkPlugins={[remarkGfm]}>
+                  <Markdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      img: ({ src, alt }) => <PreviewArchiveImage src={src} alt={alt} />,
+                    }}
+                  >
                     {stripLeadingH1(narrativeContent).replace(/\*\*(.+?)\*\*/g, ' **$1** ')}
                   </Markdown>
                 </section>

@@ -50,6 +50,8 @@ class ArchiveDocument(BaseModel):
     location: str = Field(..., description="Physical location or origin")
     source_type: str = Field(..., description="Source API type (e.g. 'loc_digital', 'dpla')")
     raw_text: Optional[str] = Field(None, description="Full OCR or text content")
+    thumbnail_url: Optional[str] = Field(None, description="Thumbnail image URL from the archive")
+    image_url: Optional[str] = Field(None, description="Full-resolution image URL from the archive")
     record_group: Optional[str] = Field(None, description="Record Group ID")
     keywords_matched: List[str] = Field(
         default_factory=list, description="Keywords that matched this document"

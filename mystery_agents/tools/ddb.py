@@ -114,6 +114,13 @@ class DDBSource(ArchiveSource):
             combined = f"{title} {description}".lower()
             matched = [kw for kw in keywords if kw.lower() in combined]
 
+            # サムネイル URL 抽出
+            thumbnail_url = item.get("thumbnail", item.get("preview", None))
+            if isinstance(thumbnail_url, list) and thumbnail_url:
+                thumbnail_url = str(thumbnail_url[0])
+            elif not isinstance(thumbnail_url, str):
+                thumbnail_url = None
+
             doc = ArchiveDocument(
                 title=str(title)[:500],
                 date=self.parse_year(str(date_str), min_century=13),
@@ -123,6 +130,7 @@ class DDBSource(ArchiveSource):
                 location=str(location)[:200],
                 source_type=self.source_type,
                 raw_text=str(description)[:5000] if description else None,
+                thumbnail_url=thumbnail_url,
                 keywords_matched=matched,
             )
             documents.append(doc)

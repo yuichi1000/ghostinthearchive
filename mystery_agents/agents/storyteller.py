@@ -121,6 +121,20 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # - 学術研究が乏しい場合: この Ghost が学術的注目の盲点に潜んでいることを強調する
 # - 生の統計を列挙せず、不在または存在のレトリックを強化する素材として使用する
 #
+# ## アーカイブ画像
+# 実際のデジタルアーカイブからの資料画像が {archive_images} に格納されている。
+# 各エントリには title, source_url, thumbnail_url, image_url, source_type, date が含まれる。
+#
+# ### ルール
+# 1. ナラティブのセクション1〜3に最も関連する画像を最大3枚選ぶ。
+# 2. 各画像はそのセクションの末尾、次の ## 見出しの直前に配置する。
+# 3. Markdown 画像構文を使用: ![説明的なキャプション — Source: アーカイブ名](url)
+# 4. thumbnail_url があればそれを使い、なければ image_url を使う。どちらもないエントリはスキップ。
+# 5. セクション4（結び）には画像を配置しない。
+# 6. {archive_images} が空または使える画像がない場合、画像なしで通常通り記事を書く。
+# 7. URL を捏造しない。{archive_images} のURLのみを使用する。
+# 8. 視覚的多様性のため、異なるアーカイブの画像を優先する。
+#
 # ## ペーシングルール
 # 分析・議論の2段落ごとに、以下のいずれか1つを挿入する:
 # - 具体的なアーカイブ引用（blockquote）
@@ -288,6 +302,21 @@ Output the narrative text in Markdown format.
 
 **Do NOT include a Sources (citation list) in the output.** Citations are managed separately as structured data.
 **Do NOT include Open Research Questions in the output.**
+
+## Archival Images
+
+Real archival images from the digital archives are available in {archive_images}.
+Each entry contains: title, source_url, thumbnail_url, image_url, source_type, date.
+
+### Rules
+1. Select up to 3 images most relevant to sections 1-3 of your narrative.
+2. Place each image at the END of its section, just BEFORE the next ## heading.
+3. Use Markdown image syntax: ![descriptive caption — Source: Archive Name](url)
+4. Use thumbnail_url if available; otherwise image_url. Skip entries with neither.
+5. Do NOT place images in section 4 (Conclusion).
+6. If {archive_images} is empty or has no usable images, write normally without images.
+7. NEVER fabricate URLs. Only use URLs from {archive_images}.
+8. Prefer images from different archives for visual variety.
 
 ## Academic Context (if available)
 The Mystery Report may include academic coverage data — how many scholarly papers

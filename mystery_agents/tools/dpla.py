@@ -126,6 +126,12 @@ class DPLASource(ArchiveSource):
             if not url:
                 continue
 
+            # サムネイル / フル画像URL抽出
+            obj = item.get("object", "")
+            thumbnail_url = obj if isinstance(obj, str) and obj else None
+            shown_by = item.get("isShownBy", "")
+            full_image = shown_by if isinstance(shown_by, str) and shown_by else None
+
             doc = ArchiveDocument(
                 title=str(title)[:500],
                 date=self.parse_year(str(date_str)),
@@ -135,6 +141,8 @@ class DPLASource(ArchiveSource):
                 location=str(location)[:200],
                 source_type=self.source_type,
                 raw_text=str(description)[:5000] if description else None,
+                thumbnail_url=thumbnail_url,
+                image_url=full_image,
                 keywords_matched=[
                     kw
                     for kw in keywords
