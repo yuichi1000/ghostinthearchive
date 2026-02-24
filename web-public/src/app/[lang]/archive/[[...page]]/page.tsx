@@ -15,10 +15,6 @@ import type { SupportedLang } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 import { buildOgpMetadata, buildAlternates } from "@/lib/seo"
 
-// SSG: 本番ビルドではビルド時に生成されたページ以外は 404
-// dev モードでは Firestore 初回接続遅延による 404 を防ぐため動的レンダリングを許可
-export const dynamicParams = process.env.NODE_ENV === "production" ? false : true
-
 export async function generateStaticParams() {
   const mysteries = await getPublishedMysteries(1000)
   const totalPages = Math.max(1, Math.ceil(mysteries.length / ARCHIVE_PAGE_SIZE))
