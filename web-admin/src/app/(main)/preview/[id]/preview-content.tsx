@@ -22,6 +22,7 @@ import {
 import Markdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { rehypeUnwrapImages } from "@ghost/shared/src/lib/rehype-unwrap-images"
+import { normalizeImagePlacement } from "@ghost/shared/src/lib/normalize-image-placement"
 import { stripLeadingH1 } from "@ghost/shared/src/lib/utils"
 import { useState } from "react"
 
@@ -200,7 +201,7 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
                       img: ({ src, alt }) => <PreviewArchiveImage src={src} alt={alt} />,
                     }}
                   >
-                    {stripLeadingH1(narrativeContent).replace(/\*\*(.+?)\*\*/g, ' **$1** ')}
+                    {normalizeImagePlacement(stripLeadingH1(narrativeContent).replace(/\*\*(.+?)\*\*/g, ' **$1** '))}
                   </Markdown>
                 </section>
               ) : (
