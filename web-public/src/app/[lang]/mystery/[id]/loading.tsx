@@ -29,7 +29,7 @@ export default function MysteryDetailLoading() {
           </div>
 
           {/* Hero image skeleton */}
-          <div className="mb-12 rounded-sm border border-border aspect-video bg-muted/10 animate-pulse" />
+          <div className="mx-auto max-w-2xl mb-12 rounded-sm border border-border aspect-video bg-muted/10 animate-pulse" />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Main content skeleton */}
