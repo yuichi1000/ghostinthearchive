@@ -1,5 +1,6 @@
 import Markdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { rehypeUnwrapImages } from "@ghost/shared/src/lib/rehype-unwrap-images"
 import { FileText } from "lucide-react"
 import { stripLeadingH1 } from "@ghost/shared/src/lib/utils"
 import { slugify } from "@/lib/markdown-headings"
@@ -64,12 +65,6 @@ export function NarrativeSection({ narrativeContent, summary, lang = "en" }: Nar
       img: ({ src, alt }) => (
         <ArchiveImage src={src} alt={alt} lang={lang} />
       ),
-      p: ({ children, node }) => {
-        const hasImage = node?.children?.some(
-          (child: any) => child.type === "element" && child.tagName === "img"
-        )
-        return hasImage ? <>{children}</> : <p>{children}</p>
-      },
       h2: ({ children }) => {
         const text = getTextContent(children)
         // 空スラグのフォールバック（Unicode 対応で解消済みだが安全策）
@@ -84,7 +79,7 @@ export function NarrativeSection({ narrativeContent, summary, lang = "en" }: Nar
 
     return (
       <section id="section-narrative" className="scroll-mt-24 prose prose-lg prose-invert max-w-none prose-headings:font-serif prose-headings:text-parchment prose-headings:mt-12 prose-headings:mb-4 prose-p:text-foreground/90 prose-p:leading-loose prose-p:mb-6 prose-a:text-gold prose-strong:text-parchment prose-hr:border-border">
-        <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+        <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeUnwrapImages]} components={markdownComponents}>
           {stripLeadingH1(narrativeContent).replace(/\*\*(.+?)\*\*/g, ' **$1** ')}
         </Markdown>
       </section>

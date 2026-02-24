@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import Markdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { rehypeUnwrapImages } from "@ghost/shared/src/lib/rehype-unwrap-images"
 import { stripLeadingH1 } from "@ghost/shared/src/lib/utils"
 import { useState } from "react"
 
@@ -194,14 +195,9 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
                 <section className="prose prose-lg prose-invert max-w-none prose-headings:font-serif prose-headings:text-parchment prose-headings:mt-12 prose-headings:mb-4 prose-p:text-foreground/90 prose-p:leading-loose prose-p:mb-6 prose-a:text-gold prose-blockquote:border-gold/30 prose-blockquote:bg-card prose-blockquote:px-6 prose-blockquote:py-4 prose-blockquote:rounded-sm prose-blockquote:text-foreground/70 prose-blockquote:italic prose-blockquote:font-serif prose-strong:text-parchment prose-hr:border-border">
                   <Markdown
                     remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeUnwrapImages]}
                     components={{
                       img: ({ src, alt }) => <PreviewArchiveImage src={src} alt={alt} />,
-                      p: ({ children, node }) => {
-                        const hasImage = node?.children?.some(
-                          (child: any) => child.type === "element" && child.tagName === "img"
-                        )
-                        return hasImage ? <>{children}</> : <p>{children}</p>
-                      },
                     }}
                   >
                     {stripLeadingH1(narrativeContent).replace(/\*\*(.+?)\*\*/g, ' **$1** ')}
