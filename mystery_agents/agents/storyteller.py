@@ -126,11 +126,11 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # 各エントリには title, source_url, thumbnail_url, image_url, source_type, date が含まれる。
 #
 # ### ルール
-# 1. ナラティブのセクション1〜3に最も関連する画像を最大3枚選ぶ。
-# 2. 各画像はそのセクションの末尾、次の ## 見出しの直前に配置する。
+# 1. ナラティブのセクション1〜4に最も関連する画像を最大4枚選ぶ。
+# 2. 各画像はそのセクションの末尾、次の ## 見出しの直前（またはドキュメント末尾）に配置する。
 # 3. Markdown 画像構文を使用: ![説明的なキャプション — Source: アーカイブ名](url)
 # 4. thumbnail_url があればそれを使い、なければ image_url を使う。どちらもないエントリはスキップ。
-# 5. セクション4（結び）には画像を配置しない。
+# 5. 同じURLの画像を複数回使用しない。ユニークな画像が不足する場合は無理に配置しない。
 # 6. {archive_images} が空または使える画像がない場合、画像なしで通常通り記事を書く。
 # 7. URL を捏造しない。{archive_images} のURLのみを使用する。
 # 8. 視覚的多様性のため、異なるアーカイブの画像を優先する。
@@ -309,11 +309,11 @@ Real archival images from the digital archives are available in {archive_images}
 Each entry contains: title, source_url, thumbnail_url, image_url, source_type, date.
 
 ### Rules
-1. Select up to 3 images most relevant to sections 1-3 of your narrative.
-2. Place each image at the END of its section, just BEFORE the next ## heading.
+1. Select up to 4 images most relevant to sections 1-4 of your narrative.
+2. Place each image at the END of its section, just BEFORE the next ## heading (or at the end of the document for section 4).
 3. Use Markdown image syntax: ![descriptive caption — Source: Archive Name](url)
 4. Use thumbnail_url if available; otherwise image_url. Skip entries with neither.
-5. Do NOT place images in section 4 (Conclusion).
+5. Do NOT use the same image URL more than once. If fewer unique images are available than sections, leave some sections without images.
 6. If {archive_images} is empty or has no usable images, write normally without images.
 7. NEVER fabricate URLs. Only use URLs from {archive_images}.
 8. Prefer images from different archives for visual variety.
