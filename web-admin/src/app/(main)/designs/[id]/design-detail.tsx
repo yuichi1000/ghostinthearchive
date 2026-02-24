@@ -108,6 +108,19 @@ export function DesignDetail({ designId }: DesignDetailProps) {
 
   const isProcessing = design.status === "designing" || design.status === "rendering"
   const canRender = design.status === "design_ready"
+  const isRenderReady = design.status === "render_ready"
+
+  // render_ready 時: アセットが存在するプロダクトのみ表示
+  const assetsForViewer = isRenderReady ? (design.assets ?? []) : undefined
+  const productsForViewer = (() => {
+    const allProducts = design.proposal?.products ?? []
+    if (!isRenderReady || !design.assets || design.assets.length === 0) {
+      return allProducts
+    }
+    // アセットが存在する product_type のみフィルタ
+    const assetProductTypes = new Set(design.assets.map((a) => a.product_type))
+    return allProducts.filter((p) => assetProductTypes.has(p.product_type))
+  })()
 
   return (
     <div className="py-8 md:py-12">
@@ -193,7 +206,7 @@ export function DesignDetail({ designId }: DesignDetailProps) {
           </div>
         )}
 
-        {/* デザイン提案ビューアー */}
+        {/* デザイン提案ビューアー（render_ready 時は統合カード表示） */}
         {design.proposal?.products && (
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -219,12 +232,29 @@ export function DesignDetail({ designId }: DesignDetailProps) {
               )}
             </div>
 
-            <DesignProposalViewer products={design.proposal.products} />
+            {/* render_ready でアセットが全て失敗した場合 */}
+            {isRenderReady && productsForViewer.length === 0 && (
+              <div className="aged-card letterpress-border rounded-sm p-6">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-[#ff6b6b]" />
+                  <span className="text-sm text-[#ff6b6b]">
+                    アセットの生成に失敗しました
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {productsForViewer.length > 0 && (
+              <DesignProposalViewer
+                products={productsForViewer}
+                assets={assetsForViewer}
+              />
+            )}
           </div>
         )}
 
-        {/* アセットギャラリー */}
-        {design.assets && design.assets.length > 0 && (
+        {/* アセットギャラリー（render_ready 時は統合カードで表示するため非表示） */}
+        {!isRenderReady && design.assets && design.assets.length > 0 && (
           <div className="mb-6">
             <h2 className="font-mono text-sm uppercase tracking-wider text-parchment mb-4">
               Generated Assets
