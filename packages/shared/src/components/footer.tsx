@@ -26,7 +26,7 @@ const PRIMARY_SOURCES = [
   { label: "Delpher (KB)", href: "https://www.delpher.nl/" },
   { label: "Wellcome Collection", href: "https://wellcomecollection.org/" },
   // アジア太平洋
-  { label: "NDL Search（国立国会図書館）", href: "https://ndlsearch.ndl.go.jp/" },
+  { label: "NDL Search", href: "https://ndlsearch.ndl.go.jp/" },
   { label: "Trove", href: "https://trove.nla.gov.au/", pending: true },
   // グローバル
   { label: "Internet Archive", href: "https://archive.org/" },
