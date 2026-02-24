@@ -11,6 +11,7 @@ from google.adk.agents import LlmAgent
 
 from shared.model_config import create_pro_model
 
+from ..tools.document_inventory import get_document_inventory
 from ..tools.openalex import search_academic_papers
 from ..tools.scholar_tools import save_structured_report
 from ..tools.search_metadata import get_search_metadata
@@ -88,6 +89,24 @@ from ..tools.search_metadata import get_search_metadata
 # - 分野バイアス: 特定分野では網羅されているが他分野では見落とされていないか
 # - 時代バイアス: 学術的関心の変遷による研究の偏り
 # - アクセスバイアス: 主要一次資料がアクセス制限のある機関に保管されていないか
+#
+# ## 証拠ソース選定（必須 — 証拠選定前に実施）
+# evidence_a, evidence_b, additional_evidence を選定する前に `get_document_inventory` を呼び出し、
+# Librarian が収集した全文書をアーカイブ別に確認する。
+#
+# ### 選定原則
+# 1. **メタデータの豊富さより学術的権威**: LOC の一次資料は、説明文が短くても、
+#    Internet Archive の長い説明文付きエントリより証拠として価値が高い。
+# 2. **アグリゲータより機関一次アーカイブ**: Internet Archive は他機関の資料の
+#    デジタル化コピーを多く保持する。同等の資料が機関アーカイブと IA の両方にある場合、
+#    必ず機関アーカイブを引用する。
+# 3. **additional_evidence のソース多様性**: 資料が許す限り、できるだけ多くの
+#    異なるアーカイブから支持証拠を選ぶ。LOC, Europeana, NDL にも関連文書があるのに
+#    IA だけから5件選ぶことは避ける。
+# 4. **文書インベントリを活用**: インベントリは Scholar の分析テキストで目立った
+#    文書だけでなく、全アーカイブの全文書を表示する。証拠選定を確定する前に確認し、
+#    機関アーカイブの価値ある一次資料が Scholar の分析で簡潔にしか言及されていない
+#    可能性を考慮する。
 #
 # ## confidence_level チェックリスト
 # HIGH（Confirmed Ghost）: 3+独立資料の矛盾 + API限界で説明不可 + 2+代替仮説を検討・棄却 + 再現可能
@@ -250,6 +269,33 @@ Structure your integrated analysis as a "Mystery Report":
 **Points Requiring Further Investigation:**
 [What needs further research, especially in languages not yet searched]
 
+## Evidence Source Selection (MANDATORY — before selecting evidence)
+
+Before filling evidence_a, evidence_b, and additional_evidence, call `get_document_inventory`
+to see all documents collected by the Librarian, organized by archive.
+
+### Selection Principles
+
+1. **Scholarly authority over metadata richness**: A Library of Congress primary document
+   with a brief description is more valuable as evidence than an Internet Archive entry
+   with a long description. Judge evidence by its scholarly provenance, not by how much
+   text accompanies it.
+
+2. **Institutional primary archives over aggregators**: Internet Archive often hosts
+   digitized copies of materials held by other institutions (LOC, DPLA, Europeana, NDL).
+   When the same or equivalent material exists in both an institutional archive and
+   Internet Archive, ALWAYS cite the institutional archive.
+
+3. **Source diversity in additional_evidence**: Select supporting evidence from as many
+   different archives as the material allows. Do not fill additional_evidence with
+   5 items all from Internet Archive when LOC, Europeana, or NDL also provided relevant
+   documents.
+
+4. **Use the document inventory**: The inventory shows you ALL documents from ALL archives,
+   not just what was prominent in the Scholar analyses. Check it before finalizing evidence
+   selection — there may be valuable primary sources from institutional archives that
+   the Scholars mentioned only briefly.
+
 ## Save Structured Report (MANDATORY)
 
 After completing your analysis, you MUST call `save_structured_report` with a JSON containing:
@@ -397,7 +443,7 @@ def create_armchair_polymath() -> LlmAgent:
             "and Anthropology perspectives from all available language sources."
         ),
         instruction=ARMCHAIR_POLYMATH_INSTRUCTION,
-        tools=[save_structured_report, get_search_metadata, search_academic_papers],
+        tools=[save_structured_report, get_search_metadata, search_academic_papers, get_document_inventory],
         output_key="mystery_report",  # 既存と同じキー → 下流互換性維持
     )
 

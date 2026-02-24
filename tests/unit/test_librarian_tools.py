@@ -352,39 +352,104 @@ class TestTotalDocsCap:
 
 
 class TestRankDocuments:
-    """_rank_documents のテスト"""
+    """_rank_documents のテスト（ソースインターリーブ方式）"""
 
-    def test_ranking_by_keyword_match(self):
-        """keywords_matched が多い順にソートされる。"""
-        doc_0kw = _make_doc(url="https://a.com/0", keywords_matched=[])
-        doc_2kw = _make_doc(url="https://a.com/2", keywords_matched=["ghost", "ship"])
-        doc_1kw = _make_doc(url="https://a.com/1", keywords_matched=["ghost"])
+    def test_interleave_prevents_single_source_domination(self):
+        """IA 10件 + LOC 3件 → LOC の上位資料が埋もれない。"""
+        ia_docs = [
+            _make_doc(
+                url=f"https://archive.org/{i}",
+                source_type="internet_archive",
+                keywords_matched=["ghost", "ship", "harbor"][:3 - i % 3],
+            )
+            for i in range(10)
+        ]
+        loc_docs = [
+            _make_doc(
+                url=f"https://loc.gov/{i}",
+                source_type="loc_digital",
+                keywords_matched=["ghost", "ship"][:2 - i % 2],
+            )
+            for i in range(3)
+        ]
+
+        ranked = _rank_documents(ia_docs + loc_docs)
+
+        # 最初の4件には IA と LOC の両方が含まれる
+        source_types_top4 = [d.source_type for d in ranked[:4]]
+        assert "loc_digital" in source_types_top4
+        assert "internet_archive" in source_types_top4
+
+    def test_interleave_round_robin_order(self):
+        """2ソースから交互に取り出される。"""
+        doc_a1 = _make_doc(url="https://a.com/1", source_type="loc_digital", keywords_matched=["ghost", "ship"])
+        doc_a2 = _make_doc(url="https://a.com/2", source_type="loc_digital", keywords_matched=["ghost"])
+        doc_b1 = _make_doc(url="https://b.com/1", source_type="internet_archive", keywords_matched=["ghost", "ship", "harbor"])
+        doc_b2 = _make_doc(url="https://b.com/2", source_type="internet_archive", keywords_matched=["ghost"])
+
+        ranked = _rank_documents([doc_a1, doc_a2, doc_b1, doc_b2])
+
+        # 4件全て含まれる
+        assert len(ranked) == 4
+        # 最初の2件は異なるソースタイプ
+        assert ranked[0].source_type != ranked[1].source_type
+
+    def test_ranking_within_source_by_keyword_match(self):
+        """各ソース内では keywords_matched 数でソートされる。"""
         doc_3kw = _make_doc(
             url="https://a.com/3",
+            source_type="loc_digital",
             keywords_matched=["ghost", "ship", "harbor"],
         )
+        doc_1kw = _make_doc(
+            url="https://a.com/1",
+            source_type="loc_digital",
+            keywords_matched=["ghost"],
+        )
+        doc_2kw = _make_doc(
+            url="https://a.com/2",
+            source_type="loc_digital",
+            keywords_matched=["ghost", "ship"],
+        )
 
-        ranked = _rank_documents([doc_0kw, doc_2kw, doc_1kw, doc_3kw])
+        ranked = _rank_documents([doc_1kw, doc_3kw, doc_2kw])
 
+        # 単一ソースなのでキーワード数順
         assert ranked[0].source_url == "https://a.com/3"
         assert ranked[1].source_url == "https://a.com/2"
         assert ranked[2].source_url == "https://a.com/1"
-        assert ranked[3].source_url == "https://a.com/0"
-
-    def test_ranking_stable_for_same_score(self):
-        """同点の場合は元の順序が維持される（安定ソート）。"""
-        doc_a = _make_doc(url="https://a.com/a", keywords_matched=["ghost"])
-        doc_b = _make_doc(url="https://a.com/b", keywords_matched=["ship"])
-
-        ranked = _rank_documents([doc_a, doc_b])
-
-        # 同スコアなので元の順序を維持
-        assert ranked[0].source_url == "https://a.com/a"
-        assert ranked[1].source_url == "https://a.com/b"
 
     def test_ranking_empty_list(self):
         """空リストでエラーにならない。"""
         assert _rank_documents([]) == []
+
+    def test_ranking_single_source(self):
+        """単一ソースのみの場合は通常のキーワード順。"""
+        doc_a = _make_doc(url="https://a.com/a", source_type="loc_digital", keywords_matched=["ghost"])
+        doc_b = _make_doc(url="https://a.com/b", source_type="loc_digital", keywords_matched=["ghost", "ship"])
+
+        ranked = _rank_documents([doc_a, doc_b])
+
+        assert ranked[0].source_url == "https://a.com/b"
+        assert ranked[1].source_url == "https://a.com/a"
+
+    def test_three_sources_interleave(self):
+        """3ソースが正しくインターリーブされる。"""
+        docs = [
+            _make_doc(url="https://loc.gov/1", source_type="loc_digital", keywords_matched=["a"]),
+            _make_doc(url="https://ia.org/1", source_type="internet_archive", keywords_matched=["a"]),
+            _make_doc(url="https://ia.org/2", source_type="internet_archive", keywords_matched=["a", "b"]),
+            _make_doc(url="https://euro.eu/1", source_type="europeana", keywords_matched=["a"]),
+            _make_doc(url="https://euro.eu/2", source_type="europeana", keywords_matched=["a", "b"]),
+        ]
+
+        ranked = _rank_documents(docs)
+
+        # 5件全て含まれる
+        assert len(ranked) == 5
+        # 最初の3件は全て異なるソース
+        first_three_sources = {d.source_type for d in ranked[:3]}
+        assert len(first_three_sources) == 3
 
 
 class TestSearchSingleSource:
