@@ -108,7 +108,7 @@ export function TableOfContents({ sections, heading, variant }: TableOfContentsP
 
   if (variant === "desktop") {
     return (
-      <div className="aged-card letterpress-border rounded-sm p-5">
+      <div className="hidden lg:block aged-card letterpress-border rounded-sm p-5">
         <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
           <List className="w-3.5 h-3.5" />
           {heading}
