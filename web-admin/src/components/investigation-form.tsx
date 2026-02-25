@@ -6,11 +6,11 @@ import {
 } from "lucide-react"
 
 const STORYTELLER_OPTIONS = [
-  { value: "claude", label: "Claude Sonnet 4.5" },
+  { value: "claude", label: "Claude Sonnet 4.6" },
   { value: "gemini", label: "Gemini 3 Pro" },
-  { value: "gpt", label: "GPT-4o" },
+  { value: "gpt", label: "GPT-4.1" },
   { value: "llama", label: "Llama 4 Maverick" },
-  { value: "deepseek", label: "DeepSeek V3" },
+  { value: "deepseek", label: "DeepSeek V3.2" },
   { value: "mistral", label: "Mistral Large" },
 ] as const
 

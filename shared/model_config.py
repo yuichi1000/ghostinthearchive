@@ -34,9 +34,9 @@ MODEL_FLASH = "gemini-2.5-flash"
 # === End 日本語訳 ===
 STORYTELLER_MODELS: dict[str, dict] = {
     "claude": {
-        "model_id": "openrouter/anthropic/claude-sonnet-4.5",
+        "model_id": "openrouter/anthropic/claude-sonnet-4.6",
         "provider": "litellm",
-        "display_name": "Claude Sonnet 4.5",
+        "display_name": "Claude Sonnet 4.6",
         "openrouter_provider_order": ["anthropic"],
     },
     "gemini": {
@@ -45,9 +45,9 @@ STORYTELLER_MODELS: dict[str, dict] = {
         "display_name": "Gemini 3 Pro",
     },
     "gpt": {
-        "model_id": "openrouter/openai/gpt-4o",
+        "model_id": "openrouter/openai/gpt-4.1",
         "provider": "litellm",
-        "display_name": "GPT-4o",
+        "display_name": "GPT-4.1",
         "openrouter_provider_order": ["openai"],
     },
     "llama": {
@@ -57,10 +57,10 @@ STORYTELLER_MODELS: dict[str, dict] = {
         "openrouter_provider_order": ["deepinfra"],
     },
     "deepseek": {
-        "model_id": "openrouter/deepseek/deepseek-chat",
+        "model_id": "openrouter/deepseek/deepseek-v3.2",
         "provider": "litellm",
-        "display_name": "DeepSeek V3",
-        "openrouter_provider_order": ["deepinfra"],
+        "display_name": "DeepSeek V3.2",
+        "openrouter_provider_order": ["ionstream"],
     },
     "mistral": {
         "model_id": "openrouter/mistralai/mistral-large-2512",
