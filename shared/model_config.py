@@ -148,7 +148,7 @@ def create_storyteller_model(storyteller: str = DEFAULT_STORYTELLER):
         kwargs["extra_body"] = {
             "provider": {
                 "order": provider_order,
-                "allow_fallbacks": True,
+                "allow_fallbacks": False,
             }
         }
 

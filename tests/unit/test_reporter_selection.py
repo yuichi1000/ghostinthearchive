@@ -124,7 +124,7 @@ class TestCreateStorytellerModel:
             assert provider is not None, f"{name} の extra_body に provider がない"
             assert "order" in provider, f"{name} の provider に order がない"
             assert provider["order"] == config["openrouter_provider_order"]
-            assert provider["allow_fallbacks"] is True
+            assert provider["allow_fallbacks"] is False
 
     def test_gemini_does_not_pass_extra_body(self):
         """Gemini（native）モデルは extra_body を渡さないこと。"""

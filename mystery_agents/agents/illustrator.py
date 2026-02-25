@@ -290,6 +290,7 @@ def create_illustrator() -> LlmAgent:
         instruction=ILLUSTRATOR_INSTRUCTION,
         tools=[generate_image, validate_image],
         output_key="visual_assets",
+        include_contents="none",
         before_tool_callback=_limit_tool_calls,
     )
 
