@@ -292,15 +292,19 @@ pending (EN原文 + 翻訳あり) → (Approve) → published
 #### ブログ作成パイプライン（`mystery_agents/`）
 
 ```
-ParallelAPILibrarians(7 API groups) → Aggregator → [ScholarGate] → ParallelScholars(分析)
-  → DebateLoop(LoopAgent, max_iterations=2) → [PolymathGate] → ArmchairPolymath
-  → [StorytellerGate] → Storyteller(EN) → [PostStoryGate] → Parallel(Illustrator, ParallelTranslators(3言語)) → Publisher(translations map保存) → Firestore
+ParallelAPILibrarians(7 API groups) → Aggregator → DynamicScholarBlock(分析+討論)
+  → [PolymathGate] → ArmchairPolymath → [StorytellerGate] → Storyteller(EN)
+  → [PostStoryGate] → Parallel(Illustrator, ParallelTranslators(3言語)) → Publisher → Firestore
 ```
 
 - API ベース Librarian（US Archives, Europeana, Internet Archive, DDB, NDL, Trove, Wellcome）がテーマに応じて自律検索
 - AggregatorAgent（LLM 不使用）が raw_search_results を言語別に集約 → `collected_documents_{lang}` に書き込み
-- DebateLoop は有意な分析が2言語以上ある場合のみ実行される
-- Scholar は分析モードと討論モードの2つを持つ（単一ファクトリ関数 `create_scholar(lang, mode)`）
+- DynamicScholarBlock（BaseAgent）が `active_languages` に基づき Scholar を動的生成
+  - Phase 1: ドキュメントがある言語の Scholar のみ並列分析
+  - Phase 2: 有意な分析が2言語以上なら討論ループ（最大2ラウンド、収束判定で早期終了）
+  - 討論 instruction には参加言語のみ記載（肥大化防止）
+  - 収束判定は LLM を介さず純粋関数で直接実行
+- Scholar は分析モードと討論モードの2つを持つ（`create_scholar(lang, mode, active_langs)`）
 - 討論モードの Scholar は `append_to_whiteboard` ツールで共有ホワイトボードに発言を記録
 - ParallelTranslators は3言語の翻訳を並列実行する（`create_all_translators()`）
 - Approve 時は翻訳不要（ステータス変更のみ）

@@ -14,8 +14,7 @@ class TestStateKeyDefinitions:
     def test_no_orphan_keys(self):
         """writer はあるが reader がいないキーは published_episode のみ許容。"""
         orphans = [k.name for k in STATE_KEYS if not k.read_by]
-        # active_languages は PR 3 の DynamicScholarBlock が reader になる予定
-        allowed_orphans = {"published_episode", "active_languages"}
+        allowed_orphans = {"published_episode"}
         unexpected = set(orphans) - allowed_orphans
         assert not unexpected, f"Unexpected orphan keys: {unexpected}"
 

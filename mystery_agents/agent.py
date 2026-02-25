@@ -3,17 +3,18 @@
 Defines root_agent (ghost_commander) as a SequentialAgent that orchestrates
 the multilingual investigation pipeline:
 
-  ParallelAPILibrarians → Aggregator → ScholarBlock → DebateLoop
+  ParallelAPILibrarians → Aggregator → DynamicScholarBlock
     → PolymathBlock → StorytellerBlock → PostStoryBlock
 
 API ベース Librarian（7グループ）が並列で検索し、AggregatorAgent が
-検索結果を言語別に集約。Scholar 以降は従来と同じ言語ベース処理。
-DebateLoop は有意な分析が2言語以上の場合のみ実行。
+検索結果を言語別に集約。DynamicScholarBlock が active_languages に基づき
+Scholar を動的に生成・実行し、分析→討論を一貫制御する。
 PostStoryBlock では Illustrator と3言語翻訳が並列実行される。
 
-DebateLoop 内部は SequentialAgent(debate_round) で構成:
-  parallel_debate_scholars → convergence_checker
-収束判定により新規論点が枯渇した場合、max_iterations 前にループを早期終了する。
+DynamicScholarBlock 内部:
+  Phase 1: 並列分析（active_languages から Scholar を動的生成）
+  Phase 2: 討論ループ（有意な分析 ≧ 2 言語、最大2ラウンド、収束判定で早期終了）
+収束判定は LLM を介さず純粋関数で直接実行する。
 
 build_pipeline() は全エージェントを毎回新規生成するファクトリ関数。
 ADK の単一親制約に違反しないよう、同一インスタンスを複数の親に割り当てない。
@@ -23,20 +24,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from google.adk.agents import LoopAgent, ParallelAgent, SequentialAgent
+from google.adk.agents import ParallelAgent, SequentialAgent
 from google.genai import types
 
 from .agents.aggregator import create_aggregator
 from .agents.api_librarians import create_all_api_librarians
 from .agents.armchair_polymath import create_armchair_polymath
-from .agents.convergence_checker import create_convergence_checker
+from .agents.dynamic_scholar_block import create_dynamic_scholar_block
 from .agents.illustrator import create_illustrator
-from .agents.language_gate import make_debate_loop_gate
-from .agents.language_scholars import create_all_scholars
 from .agents.pipeline_gate import (
     make_polymath_gate,
     make_post_story_gate,
-    make_scholar_gate,
     make_storyteller_gate,
 )
 from .agents.publisher import create_publisher
@@ -50,11 +48,13 @@ if TYPE_CHECKING:
 # パイプライン説明文（build_pipeline 内で共有）
 _PIPELINE_DESCRIPTION = (
     "Ghost in the Archive multilingual blog creation pipeline. "
-    "Executes ParallelAPILibrarians(7 API groups) → Aggregator → ScholarBlock "
-    "→ DebateLoop → PolymathBlock → StorytellerBlock → PostStoryBlock "
+    "Executes ParallelAPILibrarians(7 API groups) → Aggregator "
+    "→ DynamicScholarBlock(analysis + debate) → PolymathBlock "
+    "→ StorytellerBlock → PostStoryBlock "
     "to research, analyze, debate, create content, generate images, "
     "translate to 3 languages (ja/es/de) in parallel, "
     "and publish historical mysteries and folkloric anomalies. "
+    "DynamicScholarBlock dynamically creates Scholars for active languages only. "
     "Pipeline gates skip downstream agents when upstream stages fail."
 )
 
@@ -64,12 +64,13 @@ SKIP_AUTHORS = {
     "ghost_commander",
     "parallel_api_librarians",
     "aggregator",
-    "parallel_scholars",
-    "parallel_debate_scholars",
-    "debate_loop",
-    "debate_round",
+    # DynamicScholarBlock 内部のオーケストレーターエージェント
+    "dynamic_scholar_block",
+    "dynamic_analysis",
+    "dynamic_debate_0",
+    "dynamic_debate_1",
+    # 並列翻訳・後処理ブロック
     "parallel_translators",
-    "scholar_block",
     "polymath_block",
     "storyteller_block",
     "post_story_block",
@@ -106,7 +107,6 @@ def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
     """
     # リーフエージェント（毎回新規生成）
     ap = create_armchair_polymath()
-    cc = create_convergence_checker()
     il = create_illustrator()
     pub = create_publisher()
     st = create_storyteller(storyteller)
@@ -114,41 +114,12 @@ def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
 
     # ファクトリエージェント（既に毎回新規生成）
     api_libs = create_all_api_librarians()
-    scholars_analysis = create_all_scholars(mode="analysis")
-    scholars_debate = create_all_scholars(mode="debate")
     translators = create_all_translators()
 
-    # 討論ラウンド: 全 Scholar が並列で議論 → 収束判定
-    debate_round = SequentialAgent(
-        name="debate_round",
-        sub_agents=[
-            ParallelAgent(
-                name="parallel_debate_scholars",
-                sub_agents=list(scholars_debate.values()),
-            ),
-            cc,
-        ],
-    )
-
-    # 討論ループ（LoopAgent: 最大2ラウンド、有意な分析が2言語未満ならスキップ）
-    debate_loop = LoopAgent(
-        name="debate_loop",
-        sub_agents=[debate_round],
-        max_iterations=2,
-        before_agent_callback=make_debate_loop_gate(),
-    )
-
-    # Scholar ブロック（全 Librarian 失敗時にスキップ）
-    scholar_block = SequentialAgent(
-        name="scholar_block",
-        sub_agents=[
-            ParallelAgent(
-                name="parallel_scholars",
-                sub_agents=list(scholars_analysis.values()),
-            ),
-        ],
-        before_agent_callback=make_scholar_gate(),
-    )
+    # DynamicScholarBlock: 分析 + 討論を一貫制御
+    # active_languages に基づき Scholar を動的生成、
+    # 有意な分析が2言語以上なら討論ループ（収束判定付き）
+    dsb = create_dynamic_scholar_block()
 
     # ArmchairPolymath ブロック（全 Scholar 失敗時にスキップ）
     polymath_block = SequentialAgent(
@@ -196,8 +167,7 @@ def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
                 sub_agents=api_libs,
             ),
             agg,
-            scholar_block,
-            debate_loop,
+            dsb,
             polymath_block,
             storyteller_block,
             post_story_block,
