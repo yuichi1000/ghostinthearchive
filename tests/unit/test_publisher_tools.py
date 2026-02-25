@@ -947,6 +947,43 @@ class TestPublishMysteryStateDirectRead:
         assert saved["narrative_content"] == "LLM provided content"
         assert saved["raw_data"] == "LLM provided raw data"
 
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_mystery_report_saved_to_firestore(self, mock_get_db, mock_get_bucket):
+        """state の mystery_report が Firestore に保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        report_text = "# Integrated Analysis Report\n\nA very long Polymath report..."
+        state = {"mystery_report": report_text}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["mystery_report"] == report_text
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_mystery_report_skips_insufficient_data(self, mock_get_db, mock_get_bucket):
+        """INSUFFICIENT_DATA の mystery_report は保存しない。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {"mystery_report": "INSUFFICIENT_DATA: No scholars produced analysis"}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "mystery_report" not in saved
+
 
 class TestThumbnailUpload:
     """サムネイルアップロードのテスト。"""

@@ -314,6 +314,12 @@ def publish_mystery(
                 data["multilingual_analysis"] = multilingual
                 data["languages_analyzed"] = list(multilingual.keys())
 
+            # mystery_report: Armchair Polymath の統合分析レポート全文を保存
+            mystery_report = tool_context.state.get("mystery_report")
+            if mystery_report and isinstance(mystery_report, str):
+                if "INSUFFICIENT_DATA" not in mystery_report:
+                    data["mystery_report"] = mystery_report
+
             # source_coverage の API フィールドを raw_search_results から programmatic に上書き
             # （LLM の手動転記ではなくセッション状態から直接生成）
             search_meta_json = _get_search_metadata(tool_context)
