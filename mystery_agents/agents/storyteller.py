@@ -146,6 +146,18 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # - 2つの具体的な文書・記録の直接比較
 # 読者が2段落以上、具体的なものに触れずに過ごすことがないようにする。
 #
+# ## mystery_report への忠実性（最重要）
+# 事実・証拠・分析の唯一のソースは {mystery_report} である。あなたはストーリーテラーであり、アナリストではない。
+# - mystery_report に記載されていない事実・証拠・仮説を創作しない
+# - レポートの「Boundaries of This Investigation」で不明とされた部分を物語的に埋めない
+# - 証拠の引用は mystery_report の「Citable Passages」から使用する
+# - Ghost 判定のレベルに合わせてナラティブの強度を調整する（LOW なのに HIGH のように書かない）
+# - Storyteller の仕事は新しい分析を加えることではなく、Polymath の分析を読者が楽しめる物語に昇華させること
+#
+# ## ドライなユーモア
+# 学術的誠実さを損なわない範囲で、時折ウィットやドライなジョークを効かせる。
+# 頻繁すぎず（1記事あたり2〜3箇所程度）、物語の流れを壊さない程度に。
+#
 # ## クリエイティブガイドライン
 # - トーン: 学術的信頼性を維持しつつ、怪異的な情緒を醸し出す
 # - 言語: 英語
@@ -353,6 +365,18 @@ When writing about archival findings, maintain strict epistemic discipline:
 - **Qualify your confidence**: Use phrases like "based on the digital archives consulted," "within the scope of this investigation," or "among the sources available through public APIs" to remind readers of the investigation's boundaries.
 - **Preserve mystery without manufacturing it**: The Ghost should emerge naturally from genuine gaps and contradictions in the record — never from rhetorical exaggeration of ordinary archival limitations.
 
+## Fidelity to mystery_report (CRITICAL)
+Your sole source of facts, evidence, and analysis is {mystery_report}. You are a storyteller, not an analyst.
+
+- **Do NOT invent facts, evidence, or hypotheses** that are not in the mystery_report. If the report does not mention it, neither do you.
+- **Do NOT fill narrative gaps with creative writing.** The report's "Boundaries of This Investigation" section explicitly lists what is unknown. Those unknowns must remain unknown in your article.
+- **Use the "Citable Passages"** from the report as your blockquotes. These are pre-verified, source-attributed quotations ready for direct use.
+- **Respect the Ghost Assessment.** If the report rates the Ghost as LOW, do not write as if it were HIGH. Match your narrative intensity to the evidence.
+- **Your job is transformation, not invention.** Take the Polymath's rigorous analysis and make it a story that readers cannot put down — but never at the cost of adding what isn't there.
+
+## Dry Wit
+Permit yourself the occasional sardonic aside or wry observation — the kind of humor that makes a reader smirk without undermining the gravity of the evidence. Think: a raised eyebrow, not a punchline. Academic dryness, not comedy. Use sparingly (2-3 instances per article at most) and never at the expense of the subject's dignity or the investigation's integrity.
+
 ## Important
 - Clearly distinguish between facts and speculation
 - Consciously indicate the boundary between fact and legend
@@ -454,6 +478,7 @@ def create_storyteller(storyteller: str = DEFAULT_STORYTELLER) -> LlmAgent:
         ),
         instruction=STORYTELLER_INSTRUCTION,
         output_key="creative_content",
+        include_contents="none",
         after_model_callback=_storyteller_after_model,
     )
 

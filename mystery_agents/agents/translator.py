@@ -318,6 +318,7 @@ def create_translator(target_lang: str) -> LlmAgent:
         ),
         instruction=instruction,
         output_key=f"translation_result_{target_lang}",
+        include_contents="none",
     )
 
 

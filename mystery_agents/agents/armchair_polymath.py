@@ -109,10 +109,42 @@ from ..tools.search_metadata import get_search_metadata
 #    機関アーカイブの価値ある一次資料が Scholar の分析で簡潔にしか言及されていない
 #    可能性を考慮する。
 #
+# ## 文字数
+# **5,000〜10,000 words（英語）** — このレポートは Storyteller への唯一の入力である。
+# 2,000〜3,500 語の記事を書くのに十分な詳細・証拠・分析を含めること。
+# Storyteller が詳細を創作せざるを得ない薄いレポートより、引用と分析が豊富な 7,000 語のレポートの方がはるかに価値がある。
+#
 # ## confidence_level チェックリスト
 # HIGH（Confirmed Ghost）: 3+独立資料の矛盾 + API限界で説明不可 + 2+代替仮説を検討・棄却 + 再現可能
 # MEDIUM（Suspected Ghost）: 2独立資料の矛盾 + API限界で部分的に説明可 + 1+代替仮説を検討
 # LOW（Archival Echo）: 単一ソース or 単一アーカイブ + API限界で説明可能 + 言語横断裏付けなし
+#
+# ## Output Format に追加するセクション
+#
+# **Ghost 判定（Ghost Assessment）:**
+# - なぜこれが Ghost と言えるのか
+# - 3条件（複数独立ソース / API限界排除 / 再現性）それぞれの評価
+# - Ghost 度（HIGH / MEDIUM / LOW）の判定根拠
+#
+# **言語学的分析（Linguistic Analysis）:**
+# - 異なる言語間の記述の差異
+# - 翻訳・転写による情報の変質・欠落
+# - 用語や表記の文化的差異が示唆するもの
+#
+# **文書館学的分析（Archival Science Analysis）:**
+# - アーカイブの選別バイアス
+# - 記録の不在が語るもの（何が保存され、何が破棄されたか）
+# - 保存と破棄の政治学
+#
+# **本調査の限界（Boundaries of This Investigation）:**
+# - 確認できなかった事項のリスト
+# - 証拠がない部分の明示的宣言
+# - 「不明」と「否定」の区別を明確化
+# - Storyteller が創作で埋めてはならない領域の指定
+#
+# **引用可能な素材（Citable Passages）:**
+# - 日付・人名・場所を含む具体的な一次資料の引用（3-5件）
+# - Storyteller が blockquote で直接使える形式で提供
 #
 # ## ガード
 # - 全言語の分析が空 → INSUFFICIENT_DATA を出力
@@ -239,6 +271,12 @@ Assess what existing scholarship may already cover this topic:
 - **Temporal bias**: Has academic interest in this topic shifted over time? Are there periods of intense study followed by neglect?
 - **Access bias**: Are the key primary sources held in institutions with restricted access, creating a skew in who has published on this topic?
 
+## Word Count
+**5,000–10,000 words (English).** This report is the sole input for the Storyteller —
+it must contain enough detail, evidence, and analysis for a compelling 2,000–3,500 word article.
+Err on the side of thoroughness: a 7,000-word report with rich citations and nuanced analysis
+is far more valuable than a 3,000-word summary that forces the Storyteller to invent details.
+
 ## Output Format
 Structure your integrated analysis as a "Mystery Report":
 
@@ -273,6 +311,44 @@ Structure your integrated analysis as a "Mystery Report":
 - Power dynamics visible across language barriers
 - Cultural contact and its documentary traces
 - What the comparison of different language records reveals about social structures
+
+**Ghost Assessment:**
+Explicitly evaluate whether this investigation constitutes a Ghost, using the project's three-condition framework:
+1. **Multiple Independent Source Condition**: Do 2+ independent primary sources contain contradictions that cannot be explained by normal record-keeping practices? Cite the specific sources and the specific contradiction.
+2. **API Limitation Exclusion Condition**: Can the contradiction be explained by digitization gaps, API coverage, OCR quality, or search terminology limitations? If yes, explain how. If no, explain why not.
+3. **Reproducibility Condition**: Can a third party, using only public sources, verify the same contradiction? Provide the specific steps.
+- **Ghost Rating**: HIGH / MEDIUM / LOW — with explicit justification for the chosen level.
+
+**Linguistic Analysis:**
+- How are descriptions of the same events, people, or places different across languages?
+- What information is lost, distorted, or added through translation and transcription?
+- What do differences in terminology, naming conventions, or orthography across cultures suggest?
+- Are there cases where a word or concept in one language has no equivalent in another, affecting the historical record?
+
+**Archival Science Analysis:**
+- What selection biases are visible in the archives consulted? (What was deemed worth preserving, and by whom?)
+- What does the ABSENCE of records tell us? (What was likely destroyed, suppressed, or never recorded?)
+- The politics of preservation and destruction: Who decided what to keep and what to discard?
+- How do different national archival traditions treat this type of material differently?
+
+**Boundaries of This Investigation:**
+This section is critical for the Storyteller — it defines what the Storyteller must NOT invent.
+- **What we could not confirm**: List specific claims, dates, or connections that remain unverified despite searching.
+- **What we do not know**: Explicitly declare gaps in the evidence — questions that the available sources simply cannot answer.
+- **"Unknown" vs. "Disproven"**: Clearly distinguish between "we found no evidence for X" (unknown) and "we found evidence against X" (disproven).
+- **Off-limits for narrative embellishment**: Specify areas where the Storyteller must not fill gaps with creative writing. If a date is uncertain, it must remain uncertain in the article. If a person's motives are unknown, they must remain unknown.
+
+**Citable Passages:**
+Provide 3-5 specific, ready-to-use quotations from primary sources that the Storyteller can embed as blockquotes.
+Each passage must include:
+- The exact text (direct quote or close paraphrase from the source)
+- Source attribution (archive name, document title, date)
+- Brief context note (1 sentence explaining why this passage matters)
+
+Example format:
+> "The manifest lists 27 passengers, yet the harbor log records only 23 souls aboard."
+> — Boston Harbor Master's Log, March 15, 1842 (National Archives)
+> Context: This four-person discrepancy is the core anomaly of this investigation.
 
 **Points Requiring Further Investigation:**
 [What needs further research, especially in languages not yet searched]
