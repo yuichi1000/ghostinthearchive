@@ -1,6 +1,18 @@
 """Unit tests for NYPL Digital Collections API tool."""
 
+import os
+
+import pytest
 import responses
+
+# テスト用ダミートークン
+_TEST_TOKEN = "test_nypl_token_12345"
+
+
+@pytest.fixture(autouse=True)
+def _set_nypl_token(monkeypatch):
+    """全テストで NYPL_API_TOKEN を設定する。"""
+    monkeypatch.setenv("NYPL_API_TOKEN", _TEST_TOKEN)
 
 from mystery_agents.tools.nypl_digital import (
     BASE_URL,
@@ -50,7 +62,7 @@ class TestNYPLSource:
         assert source.source_name == "NYPL Digital Collections"
         assert source.supported_languages == {"en"}
         assert source.is_newspaper_source is False
-        assert source.env_var_key is None
+        assert source.env_var_key == "NYPL_API_TOKEN"
 
     def test_empty_keywords(self):
         """空のキーワードでエラーを返す。"""
