@@ -1,4 +1,4 @@
-export const SUPPORTED_LANGS = ["en", "ja", "es", "de", "fr", "nl", "pt"] as const;
+export const SUPPORTED_LANGS = ["en", "ja", "es", "de"] as const;
 export type SupportedLang = (typeof SUPPORTED_LANGS)[number];
 export const DEFAULT_LANG: SupportedLang = "en";
 export const LANG_NAMES: Record<SupportedLang, string> = {
@@ -6,9 +6,6 @@ export const LANG_NAMES: Record<SupportedLang, string> = {
   ja: "日本語",
   es: "Español",
   de: "Deutsch",
-  fr: "Français",
-  nl: "Nederlands",
-  pt: "Português",
 };
 
 export function isValidLang(lang: string): lang is SupportedLang {

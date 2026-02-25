@@ -8,15 +8,12 @@ import { slugify } from "@/lib/markdown-headings"
 import type { ReactNode } from "react"
 import { ArchiveImage } from "./archive-image"
 
-// 7言語のアーカイブ引用ラベル
+// 4言語のアーカイブ引用ラベル
 const ARCHIVE_LABEL: Record<string, string> = {
   en: "From the Archive",
   ja: "アーカイブ記録",
   es: "Del Archivo",
   de: "Aus dem Archiv",
-  fr: "Extrait d'archive",
-  nl: "Uit het Archief",
-  pt: "Do Arquivo",
 }
 
 function ArchiveBlockquote({ children, lang }: { children?: React.ReactNode; lang: string }) {
