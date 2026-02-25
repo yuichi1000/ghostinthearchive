@@ -40,7 +40,7 @@ function PreviewArchiveImage({ src, alt }: { src?: string; alt?: string }) {
   const [hasError, setHasError] = useState(false)
   if (!src || hasError) return null
   return (
-    <figure className="not-prose my-8 mx-auto w-fit max-w-3xl">
+    <figure className="not-prose my-8 flex flex-col items-center">
       <img
         src={src}
         alt={alt || "Archival Image"}

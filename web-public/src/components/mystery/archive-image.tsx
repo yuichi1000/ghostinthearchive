@@ -24,7 +24,7 @@ export function ArchiveImage({ src, alt, lang }: ArchiveImageProps) {
   const label = IMAGE_LABEL[lang] || IMAGE_LABEL.en
 
   return (
-    <figure className="not-prose my-8 mx-auto w-fit max-w-3xl">
+    <figure className="not-prose my-8 flex flex-col items-center">
       <img
         src={src}
         alt={alt || label}
