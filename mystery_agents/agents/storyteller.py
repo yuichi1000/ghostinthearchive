@@ -19,7 +19,11 @@ from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models.llm_response import LlmResponse
 
-from shared.model_config import DEFAULT_STORYTELLER, create_storyteller_model
+from shared.model_config import (
+    DEFAULT_STORYTELLER,
+    STORYTELLER_MODELS,
+    create_storyteller_model,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -363,8 +367,7 @@ def _storyteller_after_model(
     callback_context: CallbackContext,
     llm_response: LlmResponse,
 ) -> LlmResponse | None:
-    """Storyteller の LLM 応答メタデータを記録し、異常応答を検出する。"""
-    # 正常応答（テキストあり + エラーなし）はスルー
+    """Storyteller の LLM 応答メタデータを記録する。"""
     has_text = (
         llm_response.content
         and llm_response.content.parts
@@ -373,11 +376,42 @@ def _storyteller_after_model(
             for p in llm_response.content.parts
         )
     )
+
+    # モデル情報をセッション状態から取得
+    storyteller_key = callback_context.state.get("storyteller", DEFAULT_STORYTELLER)
+    model_config = STORYTELLER_MODELS.get(storyteller_key, {})
+
     if has_text and not llm_response.error_code:
+        # 正常応答: モデル情報 + トークン使用量をログ
+        metadata = {
+            "storyteller": storyteller_key,
+            "display_name": model_config.get("display_name", "unknown"),
+            "model_id": model_config.get("model_id", "unknown"),
+            "model_version": getattr(llm_response, "model_version", None),
+            "prompt_tokens": (
+                llm_response.usage_metadata.prompt_token_count
+                if llm_response.usage_metadata else None
+            ),
+            "output_tokens": (
+                llm_response.usage_metadata.candidates_token_count
+                if llm_response.usage_metadata else None
+            ),
+        }
+        logger.info(
+            "Storyteller 応答完了: model=%s (%s), tokens=%s/%s",
+            metadata["display_name"],
+            metadata["model_id"],
+            metadata["prompt_tokens"],
+            metadata["output_tokens"],
+        )
+        callback_context.state["storyteller_llm_metadata"] = metadata
         return None
 
     # 異常応答: メタデータをログ + セッション状態に記録
     metadata = {
+        "storyteller": storyteller_key,
+        "display_name": model_config.get("display_name", "unknown"),
+        "model_id": model_config.get("model_id", "unknown"),
         "finish_reason": str(llm_response.finish_reason) if llm_response.finish_reason else None,
         "error_code": llm_response.error_code,
         "error_message": llm_response.error_message,
