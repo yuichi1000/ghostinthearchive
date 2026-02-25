@@ -325,11 +325,15 @@ def publish_mystery(
                     sc["apis_with_results"] = search_meta["apis_with_results"]
                     sc["apis_without_results"] = search_meta["apis_without_results"]
                 else:
-                    data["source_coverage"] = {
+                    sc = {
                         "apis_searched": search_meta["apis_searched"],
                         "apis_with_results": search_meta["apis_with_results"],
                         "apis_without_results": search_meta["apis_without_results"],
                     }
+                    data["source_coverage"] = sc
+                # API エラー情報を記録（エラーがある場合のみ）
+                if search_meta.get("errors"):
+                    sc["api_errors"] = search_meta["errors"]
 
             # 全言語の翻訳結果を translations map に収集
             translations: dict[str, dict] = {}

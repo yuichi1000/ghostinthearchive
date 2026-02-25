@@ -1221,3 +1221,76 @@ class TestSourceCoverageProgrammaticOverwrite:
         # LLM 生成値がそのまま残る
         assert sc["apis_searched"] == ["chronicling_america"]
 
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_api_errors_saved_to_source_coverage(self, mock_get_db, mock_get_bucket):
+        """API エラーがある場合、source_coverage.api_errors に保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Test",
+                "summary": "Test summary",
+                "source_coverage": {
+                    "apis_searched": ["llm_value"],
+                    "apis_with_results": [],
+                    "apis_without_results": ["llm_value"],
+                    "coverage_assessment": "Limited coverage",
+                },
+            },
+            "raw_search_results_en": [
+                {"source": "chronicling_america", "total_hits": 0, "documents_returned": 0,
+                 "error": "Chronicling America API error: 503 Server Error"},
+                {"source": "europeana", "total_hits": 10, "documents_returned": 5},
+            ],
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        sc = saved["source_coverage"]
+        assert "api_errors" in sc
+        assert "chronicling_america" in sc["api_errors"]
+        assert "503" in sc["api_errors"]["chronicling_america"]
+        # エラーのない europeana は api_errors に含まれない
+        assert "europeana" not in sc["api_errors"]
+
+    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_no_api_errors_field_when_no_errors(self, mock_get_db, mock_get_bucket):
+        """API エラーがない場合、api_errors フィールドは存在しない。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Test",
+                "summary": "Test summary",
+            },
+            "raw_search_results_en": [
+                {"source": "europeana", "total_hits": 20, "documents_returned": 5},
+                {"source": "loc_digital", "total_hits": 0, "documents_returned": 0},
+            ],
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        sc = saved["source_coverage"]
+        assert "api_errors" not in sc
+
