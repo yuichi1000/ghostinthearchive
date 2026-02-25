@@ -545,10 +545,10 @@ export const AGENT_NAME_LABELS: Record<string, string> = {
  * ストーリーテラー（LLM）の表示名マッピング
  */
 export const STORYTELLER_DISPLAY_NAMES: Record<string, string> = {
-  claude: "Claude Sonnet 4.5",
+  claude: "Claude Sonnet 4.6",
   gemini: "Gemini 3 Pro",
-  gpt: "GPT-4o",
+  gpt: "GPT-4.1",
   llama: "Llama 4 Maverick",
-  deepseek: "DeepSeek V3",
+  deepseek: "DeepSeek V3.2",
   mistral: "Mistral Large",
 };

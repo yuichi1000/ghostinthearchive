@@ -65,7 +65,7 @@ class TestCreateStorytellerModel:
         create_storyteller_model("claude")
         last_call = LiteLlm.call_args
         assert last_call is not None
-        assert last_call.kwargs.get("model") == "openrouter/anthropic/claude-sonnet-4.5"
+        assert last_call.kwargs.get("model") == "openrouter/anthropic/claude-sonnet-4.6"
 
     def test_gpt_returns_litellm(self):
         """gpt ストーリーテラーは LiteLlm アダプタを返すこと。"""
@@ -75,7 +75,7 @@ class TestCreateStorytellerModel:
         create_storyteller_model("gpt")
         last_call = LiteLlm.call_args
         assert last_call is not None
-        assert last_call.kwargs.get("model") == "openrouter/openai/gpt-4o"
+        assert last_call.kwargs.get("model") == "openrouter/openai/gpt-4.1"
 
     def test_llama_returns_litellm(self):
         """llama ストーリーテラーは LiteLlm アダプタを返すこと。"""
@@ -95,7 +95,7 @@ class TestCreateStorytellerModel:
         create_storyteller_model("deepseek")
         last_call = LiteLlm.call_args
         assert last_call is not None
-        assert last_call.kwargs.get("model") == "openrouter/deepseek/deepseek-chat"
+        assert last_call.kwargs.get("model") == "openrouter/deepseek/deepseek-v3.2"
 
     def test_mistral_returns_litellm(self):
         """mistral ストーリーテラーは LiteLlm アダプタを返すこと。"""
