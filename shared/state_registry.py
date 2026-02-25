@@ -37,8 +37,8 @@ class StateKey:
 STATE_KEYS: list[StateKey] = [
     StateKey(
         name="selected_languages",
-        description="調査対象言語リスト（ThemeAnalyzer が選択）",
-        written_by=("theme_analyzer_tools",),
+        description="調査対象言語リスト（パイプライン初期化で全言語セット）",
+        written_by=("pipeline_init",),
         read_by=("language_gate", "pipeline_gate"),
     ),
     StateKey(
@@ -68,7 +68,7 @@ STATE_KEYS: list[StateKey] = [
     StateKey(
         name="debate_whiteboard",
         description="討論ホワイトボード（Scholar 討論モードが累積書き込み）",
-        written_by=("theme_analyzer_tools", "debate_tools"),
+        written_by=("pipeline_init", "debate_tools"),
         read_by=("armchair_polymath",),
     ),
     StateKey(

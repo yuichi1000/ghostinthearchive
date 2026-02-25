@@ -91,11 +91,6 @@ class TestADKEvaluationSetup:
         producer_eval = EVAL_SETS_DIR / "producer_eval.json"
         assert producer_eval.exists()
 
-    def test_theme_analyzer_eval_exists(self):
-        """theme_analyzer_eval.json should exist."""
-        theme_analyzer_eval = EVAL_SETS_DIR / "theme_analyzer_eval.json"
-        assert theme_analyzer_eval.exists()
-
     def test_armchair_polymath_eval_exists(self):
         """armchair_polymath_eval.json should exist."""
         armchair_polymath_eval = EVAL_SETS_DIR / "armchair_polymath_eval.json"
@@ -342,37 +337,6 @@ class TestEvalSetContent:
 
         # Should have bilingual test
         assert any("bilingual" in eid.lower() for eid in eval_ids)
-
-    def test_theme_analyzer_eval_covers_key_scenarios(self):
-        """ThemeAnalyzer eval should cover geographic, cultural, and fallback scenarios."""
-        with open(EVAL_SETS_DIR / "theme_analyzer_eval.json") as f:
-            data = json.load(f)
-
-        eval_ids = [e["eval_id"] for e in data["eval_cases"]]
-
-        # 地理的手がかりに基づく言語選択
-        assert any("geographic" in eid.lower() for eid in eval_ids)
-
-        # 文化的手がかりに基づく言語選択
-        assert any("cultural" in eid.lower() for eid in eval_ids)
-
-        # デフォルトフォールバック
-        assert any("fallback" in eid.lower() or "default" in eid.lower() for eid in eval_ids)
-
-    def test_theme_analyzer_eval_covers_tool_usage(self):
-        """ThemeAnalyzer eval should test save_language_selection tool usage."""
-        with open(EVAL_SETS_DIR / "theme_analyzer_eval.json") as f:
-            data = json.load(f)
-
-        # 全シナリオで save_language_selection を呼び出すこと
-        for eval_case in data["eval_cases"]:
-            for turn in eval_case.get("conversation", []):
-                intermediate_data = turn.get("intermediate_data", {})
-                tool_uses = intermediate_data.get("tool_uses", [])
-                tool_names = [t.get("name", "") for t in tool_uses]
-                assert "save_language_selection" in tool_names, (
-                    f"Eval {eval_case['eval_id']} should use save_language_selection tool"
-                )
 
     def test_armchair_polymath_eval_covers_key_scenarios(self):
         """Armchair Polymath eval should cover cross-language, single, debate, and insufficient scenarios."""

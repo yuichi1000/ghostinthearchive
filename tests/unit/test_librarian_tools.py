@@ -25,6 +25,7 @@ def _make_mock_source(
     total_hits=0,
     error=None,
     supports_language_filter=False,
+    supported_languages=None,
     delay=0,
 ):
     """テスト用のモック ArchiveSource を作成する。"""
@@ -36,6 +37,7 @@ def _make_mock_source(
     s.source_key = source_key
     s.source_name = source_name
     s.supports_language_filter = supports_language_filter
+    s.supported_languages = supported_languages or {"en"}
 
     def _search(**kwargs):
         if delay > 0:
@@ -207,6 +209,7 @@ class TestParallelExecution:
             source_key = "bad"
             source_name = "Bad Source"
             supports_language_filter = False
+            supported_languages = {"en"}
 
             def search(self, **kwargs):
                 raise ConnectionError("API down")
@@ -251,6 +254,7 @@ class TestDynamicMaxResults:
                 source_key = key
                 source_name = f"Source {key}"
                 supports_language_filter = False
+                supported_languages = {"en"}
 
                 def search(self, **kwargs):
                     call_log.append((key, kwargs["max_results"]))
@@ -285,6 +289,7 @@ class TestDynamicMaxResults:
                 source_key = key
                 source_name = f"Source {key}"
                 supports_language_filter = False
+                supported_languages = {"en"}
 
                 def search(self, **kwargs):
                     call_log.append((key, kwargs["max_results"]))
@@ -629,6 +634,7 @@ class TestDefaultDates:
             source_key = "loc"
             source_name = "LOC"
             supports_language_filter = False
+            supported_languages = {"en"}
 
             def search(self, **kwargs):
                 call_log.append(kwargs)
@@ -790,3 +796,140 @@ class TestLogKeywordLanguageMismatch:
             _log_keyword_language_mismatch([], "de")
 
         assert "キーワード言語不一致" not in caplog.text
+
+
+class TestGetExpansionLanguages:
+    """_get_expansion_languages のテスト。"""
+
+    def test_returns_other_languages(self):
+        """自言語を除いた他の言語を返す。"""
+        from mystery_agents.tools.librarian_tools import _get_expansion_languages
+        from tests.fakes import make_tool_context
+
+        ctx = make_tool_context({"selected_languages": ["en", "de", "fr"]})
+        result = _get_expansion_languages(ctx, "de")
+        assert result == ["en", "fr"]
+
+    def test_single_language_returns_empty(self):
+        """1言語のみなら空リスト。"""
+        from mystery_agents.tools.librarian_tools import _get_expansion_languages
+        from tests.fakes import make_tool_context
+
+        ctx = make_tool_context({"selected_languages": ["en"]})
+        result = _get_expansion_languages(ctx, "en")
+        assert result == []
+
+    def test_none_context_returns_empty(self):
+        """tool_context が None なら空リスト。"""
+        from mystery_agents.tools.librarian_tools import _get_expansion_languages
+
+        result = _get_expansion_languages(None, "en")
+        assert result == []
+
+
+class TestMultilingualKeywordExpansion:
+    """search_archives の多言語キーワード展開テスト。"""
+
+    @patch("mystery_agents.tools.librarian_tools.translate_keywords")
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    def test_expansion_sent_to_multilingual_sources_only(
+        self, mock_get_all, mock_validate, mock_translate
+    ):
+        """展開キーワードは多言語ソースのみに渡される。"""
+        from tests.fakes import make_tool_context
+
+        # 多言語ソース（Europeana: 6言語対応）
+        multi_source = _make_mock_source(
+            source_key="europeana",
+            source_name="Europeana",
+            docs=[_make_doc(url="https://europeana.eu/1")],
+            total_hits=1,
+            supported_languages={"en", "de", "es", "fr", "nl", "pt"},
+        )
+        # 単一言語ソース（DDB: ドイツ語のみ）
+        single_source = _make_mock_source(
+            source_key="ddb",
+            source_name="DDB",
+            docs=[_make_doc(url="https://ddb.de/1")],
+            total_hits=1,
+            supported_languages={"de"},
+        )
+        mock_get_all.return_value = {"europeana": multi_source, "ddb": single_source}
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 2, "reachable": 2, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 50,
+            "verified_documents": [
+                _make_doc(url="https://europeana.eu/1"),
+                _make_doc(url="https://ddb.de/1"),
+            ],
+        })()
+        mock_translate.return_value = {"en": ["ghost", "haunting"]}
+
+        ctx = make_tool_context({"selected_languages": ["en", "de"]})
+        search_archives(
+            keywords="Geist, Spuk",
+            sources="europeana,ddb",
+            language="de",
+            tool_context=ctx,
+        )
+
+        mock_translate.assert_called_once()
+
+    @patch("mystery_agents.tools.librarian_tools.translate_keywords")
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    def test_no_expansion_without_tool_context(
+        self, mock_get_all, mock_validate, mock_translate
+    ):
+        """tool_context がない場合は展開しない。"""
+        mock_source = _make_mock_source(
+            source_key="europeana",
+            docs=[],
+            total_hits=0,
+            supported_languages={"en", "de"},
+        )
+        mock_get_all.return_value = {"europeana": mock_source}
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 0, "reachable": 0, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 0, "verified_documents": [],
+        })()
+
+        search_archives(
+            keywords="ghost",
+            sources="europeana",
+            language="en",
+            tool_context=None,
+        )
+
+        mock_translate.assert_not_called()
+
+    @patch("mystery_agents.tools.librarian_tools.translate_keywords")
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    def test_no_expansion_without_language(
+        self, mock_get_all, mock_validate, mock_translate
+    ):
+        """language が未指定の場合は展開しない。"""
+        from tests.fakes import make_tool_context
+
+        mock_source = _make_mock_source(
+            source_key="loc",
+            docs=[],
+            total_hits=0,
+        )
+        mock_get_all.return_value = {"loc": mock_source}
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 0, "reachable": 0, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 0, "verified_documents": [],
+        })()
+
+        ctx = make_tool_context({"selected_languages": ["en", "de"]})
+        search_archives(
+            keywords="ghost",
+            sources="loc",
+            language=None,
+            tool_context=ctx,
+        )
+
+        mock_translate.assert_not_called()

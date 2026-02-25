@@ -11,7 +11,6 @@ from .language_librarians import create_all_librarians, create_librarian
 from .language_scholars import create_all_scholars, create_scholar
 from .publisher import create_publisher, publisher_agent
 from .storyteller import create_storyteller, storyteller_agent
-from .theme_analyzer import create_theme_analyzer, theme_analyzer_agent
 from .translator import create_all_translators, create_translator, translator_agent
 
 __all__ = [
@@ -29,8 +28,6 @@ __all__ = [
     "publisher_agent",
     "create_convergence_checker",
     "convergence_checker_agent",
-    "create_theme_analyzer",
-    "theme_analyzer_agent",
     "create_translator",
     "create_all_translators",
     "translator_agent",

@@ -3,12 +3,11 @@
 Defines root_agent (ghost_commander) as a SequentialAgent that orchestrates
 the multilingual investigation pipeline:
 
-  ThemeAnalyzer → ParallelLibrarians → ScholarBlock → DebateLoop
+  ParallelLibrarians → ScholarBlock → DebateLoop
     → PolymathBlock → StorytellerBlock → PostStoryBlock
 
-各言語エージェントは before_agent_callback で selected_languages をチェックし、
-未選択の言語はスキップされる。DebateLoop は有意な分析が2言語以上の場合のみ実行される。
-パイプラインゲートにより、前段が失敗した場合は後続をスキップしてトークン消費を抑制する。
+全7言語の Librarian/Scholar を常時実行し、パイプラインゲートが
+結果なしの言語を自動スキップする。DebateLoop は有意な分析が2言語以上の場合のみ実行。
 PostStoryBlock では Illustrator と6言語翻訳が並列実行される。
 
 DebateLoop 内部は SequentialAgent(debate_round) で構成:
@@ -19,7 +18,12 @@ build_pipeline() は全エージェントを毎回新規生成するファクト
 ADK の単一親制約に違反しないよう、同一インスタンスを複数の親に割り当てない。
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
+
 from google.adk.agents import LoopAgent, ParallelAgent, SequentialAgent
+from google.genai import types
 
 from .agents.armchair_polymath import create_armchair_polymath
 from .agents.convergence_checker import create_convergence_checker
@@ -35,14 +39,17 @@ from .agents.pipeline_gate import (
 )
 from .agents.publisher import create_publisher
 from .agents.storyteller import create_storyteller
-from .agents.theme_analyzer import create_theme_analyzer
 from .agents.translator import create_all_translators
+from shared.constants import ALLOWED_LANGUAGES
 from shared.model_config import DEFAULT_STORYTELLER
+
+if TYPE_CHECKING:
+    from google.adk.agents.callback_context import CallbackContext
 
 # パイプライン説明文（build_pipeline 内で共有）
 _PIPELINE_DESCRIPTION = (
     "Ghost in the Archive multilingual blog creation pipeline. "
-    "Executes ThemeAnalyzer → ParallelLibrarians → ScholarBlock → DebateLoop "
+    "Executes ParallelLibrarians(7 languages) → ScholarBlock → DebateLoop "
     "→ PolymathBlock → StorytellerBlock → PostStoryBlock "
     "to research, analyze, debate, create content, generate images, "
     "translate to 6 languages (ja/es/de/fr/nl/pt) in parallel, "
@@ -68,6 +75,20 @@ SKIP_AUTHORS = {
 }
 
 
+def _initialize_pipeline_state(
+    callback_context: CallbackContext,
+) -> Optional[types.Content]:
+    """パイプライン状態を初期化する（ThemeAnalyzer の代替）。
+
+    全7言語を常時実行するため、selected_languages を全言語リストで初期化。
+    下流のゲート・討論ロジックとの互換性を維持する。
+    """
+    callback_context.state["selected_languages"] = sorted(ALLOWED_LANGUAGES)
+    callback_context.state["debate_whiteboard"] = ""
+    callback_context.state["structured_report"] = {}
+    return None  # 実行続行
+
+
 def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
     """パイプラインを新規構築する。毎回新しいエージェントインスタンスを生成。
 
@@ -81,7 +102,6 @@ def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
         構築済みパイプライン（SequentialAgent）
     """
     # リーフエージェント（毎回新規生成）
-    ta = create_theme_analyzer()
     ap = create_armchair_polymath()
     cc = create_convergence_checker()
     il = create_illustrator()
@@ -167,7 +187,6 @@ def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
         name="ghost_commander",
         description=_PIPELINE_DESCRIPTION,
         sub_agents=[
-            ta,
             ParallelAgent(
                 name="parallel_librarians",
                 sub_agents=list(libs.values()),
@@ -178,6 +197,7 @@ def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
             storyteller_block,
             post_story_block,
         ],
+        before_agent_callback=_initialize_pipeline_state,
     )
 
 

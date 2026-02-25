@@ -107,8 +107,8 @@ class TestScholarGate:
         result = gate(ctx)
         assert result is None
 
-    def test_no_selected_languages_defaults_to_en(self):
-        """selected_languages がない場合 ['en'] をデフォルトにする。"""
+    def test_no_selected_languages_defaults_to_all(self):
+        """selected_languages がない場合、全言語をデフォルトにする。"""
         ctx = MockCallbackContext(state={
             "collected_documents_en": "Found documents...",
         })

@@ -15,7 +15,7 @@ from google.adk.agents import LlmAgent
 from shared.model_config import create_pro_model
 
 from ..tools.debate_tools import append_to_whiteboard
-from .language_gate import make_debate_gate, make_language_gate
+from .language_gate import make_debate_gate
 
 # === 日本語訳 ===
 # 言語別 Scholar の共通指示テンプレート（分析モード）:
@@ -347,7 +347,6 @@ def create_scholar(lang_code: str, mode: str = "analysis") -> LlmAgent:
             instruction=instruction,
             tools=[],  # save_structured_report は呼び出さない
             output_key=f"scholar_analysis_{lang_code}",
-            before_agent_callback=make_language_gate(lang_code),
         )
     elif mode == "debate":
         instruction = _BASE_SCHOLAR_DEBATE_INSTRUCTION.format(
