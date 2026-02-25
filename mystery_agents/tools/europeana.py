@@ -48,7 +48,7 @@ class EuropeanaSource(ArchiveSource):
     source_name = "Europeana"
     source_type = "europeana"
     min_request_delay = 1.0
-    supported_languages = {"de", "es", "fr", "nl", "pt"}
+    supported_languages = {"en", "de", "es", "fr", "nl", "pt"}
     supports_language_filter = True
     is_newspaper_source = False
     expected_domains = ["europeana.eu"]

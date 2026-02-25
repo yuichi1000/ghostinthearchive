@@ -512,7 +512,6 @@ export interface PipelineRun {
  * エージェント名の日本語ラベルマッピング
  */
 export const AGENT_NAME_LABELS: Record<string, string> = {
-  theme_analyzer: "テーマ分析",
   librarian: "資料収集",
   librarian_en: "資料収集（英語）",
   librarian_es: "資料収集（スペイン語）",

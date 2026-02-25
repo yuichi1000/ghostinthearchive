@@ -12,7 +12,6 @@ from google.adk.agents import LlmAgent
 
 from shared.model_config import create_flash_model
 
-from .language_gate import make_language_gate
 from ..tools.librarian_tools import (
     get_available_keywords,
     search_archives,
@@ -241,7 +240,6 @@ def create_librarian(lang_code: str) -> LlmAgent:
         instruction=instruction,
         tools=tools,
         output_key=f"collected_documents_{lang_code}",
-        before_agent_callback=make_language_gate(lang_code),
     )
 
 

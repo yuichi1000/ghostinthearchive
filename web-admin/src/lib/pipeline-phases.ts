@@ -12,7 +12,6 @@ interface PipelinePhase {
 
 const PIPELINE_PHASES: PipelinePhase[] = [
   // ブログパイプライン
-  { id: "theme",              label: "テーマ分析",  match: (n) => n === "theme_analyzer" },
   { id: "research",           label: "資料収集",    match: (n) => n.startsWith("librarian") },
   { id: "analysis",           label: "学際分析",    match: (n) => n.startsWith("scholar") && !n.includes("debate") },
   { id: "debate",             label: "討論",        match: (n) => n.includes("debate") },

@@ -1,7 +1,7 @@
 """Unit tests for language gate callbacks.
 
-make_language_gate, make_debate_gate, make_debate_loop_gate のテスト。
-before_agent_callback として機能し、未選択言語のエージェントをスキップする。
+make_debate_gate, make_debate_loop_gate のテスト。
+before_agent_callback として機能し、討論モードのスキップ条件を制御する。
 
 注意: conftest.py で google.genai.types がモックされるため、
 types.Content() は MagicMock を返す。スキップ判定は「None でないこと」で検証する。
@@ -14,7 +14,6 @@ import pytest
 from mystery_agents.agents.language_gate import (
     make_debate_gate,
     make_debate_loop_gate,
-    make_language_gate,
 )
 
 
@@ -24,49 +23,6 @@ def mock_callback_context():
     ctx = MagicMock()
     ctx.state = {}
     return ctx
-
-
-class TestMakeLanguageGate:
-    """make_language_gate のテスト。"""
-
-    def test_selected_language_returns_none(self, mock_callback_context):
-        """選択言語に含まれる場合は None を返す（実行続行）。"""
-        mock_callback_context.state = {"selected_languages": ["en", "de"]}
-        gate = make_language_gate("en")
-        result = gate(mock_callback_context)
-        assert result is None
-
-    def test_unselected_language_returns_skip(self, mock_callback_context):
-        """選択言語に含まれない場合は非 None を返す（スキップ）。"""
-        mock_callback_context.state = {"selected_languages": ["en", "de"]}
-        gate = make_language_gate("fr")
-        result = gate(mock_callback_context)
-        assert result is not None
-
-    def test_default_en_only_when_not_set(self, mock_callback_context):
-        """selected_languages 未設定時は en のみ実行。"""
-        mock_callback_context.state = {}
-        gate_en = make_language_gate("en")
-        gate_de = make_language_gate("de")
-        assert gate_en(mock_callback_context) is None
-        assert gate_de(mock_callback_context) is not None
-
-    def test_invalid_type_fallback_to_en(self, mock_callback_context):
-        """selected_languages が不正な型の場合は en にフォールバック。"""
-        mock_callback_context.state = {"selected_languages": "not_a_list"}
-        gate_en = make_language_gate("en")
-        gate_de = make_language_gate("de")
-        assert gate_en(mock_callback_context) is None
-        assert gate_de(mock_callback_context) is not None
-
-    def test_all_languages_selected(self, mock_callback_context):
-        """全言語選択時は全て None を返す。"""
-        mock_callback_context.state = {
-            "selected_languages": ["en", "de", "es", "fr", "nl", "pt"]
-        }
-        for lang in ["en", "de", "es", "fr", "nl", "pt"]:
-            gate = make_language_gate(lang)
-            assert gate(mock_callback_context) is None
 
 
 class TestMakeDebateGate:
@@ -97,15 +53,17 @@ class TestMakeDebateGate:
         result = gate(mock_callback_context)
         assert result is not None
 
-    def test_default_single_en_skips(self, mock_callback_context):
-        """デフォルト（en のみ）の場合はスキップ。"""
-        mock_callback_context.state = {}
+    def test_default_all_languages_passes(self, mock_callback_context):
+        """デフォルト（全7言語）の場合、有意な分析があれば通過。"""
+        mock_callback_context.state = {
+            "scholar_analysis_en": "Detailed analysis...",
+        }
         gate = make_debate_gate("en")
         result = gate(mock_callback_context)
-        assert result is not None
+        assert result is None
 
     def test_invalid_type_fallback(self, mock_callback_context):
-        """不正な型の場合はデフォルト en のみ → スキップ。"""
+        """不正な型の場合はデフォルト全言語 → 有意な分析がないためスキップ。"""
         mock_callback_context.state = {"selected_languages": 42}
         gate = make_debate_gate("en")
         result = gate(mock_callback_context)
@@ -217,8 +175,8 @@ class TestMakeDebateLoopGate:
         gate = make_debate_loop_gate()
         assert gate(mock_callback_context) is None
 
-    def test_default_single_language_skips(self, mock_callback_context):
-        """デフォルト（en のみ）→ 1言語のみなのでスキップ。"""
+    def test_default_all_languages_with_one_analysis_skips(self, mock_callback_context):
+        """デフォルト（全7言語）で有意な分析が1言語のみ → スキップ。"""
         mock_callback_context.state = {
             "scholar_analysis_en": "English analysis...",
         }

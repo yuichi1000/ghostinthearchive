@@ -1,8 +1,7 @@
 """言語ゲートコールバック。
 
 ADK の before_agent_callback パターンを使用して、
-テーマに基づいて選択されていない言語のエージェントをスキップする。
-MultilingualOrchestrator (カスタム BaseAgent) の代替として機能する。
+討論モードの Scholar エージェントのスキップ条件を制御する。
 """
 
 from __future__ import annotations
@@ -15,26 +14,6 @@ from shared.constants import DEFAULT_SELECTED_LANGUAGES
 
 if TYPE_CHECKING:
     from google.adk.agents.callback_context import CallbackContext
-
-
-def make_language_gate(lang_code: str):
-    """before_agent_callback: 選択されていない言語のエージェントをスキップ。
-
-    selected_languages に含まれない言語の場合、空の Content を返してスキップする。
-    selected_languages が未設定の場合は ["en"] をデフォルトとする。
-    """
-
-    def gate(callback_context: CallbackContext) -> Optional[types.Content]:
-        selected = callback_context.state.get("selected_languages", DEFAULT_SELECTED_LANGUAGES)
-        if not isinstance(selected, list):
-            selected = list(DEFAULT_SELECTED_LANGUAGES)
-        if lang_code not in selected:
-            return types.Content(
-                parts=[types.Part(text="")], role="model"
-            )
-        return None
-
-    return gate
 
 
 def make_debate_gate(lang_code: str):

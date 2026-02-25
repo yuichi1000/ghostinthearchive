@@ -99,6 +99,7 @@ class TestSearchArchivesAllSourcesFail:
             source_key = "fail1"
             source_name = "Fail Source 1"
             supports_language_filter = False
+            supported_languages = {"en"}
             def search(self, **kwargs):
                 raise ConnectionError("Connection refused")
 
@@ -106,6 +107,7 @@ class TestSearchArchivesAllSourcesFail:
             source_key = "fail2"
             source_name = "Fail Source 2"
             supports_language_filter = False
+            supported_languages = {"en"}
             def search(self, **kwargs):
                 raise TimeoutError("Request timeout")
 

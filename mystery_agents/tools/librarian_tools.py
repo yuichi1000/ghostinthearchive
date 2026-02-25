@@ -16,6 +16,8 @@ from google.adk.tools.tool_context import ToolContext
 
 logger = logging.getLogger(__name__)
 
+from shared.keyword_translator import translate_keywords
+
 from ..schemas.document import ArchiveDocument
 from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
@@ -424,6 +426,19 @@ def _log_keyword_language_mismatch(
         )
 
 
+def _get_expansion_languages(tool_context: Optional[ToolContext], current_lang: str) -> list[str]:
+    """selected_languages から current_lang を除いた言語リストを返す。
+
+    1言語のみなら空リスト（展開不要）。tool_context が None の場合も空リスト。
+    """
+    if tool_context is None:
+        return []
+    selected = tool_context.state.get("selected_languages", [])
+    if not isinstance(selected, list) or len(selected) <= 1:
+        return []
+    return [lang for lang in selected if lang != current_lang]
+
+
 def search_archives(
     keywords: str,
     date_start: Optional[str] = None,
@@ -460,6 +475,25 @@ def search_archives(
 
     keyword_groups = [keyword_list]
 
+    # 多言語キーワード展開: Translation API で他言語キーワードを追加
+    if language and tool_context is not None:
+        expansion_langs = _get_expansion_languages(tool_context, language)
+        if expansion_langs:
+            translated = translate_keywords(keyword_list, language, expansion_langs)
+            for lang_kws in translated.values():
+                if lang_kws:
+                    keyword_groups.append(lang_kws)
+            if translated:
+                logger.info(
+                    "多言語キーワード展開: %s → %d 言語に翻訳",
+                    language, len(translated),
+                    extra={
+                        "source_lang": language,
+                        "expansion_langs": list(translated.keys()),
+                        "original_keywords": keyword_list,
+                    },
+                )
+
     all_sources_map = get_all_sources()
 
     if sources:
@@ -494,18 +528,22 @@ def search_archives(
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=min(_MAX_WORKERS, len(valid_sources) or 1)
     ) as executor:
-        futures = {
-            executor.submit(
+        futures = {}
+        for key, source_obj in valid_sources:
+            # 多言語ソース（supported_languages > 1）のみ展開キーワードを渡す
+            if len(source_obj.supported_languages) > 1 and len(keyword_groups) > 1:
+                groups_for_source = keyword_groups
+            else:
+                groups_for_source = [keyword_groups[0]]
+            futures[executor.submit(
                 _search_single_source,
                 source_obj,
-                keyword_groups,
+                groups_for_source,
                 date_start=date_start,
                 date_end=date_end,
                 per_source_limit=per_source_limit,
                 language=language,
-            ): key
-            for key, source_obj in valid_sources
-        }
+            )] = key
         for future in concurrent.futures.as_completed(futures):
             key = futures[future]
             source_obj = all_sources_map[key]

@@ -235,6 +235,21 @@ class TestEmptyDates:
         assert "YEAR" not in request.url
 
 
+class TestSupportedLanguages:
+    """EuropeanaSource.supported_languages のテスト。"""
+
+    def test_en_in_supported_languages(self):
+        """英語が supported_languages に含まれる。"""
+        source = EuropeanaSource()
+        assert "en" in source.supported_languages
+
+    def test_all_expected_languages(self):
+        """全6言語が supported_languages に含まれる。"""
+        source = EuropeanaSource()
+        expected = {"en", "de", "es", "fr", "nl", "pt"}
+        assert source.supported_languages == expected
+
+
 class TestParseYear:
     """Tests for ArchiveSource.parse_year() (旧 _parse_year)。"""
 

@@ -41,9 +41,6 @@ from .debate_tools import append_to_whiteboard
 # Search metadata tool
 from .search_metadata import get_search_metadata
 
-# ThemeAnalyzer Agent LLM-facing tools
-from .theme_analyzer_tools import save_language_selection
-
 __all__ = [
     # アーカイブソース基盤
     "ArchiveSource",
@@ -77,6 +74,4 @@ __all__ = [
     "append_to_whiteboard",
     # Search metadata tool
     "get_search_metadata",
-    # ThemeAnalyzer LLM tools
-    "save_language_selection",
 ]
