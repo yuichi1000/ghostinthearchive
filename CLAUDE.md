@@ -292,11 +292,13 @@ pending (EN原文 + 翻訳あり) → (Approve) → published
 #### ブログ作成パイプライン（`mystery_agents/`）
 
 ```
-ThemeAnalyzer → ParallelLibrarians → [ScholarGate] → ParallelScholars(分析)
+ParallelAPILibrarians(7 API groups) → Aggregator → [ScholarGate] → ParallelScholars(分析)
   → DebateLoop(LoopAgent, max_iterations=2) → [PolymathGate] → ArmchairPolymath
   → [StorytellerGate] → Storyteller(EN) → [PostStoryGate] → Parallel(Illustrator, ParallelTranslators(3言語)) → Publisher(translations map保存) → Firestore
 ```
 
+- API ベース Librarian（US Archives, Europeana, Internet Archive, DDB, NDL, Trove, Wellcome）がテーマに応じて自律検索
+- AggregatorAgent（LLM 不使用）が raw_search_results を言語別に集約 → `collected_documents_{lang}` に書き込み
 - DebateLoop は有意な分析が2言語以上ある場合のみ実行される
 - Scholar は分析モードと討論モードの2つを持つ（単一ファクトリ関数 `create_scholar(lang, mode)`）
 - 討論モードの Scholar は `append_to_whiteboard` ツールで共有ホワイトボードに発言を記録

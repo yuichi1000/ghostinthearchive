@@ -3,12 +3,13 @@
 Defines root_agent (ghost_commander) as a SequentialAgent that orchestrates
 the multilingual investigation pipeline:
 
-  ParallelLibrarians → ScholarBlock → DebateLoop
+  ParallelAPILibrarians → Aggregator → ScholarBlock → DebateLoop
     → PolymathBlock → StorytellerBlock → PostStoryBlock
 
-全7言語の Librarian/Scholar を常時実行し、パイプラインゲートが
-結果なしの言語を自動スキップする。DebateLoop は有意な分析が2言語以上の場合のみ実行。
-PostStoryBlock では Illustrator と6言語翻訳が並列実行される。
+API ベース Librarian（7グループ）が並列で検索し、AggregatorAgent が
+検索結果を言語別に集約。Scholar 以降は従来と同じ言語ベース処理。
+DebateLoop は有意な分析が2言語以上の場合のみ実行。
+PostStoryBlock では Illustrator と3言語翻訳が並列実行される。
 
 DebateLoop 内部は SequentialAgent(debate_round) で構成:
   parallel_debate_scholars → convergence_checker
@@ -25,11 +26,12 @@ from typing import TYPE_CHECKING, Optional
 from google.adk.agents import LoopAgent, ParallelAgent, SequentialAgent
 from google.genai import types
 
+from .agents.aggregator import create_aggregator
+from .agents.api_librarians import create_all_api_librarians
 from .agents.armchair_polymath import create_armchair_polymath
 from .agents.convergence_checker import create_convergence_checker
 from .agents.illustrator import create_illustrator
 from .agents.language_gate import make_debate_loop_gate
-from .agents.language_librarians import create_all_librarians
 from .agents.language_scholars import create_all_scholars
 from .agents.pipeline_gate import (
     make_polymath_gate,
@@ -40,7 +42,6 @@ from .agents.pipeline_gate import (
 from .agents.publisher import create_publisher
 from .agents.storyteller import create_storyteller
 from .agents.translator import create_all_translators
-from shared.constants import ALLOWED_LANGUAGES
 from shared.model_config import DEFAULT_STORYTELLER
 
 if TYPE_CHECKING:
@@ -49,8 +50,8 @@ if TYPE_CHECKING:
 # パイプライン説明文（build_pipeline 内で共有）
 _PIPELINE_DESCRIPTION = (
     "Ghost in the Archive multilingual blog creation pipeline. "
-    "Executes ParallelLibrarians(7 languages) → ScholarBlock → DebateLoop "
-    "→ PolymathBlock → StorytellerBlock → PostStoryBlock "
+    "Executes ParallelAPILibrarians(7 API groups) → Aggregator → ScholarBlock "
+    "→ DebateLoop → PolymathBlock → StorytellerBlock → PostStoryBlock "
     "to research, analyze, debate, create content, generate images, "
     "translate to 3 languages (ja/es/de) in parallel, "
     "and publish historical mysteries and folkloric anomalies. "
@@ -61,7 +62,8 @@ _PIPELINE_DESCRIPTION = (
 # 実際にテキストを生成するリーフエージェントのみ進捗表示する
 SKIP_AUTHORS = {
     "ghost_commander",
-    "parallel_librarians",
+    "parallel_api_librarians",
+    "aggregator",
     "parallel_scholars",
     "parallel_debate_scholars",
     "debate_loop",
@@ -78,12 +80,13 @@ SKIP_AUTHORS = {
 def _initialize_pipeline_state(
     callback_context: CallbackContext,
 ) -> Optional[types.Content]:
-    """パイプライン状態を初期化する（ThemeAnalyzer の代替）。
+    """パイプライン状態を初期化する。
 
-    全7言語を常時実行するため、selected_languages を全言語リストで初期化。
-    下流のゲート・討論ロジックとの互換性を維持する。
+    API ベース Librarian は言語選択不要（テーマから自律判断）。
+    selected_languages は AggregatorAgent が検索結果から動的に設定するため、
+    ここでは空リストで初期化する。
     """
-    callback_context.state["selected_languages"] = sorted(ALLOWED_LANGUAGES)
+    callback_context.state["selected_languages"] = []
     callback_context.state["debate_whiteboard"] = ""
     callback_context.state["structured_report"] = {}
     return None  # 実行続行
@@ -107,9 +110,10 @@ def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
     il = create_illustrator()
     pub = create_publisher()
     st = create_storyteller(storyteller)
+    agg = create_aggregator()
 
     # ファクトリエージェント（既に毎回新規生成）
-    libs = create_all_librarians()
+    api_libs = create_all_api_librarians()
     scholars_analysis = create_all_scholars(mode="analysis")
     scholars_debate = create_all_scholars(mode="debate")
     translators = create_all_translators()
@@ -188,9 +192,10 @@ def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
         description=_PIPELINE_DESCRIPTION,
         sub_agents=[
             ParallelAgent(
-                name="parallel_librarians",
-                sub_agents=list(libs.values()),
+                name="parallel_api_librarians",
+                sub_agents=api_libs,
             ),
+            agg,
             scholar_block,
             debate_loop,
             polymath_block,

@@ -37,14 +37,26 @@ class StateKey:
 STATE_KEYS: list[StateKey] = [
     StateKey(
         name="selected_languages",
-        description="調査対象言語リスト（パイプライン初期化で全言語セット）",
-        written_by=("pipeline_init",),
+        description="調査対象言語リスト（Aggregator が検索結果から動的に設定）",
+        written_by=("pipeline_init", "aggregator"),
         read_by=("language_gate", "pipeline_gate"),
     ),
     StateKey(
+        name="active_languages",
+        description="ドキュメント数ランキング順の言語リスト（Aggregator が設定）",
+        written_by=("aggregator",),
+        read_by=(),
+    ),
+    StateKey(
+        name="collected_documents_{api_key}",
+        description="API Librarian の検索結果テキスト（API グループ別）",
+        written_by=("librarian_{api_key}",),
+        read_by=("aggregator",),
+    ),
+    StateKey(
         name="collected_documents_{lang}",
-        description="Librarian が収集した資料（言語別）",
-        written_by=("librarian_{lang}",),
+        description="Aggregator が集約した資料（言語別、Scholar が参照）",
+        written_by=("aggregator",),
         read_by=("scholar_{lang}", "pipeline_gate", "publisher_tools"),
     ),
     StateKey(
