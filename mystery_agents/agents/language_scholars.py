@@ -231,6 +231,71 @@ so other Scholars can reference it in subsequent rounds.
 - Keep your response focused and concise
 """
 
+# === 日本語訳 ===
+# 動的討論テンプレート:
+# DynamicScholarBlock から呼ばれる場合に使用。
+# 参加言語のみを instruction に含め、不参加言語の肥大化を防ぐ。
+# {language_references} に実際の参加言語一覧が動的に挿入される。
+# === End 日本語訳 ===
+
+_DYNAMIC_DEBATE_INSTRUCTION = """
+You are a Scholar Agent representing the {language_name} cultural perspective
+for the "Ghost in the Archive" project, now in DEBATE MODE. Your role is to critically
+examine analyses from other language-specific Scholars and provide challenges,
+corroborations, and synthesis proposals from your cultural standpoint.
+
+## Your Cultural Perspective
+{cultural_perspective}
+
+## Input: Scholar Analyses
+Read the following Scholar analysis results from session state:
+{language_references}
+
+Focus especially on analyses from perspectives OTHER than {language_name}.
+
+## Input: Previous Debate Record
+- {{debate_whiteboard}}: Record of previous debate contributions
+
+Read what other Scholars have already argued. Build on, challenge, or refine
+their points rather than repeating what has been said.
+
+## Your Task: Scholarly Debate
+
+### 1. Challenge Other Perspectives
+- Identify claims in other Scholars' analyses that {language_name} sources contradict
+- Point out cultural biases or blind spots in other analyses
+- Question assumptions based on your knowledge of {language_name} historiography
+
+### 2. Corroborate Findings
+- Confirm findings from other Scholars that align with {language_name} sources
+- Provide additional {language_name}-language evidence for shared conclusions
+- Note when multiple cultural perspectives converge on the same conclusion
+
+### 3. Identify Blind Spots
+- What have other Scholars missed that {language_name} sources reveal?
+- What cultural context is needed to properly interpret the evidence?
+- What translation or terminology issues might cause misunderstanding?
+
+### 4. Synthesis Proposals
+- Suggest how the different cultural perspectives can be integrated
+- Propose which narrative best explains the cross-language evidence
+- Recommend areas where further investigation is needed
+
+## Output Requirements
+
+Present your debate contribution as a clear, structured text response.
+Your text output is the primary record of this debate and appears in the pipeline execution logs.
+
+Also use the `append_to_whiteboard` tool to record your contribution to the shared whiteboard
+so other Scholars can reference it in subsequent rounds.
+
+## Important
+- Output in **English**
+- Be constructive — challenge ideas, not scholars
+- Cite specific sources when available
+- Keep your response focused and concise
+"""
+
 SCHOLAR_CONFIGS = {
     "en": {
         "language_name": "English",
@@ -325,12 +390,19 @@ SCHOLAR_CONFIGS = {
 }
 
 
-def create_scholar(lang_code: str, mode: str = "analysis") -> LlmAgent:
+def create_scholar(
+    lang_code: str,
+    mode: str = "analysis",
+    active_langs: list[str] | None = None,
+) -> LlmAgent:
     """指定された言語の Scholar エージェントを生成する。
 
     Args:
         lang_code: 言語コード（en, de, es, fr, nl, pt, ja）
         mode: "analysis"（分析モード）または "debate"（討論モード）
+        active_langs: 討論参加言語のリスト（DynamicScholarBlock から指定）。
+            指定された場合、討論 instruction に参加言語のみ記載し、
+            before_agent_callback を省略する（DynamicScholarBlock がゲートを担当）。
     """
     config = SCHOLAR_CONFIGS[lang_code]
 
@@ -349,22 +421,49 @@ def create_scholar(lang_code: str, mode: str = "analysis") -> LlmAgent:
             output_key=f"scholar_analysis_{lang_code}",
         )
     elif mode == "debate":
-        instruction = _BASE_SCHOLAR_DEBATE_INSTRUCTION.format(
-            language_name=config["language_name"],
-            cultural_perspective=config["cultural_perspective"],
-        )
-        return LlmAgent(
-            name=f"scholar_{lang_code}_debate",
-            model=create_pro_model(),
-            description=(
-                f"Debates from the {config['language_name']} cultural perspective. "
-                f"Challenges, corroborates, and synthesizes findings from other Scholars "
-                f"using the shared debate whiteboard."
-            ),
-            instruction=instruction,
-            tools=[append_to_whiteboard],
-            before_agent_callback=make_debate_gate(lang_code),
-        )
+        if active_langs:
+            # 動的討論: 参加言語のみ instruction に含める（肥大化防止）
+            lang_references = "\n".join(
+                f"- {{scholar_analysis_{l}}}: "
+                f"{SCHOLAR_CONFIGS[l]['language_name']} cultural perspective analysis"
+                for l in active_langs
+                if l != lang_code
+            )
+            instruction = _DYNAMIC_DEBATE_INSTRUCTION.format(
+                language_name=config["language_name"],
+                cultural_perspective=config["cultural_perspective"],
+                language_references=lang_references,
+            )
+            return LlmAgent(
+                name=f"scholar_{lang_code}_debate",
+                model=create_pro_model(),
+                description=(
+                    f"Debates from the {config['language_name']} cultural perspective. "
+                    f"Challenges, corroborates, and synthesizes findings from other Scholars "
+                    f"using the shared debate whiteboard."
+                ),
+                instruction=instruction,
+                tools=[append_to_whiteboard],
+                # DynamicScholarBlock がゲートを担当するため callback 不要
+            )
+        else:
+            # 静的討論（後方互換: LoopAgent ベースのパイプライン用）
+            instruction = _BASE_SCHOLAR_DEBATE_INSTRUCTION.format(
+                language_name=config["language_name"],
+                cultural_perspective=config["cultural_perspective"],
+            )
+            return LlmAgent(
+                name=f"scholar_{lang_code}_debate",
+                model=create_pro_model(),
+                description=(
+                    f"Debates from the {config['language_name']} cultural perspective. "
+                    f"Challenges, corroborates, and synthesizes findings from other Scholars "
+                    f"using the shared debate whiteboard."
+                ),
+                instruction=instruction,
+                tools=[append_to_whiteboard],
+                before_agent_callback=make_debate_gate(lang_code),
+            )
     else:
         raise ValueError(f"Unknown mode: {mode!r}. Use 'analysis' or 'debate'.")
 

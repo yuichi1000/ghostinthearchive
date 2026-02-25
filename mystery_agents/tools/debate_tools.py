@@ -76,6 +76,44 @@ def _extract_words(text: str) -> set[str]:
     return set(words)
 
 
+def is_debate_converged(whiteboard: str) -> bool:
+    """ホワイトボードの内容から討論の収束を判定する（純粋関数）。
+
+    DynamicScholarBlock から LLM を介さず直接呼び出すために用意。
+    LoopAgent の ConvergenceChecker とは異なり、escalate は行わない。
+
+    Args:
+        whiteboard: ホワイトボードのテキスト全文。
+
+    Returns:
+        収束していれば True。
+    """
+    if not whiteboard:
+        return False
+
+    rounds = _extract_rounds(whiteboard)
+    if len(rounds) < 2:
+        return False
+
+    sorted_nums = sorted(rounds.keys())
+    prev_words = _extract_words(rounds[sorted_nums[-2]])
+    curr_words = _extract_words(rounds[sorted_nums[-1]])
+
+    if not curr_words:
+        return False
+
+    new_words = curr_words - prev_words
+    new_word_ratio = len(new_words) / len(curr_words)
+
+    converged = new_word_ratio < _CONVERGENCE_THRESHOLD
+    logger.info(
+        "Direct convergence check: new_word_ratio=%.1f%%, converged=%s",
+        new_word_ratio * 100,
+        converged,
+    )
+    return converged
+
+
 def check_debate_convergence(tool_context: ToolContext) -> str:
     """討論の収束を判定する。
 

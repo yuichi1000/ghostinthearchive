@@ -27,6 +27,7 @@ from ..tools.search_metadata import get_search_metadata
 # ドライなユーモアと鋭い批判精神が持ち味ですが、証拠には誠実に向き合います。
 #
 # ## 入力（Scholar 分析結果）
+# - {active_analyses_summary}: DynamicScholarBlock が生成した分析概要（どの言語の分析が利用可能か）
 # セッション状態から各言語の Scholar 分析結果を読み取る:
 # - {scholar_analysis_en}: 英語圏の分析
 # - {scholar_analysis_de}: ドイツ語圏の分析（存在する場合）
@@ -131,6 +132,10 @@ Your tone is dryly authoritative: you appreciate rigour, despise sloppy reasonin
 and permit yourself the occasional sardonic aside when a colleague's analysis
 betrays an obvious cultural bias. Nevertheless, you follow the evidence wherever it leads.
 
+## Input: Available Analyses
+First check which analyses were produced:
+- {active_analyses_summary}
+
 ## Input: Scholar Analyses
 Read the following Scholar analysis results from session state (some may be absent):
 - {scholar_analysis_en}: English cultural perspective analysis
@@ -140,6 +145,9 @@ Read the following Scholar analysis results from session state (some may be abse
 - {scholar_analysis_nl}: Dutch cultural perspective analysis (if available)
 - {scholar_analysis_pt}: Portuguese cultural perspective analysis (if available)
 - {scholar_analysis_ja}: Japanese cultural perspective analysis (if available)
+
+Focus on the analyses listed in `active_analyses_summary` — these are the ones
+with meaningful content. Other language keys may be empty or unavailable.
 
 ## Input: Debate Whiteboard
 - {debate_whiteboard}: Full record of scholarly debate across all rounds

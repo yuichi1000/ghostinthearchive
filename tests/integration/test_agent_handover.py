@@ -2,7 +2,7 @@
 
 Tests verify that session state is correctly passed between agents
 in the multilingual pipeline:
-  ThemeAnalyzer → ParallelLibrarians → ParallelScholars → DebateLoop
+  ParallelAPILibrarians → Aggregator → DynamicScholarBlock(analysis+debate)
     → ArmchairPolymath → Storyteller → Illustrator → Translator → Publisher
 """
 
@@ -112,6 +112,12 @@ class TestInstructionPlaceholders:
         assert "{scholar_analysis_en}" in instruction
         assert "{scholar_analysis_de}" in instruction
         assert "{scholar_analysis_es}" in instruction
+
+    def test_armchair_polymath_references_active_analyses_summary(self):
+        """ArmchairPolymath should reference {active_analyses_summary}."""
+        from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
+
+        assert "{active_analyses_summary}" in armchair_polymath_agent.instruction
 
     def test_armchair_polymath_references_whiteboard(self):
         """ArmchairPolymath should reference {debate_whiteboard}."""
@@ -321,53 +327,29 @@ def _find_sub_agent(pipeline, name: str):
     return None
 
 
-class TestDebateLoopConfiguration:
-    """Tests for the debate loop LoopAgent configuration."""
+class TestDynamicScholarBlockConfiguration:
+    """Tests for the DynamicScholarBlock in the pipeline."""
 
-    def test_debate_loop_is_created_via_loop_agent(self):
-        """debate_loop should be created via LoopAgent constructor."""
+    def test_dynamic_scholar_block_exists(self):
+        """ghost_commander should contain dynamic_scholar_block."""
         from mystery_agents.agent import ghost_commander
 
-        debate_loop = _find_sub_agent(ghost_commander, "debate_loop")
-        assert debate_loop is not None
-        assert "debate_loop" in repr(debate_loop)
+        dsb = _find_sub_agent(ghost_commander, "dynamic_scholar_block")
+        assert dsb is not None
+        assert "dynamic_scholar_block" in repr(dsb)
 
-    def test_debate_loop_max_iterations(self):
-        """debate_loop should have max_iterations=2."""
+    def test_dynamic_scholar_block_is_base_agent(self):
+        """dynamic_scholar_block should be a BaseAgent."""
+        from google.adk.agents import BaseAgent
+
         from mystery_agents.agent import ghost_commander
 
-        debate_loop = _find_sub_agent(ghost_commander, "debate_loop")
-        assert debate_loop.max_iterations == 2
-
-    def test_debate_loop_has_gate_callback(self):
-        """debate_loop should have a before_agent_callback."""
-        from mystery_agents.agent import ghost_commander
-
-        debate_loop = _find_sub_agent(ghost_commander, "debate_loop")
-        # before_agent_callback が設定されていること（callable であること）
-        assert debate_loop.before_agent_callback is not None
-        assert callable(debate_loop.before_agent_callback)
-
-    def test_debate_loop_contains_debate_round(self):
-        """debate_loop should contain debate_round as its sub_agent."""
-        from mystery_agents.agent import ghost_commander
-
-        debate_loop = _find_sub_agent(ghost_commander, "debate_loop")
-        # LoopAgent の直接の sub_agent は debate_round（1つ）
-        assert len(debate_loop.sub_agents) == 1
-        assert "debate_round" in repr(debate_loop.sub_agents[0])
+        dsb = _find_sub_agent(ghost_commander, "dynamic_scholar_block")
+        assert isinstance(dsb, BaseAgent)
 
 
 class TestPipelineGateCallbacks:
     """Tests for pipeline gate callbacks on block agents."""
-
-    def test_scholar_block_has_gate(self):
-        """scholar_block should have a before_agent_callback."""
-        from mystery_agents.agent import ghost_commander
-
-        scholar_block = _find_sub_agent(ghost_commander, "scholar_block")
-        assert scholar_block.before_agent_callback is not None
-        assert callable(scholar_block.before_agent_callback)
 
     def test_polymath_block_has_gate(self):
         """polymath_block should have a before_agent_callback."""
@@ -399,7 +381,7 @@ class TestPipelineGateCallbacks:
 
         sub_agent_names = [repr(a) for a in ghost_commander.sub_agents]
         sub_agents_str = " ".join(sub_agent_names)
-        assert "scholar_block" in sub_agents_str
+        assert "dynamic_scholar_block" in sub_agents_str
         assert "polymath_block" in sub_agents_str
         assert "storyteller_block" in sub_agents_str
         assert "post_story_block" in sub_agents_str
