@@ -18,7 +18,7 @@ ALLOWED_LANGUAGES: set[str] = {"en", "de", "es", "fr", "ja", "nl", "pt"}
 DEFAULT_SELECTED_LANGUAGES: list[str] = sorted(ALLOWED_LANGUAGES)
 
 # Translator が翻訳する対象言語（英語から各言語へ）
-TRANSLATION_LANGUAGES: list[str] = ["ja", "es", "de", "fr", "nl", "pt"]
+TRANSLATION_LANGUAGES: list[str] = ["ja", "es", "de"]
 
 # ---------------------------------------------------------------------------
 # ステータス / スキーマ

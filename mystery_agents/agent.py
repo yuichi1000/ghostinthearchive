@@ -52,7 +52,7 @@ _PIPELINE_DESCRIPTION = (
     "Executes ParallelLibrarians(7 languages) → ScholarBlock → DebateLoop "
     "→ PolymathBlock → StorytellerBlock → PostStoryBlock "
     "to research, analyze, debate, create content, generate images, "
-    "translate to 6 languages (ja/es/de/fr/nl/pt) in parallel, "
+    "translate to 3 languages (ja/es/de) in parallel, "
     "and publish historical mysteries and folkloric anomalies. "
     "Pipeline gates skip downstream agents when upstream stages fail."
 )

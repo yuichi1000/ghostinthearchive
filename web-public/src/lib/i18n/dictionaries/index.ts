@@ -6,9 +6,6 @@ const dictionaries: Record<SupportedLang, () => Promise<Dictionary>> = {
   ja: () => import("./ja").then((m) => m.default),
   es: () => import("./es").then((m) => m.default),
   de: () => import("./de").then((m) => m.default),
-  fr: () => import("./fr").then((m) => m.default),
-  nl: () => import("./nl").then((m) => m.default),
-  pt: () => import("./pt").then((m) => m.default),
 };
 
 export async function getDictionary(lang: SupportedLang): Promise<Dictionary> {

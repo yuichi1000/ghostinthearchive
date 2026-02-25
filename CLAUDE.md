@@ -137,8 +137,8 @@ web-admin と web-public で共通するコードは `packages/shared/`（`@ghos
 ## Web Architecture
 
 - **web-public**: SSG（Static Site Generation）で動作（`output: "export"`）
-  - 7言語（en/ja/es/de/fr/nl/pt）× N記事 の静的 HTML をビルド時に生成
-  - `React.cache` で Firestore クエリを 7N→1 回に最適化
+  - 4言語（en/ja/es/de）× N記事 の静的 HTML をビルド時に生成
+  - `React.cache` で Firestore クエリを 4N→1 回に最適化
   - 記事更新時は Cloud Build（E2_HIGHCPU_8）で再ビルド・再デプロイ
   - ルート `/` はブラウザ言語を検出して `/{lang}/` にリダイレクト
 - **web-admin**: クライアントサイドレンダリング（毎回 Firestore アクセス）
@@ -157,13 +157,13 @@ web-admin と web-public で共通するコードは `packages/shared/`（`@ghos
 | **Armchair Polymath** | 言語横断統合分析（書斎の安楽椅子学者）               | scholar_analysis + debate_whiteboard | mystery_report                                                           |
 | **Storyteller**       | 歴史的厳密さと怪異的情緒の融合（英語ブログ記事）     | mystery_report                       | creative_content (英語ブログ原稿)                                        |
 | **Illustrator**       | トップ画像生成                                       | creative_content                     | visual_assets (Imagen 3 によるトップ画像1枚)                             |
-| **Translator**        | 英語→多言語翻訳（6言語並列）                         | creative_content + structured_report | translation*result*{lang} (各言語翻訳)                                   |
+| **Translator**        | 英語→多言語翻訳（3言語並列）                         | creative_content + structured_report | translation*result*{lang} (各言語翻訳)                                   |
 | **Publisher**         | 納品・公開（EN+JA両方保存）                          | 全アセット                           | published_episode (Firestore 保存、管理画面反映)                         |
 
 **Translator Factory パターン（`mystery_agents/agents/translator.py`）:**
 
 - `create_translator(lang)` → 単一言語の `LlmAgent` を返す
-- `create_all_translators()` → 6言語分の dict を返す
+- `create_all_translators()` → 3言語分の dict を返す
 - `translator_agent = create_translator("ja")` で後方互換維持（Curator での利用）
 
 **状態遷移:**
@@ -268,10 +268,10 @@ pending (EN原文 + 翻訳あり) → (Approve) → published
 - **歴史的厳密さ**と**怪異的情緒**を両立させたブログ記事の作成
 - センセーショナリズムに走らず、学術的誠実さを保ちながらも、読者の好奇心を刺激する構成
 
-**Translator（翻訳家）** — Factory パターン × 6言語
+**Translator（翻訳家）** — Factory パターン × 3言語
 
-- 英語記事を6言語（ja/es/de/fr/nl/pt）に並列翻訳
-- 各言語に専用のトーンガイドライン（ja: 怪異情緒、de: Unheimlichkeit、fr: le mystérieux 等）
+- 英語記事を3言語（ja/es/de）に並列翻訳
+- 各言語に専用のトーンガイドライン（ja: 怪異情緒、es: lo misterioso、de: Unheimlichkeit）
 - 歴史用語・民俗学用語の正確な翻訳、Fact × Folklore のニュアンス維持
 - ブログパイプライン内で Illustrator と並列実行（`mystery_agents/agents/translator.py`）
 - `create_translator(lang)` / `create_all_translators()` Factory パターン
@@ -294,13 +294,13 @@ pending (EN原文 + 翻訳あり) → (Approve) → published
 ```
 ThemeAnalyzer → ParallelLibrarians → [ScholarGate] → ParallelScholars(分析)
   → DebateLoop(LoopAgent, max_iterations=2) → [PolymathGate] → ArmchairPolymath
-  → [StorytellerGate] → Storyteller(EN) → [PostStoryGate] → Parallel(Illustrator, ParallelTranslators(6言語)) → Publisher(translations map保存) → Firestore
+  → [StorytellerGate] → Storyteller(EN) → [PostStoryGate] → Parallel(Illustrator, ParallelTranslators(3言語)) → Publisher(translations map保存) → Firestore
 ```
 
 - DebateLoop は有意な分析が2言語以上ある場合のみ実行される
 - Scholar は分析モードと討論モードの2つを持つ（単一ファクトリ関数 `create_scholar(lang, mode)`）
 - 討論モードの Scholar は `append_to_whiteboard` ツールで共有ホワイトボードに発言を記録
-- ParallelTranslators は6言語の翻訳を並列実行する（`create_all_translators()`）
+- ParallelTranslators は3言語の翻訳を並列実行する（`create_all_translators()`）
 - Approve 時は翻訳不要（ステータス変更のみ）
 
 **パイプラインゲート（カスケード障害対策）:**
@@ -337,7 +337,7 @@ output_key ベース:
 - `mystery_report` - Armchair Polymath の統合分析レポート（下流互換維持）
 - `creative_content` - Storyteller の英語ブログ原稿
 - `visual_assets` - Illustrator のトップ画像アセット
-- `translation_result_{lang}` - Translator の翻訳結果（ja, es, de, fr, nl, pt 各言語、JSON形式）
+- `translation_result_{lang}` - Translator の翻訳結果（ja, es, de 各言語、JSON形式）
 - `published_episode` - Publisher の公開結果
 
 tool_context.state ベース（構造化データ、LLM を経由しない正確なデータ）:
@@ -499,7 +499,7 @@ packages/shared/              # web-admin / web-public 共有コード (@ghost/s
 └── src/components/           # 共通 UI コンポーネント
 
 web-admin/                    # Next.js 管理画面（日本語表示優先）
-web-public/                   # Next.js 公開サイト（7言語対応: en/ja/es/de/fr/nl/pt）
+web-public/                   # Next.js 公開サイト（4言語対応: en/ja/es/de）
 docs/                         # ドキュメント（手順.md 等）
 
 tests/                        # テストスイート

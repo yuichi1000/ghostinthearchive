@@ -1,10 +1,10 @@
 """Translator Agent Factory - Multilingual translation
 
-Creates translator agents for 6 target languages (ja, es, de, fr, nl, pt).
+Creates translator agents for 3 target languages (ja, es, de).
 Each translator maintains language-specific tone and cultural nuance.
 
 Used in two contexts:
-- Blog pipeline: ParallelAgent runs all 6 translators concurrently
+- Blog pipeline: ParallelAgent runs all 3 translators concurrently
   (reads creative_content / mystery_report / structured_report from session state)
 - Curator pipeline: Japanese translator for theme suggestions
   (reads JSON from user message)
@@ -27,9 +27,6 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # ja: 学術的信頼性 + 怪異情緒、「歴史探偵 + 怪異蒐集家」
 # es: 学術的荘厳さ + lo misterioso、スペイン文学ジャーナリズム
 # de: 学術的精密さ + Unheimlichkeit（不気味なもの）
-# fr: 知的厳格さ + le mystérieux、フランス・ルポルタージュ伝統
-# nl: 直接的学術文体 + het onverklaarbare
-# pt: ブラジルポルトガル語、文学的豊かさ + o misterioso
 # === End 日本語訳 ===
 
 TRANSLATOR_CONFIGS: dict[str, dict[str, str]] = {
@@ -89,65 +86,6 @@ TRANSLATOR_CONFIGS: dict[str, dict[str, str]] = {
             "- Folklore terms: folklore → Volkskunde, legend → Legende/Sage, myth → Mythos\n"
             "- Place names: Use German forms where they exist (e.g., Munich not München for English readers)\n"
             "- Person names: Keep original with German-style reference"
-        ),
-    },
-    "fr": {
-        "language_name": "French",
-        "tone": (
-            "Intellectual rigor infused with 'le mystérieux' — the mysterious. "
-            "Follow the tradition of French reportage (grand reportage) and literary investigation. "
-            "Evoke the spirit of Gérard de Nerval's mystical explorations or Emmanuel Carrère's documentary narratives."
-        ),
-        "speculation": (
-            "- 'It is said that...' → 'On raconte que...'\n"
-            "- 'Perhaps...' → 'Peut-être...' / 'Il se pourrait que...'\n"
-            "- 'According to legend...' → 'Selon la légende...'"
-        ),
-        "terminology": (
-            "- Historical terms: Use standard academic French\n"
-            "- Folklore terms: folklore → folklore, legend → légende, myth → mythe\n"
-            "- Place names: Use French forms where they exist\n"
-            "- Person names: Keep original with French-style reference"
-        ),
-    },
-    "nl": {
-        "language_name": "Dutch",
-        "tone": (
-            "Direct, scholarly prose combined with 'het onverklaarbare' (the inexplicable). "
-            "Dutch academic writing tends toward clarity and directness — honor that tradition "
-            "while weaving in atmospheric mystery. Think of it as a Rijksmuseum audio guide "
-            "that occasionally ventures into the uncanny."
-        ),
-        "speculation": (
-            "- 'It is said that...' → 'Er wordt gezegd dat...'\n"
-            "- 'Perhaps...' → 'Misschien...' / 'Wellicht...'\n"
-            "- 'According to legend...' → 'Volgens de legende...'"
-        ),
-        "terminology": (
-            "- Historical terms: Use standard academic Dutch\n"
-            "- Folklore terms: folklore → volkskunde, legend → legende/sage, myth → mythe\n"
-            "- Place names: Use Dutch forms where they exist\n"
-            "- Person names: Keep original with Dutch-style reference"
-        ),
-    },
-    "pt": {
-        "language_name": "Brazilian Portuguese",
-        "tone": (
-            "Literary richness infused with 'o misterioso' — the mysterious. "
-            "Use Brazilian Portuguese (português brasileiro) as the base. "
-            "Follow the tradition of Brazilian literary journalism (jornalismo literário). "
-            "Evoke the spirit of Euclides da Cunha's documentary narrative or Eliane Brum's investigative prose."
-        ),
-        "speculation": (
-            "- 'It is said that...' → 'Dizem que...' / 'Conta-se que...'\n"
-            "- 'Perhaps...' → 'Talvez...' / 'Quem sabe...'\n"
-            "- 'According to legend...' → 'Segundo a lenda...'"
-        ),
-        "terminology": (
-            "- Historical terms: Use standard academic Brazilian Portuguese\n"
-            "- Folklore terms: folklore → folclore, legend → lenda, myth → mito\n"
-            "- Place names: Use Portuguese forms where they exist\n"
-            "- Person names: Keep original with Portuguese-style reference"
         ),
     },
 }
@@ -349,7 +287,7 @@ def create_translator(target_lang: str) -> LlmAgent:
     """指定言語の Translator エージェントを生成する。
 
     Args:
-        target_lang: 翻訳先の言語コード (ja, es, de, fr, nl, pt)
+        target_lang: 翻訳先の言語コード (ja, es, de)
 
     Returns:
         LlmAgent: 翻訳エージェント
@@ -384,7 +322,7 @@ def create_translator(target_lang: str) -> LlmAgent:
 
 
 def create_all_translators() -> dict[str, LlmAgent]:
-    """全6言語の Translator エージェントを生成する。
+    """全3言語の Translator エージェントを生成する。
 
     Returns:
         dict[str, LlmAgent]: 言語コード → LlmAgent の辞書

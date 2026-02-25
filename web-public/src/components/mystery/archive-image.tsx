@@ -2,15 +2,12 @@
 
 import { useState } from "react"
 
-// 7言語のアーカイブ画像ラベル
+// 4言語のアーカイブ画像ラベル
 const IMAGE_LABEL: Record<string, string> = {
   en: "Archival Image",
   ja: "アーカイブ資料",
   es: "Imagen de archivo",
   de: "Archivbild",
-  fr: "Image d'archive",
-  nl: "Archiefafbeelding",
-  pt: "Imagem de arquivo",
 }
 
 interface ArchiveImageProps {

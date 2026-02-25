@@ -40,16 +40,16 @@ class TestCreateTranslator:
 class TestCreateAllTranslators:
     """Tests for create_all_translators function."""
 
-    def test_returns_all_six_languages(self):
-        """Should return translators for all 6 target languages."""
+    def test_returns_all_three_languages(self):
+        """Should return translators for all 3 target languages."""
         translators = create_all_translators()
-        assert set(translators.keys()) == {"ja", "es", "de", "fr", "nl", "pt"}
+        assert set(translators.keys()) == {"ja", "es", "de"}
 
-    def test_returns_six_distinct_agents(self):
-        """Should return 6 distinct agent instances."""
+    def test_returns_three_distinct_agents(self):
+        """Should return 3 distinct agent instances."""
         translators = create_all_translators()
         agent_ids = [id(a) for a in translators.values()]
-        assert len(set(agent_ids)) == 6
+        assert len(set(agent_ids)) == 3
 
 
 class TestBackwardCompatibility:
@@ -71,10 +71,10 @@ class TestTranslatorConfigs:
                 f"Missing keys in {lang}: {required_keys - config.keys()}"
             )
 
-    def test_six_languages_configured(self):
-        """Should have exactly 6 language configs."""
-        assert len(TRANSLATOR_CONFIGS) == 6
-        assert set(TRANSLATOR_CONFIGS.keys()) == {"ja", "es", "de", "fr", "nl", "pt"}
+    def test_three_languages_configured(self):
+        """Should have exactly 3 language configs."""
+        assert len(TRANSLATOR_CONFIGS) == 3
+        assert set(TRANSLATOR_CONFIGS.keys()) == {"ja", "es", "de"}
 
     def test_base_instruction_has_required_placeholders(self):
         """Base instruction template should have all required format placeholders."""
@@ -136,9 +136,6 @@ class TestTranslatorConfigs:
             )
             assert "NO suffix like _ja or _es" in formatted, f"Missing for {lang}"
 
-    def test_portuguese_uses_brazilian_portuguese(self):
-        """Portuguese config should specify Brazilian Portuguese."""
-        assert TRANSLATOR_CONFIGS["pt"]["language_name"] == "Brazilian Portuguese"
 
 
 class TestTranslatorSessionStateReferences:
@@ -174,7 +171,7 @@ class TestTranslatorSessionStateReferences:
         assert "Do NOT wrap it in markdown code blocks" in formatted
 
     def test_all_languages_have_session_state_placeholders(self):
-        """全6言語で session state プレースホルダーが正しくフォーマットされること。"""
+        """全3言語で session state プレースホルダーが正しくフォーマットされること。"""
         for lang in TRANSLATOR_CONFIGS:
             formatted = self._format_instruction(lang)
             assert "{creative_content}" in formatted, f"{lang}: creative_content missing"

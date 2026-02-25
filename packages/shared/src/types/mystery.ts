@@ -25,7 +25,7 @@ export type SourceType = "newspaper" | "loc_digital" | "dpla" | "nypl"
 export type SourceLanguage = "en" | "es" | "de" | "fr" | "nl" | "pt";
 
 /** 翻訳対象言語（ソース言語 + 日本語） */
-export type TranslationLang = "ja" | "es" | "de" | "fr" | "nl" | "pt";
+export type TranslationLang = "ja" | "es" | "de";
 
 /**
  * 翻訳済みコンテンツ
@@ -516,22 +516,13 @@ export const AGENT_NAME_LABELS: Record<string, string> = {
   librarian_en: "資料収集（英語）",
   librarian_es: "資料収集（スペイン語）",
   librarian_de: "資料収集（ドイツ語）",
-  librarian_fr: "資料収集（フランス語）",
-  librarian_nl: "資料収集（オランダ語）",
-  librarian_pt: "資料収集（ポルトガル語）",
   scholar: "学際分析",
   scholar_en: "学際分析（英語）",
   scholar_es: "学際分析（スペイン語）",
   scholar_de: "学際分析（ドイツ語）",
-  scholar_fr: "学際分析（フランス語）",
-  scholar_nl: "学際分析（オランダ語）",
-  scholar_pt: "学際分析（ポルトガル語）",
   scholar_en_debate: "討論（英語）",
   scholar_es_debate: "討論（スペイン語）",
   scholar_de_debate: "討論（ドイツ語）",
-  scholar_fr_debate: "討論（フランス語）",
-  scholar_nl_debate: "討論（オランダ語）",
-  scholar_pt_debate: "討論（ポルトガル語）",
   armchair_polymath: "統合分析",
   cross_reference_scholar: "統合分析",
   storyteller: "物語生成",
@@ -539,9 +530,6 @@ export const AGENT_NAME_LABELS: Record<string, string> = {
   translator_ja: "翻訳（日本語）",
   translator_es: "翻訳（スペイン語）",
   translator_de: "翻訳（ドイツ語）",
-  translator_fr: "翻訳（フランス語）",
-  translator_nl: "翻訳（オランダ語）",
-  translator_pt: "翻訳（ポルトガル語）",
   debate_loop: "討論",
   parallel_translators: "翻訳",
   scriptwriter: "脚本作成",

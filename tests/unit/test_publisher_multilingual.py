@@ -27,7 +27,7 @@ class TestPublisherTranslationsMap:
     def test_builds_translations_map_from_session_state(
         self, mock_get_db, mock_get_bucket
     ):
-        """Should collect all 6 language translations into a translations map."""
+        """Should collect all 3 language translations into a translations map."""
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
         mock_get_bucket.return_value = MagicMock()
@@ -123,9 +123,9 @@ class TestPublisherTranslationsMap:
         mock_get_bucket.return_value = MagicMock()
 
         state = {
-            "translation_result_fr": {
-                "title": "Mystère de test",
-                "summary": "Résumé de test",
+            "translation_result_de": {
+                "title": "Testgeheimnis",
+                "summary": "Testzusammenfassung",
             },
         }
 
@@ -135,7 +135,7 @@ class TestPublisherTranslationsMap:
 
         assert result_data["status"] == "success"
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
-        assert saved_data["translations"]["fr"]["title"] == "Mystère de test"
+        assert saved_data["translations"]["de"]["title"] == "Testgeheimnis"
 
     @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
@@ -149,7 +149,7 @@ class TestPublisherTranslationsMap:
 
         state = {
             "translation_result_ja": json.dumps({"title": "正常な翻訳"}),
-            "translation_result_nl": "this is { not valid json",
+            "translation_result_es": "this is { not valid json",
         }
 
         tool_context = make_tool_context(state)
@@ -159,20 +159,20 @@ class TestPublisherTranslationsMap:
         assert result_data["status"] == "success"
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert "ja" in saved_data["translations"]
-        assert "nl" not in saved_data["translations"]
+        assert "es" not in saved_data["translations"]
 
     @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
-    def test_all_six_languages_in_translations(
+    def test_all_three_languages_in_translations(
         self, mock_get_db, mock_get_bucket
     ):
-        """Should include all 6 languages when all translations succeed."""
+        """Should include all 3 languages when all translations succeed."""
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
         mock_get_bucket.return_value = MagicMock()
 
         state = {}
-        for lang in ["ja", "es", "de", "fr", "nl", "pt"]:
+        for lang in ["ja", "es", "de"]:
             state[f"translation_result_{lang}"] = json.dumps({
                 "title": f"Title in {lang}",
                 "summary": f"Summary in {lang}",
@@ -184,7 +184,7 @@ class TestPublisherTranslationsMap:
 
         assert result_data["status"] == "success"
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
-        assert set(saved_data["translations"].keys()) == {"ja", "es", "de", "fr", "nl", "pt"}
+        assert set(saved_data["translations"].keys()) == {"ja", "es", "de"}
 
 
 class TestExtractJsonFromText:
@@ -294,16 +294,16 @@ class TestPublisherLanguageValidation:
 
     @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
-    def test_rejects_english_text_as_french(
+    def test_rejects_english_text_as_spanish(
         self, mock_get_db, mock_get_bucket
     ):
-        """英語テキストをフランス語翻訳として拒否すること。"""
+        """英語テキストをスペイン語翻訳として拒否すること。"""
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
         mock_get_bucket.return_value = MagicMock()
 
-        # 英語テキストがそのままフランス語翻訳として返された場合
-        english_as_french = {
+        # 英語テキストがそのままスペイン語翻訳として返された場合
+        english_as_spanish = {
             "title": "The Ghost Ship of Boston Harbor",
             "summary": "The mystery of a ship that vanished in 1842",
             "narrative_content": (
@@ -324,7 +324,7 @@ class TestPublisherLanguageValidation:
                     "乗組員は全員行方不明となり、船体は二度と発見されなかった。"
                 ),
             }),
-            "translation_result_fr": json.dumps(english_as_french),
+            "translation_result_es": json.dumps(english_as_spanish),
         }
 
         tool_context = make_tool_context(state)
@@ -335,29 +335,29 @@ class TestPublisherLanguageValidation:
         assert result_data["status"] == "success"
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
 
-        # 日本語は通過、フランス語は拒否されること
+        # 日本語は通過、スペイン語は拒否されること
         assert "ja" in saved_data["translations"]
-        assert "fr" not in saved_data["translations"]
+        assert "es" not in saved_data["translations"]
 
     @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
-    def test_accepts_valid_french_translation(
+    def test_accepts_valid_spanish_translation(
         self, mock_get_db, mock_get_bucket
     ):
-        """正常なフランス語翻訳は通過すること。"""
+        """正常なスペイン語翻訳は通過すること。"""
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
         mock_get_bucket.return_value = MagicMock()
 
         state = {
-            "translation_result_fr": json.dumps({
-                "title": "Le navire fantôme du port de Boston",
-                "summary": "Le mystère d'un navire disparu en 1842",
+            "translation_result_es": json.dumps({
+                "title": "El barco fantasma del puerto de Boston",
+                "summary": "El misterio de un barco que desapareció en 1842",
                 "narrative_content": (
-                    "Un cargo amarré au port de Boston a disparu du jour au lendemain. "
-                    "Tous les membres d'équipage ont disparu et la coque n'a jamais été retrouvée. "
-                    "Des pêcheurs locaux affirment avoir aperçu un navire fantôme les nuits de brouillard, "
-                    "mais les autorités n'ont pas inclus leur témoignage dans les registres officiels."
+                    "Un carguero amarrado en el puerto de Boston desapareció de la noche a la mañana. "
+                    "Todos los miembros de la tripulación desaparecieron y el casco nunca fue encontrado. "
+                    "Los pescadores locales afirmaron haber avistado un barco fantasma en las noches de niebla, "
+                    "pero las autoridades no incluyeron su testimonio en los registros oficiales."
                 ),
             }),
         }
@@ -368,7 +368,7 @@ class TestPublisherLanguageValidation:
 
         assert result_data["status"] == "success"
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
-        assert "fr" in saved_data["translations"]
+        assert "es" in saved_data["translations"]
 
     @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
@@ -381,7 +381,7 @@ class TestPublisherLanguageValidation:
         mock_get_bucket.return_value = MagicMock()
 
         state = {
-            "translation_result_fr": json.dumps({
+            "translation_result_es": json.dumps({
                 "title": "The Ghost Ship",
                 "summary": "A mystery of vanished ship",
                 "narrative_content": (
@@ -399,4 +399,4 @@ class TestPublisherLanguageValidation:
                 publish_mystery(_make_mystery_json(), "", tool_context)
 
         assert any("Translation rejected" in msg for msg in caplog.messages)
-        assert any("'fr'" in msg for msg in caplog.messages)
+        assert any("'es'" in msg for msg in caplog.messages)

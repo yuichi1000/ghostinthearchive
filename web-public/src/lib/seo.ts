@@ -14,9 +14,6 @@ export const OG_LOCALE_MAP: Record<SupportedLang, string> = {
   ja: "ja_JP",
   es: "es_ES",
   de: "de_DE",
-  fr: "fr_FR",
-  nl: "nl_NL",
-  pt: "pt_BR",
 }
 
 /**

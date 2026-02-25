@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import type { PreviewLang } from "@/components/language-selector"
 
 const STORAGE_KEY = "ghost-admin-lang"
-const SUPPORTED_LANGS: PreviewLang[] = ["en", "ja", "es", "de", "fr", "nl", "pt"]
+const SUPPORTED_LANGS: PreviewLang[] = ["en", "ja", "es", "de"]
 const DEFAULT_LANG: PreviewLang = "en"
 
 interface LanguageContextValue {

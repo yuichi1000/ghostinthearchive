@@ -80,8 +80,8 @@ export async function getPublishedMysteryIds(): Promise<string[]> {
 
 /**
  * 全公開済みミステリーを Map<id, mystery> で返す（React.cache 付き）
- * SSG ビルド時に 7言語 × N記事 の全ページで同一データを共有し、
- * Firestore クエリを 7N 回 → 1回に削減する
+ * SSG ビルド時に 4言語 × N記事 の全ページで同一データを共有し、
+ * Firestore クエリを 4N 回 → 1回に削減する
  */
 export const getAllPublishedMysteriesMap = cache(async (): Promise<Map<string, FirestoreMystery>> => {
   const mysteries = await getPublishedMysteries(1000);

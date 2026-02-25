@@ -12,9 +12,6 @@ export const ALL_LANGS = [
   { code: "ja" as const, label: "日本語" },
   { code: "es" as const, label: "Español" },
   { code: "de" as const, label: "Deutsch" },
-  { code: "fr" as const, label: "Français" },
-  { code: "nl" as const, label: "Nederlands" },
-  { code: "pt" as const, label: "Português" },
 ] as const
 
 export type PreviewLang = "en" | TranslationLang
