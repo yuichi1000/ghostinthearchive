@@ -28,6 +28,7 @@ from google.adk.agents import ParallelAgent, SequentialAgent
 from google.genai import types
 
 from .agents.aggregator import create_aggregator
+from .agents.language_scholars import SCHOLAR_CONFIGS
 from .agents.api_librarians import create_all_api_librarians
 from .agents.armchair_polymath import create_armchair_polymath
 from .agents.dynamic_scholar_block import create_dynamic_scholar_block
@@ -90,6 +91,12 @@ def _initialize_pipeline_state(
     callback_context.state["selected_languages"] = []
     callback_context.state["debate_whiteboard"] = ""
     callback_context.state["structured_report"] = {}
+    # Armchair Polymath の instruction が全言語の {scholar_analysis_{lang}} を
+    # 参照するため、未実行言語でも ADK のプレースホルダー解決が失敗しないよう
+    # 全言語キーを空文字列で初期化する
+    for lang in SCHOLAR_CONFIGS:
+        callback_context.state[f"scholar_analysis_{lang}"] = ""
+    callback_context.state["active_analyses_summary"] = ""
     return None  # 実行続行
 
 
