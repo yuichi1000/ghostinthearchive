@@ -22,13 +22,14 @@ def _registry_output_keys() -> set[str]:
 class TestSessionStateKeys:
     """Tests for session state key conventions."""
 
-    def test_librarian_output_keys(self):
-        """Language-specific Librarian agents should use 'collected_documents_{lang}' output keys."""
-        from mystery_agents.agents.language_librarians import create_all_librarians
+    def test_api_librarian_output_keys(self):
+        """API-based Librarian agents should use 'collected_documents_{api_key}' output keys."""
+        from mystery_agents.agents.api_librarians import API_CONFIGS, create_all_api_librarians
 
-        librarians = create_all_librarians()
-        for lang, agent in librarians.items():
-            assert agent.output_key == f"collected_documents_{lang}"
+        librarians = create_all_api_librarians()
+        expected_keys = [f"collected_documents_{key}" for key in API_CONFIGS]
+        actual_keys = [agent.output_key for agent in librarians]
+        assert sorted(actual_keys) == sorted(expected_keys)
 
     def test_scholar_output_keys(self):
         """Language-specific Scholar agents should use 'scholar_analysis_{lang}' output keys."""
@@ -190,15 +191,12 @@ class TestRootAgentConfiguration:
 class TestLanguageGateCallbacks:
     """Tests for before_agent_callback on language agents."""
 
-    def test_librarians_have_gate_callback(self):
-        """All librarians should have a before_agent_callback."""
-        from mystery_agents.agents.language_librarians import create_all_librarians
+    def test_api_librarian_count(self):
+        """API-based Librarians should match the number of API configs."""
+        from mystery_agents.agents.api_librarians import API_CONFIGS, create_all_api_librarians
 
-        librarians = create_all_librarians()
-        for lang, agent in librarians.items():
-            assert agent.before_agent_callback is not None, (
-                f"librarian_{lang} should have before_agent_callback"
-            )
+        librarians = create_all_api_librarians()
+        assert len(librarians) == len(API_CONFIGS)
 
     def test_scholars_have_gate_callback(self):
         """All scholars should have a before_agent_callback."""
@@ -405,3 +403,12 @@ class TestPipelineGateCallbacks:
         assert "polymath_block" in sub_agents_str
         assert "storyteller_block" in sub_agents_str
         assert "post_story_block" in sub_agents_str
+
+    def test_ghost_commander_contains_aggregator(self):
+        """ghost_commander should contain the aggregator agent after parallel librarians."""
+        from mystery_agents.agent import ghost_commander
+
+        sub_agent_names = [repr(a) for a in ghost_commander.sub_agents]
+        sub_agents_str = " ".join(sub_agent_names)
+        assert "parallel_api_librarians" in sub_agents_str
+        assert "aggregator" in sub_agents_str

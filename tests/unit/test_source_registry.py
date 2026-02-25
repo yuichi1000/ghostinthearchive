@@ -165,10 +165,10 @@ class TestEnsureAllLoaded:
         """実際のモジュールがロードされ、ソースが登録される。"""
         all_sources = get_all_sources()
 
-        # 全 API ツールが登録されていること
+        # 全 API ツールが登録されていること（Delpher は除外済み）
         expected_keys = {
             "loc", "dpla", "nypl", "internet_archive",
-            "ddb", "europeana", "chronicling_america", "trove", "delpher",
+            "ddb", "europeana", "chronicling_america", "trove",
             "ndl", "wellcome",
         }
         assert expected_keys.issubset(set(all_sources.keys()))
