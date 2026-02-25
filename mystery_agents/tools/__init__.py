@@ -41,6 +41,9 @@ from .debate_tools import append_to_whiteboard
 # Search metadata tool
 from .search_metadata import get_search_metadata
 
+# Word count tool
+from .word_count import count_words
+
 __all__ = [
     # アーカイブソース基盤
     "ArchiveSource",
@@ -74,4 +77,6 @@ __all__ = [
     "append_to_whiteboard",
     # Search metadata tool
     "get_search_metadata",
+    # Word count tool
+    "count_words",
 ]

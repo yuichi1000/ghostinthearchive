@@ -15,6 +15,7 @@ from ..tools.document_inventory import get_document_inventory
 from ..tools.openalex import search_academic_papers
 from ..tools.scholar_tools import save_structured_report
 from ..tools.search_metadata import get_search_metadata
+from ..tools.word_count import count_words
 
 # === 日本語訳 ===
 # あなたは「Ghost in the Archive」プロジェクトの Armchair Polymath です。
@@ -145,6 +146,10 @@ from ..tools.search_metadata import get_search_metadata
 # **引用可能な素材（Citable Passages）:**
 # - 日付・人名・場所を含む具体的な一次資料の引用（3-5件）
 # - Storyteller が blockquote で直接使える形式で提供
+#
+# ## 語数検証（必須）
+# レポート完成後、`count_words` ツールに全文テキストと min_words=5000, max_words=10000 を渡して呼び出す。
+# within_range が false の場合、確定前にレポートを修正すること。
 #
 # ## ガード
 # - 全言語の分析が空 → INSUFFICIENT_DATA を出力
@@ -509,6 +514,12 @@ The full JSON structure for `save_structured_report`:
 
 This call is mandatory — do NOT skip it.
 
+## Word Count Verification (MANDATORY)
+
+After completing your report text, call `count_words` with your full report text
+and `min_words=5000`, `max_words=10000`. If the result shows `within_range` is false,
+revise your report accordingly before finalizing.
+
 **CRITICAL: Every evidence object MUST include a non-empty `relevant_excerpt`.**
 If you cannot find a specific verbatim quote, write a brief paraphrase of the source material.
 NEVER leave `relevant_excerpt` as an empty string — items with empty excerpts will be automatically removed.
@@ -527,7 +538,7 @@ def create_armchair_polymath() -> LlmAgent:
             "and Anthropology perspectives from all available language sources."
         ),
         instruction=ARMCHAIR_POLYMATH_INSTRUCTION,
-        tools=[save_structured_report, get_search_metadata, search_academic_papers, get_document_inventory],
+        tools=[save_structured_report, get_search_metadata, search_academic_papers, get_document_inventory, count_words],
         output_key="mystery_report",  # 既存と同じキー → 下流互換性維持
     )
 

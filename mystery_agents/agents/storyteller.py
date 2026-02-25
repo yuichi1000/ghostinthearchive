@@ -25,6 +25,8 @@ from shared.model_config import (
     create_storyteller_model,
 )
 
+from ..tools.word_count import count_words
+
 logger = logging.getLogger(__name__)
 
 load_dotenv(Path(__file__).parent.parent / ".env")
@@ -145,6 +147,10 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # - 日付・場所・人物に紐づく具体的な感覚描写
 # - 2つの具体的な文書・記録の直接比較
 # 読者が2段落以上、具体的なものに触れずに過ごすことがないようにする。
+#
+# ## 語数検証（必須）
+# 記事完成後、`count_words` ツールに全文テキストと min_words=2000, max_words=3500 を渡して呼び出す。
+# within_range が false の場合、確定前に記事を修正すること。
 #
 # ## mystery_report への忠実性（最重要）
 # 事実・証拠・分析の唯一のソースは {mystery_report} である。あなたはストーリーテラーであり、アナリストではない。
@@ -365,6 +371,12 @@ When writing about archival findings, maintain strict epistemic discipline:
 - **Qualify your confidence**: Use phrases like "based on the digital archives consulted," "within the scope of this investigation," or "among the sources available through public APIs" to remind readers of the investigation's boundaries.
 - **Preserve mystery without manufacturing it**: The Ghost should emerge naturally from genuine gaps and contradictions in the record — never from rhetorical exaggeration of ordinary archival limitations.
 
+## Word Count Verification (MANDATORY)
+
+After completing your article text, call `count_words` with your full article text
+and `min_words=2000`, `max_words=3500`. If the result shows `within_range` is false,
+revise your article accordingly before finalizing.
+
 ## Fidelity to mystery_report (CRITICAL)
 Your sole source of facts, evidence, and analysis is {mystery_report}. You are a storyteller, not an analyst.
 
@@ -477,6 +489,7 @@ def create_storyteller(storyteller: str = DEFAULT_STORYTELLER) -> LlmAgent:
             "an English blog article that interweaves fact and legend."
         ),
         instruction=STORYTELLER_INSTRUCTION,
+        tools=[count_words],
         output_key="creative_content",
         include_contents="none",
         after_model_callback=_storyteller_after_model,
