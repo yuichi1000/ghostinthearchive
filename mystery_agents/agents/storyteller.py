@@ -17,7 +17,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
-from google.adk.models.llm_response import LlmResponse
+from google.adk.models import LlmRequest, LlmResponse
+from google.genai import types
 
 from shared.model_config import (
     DEFAULT_STORYTELLER,
@@ -45,6 +46,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # **事実と伝説を織り交ぜた独自のナラティブ**としてブログ原稿を**英語で**生成します。
 #
 # ## 最重要ルール：資料に基づかないコンテンツは生成しない
+# 以下の Mystery Report を確認する。
 # ## 出力言語：英語
 # ## 文章量：英語 2,000〜3,500 words
 #
@@ -153,7 +155,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # within_range が false の場合、確定前に記事を修正すること。
 #
 # ## mystery_report への忠実性（最重要）
-# 事実・証拠・分析の唯一のソースは {mystery_report} である。あなたはストーリーテラーであり、アナリストではない。
+# 事実・証拠・分析の唯一のソースは上記の Mystery Report である。あなたはストーリーテラーであり、アナリストではない。
 # - mystery_report に記載されていない事実・証拠・仮説を創作しない
 # - レポートの「Boundaries of This Investigation」で不明とされた部分を物語的に埋めない
 # - 証拠の引用は mystery_report の「Citable Passages」から使用する
@@ -186,7 +188,7 @@ Receive the Mystery Report (including Folkloric Context) created by the Scholar 
 and generate a blog article as **an original narrative in English that weaves together fact and legend**.
 
 ## Critical Rule: Do NOT Generate Content Without Source Materials
-Check {mystery_report} in the session state.
+Check the Mystery Report below.
 **If it contains the message "INSUFFICIENT_DATA," or if it contains no concrete evidence based on actual archive materials
 (source URLs, citations, dates), you MUST NOT generate content.**
 In that case, output only the following message and stop:
@@ -378,7 +380,7 @@ and `min_words=2000`, `max_words=3500`. If the result shows `within_range` is fa
 revise your article accordingly before finalizing.
 
 ## Fidelity to mystery_report (CRITICAL)
-Your sole source of facts, evidence, and analysis is {mystery_report}. You are a storyteller, not an analyst.
+Your sole source of facts, evidence, and analysis is the Mystery Report provided above. You are a storyteller, not an analyst.
 
 - **Do NOT invent facts, evidence, or hypotheses** that are not in the mystery_report. If the report does not mention it, neither do you.
 - **Do NOT fill narrative gaps with creative writing.** The report's "Boundaries of This Investigation" section explicitly lists what is unknown. Those unknowns must remain unknown in your article.
@@ -398,6 +400,90 @@ Permit yourself the occasional sardonic aside or wry observation — the kind of
 - Provide readers with an experience of "a slight chill down the spine"
 - **Remember the concept of "Ghost in the Archive"** — weave into the narrative that this mystery was excavated from the archive
 """
+
+def _estimate_tokens(text: str) -> int:
+    """英語4文字≒1トークンの概算。ログ用途。"""
+    return len(text) // 4 if text else 0
+
+
+def _is_leaked_content(content: types.Content) -> bool:
+    """ADK _present_other_agent_message が生成したリークコンテンツを検出する。
+
+    ADK の SequentialAgent 内（branch=None）では include_contents='none' が無効化され、
+    上流エージェントの会話履歴が role='user' + 先頭パート "For context:" の形式でリークする。
+    """
+    if not content.parts:
+        return False
+    first_text = next((p.text for p in content.parts if p.text), None)
+    return first_text == "For context:"
+
+
+def _has_function_parts(content: types.Content) -> bool:
+    """function_call または function_response パーツを含むか。"""
+    return any(
+        p.function_call or p.function_response
+        for p in (content.parts or [])
+    )
+
+
+def _storyteller_before_model(
+    callback_context: CallbackContext,
+    llm_request: LlmRequest,
+) -> LlmResponse | None:
+    """リークした上流会話履歴をパージし、診断ログを出力する。"""
+    # mystery_report のトークン推定
+    mystery_report = callback_context.state.get("mystery_report", "")
+    report_tokens = _estimate_tokens(mystery_report)
+
+    # パージ: リークコンテンツを除去し、ツール呼び出し/応答は保持
+    original_contents = llm_request.contents or []
+    purged_contents: list[types.Content] = []
+    purged_tokens = 0
+
+    for content in original_contents:
+        if _is_leaked_content(content) and not _has_function_parts(content):
+            # リークコンテンツのトークン数を集計
+            leaked_text = " ".join(
+                p.text for p in (content.parts or []) if p.text
+            )
+            purged_tokens += _estimate_tokens(leaked_text)
+        else:
+            purged_contents.append(content)
+
+    llm_request.contents = purged_contents
+
+    # 診断ログ: system_instruction + contents のトークン内訳
+    si_text = ""
+    if llm_request.config and llm_request.config.system_instruction:
+        si = llm_request.config.system_instruction
+        if isinstance(si, str):
+            si_text = si
+        elif hasattr(si, "parts") and si.parts:
+            si_text = " ".join(p.text for p in si.parts if p.text)
+    si_tokens = _estimate_tokens(si_text)
+
+    contents_text = " ".join(
+        p.text
+        for c in purged_contents
+        for p in (c.parts or [])
+        if p.text
+    )
+    contents_tokens = _estimate_tokens(contents_text)
+
+    total_tokens = si_tokens + contents_tokens
+    logger.info(
+        "Storyteller before_model 診断: mystery_report=%s tokens (Polymath出力), "
+        "system_instruction=%s tokens, contents=%s tokens (パージ後), "
+        "パージ除去=%s tokens, 合計推定=%s tokens",
+        f"{report_tokens:,}",
+        f"{si_tokens:,}",
+        f"{contents_tokens:,}",
+        f"{purged_tokens:,}",
+        f"{total_tokens:,}",
+    )
+
+    return None
+
 
 def _storyteller_after_model(
     callback_context: CallbackContext,
@@ -492,6 +578,7 @@ def create_storyteller(storyteller: str = DEFAULT_STORYTELLER) -> LlmAgent:
         tools=[count_words],
         output_key="creative_content",
         include_contents="none",
+        before_model_callback=_storyteller_before_model,
         after_model_callback=_storyteller_after_model,
     )
 

@@ -303,6 +303,8 @@ export interface FirestoreMystery extends MysteryReport {
   multilingual_analysis?: Record<string, string>;
   /** 分析に使用された言語コードのリスト */
   languages_analyzed?: string[];
+  /** Armchair Polymath の統合分析レポート全文 */
+  mystery_report?: string;
   /** パイプライン実行ログ */
   pipeline_log?: AgentLogEntry[];
   /** ポッドキャスト脚本 */
