@@ -28,7 +28,7 @@ def _get_client():
 
         _client = translate.Client()
     except Exception:
-        logger.debug("Translation API クライアント初期化失敗", exc_info=True)
+        logger.warning("Translation API クライアント初期化失敗", exc_info=True)
         _client = None
     return _client
 
@@ -55,7 +55,7 @@ def _translate_single(text: str, source_lang: str, target_lang: str) -> Optional
             return None
         return translated
     except Exception:
-        logger.debug(
+        logger.warning(
             "翻訳失敗: %s (%s→%s)", text, source_lang, target_lang,
             exc_info=True,
         )

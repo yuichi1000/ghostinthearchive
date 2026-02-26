@@ -439,6 +439,50 @@ def _get_expansion_languages(tool_context: Optional[ToolContext], current_lang: 
     return [lang for lang in selected if lang != current_lang]
 
 
+def _translate_keywords_for_source(
+    keyword_list: list[str],
+    source_obj,
+) -> list[str] | None:
+    """単一言語非英語ソースに英語キーワードが渡された場合、自動翻訳する。
+
+    対象: supported_languages が単一言語かつ非英語のソース（DDB=de, NDL=ja）
+    条件: 全キーワードが ASCII のみ（英語と推定）
+
+    Returns:
+        翻訳成功 → 翻訳キーワードリスト
+        対象外・翻訳失敗 → None（元キーワードで続行）
+    """
+    # 英語ソースまたは多言語ソースはスキップ
+    supported = source_obj.supported_languages
+    if len(supported) != 1:
+        return None
+    primary_lang = next(iter(supported))
+    if primary_lang == "en":
+        return None
+
+    # 非 ASCII キーワードが1つでもあればネイティブ言語が既に含まれている
+    if not all(_is_likely_english(kw) for kw in keyword_list):
+        return None
+
+    # 英語キーワードをソースのネイティブ言語に翻訳
+    logger.warning(
+        "キーワード言語不一致を検出: ソース=%s (言語=%s) に英語キーワードのみ → 自動翻訳を試行: %s",
+        source_obj.source_key,
+        primary_lang,
+        keyword_list,
+        extra={
+            "source_key": source_obj.source_key,
+            "source_lang": primary_lang,
+            "keywords": keyword_list,
+        },
+    )
+    translated = translate_keywords(keyword_list, "en", [primary_lang])
+    native_kws = translated.get(primary_lang)
+    if not native_kws:
+        return None
+    return native_kws
+
+
 def search_archives(
     keywords: str,
     date_start: Optional[str] = None,
@@ -535,6 +579,12 @@ def search_archives(
                 groups_for_source = keyword_groups
             else:
                 groups_for_source = [keyword_groups[0]]
+
+            # 単一言語非英語ソースへの英語キーワード不一致を自動翻訳で補正
+            native_kws = _translate_keywords_for_source(keyword_list, source_obj)
+            if native_kws:
+                groups_for_source = [native_kws] + groups_for_source
+
             futures[executor.submit(
                 _search_single_source,
                 source_obj,

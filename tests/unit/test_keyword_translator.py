@@ -129,3 +129,41 @@ class TestTranslateKeywords:
 
         # translate は1回しか呼ばれない（キャッシュヒット）
         assert mock_client.translate.call_count == 1
+
+
+class TestTranslationFailureWarningLogs:
+    """翻訳失敗時のログレベルが WARNING であることを検証。"""
+
+    def test_client_init_failure_logs_warning(self, caplog):
+        """_get_client() 初期化失敗時に WARNING ログが出力される。"""
+        import logging
+
+        with patch(
+            "shared.keyword_translator.translate",
+            side_effect=ImportError("No module"),
+            create=True,
+        ):
+            # _client_initialized をリセットして再初期化を強制
+            kt._client = None
+            kt._client_initialized = False
+
+            with patch.dict("sys.modules", {"google.cloud.translate_v2": None}):
+                with caplog.at_level(logging.WARNING):
+                    kt._get_client()
+
+        assert "Translation API クライアント初期化失敗" in caplog.text
+
+    @patch("shared.keyword_translator._get_client")
+    def test_translate_single_failure_logs_warning(self, mock_get_client, caplog):
+        """_translate_single() 翻訳失敗時に WARNING ログが出力される。"""
+        import logging
+
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_client.translate.side_effect = Exception("Translation API error")
+
+        with caplog.at_level(logging.WARNING):
+            result = kt._translate_single("ghost", "en", "de")
+
+        assert result is None
+        assert "翻訳失敗" in caplog.text
