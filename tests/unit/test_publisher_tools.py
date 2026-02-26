@@ -716,10 +716,10 @@ class TestPublishMysteryEvidenceFiltering:
 
     @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
-    def test_empty_excerpt_evidence_a_warns_but_saves(
+    def test_empty_excerpt_evidence_a_gets_fallback(
         self, mock_get_db, mock_get_bucket, caplog
     ):
-        """evidence_a の excerpt が空でも警告のみで保存される。"""
+        """evidence_a の excerpt が空 → フォールバック文が挿入されて保存される。"""
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
         mock_bucket = MagicMock()
@@ -744,10 +744,10 @@ class TestPublishMysteryEvidenceFiltering:
         assert result_data["status"] == "success"
 
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
-        # evidence_a は除外されない
-        assert "evidence_a" in saved
+        # フォールバック文が挿入されている
+        assert saved["evidence_a"]["relevant_excerpt"] == "[See original source: Test]"
         # 警告ログが出力されている
-        assert any("evidence_a" in r.message and "relevant_excerpt" in r.message for r in caplog.records)
+        assert any("replaced with fallback" in r.message for r in caplog.records)
 
 
 class TestPublishMysteryStateWriteback:

@@ -494,12 +494,14 @@ def publish_mystery(
         data.setdefault("additional_evidence", [])
         data["additional_evidence"] = data["additional_evidence"][:5]
 
-        # evidence_a / evidence_b の空 excerpt 警告（除外はしない）
+        # evidence_a / evidence_b: 空 excerpt にはフォールバック文を挿入
         for key in ("evidence_a", "evidence_b"):
             ev = data.get(key)
             if ev and isinstance(ev, dict):
                 if not ev.get("relevant_excerpt", "").strip():
-                    logger.warning("%s has empty relevant_excerpt, title=%s", key, ev.get("source_title", "unknown"))
+                    source_title = ev.get("source_title", "unknown source")
+                    ev["relevant_excerpt"] = f"[See original source: {source_title}]"
+                    logger.warning("%s: empty relevant_excerpt replaced with fallback, title=%s", key, source_title)
 
         # additional_evidence の source_url 欠落チェック + 空 excerpt フィルタリング
         filtered_additional = []

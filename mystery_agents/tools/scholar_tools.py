@@ -589,7 +589,7 @@ def save_structured_report(
     - get_document_inventory が事前に呼ばれていること（_inventory_consulted フラグ）
 
     evidence バリデーション:
-    - evidence_a / evidence_b: 空 excerpt は警告のみ（構造上必須のため除外しない）
+    - evidence_a / evidence_b: 空 excerpt にはフォールバック文を挿入（構造上必須のため除外しない）
     - additional_evidence: 空 excerpt の項目はフィルタリング（除外）
 
     証拠グラウンディング:
@@ -641,10 +641,14 @@ def save_structured_report(
     # evidence バリデーション
     warnings: list[str] = []
 
-    # evidence_a / evidence_b: 警告のみ（構造上必須のため除外しない）
+    # evidence_a / evidence_b: 空 excerpt にはフォールバック文を挿入
     for key in ("evidence_a", "evidence_b"):
         ev = report_data.get(key)
         if ev and isinstance(ev, dict):
+            if not ev.get("relevant_excerpt", "").strip():
+                source_title = ev.get("source_title", "unknown source")
+                ev["relevant_excerpt"] = f"[See original source: {source_title}]"
+                warnings.append(f"{key}: empty relevant_excerpt replaced with fallback")
             warnings.extend(_validate_evidence(ev, key))
 
     # additional_evidence: 空 excerpt の項目をフィルタリング

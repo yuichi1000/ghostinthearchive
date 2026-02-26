@@ -28,8 +28,8 @@ class TestSaveStructuredReport:
         report_data = {
             "title": "The Vanishing Ship",
             "summary": "A ship disappeared",
-            "evidence_a": {"source_url": "https://example.com", "source_date": "1842-03-15"},
-            "evidence_b": {"source_url": "https://example.com/es", "source_date": "1842-03-20"},
+            "evidence_a": {"source_url": "https://example.com", "source_date": "1842-03-15", "relevant_excerpt": "The ship vanished"},
+            "evidence_b": {"source_url": "https://example.com/es", "source_date": "1842-03-20", "relevant_excerpt": "El barco desapareció"},
             "hypothesis": "The ship faked its sinking",
             "alternative_hypotheses": ["Mistaken identity"],
             "classification": "OCC",
@@ -216,12 +216,13 @@ class TestValidateEvidence:
 class TestSaveStructuredReportEvidenceValidation:
     """Tests for evidence validation in save_structured_report()."""
 
-    def test_empty_excerpt_in_evidence_a_warns_but_saves(self):
-        """evidence_a の excerpt が空 → 警告付きで保存される。"""
+    def test_empty_excerpt_in_evidence_a_gets_fallback(self):
+        """evidence_a の excerpt が空 → フォールバック文が挿入される。"""
         report_data = {
             "title": "Test",
             "evidence_a": {
                 "source_url": "https://example.com",
+                "source_title": "Boston Globe",
                 "relevant_excerpt": "",
             },
             "evidence_b": {
@@ -235,9 +236,33 @@ class TestSaveStructuredReportEvidenceValidation:
         result_data = json.loads(result)
 
         assert result_data["status"] == "success"
-        assert len(result_data["warnings"]) > 0
-        # evidence_a は除外されない（構造上必須）
-        assert "evidence_a" in mock_ctx.state["structured_report"]
+        saved = mock_ctx.state["structured_report"]
+        assert saved["evidence_a"]["relevant_excerpt"] == "[See original source: Boston Globe]"
+        assert any("replaced with fallback" in w for w in result_data["warnings"])
+
+    def test_empty_excerpt_in_evidence_b_gets_fallback(self):
+        """evidence_b の excerpt が空 → フォールバック文が挿入される。"""
+        report_data = {
+            "title": "Test",
+            "evidence_a": {
+                "source_url": "https://example.com",
+                "relevant_excerpt": "Valid excerpt",
+            },
+            "evidence_b": {
+                "source_url": "https://example.com/b",
+                "source_title": "Le Monde",
+                "relevant_excerpt": "   ",
+            },
+        }
+        mock_ctx = _make_ctx()
+
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved = mock_ctx.state["structured_report"]
+        assert saved["evidence_b"]["relevant_excerpt"] == "[See original source: Le Monde]"
+        assert any("evidence_b" in w and "replaced with fallback" in w for w in result_data["warnings"])
 
     def test_empty_excerpt_in_additional_evidence_filtered_out(self):
         """additional_evidence の excerpt が空 → フィルタリングされる。"""
