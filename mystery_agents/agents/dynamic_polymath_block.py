@@ -113,7 +113,7 @@ class DynamicPolymathBlock(BaseAgent):
             tools=POLYMATH_TOOLS,
             output_key="mystery_report",
         )
-        async for event in polymath._run_async_impl(ctx):
+        async for event in polymath.run_async(ctx):
             yield event
 
 
