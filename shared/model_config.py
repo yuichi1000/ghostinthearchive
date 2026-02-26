@@ -104,6 +104,13 @@ _FLASH_RETRY_OPTIONS = HttpRetryOptions(
     jitter=1.0,
 )
 
+# === 日本語訳 ===
+# OpenRouter / LiteLLM 用リトライ設定。
+# litellm → OpenAI クライアント経由で指数バックオフ付きリトライ。
+# HTTP 429, 500-599 が対象。パイプライン全体ではなく LLM コール単位でリトライされる。
+# === End 日本語訳 ===
+_LITELLM_MAX_RETRIES = 3
+
 
 def create_pro_model() -> Gemini:
     """gemini-3-pro-preview のリトライ付きモデルアダプタを生成する。"""
@@ -152,4 +159,4 @@ def create_storyteller_model(storyteller: str = DEFAULT_STORYTELLER):
             }
         }
 
-    return LiteLlm(model=config["model_id"], **kwargs)
+    return LiteLlm(model=config["model_id"], max_retries=_LITELLM_MAX_RETRIES, **kwargs)

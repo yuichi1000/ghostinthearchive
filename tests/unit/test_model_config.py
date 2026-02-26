@@ -12,9 +12,11 @@ from shared.model_config import (
     MODEL_FLASH,
     MODEL_PRO,
     _FLASH_RETRY_OPTIONS,
+    _LITELLM_MAX_RETRIES,
     _PRO_RETRY_OPTIONS,
     create_flash_model,
     create_pro_model,
+    create_storyteller_model,
 )
 
 
@@ -58,3 +60,14 @@ class TestCreateFlashModel:
         last_call = Gemini.call_args
         # retry_options 引数が _FLASH_RETRY_OPTIONS と同一オブジェクトであること
         assert last_call.kwargs.get("retry_options") is _FLASH_RETRY_OPTIONS
+
+
+class TestCreateStorytellerModel:
+    """create_storyteller_model() の LiteLLM リトライ設定テスト。"""
+
+    def test_litellm_storyteller_has_max_retries(self):
+        """OpenRouter モデル生成時に max_retries が設定されること。"""
+        from google.adk.models.lite_llm import LiteLlm
+        create_storyteller_model("claude")
+        last_call = LiteLlm.call_args
+        assert last_call.kwargs.get("max_retries") == _LITELLM_MAX_RETRIES
