@@ -6,7 +6,6 @@ Wellcome Collection（ロンドン）の Catalogue API v2 を使用して
 """
 
 import logging
-import re
 
 from ..schemas.document import ArchiveDocument, SourceLanguage
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
@@ -14,6 +13,9 @@ from .search_utils import build_search_query
 from .source_registry import register_source
 
 logger = logging.getLogger(__name__)
+
+# archive_source_base.py に統一された strip_html を使用
+_strip_html = ArchiveSource.strip_html
 
 BASE_URL = "https://api.wellcomecollection.org/catalogue/v2/works"
 
@@ -41,25 +43,6 @@ _LANG_1_TO_3: dict[str, str] = {
     "pt": "por",
     "ja": "jpn",
 }
-
-
-def _strip_html(text: str | list | None) -> str:
-    """HTML タグを除去する。
-
-    Args:
-        text: HTML を含む可能性のあるテキスト。
-              Wellcome API の notes[].contents は list[str] の場合がある。
-
-    Returns:
-        タグ除去済みのプレーンテキスト。None の場合は空文字列。
-    """
-    if not text:
-        return ""
-    if isinstance(text, list):
-        text = " ".join(str(item) for item in text if item)
-    if not isinstance(text, str):
-        return str(text)
-    return re.sub(r"<[^>]+>", "", text).strip()
 
 
 def _extract_date_label(work: dict) -> str:
