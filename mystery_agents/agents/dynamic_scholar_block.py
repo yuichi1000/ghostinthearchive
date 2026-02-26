@@ -21,28 +21,13 @@ from google.genai import types
 
 from ..tools.debate_tools import is_debate_converged
 from .language_scholars import SCHOLAR_CONFIGS, create_scholar
+from .pipeline_gate import _is_meaningful
 
 logger = logging.getLogger(__name__)
-
-# 失敗マーカー（pipeline_gate.py と同じ判定基準）
-_FAILURE_MARKERS = frozenset({
-    "NO_DOCUMENTS_FOUND",
-    "INSUFFICIENT_DATA",
-    "NO_CONTENT",
-    "Not available",
-})
 
 # 上限値
 MAX_LANGUAGES = 7
 MAX_DEBATE_ITERATIONS = 2
-
-
-def _is_meaningful(value: str) -> bool:
-    """セッション状態の値が有意なデータを含むか判定する。"""
-    if not value:
-        return False
-    text = str(value).strip()
-    return not any(text.startswith(marker) for marker in _FAILURE_MARKERS)
 
 
 class DynamicScholarBlock(BaseAgent):
