@@ -1,6 +1,7 @@
 """count_words ツールのユニットテスト。"""
 
 import json
+from unittest.mock import MagicMock
 
 from mystery_agents.tools.word_count import count_words
 
@@ -77,3 +78,33 @@ class TestCountWords:
         result = json.loads(count_words(text, min_words=2000, max_words=3500))
         assert result["within_range"] is True
         assert result["word_count"] == 2500
+
+
+class TestCountWordsToolContextFlag:
+    """count_words() の ToolContext フラグ設定検証。"""
+
+    def _make_tool_context(self) -> MagicMock:
+        ctx = MagicMock()
+        ctx.state = {}
+        return ctx
+
+    def test_within_range_sets_verified_flag(self):
+        """範囲内 → _word_count_verified = True がステートに設定される。"""
+        ctx = self._make_tool_context()
+        text = " ".join(["word"] * 5000)
+        count_words(text, tool_context=ctx, min_words=5000, max_words=10000)
+        assert ctx.state["_word_count_verified"] is True
+
+    def test_out_of_range_resets_verified_flag(self):
+        """範囲外 → _word_count_verified = False にリセットされる。"""
+        ctx = self._make_tool_context()
+        ctx.state["_word_count_verified"] = True  # 前回の成功を模擬
+        text = " ".join(["word"] * 500)
+        count_words(text, tool_context=ctx, min_words=5000, max_words=10000)
+        assert ctx.state["_word_count_verified"] is False
+
+    def test_no_range_does_not_set_flag(self):
+        """範囲未指定 → _word_count_verified は設定されない。"""
+        ctx = self._make_tool_context()
+        count_words("hello world", tool_context=ctx)
+        assert "_word_count_verified" not in ctx.state
