@@ -31,6 +31,28 @@ _MAX_WORKERS = 6
 _TOTAL_DOCS_CAP = 30
 
 
+def _accumulate_archive_images(
+    tool_context: ToolContext, docs_dicts: list[dict]
+) -> None:
+    """画像付きドキュメントを archive_images セッション状態に蓄積する。"""
+    images_with_urls = [
+        {
+            "title": d["title"],
+            "date": d.get("date"),
+            "source_url": d["source_url"],
+            "source_type": d["source_type"],
+            "image_url": d.get("image_url"),
+            "thumbnail_url": d.get("thumbnail_url"),
+        }
+        for d in docs_dicts
+        if d.get("thumbnail_url") or d.get("image_url")
+    ]
+    if images_with_urls:
+        existing_images = tool_context.state.get("archive_images", [])
+        existing_images.extend(images_with_urls)
+        tool_context.state["archive_images"] = existing_images
+
+
 def search_newspapers(
     keywords: str,
     date_start: Optional[str] = None,
@@ -217,24 +239,7 @@ def search_newspapers(
         existing = tool_context.state.get("raw_search_results", [])
         existing.append(result)
         tool_context.state["raw_search_results"] = existing
-
-        # archive_images に画像付きドキュメントを蓄積
-        images_with_urls = [
-            {
-                "title": d["title"],
-                "date": d.get("date"),
-                "source_url": d["source_url"],
-                "source_type": d["source_type"],
-                "image_url": d.get("image_url"),
-                "thumbnail_url": d.get("thumbnail_url"),
-            }
-            for d in docs
-            if d.get("thumbnail_url") or d.get("image_url")
-        ]
-        if images_with_urls:
-            existing_images = tool_context.state.get("archive_images", [])
-            existing_images.extend(images_with_urls)
-            tool_context.state["archive_images"] = existing_images
+        _accumulate_archive_images(tool_context, docs)
 
     return json.dumps(result, ensure_ascii=False, indent=2)
 
@@ -694,24 +699,7 @@ def search_archives(
         existing = tool_context.state.get(state_key, [])
         existing.append(result)
         tool_context.state[state_key] = existing
-
-        # archive_images に画像付きドキュメントを蓄積
-        images_with_urls = [
-            {
-                "title": d["title"],
-                "date": d.get("date"),
-                "source_url": d["source_url"],
-                "source_type": d["source_type"],
-                "image_url": d.get("image_url"),
-                "thumbnail_url": d.get("thumbnail_url"),
-            }
-            for d in all_docs_dicts
-            if d.get("thumbnail_url") or d.get("image_url")
-        ]
-        if images_with_urls:
-            existing_images = tool_context.state.get("archive_images", [])
-            existing_images.extend(images_with_urls)
-            tool_context.state["archive_images"] = existing_images
+        _accumulate_archive_images(tool_context, all_docs_dicts)
 
     return json.dumps(result, ensure_ascii=False, indent=2)
 
