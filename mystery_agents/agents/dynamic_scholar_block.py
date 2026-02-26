@@ -95,7 +95,7 @@ class DynamicScholarBlock(BaseAgent):
             name="dynamic_analysis",
             sub_agents=analysis_scholars,
         )
-        async for event in parallel_analysis._run_async_impl(ctx):
+        async for event in parallel_analysis.run_async(ctx):
             yield event
 
         # 有意な分析を出した言語を特定
@@ -162,7 +162,7 @@ class DynamicScholarBlock(BaseAgent):
                 name=f"dynamic_debate_{iteration}",
                 sub_agents=debate_scholars,
             )
-            async for event in parallel_debate._run_async_impl(ctx):
+            async for event in parallel_debate.run_async(ctx):
                 yield event
 
             # 収束判定（LLM を介さず直接チェック）
