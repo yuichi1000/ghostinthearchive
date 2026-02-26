@@ -21,7 +21,9 @@ from .armchair_polymath import (
     INSTRUCTION_BODY,
     INSTRUCTION_PREAMBLE,
     POLYMATH_DESCRIPTION,
+    POLYMATH_MAX_OUTPUT_TOKENS,
     POLYMATH_TOOLS,
+    log_polymath_tool_call,
 )
 from .language_scholars import SCHOLAR_CONFIGS
 from .pipeline_gate import _is_meaningful, _log_and_record_failure
@@ -112,6 +114,10 @@ class DynamicPolymathBlock(BaseAgent):
             instruction=instruction,
             tools=POLYMATH_TOOLS,
             output_key="mystery_report",
+            generate_content_config=types.GenerateContentConfig(
+                max_output_tokens=POLYMATH_MAX_OUTPUT_TOKENS,
+            ),
+            before_tool_callback=log_polymath_tool_call,
         )
         async for event in polymath.run_async(ctx):
             yield event
