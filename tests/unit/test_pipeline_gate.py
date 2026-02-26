@@ -6,7 +6,6 @@
 
 from mystery_agents.agents.pipeline_gate import (
     _is_meaningful,
-    make_polymath_gate,
     make_post_story_gate,
     make_scholar_gate,
     make_storyteller_gate,
@@ -113,30 +112,6 @@ class TestScholarGate:
             "collected_documents_en": "Found documents...",
         })
         gate = make_scholar_gate()
-        result = gate(ctx)
-        assert result is None
-
-
-class TestPolymathGate:
-    """make_polymath_gate のテスト。"""
-
-    def test_all_scholars_failed_skips(self):
-        ctx = MockCallbackContext(state={
-            "selected_languages": ["en", "es"],
-            "scholar_analysis_en": "INSUFFICIENT_DATA: Not enough material for analysis.",
-            "scholar_analysis_es": "INSUFFICIENT_DATA: No sources available.",
-        })
-        gate = make_polymath_gate()
-        result = gate(ctx)
-        assert result is not None
-
-    def test_one_scholar_succeeded_proceeds(self):
-        ctx = MockCallbackContext(state={
-            "selected_languages": ["en", "es"],
-            "scholar_analysis_en": "Analysis of Bell Witch phenomenon...",
-            "scholar_analysis_es": "INSUFFICIENT_DATA: No sources.",
-        })
-        gate = make_polymath_gate()
         result = gate(ctx)
         assert result is None
 

@@ -28,15 +28,8 @@ from ..tools.word_count import count_words
 # ドライなユーモアと鋭い批判精神が持ち味ですが、証拠には誠実に向き合います。
 #
 # ## 入力（Scholar 分析結果）
-# - {active_analyses_summary}: DynamicScholarBlock が生成した分析概要（どの言語の分析が利用可能か）
-# セッション状態から各言語の Scholar 分析結果を読み取る:
-# - {scholar_analysis_en}: 英語圏の分析
-# - {scholar_analysis_de}: ドイツ語圏の分析（存在する場合）
-# - {scholar_analysis_es}: スペイン語圏の分析（存在する場合）
-# - {scholar_analysis_fr}: フランス語圏の分析（存在する場合）
-# - {scholar_analysis_nl}: オランダ語圏の分析（存在する場合）
-# - {scholar_analysis_pt}: ポルトガル語圏の分析（存在する場合）
-# - {scholar_analysis_ja}: 日本語圏の分析（存在する場合）
+# DynamicPolymathBlock がアクティブ言語のみの Scholar Analyses セクションを動的に構築する。
+# 後方互換のシングルトン（armchair_polymath_agent）は全7言語を静的に参照する。
 #
 # ## 入力（討論ホワイトボード）
 # - {debate_whiteboard}: 全ラウンドの討論記録（空の場合は討論なし）
@@ -156,7 +149,7 @@ from ..tools.word_count import count_words
 # - 1言語のみ → その結果のみで Master Report 作成
 # === End 日本語訳 ===
 
-ARMCHAIR_POLYMATH_INSTRUCTION = """
+INSTRUCTION_PREAMBLE = """
 You are the Armchair Polymath for the "Ghost in the Archive" project.
 From the comfort of your study, surrounded by tottering stacks of obscure monographs,
 you survey the field reports of your language-specialist colleagues with a mixture
@@ -168,7 +161,10 @@ with more devastating clarity.
 Your tone is dryly authoritative: you appreciate rigour, despise sloppy reasoning,
 and permit yourself the occasional sardonic aside when a colleague's analysis
 betrays an obvious cultural bias. Nevertheless, you follow the evidence wherever it leads.
+"""
 
+# 全7言語ハードコードの Scholar Analyses セクション（後方互換用シングルトン向け）
+_STATIC_ANALYSES_SECTION = """
 ## Input: Available Analyses
 First check which analyses were produced:
 - {active_analyses_summary}
@@ -185,7 +181,9 @@ Read the following Scholar analysis results from session state (some may be abse
 
 Focus on the analyses listed in `active_analyses_summary` — these are the ones
 with meaningful content. Other language keys may be empty or unavailable.
+"""
 
+INSTRUCTION_BODY = """
 ## Input: Debate Whiteboard
 - {debate_whiteboard}: Full record of scholarly debate across all rounds
 
@@ -525,20 +523,38 @@ If you cannot find a specific verbatim quote, write a brief paraphrase of the so
 NEVER leave `relevant_excerpt` as an empty string — items with empty excerpts will be automatically removed.
 """
 
+# 後方互換: 全7言語の静的 instruction（シングルトン + テスト用）
+ARMCHAIR_POLYMATH_INSTRUCTION = (
+    INSTRUCTION_PREAMBLE + _STATIC_ANALYSES_SECTION + INSTRUCTION_BODY
+)
+
+# Polymath ツール一覧（DynamicPolymathBlock でも共有）
+POLYMATH_TOOLS = [
+    save_structured_report,
+    get_search_metadata,
+    search_academic_papers,
+    get_document_inventory,
+    count_words,
+]
+
+# Polymath 説明文（DynamicPolymathBlock でも共有）
+POLYMATH_DESCRIPTION = (
+    "The Armchair Polymath: a sardonic, encyclopaedically learned synthesizer "
+    "who integrates analysis results from multiple language-specific Scholars "
+    "and their debate records. Identifies cross-language discrepancies, cultural "
+    "biases, and produces a unified Mystery Report drawing on Fact, Folklore, "
+    "and Anthropology perspectives from all available language sources."
+)
+
+
 def create_armchair_polymath() -> LlmAgent:
     """Armchair Polymath エージェントを新規生成する。"""
     return LlmAgent(
         name="armchair_polymath",
         model=create_pro_model(),
-        description=(
-            "The Armchair Polymath: a sardonic, encyclopaedically learned synthesizer "
-            "who integrates analysis results from multiple language-specific Scholars "
-            "and their debate records. Identifies cross-language discrepancies, cultural "
-            "biases, and produces a unified Mystery Report drawing on Fact, Folklore, "
-            "and Anthropology perspectives from all available language sources."
-        ),
+        description=POLYMATH_DESCRIPTION,
         instruction=ARMCHAIR_POLYMATH_INSTRUCTION,
-        tools=[save_structured_report, get_search_metadata, search_academic_papers, get_document_inventory, count_words],
+        tools=POLYMATH_TOOLS,
         output_key="mystery_report",  # 既存と同じキー → 下流互換性維持
     )
 

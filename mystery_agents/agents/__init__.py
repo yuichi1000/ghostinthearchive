@@ -8,6 +8,7 @@ from .aggregator import create_aggregator
 from .api_librarians import create_all_api_librarians, create_api_librarian
 from .armchair_polymath import armchair_polymath_agent, create_armchair_polymath
 from .convergence_checker import convergence_checker_agent, create_convergence_checker
+from .dynamic_polymath_block import create_dynamic_polymath_block
 from .dynamic_scholar_block import create_dynamic_scholar_block
 from .illustrator import create_illustrator, illustrator_agent
 from .language_scholars import create_all_scholars, create_scholar
@@ -19,6 +20,7 @@ __all__ = [
     "create_api_librarian",
     "create_all_api_librarians",
     "create_aggregator",
+    "create_dynamic_polymath_block",
     "create_dynamic_scholar_block",
     "create_scholar",
     "create_all_scholars",

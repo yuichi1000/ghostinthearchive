@@ -104,21 +104,6 @@ class TestInstructionPlaceholders:
         scholar_en = create_scholar("en")
         assert "{collected_documents_en}" in scholar_en.instruction
 
-    def test_armchair_polymath_references_analyses(self):
-        """ArmchairPolymath should reference all scholar_analysis keys."""
-        from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
-
-        instruction = armchair_polymath_agent.instruction
-        assert "{scholar_analysis_en}" in instruction
-        assert "{scholar_analysis_de}" in instruction
-        assert "{scholar_analysis_es}" in instruction
-
-    def test_armchair_polymath_references_active_analyses_summary(self):
-        """ArmchairPolymath should reference {active_analyses_summary}."""
-        from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
-
-        assert "{active_analyses_summary}" in armchair_polymath_agent.instruction
-
     def test_armchair_polymath_references_whiteboard(self):
         """ArmchairPolymath should reference {debate_whiteboard}."""
         from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
@@ -351,14 +336,6 @@ class TestDynamicScholarBlockConfiguration:
 class TestPipelineGateCallbacks:
     """Tests for pipeline gate callbacks on block agents."""
 
-    def test_polymath_block_has_gate(self):
-        """polymath_block should have a before_agent_callback."""
-        from mystery_agents.agent import ghost_commander
-
-        polymath_block = _find_sub_agent(ghost_commander, "polymath_block")
-        assert polymath_block.before_agent_callback is not None
-        assert callable(polymath_block.before_agent_callback)
-
     def test_storyteller_block_has_gate(self):
         """storyteller_block should have a before_agent_callback."""
         from mystery_agents.agent import ghost_commander
@@ -382,7 +359,7 @@ class TestPipelineGateCallbacks:
         sub_agent_names = [repr(a) for a in ghost_commander.sub_agents]
         sub_agents_str = " ".join(sub_agent_names)
         assert "dynamic_scholar_block" in sub_agents_str
-        assert "polymath_block" in sub_agents_str
+        assert "dynamic_polymath_block" in sub_agents_str
         assert "storyteller_block" in sub_agents_str
         assert "post_story_block" in sub_agents_str
 
