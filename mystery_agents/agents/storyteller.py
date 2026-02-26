@@ -26,8 +26,6 @@ from shared.model_config import (
     create_storyteller_model,
 )
 
-from ..tools.word_count import count_words
-
 logger = logging.getLogger(__name__)
 
 load_dotenv(Path(__file__).parent.parent / ".env")
@@ -149,10 +147,6 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # - 日付・場所・人物に紐づく具体的な感覚描写
 # - 2つの具体的な文書・記録の直接比較
 # 読者が2段落以上、具体的なものに触れずに過ごすことがないようにする。
-#
-# ## 語数検証（必須）
-# 記事完成後、`count_words` ツールに全文テキストと min_words=2000, max_words=3500 を渡して呼び出す。
-# within_range が false の場合、確定前に記事を修正すること。
 #
 # ## mystery_report への忠実性（最重要）
 # 事実・証拠・分析の唯一のソースは上記の Mystery Report である。あなたはストーリーテラーであり、アナリストではない。
@@ -373,12 +367,6 @@ When writing about archival findings, maintain strict epistemic discipline:
 - **Qualify your confidence**: Use phrases like "based on the digital archives consulted," "within the scope of this investigation," or "among the sources available through public APIs" to remind readers of the investigation's boundaries.
 - **Preserve mystery without manufacturing it**: The Ghost should emerge naturally from genuine gaps and contradictions in the record — never from rhetorical exaggeration of ordinary archival limitations.
 
-## Word Count Verification (MANDATORY)
-
-After completing your article text, call `count_words` with your full article text
-and `min_words=2000`, `max_words=3500`. If the result shows `within_range` is false,
-revise your article accordingly before finalizing.
-
 ## Fidelity to mystery_report (CRITICAL)
 Your sole source of facts, evidence, and analysis is the Mystery Report provided above. You are a storyteller, not an analyst.
 
@@ -502,6 +490,8 @@ def _storyteller_after_model(
     # モデル情報をセッション状態から取得
     storyteller_key = callback_context.state.get("storyteller", DEFAULT_STORYTELLER)
     model_config = STORYTELLER_MODELS.get(storyteller_key, {})
+    # 実際にレスポンスを返したモデル名（LiteLlm アダプタが設定）
+    actual_model = getattr(llm_response, "model_version", None)
 
     if has_text and not llm_response.error_code:
         # 正常応答: モデル情報 + トークン使用量をログ
@@ -509,7 +499,7 @@ def _storyteller_after_model(
             "storyteller": storyteller_key,
             "display_name": model_config.get("display_name", "unknown"),
             "model_id": model_config.get("model_id", "unknown"),
-            "model_version": getattr(llm_response, "model_version", None),
+            "actual_model": actual_model,
             "prompt_tokens": (
                 llm_response.usage_metadata.prompt_token_count
                 if llm_response.usage_metadata else None
@@ -520,9 +510,9 @@ def _storyteller_after_model(
             ),
         }
         logger.info(
-            "Storyteller 応答完了: model=%s (%s), tokens=%s/%s",
-            metadata["display_name"],
+            "Storyteller 応答完了: selected=%s, actual=%s, tokens=%s/%s",
             metadata["model_id"],
+            metadata["actual_model"],
             metadata["prompt_tokens"],
             metadata["output_tokens"],
         )
@@ -534,6 +524,7 @@ def _storyteller_after_model(
         "storyteller": storyteller_key,
         "display_name": model_config.get("display_name", "unknown"),
         "model_id": model_config.get("model_id", "unknown"),
+        "actual_model": actual_model,
         "finish_reason": str(llm_response.finish_reason) if llm_response.finish_reason else None,
         "error_code": llm_response.error_code,
         "error_message": llm_response.error_message,
@@ -548,7 +539,9 @@ def _storyteller_after_model(
         ),
     }
     logger.error(
-        "Storyteller 異常応答: finish_reason=%s, error_code=%s",
+        "Storyteller 異常応答: selected=%s, actual=%s, finish_reason=%s, error_code=%s",
+        metadata["model_id"],
+        metadata["actual_model"],
         metadata["finish_reason"],
         metadata["error_code"],
         extra=metadata,
@@ -575,7 +568,7 @@ def create_storyteller(storyteller: str = DEFAULT_STORYTELLER) -> LlmAgent:
             "an English blog article that interweaves fact and legend."
         ),
         instruction=STORYTELLER_INSTRUCTION,
-        tools=[count_words],
+        tools=[],
         output_key="creative_content",
         include_contents="none",
         before_model_callback=_storyteller_before_model,
