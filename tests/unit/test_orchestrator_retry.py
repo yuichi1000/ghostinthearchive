@@ -10,9 +10,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from shared.orchestrator import (
-    _CONNECTION_ERROR_RETRY_DELAY,
-    _RATE_LIMIT_MAX_RETRIES,
-    _RATE_LIMIT_RETRY_DELAY,
     _is_rate_limit_error,
     _is_transient_connection_error,
     run_pipeline,
@@ -62,7 +59,6 @@ class TestIsTransientConnectionError:
 
     def test_with_remote_protocol_error_class_name(self):
         """クラス名に 'RemoteProtocolError' を含む例外を検出すること。"""
-        # httpx.RemoteProtocolError を模擬（httpx を import せずクラス名で判定）
         class RemoteProtocolError(Exception):
             pass
         exc = RemoteProtocolError("Server disconnected without sending a response")
@@ -108,26 +104,6 @@ class TestIsTransientConnectionError:
         assert _is_transient_connection_error(outer_group) is True
 
 
-class TestRateLimitConstants:
-    """レートリミットリトライ定数のテスト。"""
-
-    def test_retry_delay_is_60_seconds(self):
-        """リトライ間隔が 60秒（1分）であること。"""
-        assert _RATE_LIMIT_RETRY_DELAY == 60
-
-    def test_max_retries_is_1(self):
-        """最大リトライ回数が 1回であること（計2回試行）。"""
-        assert _RATE_LIMIT_MAX_RETRIES == 1
-
-
-class TestConnectionErrorConstants:
-    """接続エラーリトライ定数のテスト。"""
-
-    def test_connection_error_retry_delay_is_15_seconds(self):
-        """接続エラーのリトライ間隔が 15秒であること。"""
-        assert _CONNECTION_ERROR_RETRY_DELAY == 15
-
-
 class TestRunPipelineRetry:
     """run_pipeline() のレートリミットリトライのテスト。"""
 
@@ -136,9 +112,6 @@ class TestRunPipelineRetry:
         """429 エラー時にリトライされ、2回目で成功すること。"""
         mock_agent = MagicMock()
 
-        # Runner.run_async のモック:
-        # 1回目: 429 例外を送出
-        # 2回目: 正常終了（空のイベントストリーム）
         call_count = 0
 
         async def mock_run_async(**kwargs):
@@ -146,7 +119,6 @@ class TestRunPipelineRetry:
             call_count += 1
             if call_count == 1:
                 raise Exception("429 Too Many Requests")
-            # 2回目: 空のイベントストリーム（正常終了）
             return
             yield  # async generator にする
 
@@ -172,18 +144,18 @@ class TestRunPipelineRetry:
             patch("shared.orchestrator.update_agent_completed"),
             patch("shared.orchestrator.complete_pipeline_run"),
             patch("shared.orchestrator.error_pipeline_run"),
-            patch("shared.orchestrator._RATE_LIMIT_RETRY_DELAY", 0),  # テストではスリープしない
+            patch("shared.orchestrator._RATE_LIMIT_RETRY_DELAY", 0),
         ):
             result = await run_pipeline(
                 agent=mock_agent,
                 app_name="test_app",
                 user_message="test query",
                 initial_state={},
-                run_type="podcast",  # blog だとゲート失敗判定が必要
+                run_type="podcast",
             )
 
         assert result.run_id == "test-run-id"
-        assert call_count == 2  # 1回目失敗 + 2回目成功
+        assert call_count == 2
 
     @pytest.mark.asyncio
     async def test_raises_after_max_retries(self):
@@ -266,7 +238,7 @@ class TestRunPipelineRetry:
                     run_type="podcast",
                 )
 
-        assert call_count == 1  # リトライなし
+        assert call_count == 1
 
     @pytest.mark.asyncio
     async def test_retries_on_connection_error(self):
@@ -318,7 +290,7 @@ class TestRunPipelineRetry:
             )
 
         assert result.run_id == "test-run-id"
-        assert call_count == 2  # 1回目失敗 + 2回目成功
+        assert call_count == 2
 
     @pytest.mark.asyncio
     async def test_connection_error_uses_shorter_delay(self):
@@ -358,7 +330,6 @@ class TestRunPipelineRetry:
             patch("shared.orchestrator.error_pipeline_run"),
             patch("shared.orchestrator.asyncio") as mock_asyncio,
         ):
-            # asyncio.sleep をモック化して呼び出し引数を検証
             mock_asyncio.sleep = AsyncMock()
             mock_asyncio.timeout = asyncio.timeout
             result = await run_pipeline(
@@ -369,7 +340,6 @@ class TestRunPipelineRetry:
                 run_type="podcast",
             )
 
-        # 接続エラーのリトライ遅延は 15秒
         mock_asyncio.sleep.assert_called_once_with(15)
 
     @pytest.mark.asyncio

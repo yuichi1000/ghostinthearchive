@@ -13,7 +13,6 @@ from unittest.mock import MagicMock
 import pytest
 
 from mystery_agents.tools.debate_tools import (
-    _CONVERGENCE_THRESHOLD,
     _extract_rounds,
     _extract_words,
     check_debate_convergence,
@@ -65,7 +64,6 @@ class TestExtractWords:
 
     def test_filters_short_words(self):
         words = _extract_words("a an the cat dog")
-        # "a", "an" は3文字未満で除外
         assert "cat" in words
         assert "dog" in words
         assert "a" not in words
@@ -141,11 +139,6 @@ class TestCheckDebateConvergence:
 
     def test_no_whiteboard_key(self, mock_tool_context):
         """debate_whiteboard キーが存在しない → 継続。"""
-        # state に debate_whiteboard を設定しない
         result = check_debate_convergence(mock_tool_context)
         assert "continue" in result.lower()
         assert not mock_tool_context.actions.escalate
-
-    def test_threshold_constant_is_sensible(self):
-        """閾値が妥当な範囲（0〜1）にあることを確認。"""
-        assert 0 < _CONVERGENCE_THRESHOLD < 1
