@@ -45,13 +45,13 @@ STATE_KEYS: list[StateKey] = [
         name="active_languages",
         description="ドキュメント数ランキング順の言語リスト（Aggregator が設定）",
         written_by=("aggregator",),
-        read_by=("dynamic_scholar_block",),
+        read_by=("dynamic_scholar_block", "dynamic_polymath_block"),
     ),
     StateKey(
         name="active_analyses_summary",
-        description="DynamicScholarBlock が生成する分析概要（どの言語の分析が利用可能か）",
+        description="DynamicScholarBlock が生成する分析概要（ログ/診断用プレーンテキスト）",
         written_by=("dynamic_scholar_block",),
-        read_by=("armchair_polymath",),
+        read_by=(),
     ),
     StateKey(
         name="collected_documents_{api_key}",

@@ -4,11 +4,12 @@ Defines root_agent (ghost_commander) as a SequentialAgent that orchestrates
 the multilingual investigation pipeline:
 
   ParallelAPILibrarians → Aggregator → DynamicScholarBlock
-    → PolymathBlock → StorytellerBlock → PostStoryBlock
+    → DynamicPolymathBlock → StorytellerBlock → PostStoryBlock
 
 API ベース Librarian（7グループ）が並列で検索し、AggregatorAgent が
 検索結果を言語別に集約。DynamicScholarBlock が active_languages に基づき
 Scholar を動的に生成・実行し、分析→討論を一貫制御する。
+DynamicPolymathBlock がアクティブ言語のみの instruction で Polymath を実行。
 PostStoryBlock では Illustrator と3言語翻訳が並列実行される。
 
 DynamicScholarBlock 内部:
@@ -28,13 +29,11 @@ from google.adk.agents import ParallelAgent, SequentialAgent
 from google.genai import types
 
 from .agents.aggregator import create_aggregator
-from .agents.language_scholars import SCHOLAR_CONFIGS
 from .agents.api_librarians import create_all_api_librarians
-from .agents.armchair_polymath import create_armchair_polymath
+from .agents.dynamic_polymath_block import create_dynamic_polymath_block
 from .agents.dynamic_scholar_block import create_dynamic_scholar_block
 from .agents.illustrator import create_illustrator
 from .agents.pipeline_gate import (
-    make_polymath_gate,
     make_post_story_gate,
     make_storyteller_gate,
 )
@@ -50,12 +49,13 @@ if TYPE_CHECKING:
 _PIPELINE_DESCRIPTION = (
     "Ghost in the Archive multilingual blog creation pipeline. "
     "Executes ParallelAPILibrarians(7 API groups) → Aggregator "
-    "→ DynamicScholarBlock(analysis + debate) → PolymathBlock "
+    "→ DynamicScholarBlock(analysis + debate) → DynamicPolymathBlock "
     "→ StorytellerBlock → PostStoryBlock "
     "to research, analyze, debate, create content, generate images, "
     "translate to 3 languages (ja/es/de) in parallel, "
     "and publish historical mysteries and folkloric anomalies. "
     "DynamicScholarBlock dynamically creates Scholars for active languages only. "
+    "DynamicPolymathBlock builds Polymath instruction with active languages only. "
     "Pipeline gates skip downstream agents when upstream stages fail."
 )
 
@@ -65,14 +65,14 @@ SKIP_AUTHORS = {
     "ghost_commander",
     "parallel_api_librarians",
     "aggregator",
-    # DynamicScholarBlock 内部のオーケストレーターエージェント
+    # DynamicScholarBlock / DynamicPolymathBlock 内部のオーケストレーターエージェント
     "dynamic_scholar_block",
     "dynamic_analysis",
     "dynamic_debate_0",
     "dynamic_debate_1",
+    "dynamic_polymath_block",
     # 並列翻訳・後処理ブロック
     "parallel_translators",
-    "polymath_block",
     "storyteller_block",
     "post_story_block",
     "post_story_parallel",
@@ -91,12 +91,8 @@ def _initialize_pipeline_state(
     callback_context.state["selected_languages"] = []
     callback_context.state["debate_whiteboard"] = ""
     callback_context.state["structured_report"] = {}
-    # Armchair Polymath の instruction が全言語の {scholar_analysis_{lang}} を
-    # 参照するため、未実行言語でも ADK のプレースホルダー解決が失敗しないよう
-    # 全言語キーを空文字列で初期化する
-    for lang in SCHOLAR_CONFIGS:
-        callback_context.state[f"scholar_analysis_{lang}"] = ""
-    callback_context.state["active_analyses_summary"] = ""
+    # scholar_analysis_* は DynamicPolymathBlock が動的に参照するため初期化不要
+    # active_analyses_summary は DynamicScholarBlock が設定するため初期化不要
     return None  # 実行続行
 
 
@@ -113,7 +109,6 @@ def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
         構築済みパイプライン（SequentialAgent）
     """
     # リーフエージェント（毎回新規生成）
-    ap = create_armchair_polymath()
     il = create_illustrator()
     pub = create_publisher()
     st = create_storyteller(storyteller)
@@ -128,12 +123,9 @@ def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
     # 有意な分析が2言語以上なら討論ループ（収束判定付き）
     dsb = create_dynamic_scholar_block()
 
-    # ArmchairPolymath ブロック（全 Scholar 失敗時にスキップ）
-    polymath_block = SequentialAgent(
-        name="polymath_block",
-        sub_agents=[ap],
-        before_agent_callback=make_polymath_gate(),
-    )
+    # DynamicPolymathBlock: アクティブ言語のみの instruction で Polymath 実行
+    # ゲート機能内包（全 Scholar 失敗時にスキップ）
+    dpb = create_dynamic_polymath_block()
 
     # Storyteller ブロック（mystery_report 空ならスキップ）
     storyteller_block = SequentialAgent(
@@ -175,7 +167,7 @@ def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
             ),
             agg,
             dsb,
-            polymath_block,
+            dpb,
             storyteller_block,
             post_story_block,
         ],

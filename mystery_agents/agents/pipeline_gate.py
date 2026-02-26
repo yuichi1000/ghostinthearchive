@@ -92,36 +92,6 @@ def make_scholar_gate():
     return gate
 
 
-def make_polymath_gate():
-    """全 Scholar が失敗した場合に ArmchairPolymath をスキップ。"""
-
-    def gate(callback_context: CallbackContext) -> Optional[types.Content]:
-        selected = callback_context.state.get("selected_languages", DEFAULT_SELECTED_LANGUAGES)
-        if not isinstance(selected, list):
-            selected = list(DEFAULT_SELECTED_LANGUAGES)
-
-        for lang in selected:
-            analysis = callback_context.state.get(f"scholar_analysis_{lang}", "")
-            if _is_meaningful(analysis):
-                logger.info(
-                    "Pipeline gate [polymath]: 通過（%s に有意な分析あり）", lang,
-                    extra={"gate_name": "polymath", "decision": "pass"},
-                )
-                return None
-
-        message = (
-            "INSUFFICIENT_DATA: No meaningful Scholar analyses available. "
-            "Pipeline terminated."
-        )
-        _log_and_record_failure(callback_context, "scholar", message)
-        return types.Content(
-            parts=[types.Part(text=message)],
-            role="model",
-        )
-
-    return gate
-
-
 def make_storyteller_gate():
     """mystery_report が空なら Storyteller をスキップ。"""
 

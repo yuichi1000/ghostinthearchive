@@ -104,13 +104,11 @@ class DynamicScholarBlock(BaseAgent):
             if _is_meaningful(state.get(f"scholar_analysis_{lang}", ""))
         ]
 
-        # active_analyses_summary をステートに書き込み
+        # active_analyses_summary をステートに書き込み（ログ/診断用プレーンテキスト）
         summary_lines = []
         for lang in meaningful_langs:
             lang_name = SCHOLAR_CONFIGS[lang]["language_name"]
-            summary_lines.append(
-                f"- {lang_name} ({lang}): {{scholar_analysis_{lang}}}"
-            )
+            summary_lines.append(f"- {lang_name} ({lang})")
 
         if summary_lines:
             analyses_summary = (
