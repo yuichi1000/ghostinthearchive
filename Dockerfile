@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements and install Python dependencies
 COPY pyproject.toml ./
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --default-timeout=300 -r requirements.txt
 
 # rembg U2-NET モデルをプリダウンロード（初回実行時の待ちを回避）
 RUN python -c "from rembg import new_session; new_session('u2netp')"
