@@ -14,9 +14,13 @@ from mystery_agents.tools.scholar_tools import (
 
 
 def _make_ctx(state: dict | None = None) -> MagicMock:
-    """inventory 参照済みフラグ付きのモック ToolContext を作成する。"""
+    """事前チェックフラグ付きのモック ToolContext を作成する。"""
     ctx = MagicMock()
-    ctx.state = {"_inventory_consulted": True, **(state or {})}
+    ctx.state = {
+        "_inventory_consulted": True,
+        "_word_count_verified": True,
+        **(state or {}),
+    }
     return ctx
 
 
@@ -425,9 +429,12 @@ class TestInventoryConsultedCheck:
         assert result_data["status"] == "success"
 
     def test_invalid_json_error_takes_priority_over_inventory(self):
-        """不正 JSON のエラーは inventory チェックより後（inventory チェックが先）。"""
+        """不正 JSON のエラーは事前チェック通過後に検出される。"""
         mock_ctx = MagicMock()
-        mock_ctx.state = {"_inventory_consulted": True}
+        mock_ctx.state = {
+            "_inventory_consulted": True,
+            "_word_count_verified": True,
+        }
 
         result = save_structured_report("not valid json", mock_ctx)
         result_data = json.loads(result)
@@ -643,3 +650,42 @@ class TestValidateEvidenceGroundingDirect:
         }
         warnings = _validate_evidence_grounding(report_data, mock_ctx)
         assert warnings == []
+
+
+class TestWordCountVerifiedCheck:
+    """語数検証フラグ強制チェックのテスト。"""
+
+    def test_error_when_word_count_not_verified(self):
+        """_word_count_verified 未設定で save_structured_report → エラー。"""
+        mock_ctx = MagicMock()
+        mock_ctx.state = {"_inventory_consulted": True}
+
+        report_data = {"title": "Test", "hypothesis": "Test"}
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "error"
+        assert "count_words" in result_data["error"]
+        assert "structured_report" not in mock_ctx.state
+
+    def test_error_when_word_count_verified_false(self):
+        """_word_count_verified = False（範囲外）でもエラー。"""
+        mock_ctx = MagicMock()
+        mock_ctx.state = {"_inventory_consulted": True, "_word_count_verified": False}
+
+        report_data = {"title": "Test"}
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "error"
+        assert "count_words" in result_data["error"]
+
+    def test_success_when_word_count_verified(self):
+        """_word_count_verified = True で正常保存。"""
+        mock_ctx = _make_ctx()
+
+        report_data = {"title": "Test"}
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"

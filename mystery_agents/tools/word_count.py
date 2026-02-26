@@ -9,12 +9,20 @@ from __future__ import annotations
 
 import json
 
+from google.adk.tools import ToolContext
 
-def count_words(text: str, min_words: int = 0, max_words: int = 0) -> str:
+
+def count_words(
+    text: str,
+    tool_context: ToolContext = None,
+    min_words: int = 0,
+    max_words: int = 0,
+) -> str:
     """テキストの語数をカウントし、指定範囲との比較結果を返す。
 
     Args:
         text: 語数をカウントするテキスト
+        tool_context: ADK ToolContext（エージェント経由で自動注入、直接呼び出し時は省略可）
         min_words: 最小語数（0 の場合はチェックしない）
         max_words: 最大語数（0 の場合はチェックしない）
 
@@ -26,9 +34,13 @@ def count_words(text: str, min_words: int = 0, max_words: int = 0) -> str:
     result: dict = {"word_count": count}
 
     if min_words > 0 and max_words > 0:
+        within_range = min_words <= count <= max_words
         result["min_words"] = min_words
         result["max_words"] = max_words
-        result["within_range"] = min_words <= count <= max_words
+        result["within_range"] = within_range
+        # 語数検証フラグをセッション状態に設定
+        if tool_context is not None:
+            tool_context.state["_word_count_verified"] = within_range
         if count < min_words:
             result["message"] = (
                 f"Too short by {min_words - count} words. "

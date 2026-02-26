@@ -630,6 +630,18 @@ def save_structured_report(
             ensure_ascii=False,
         )
 
+    # 語数検証チェック
+    if not tool_context.state.get("_word_count_verified"):
+        return json.dumps(
+            {
+                "status": "error",
+                "error": "count_words must be called with min_words=5000, max_words=10000 "
+                "and the report must be within range before saving. "
+                "Call count_words first, then revise if needed.",
+            },
+            ensure_ascii=False,
+        )
+
     try:
         report_data = json.loads(report_json)
     except json.JSONDecodeError as e:
