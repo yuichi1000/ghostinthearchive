@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 from mystery_agents.agents.pipeline_gate import make_scholar_gate
 from mystery_agents.tools.debate_tools import append_to_whiteboard
-from mystery_agents.tools.illustrator_tools import _rewrite_safe_prompt
+from mystery_agents.tools.prompt_safety import _rewrite_safe_prompt
 from mystery_agents.tools.librarian_tools import search_archives
 from mystery_agents.tools.publisher_tools import publish_mystery
 from shared.http_retry import create_retry_session

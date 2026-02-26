@@ -5,7 +5,7 @@ from pathlib import Path
 
 from PIL import Image as PILImage
 
-from mystery_agents.tools.illustrator_tools import _generate_thumbnail
+from mystery_agents.tools.image_processing import _generate_thumbnail
 
 
 class TestGenerateThumbnail:
