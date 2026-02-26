@@ -13,6 +13,7 @@ import { DetailSidebar } from "./detail-sidebar"
 import { TableOfContents } from "../table-of-contents"
 import { SECTION_IDS, type TocSection } from "../../lib/toc-config"
 import { extractHeadings } from "../../lib/markdown-headings"
+import { normalizeImagePlacement } from "../../lib/normalize-image-placement"
 import { stripLeadingH1 } from "../../lib/utils"
 import type { FirestoreMystery } from "../../types/mystery"
 import type { LocalizedMystery } from "../../lib/localize"
@@ -87,8 +88,11 @@ export function MysteryArticle({
   const location = mystery.historical_context?.geographic_scope?.join(", ") || ""
   const timePeriod = mystery.historical_context?.time_period || ""
 
-  // 本文見出しから TOC セクションを動的構築（1回だけ計算）
-  const narrativeHeadings = extractHeadings(stripLeadingH1(narrativeContent || ""))
+  // markdown 処理を1回だけ行い、TOC と NarrativeSection の両方に同じ文字列を渡す
+  const processedNarrative = normalizeImagePlacement(
+    stripLeadingH1(narrativeContent || "").replace(/\*\*(.+?)\*\*/g, ' **$1** ')
+  )
+  const narrativeHeadings = extractHeadings(processedNarrative)
   const precomputedHeadingIds = narrativeHeadings.map(h => h.id)
 
   const tocSections: TocSection[] = [
@@ -129,7 +133,7 @@ export function MysteryArticle({
           {heroImage}
 
           <NarrativeSection
-            narrativeContent={narrativeContent}
+            narrativeContent={processedNarrative}
             summary={summary}
             lang={lang}
             precomputedHeadingIds={precomputedHeadingIds}

@@ -1,9 +1,7 @@
 import Markdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { rehypeUnwrapImages } from "../../lib/rehype-unwrap-images"
-import { normalizeImagePlacement } from "../../lib/normalize-image-placement"
 import { FileText } from "lucide-react"
-import { stripLeadingH1 } from "../../lib/utils"
 import { slugify } from "../../lib/markdown-headings"
 import type { ReactNode } from "react"
 import { ArchiveImage } from "./archive-image"
@@ -86,7 +84,7 @@ export function NarrativeSection({ narrativeContent, summary, lang = "en", preco
     return (
       <section id="section-narrative" className="scroll-mt-24 prose prose-lg prose-invert max-w-none prose-headings:font-serif prose-headings:text-parchment prose-headings:mt-12 prose-headings:mb-4 prose-p:text-foreground/90 prose-p:leading-loose prose-p:mb-6 prose-a:text-gold prose-strong:text-parchment prose-hr:border-border">
         <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeUnwrapImages]} components={markdownComponents}>
-          {normalizeImagePlacement(stripLeadingH1(narrativeContent).replace(/\*\*(.+?)\*\*/g, ' **$1** '))}
+          {narrativeContent}
         </Markdown>
       </section>
     )
