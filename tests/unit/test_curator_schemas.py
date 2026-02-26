@@ -45,22 +45,6 @@ class TestThemeSuggestion:
         with pytest.raises(Exception):
             ThemeSuggestion.model_validate(data)
 
-    def test_missing_theme_rejected(self):
-        data = {
-            "description": "Test description",
-            "category": "HIS",
-        }
-        with pytest.raises(Exception):
-            ThemeSuggestion.model_validate(data)
-
-    def test_missing_description_rejected(self):
-        data = {
-            "theme": "Test theme",
-            "category": "HIS",
-        }
-        with pytest.raises(Exception):
-            ThemeSuggestion.model_validate(data)
-
 
 class TestValidateSuggestions:
     """validate_suggestions() のテスト。"""

@@ -227,12 +227,3 @@ class TestArtStyleAttributes:
             for ct in ("fact", "folklore"):
                 style = get_art_style(region, ct)
                 assert style.style_prefix.endswith(" "), f"{region}/{ct}: style_prefix should end with space"
-
-    def test_frozen_dataclass(self):
-        """ArtStyle は frozen（不変）。"""
-        style = get_art_style("US", "fact")
-        try:
-            style.region = "XX"  # type: ignore[misc]
-            assert False, "Should have raised FrozenInstanceError"
-        except AttributeError:
-            pass

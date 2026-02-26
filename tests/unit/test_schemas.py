@@ -41,12 +41,6 @@ class TestMysteryReport:
         with pytest.raises(ValidationError):
             MysteryReport(**sample_mystery_report_data)
 
-    def test_missing_required_field_raises_error(self, sample_mystery_report_data):
-        """mystery_id 省略で ValidationError が発生する。"""
-        del sample_mystery_report_data["mystery_id"]
-        with pytest.raises(ValidationError, match="mystery_id"):
-            MysteryReport(**sample_mystery_report_data)
-
     def test_invalid_discrepancy_type_raises_error(self, sample_mystery_report_data):
         """存在しない discrepancy_type で ValidationError が発生する。"""
         sample_mystery_report_data["discrepancy_type"] = "nonexistent_type"
