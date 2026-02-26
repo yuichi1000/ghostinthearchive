@@ -166,6 +166,17 @@ class PipelineResult:
     session_state: dict = field(default_factory=dict)
 
 
+def _error_remaining_agents(
+    pipeline_logger: PipelineLogger,
+    agent_texts: dict[str, list[str]],
+    error_message: str,
+) -> None:
+    """エラー発生時に残存エージェントをエラーマークする。"""
+    for name in list(agent_texts.keys()):
+        pipeline_logger.error_agent(name, error_message)
+    agent_texts.clear()
+
+
 def _complete_agent(
     pipeline_logger: PipelineLogger,
     run_id: str | None,
@@ -472,9 +483,11 @@ async def run_pipeline(
             )
 
         except TimeoutError:
+            _error_remaining_agents(pipeline_logger, agent_texts, f"Pipeline timed out after {timeout_seconds}s")
             error_pipeline_run(run_id, f"Pipeline timed out after {timeout_seconds}s", error_detail={
                 "error_type": "timeout",
                 "timeout_seconds": timeout_seconds,
+                "pipeline_log": pipeline_logger.get_logs(),
             })
             raise
         except Exception as e:
@@ -499,6 +512,7 @@ async def run_pipeline(
                 continue
 
             error_message = _format_exception_group(e)
+            _error_remaining_agents(pipeline_logger, agent_texts, error_message)
             logger.error(
                 "Pipeline failed: %s", error_message, exc_info=True,
                 extra={"status": "error", "exception_class": type(e).__name__},
@@ -506,6 +520,7 @@ async def run_pipeline(
             error_pipeline_run(run_id, error_message, error_detail={
                 "error_type": "exception",
                 "exception_class": type(e).__name__,
+                "pipeline_log": pipeline_logger.get_logs(),
             })
             raise
 
