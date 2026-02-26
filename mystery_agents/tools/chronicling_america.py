@@ -3,11 +3,8 @@
 LOC の loc.gov JSON API を使用して Chronicling America 新聞コレクションを検索する。
 """
 
-import json
 import re
-from typing import Optional
 
-import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage
 from .archive_source_base import ArchiveSearchResult, ArchiveSource

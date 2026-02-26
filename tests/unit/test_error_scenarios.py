@@ -5,7 +5,6 @@
 """
 
 import json
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from mystery_agents.agents.pipeline_gate import make_scholar_gate

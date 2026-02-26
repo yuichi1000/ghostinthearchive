@@ -4,9 +4,7 @@ Internet Archive の膨大なコレクション（書籍、雑誌、ウェブペ
 その他のデジタル化資料）を検索する。
 """
 
-from typing import Optional
 
-import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage
 from .archive_source_base import ArchiveSearchResult, ArchiveSource

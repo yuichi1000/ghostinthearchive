@@ -184,7 +184,7 @@ class TestRunPipelineRetry:
             patch("shared.orchestrator.update_agent_started"),
             patch("shared.orchestrator.update_agent_completed"),
             patch("shared.orchestrator.complete_pipeline_run"),
-            patch("shared.orchestrator.error_pipeline_run") as mock_error,
+            patch("shared.orchestrator.error_pipeline_run"),
             patch("shared.orchestrator._RATE_LIMIT_RETRY_DELAY", 0),
         ):
             with pytest.raises(Exception, match="429"):
@@ -332,7 +332,7 @@ class TestRunPipelineRetry:
         ):
             mock_asyncio.sleep = AsyncMock()
             mock_asyncio.timeout = asyncio.timeout
-            result = await run_pipeline(
+            await run_pipeline(
                 agent=mock_agent,
                 app_name="test_app",
                 user_message="test query",
@@ -369,7 +369,7 @@ class TestRunPipelineRetry:
             patch("shared.orchestrator.update_agent_started"),
             patch("shared.orchestrator.update_agent_completed"),
             patch("shared.orchestrator.complete_pipeline_run"),
-            patch("shared.orchestrator.error_pipeline_run") as mock_error,
+            patch("shared.orchestrator.error_pipeline_run"),
             patch("shared.orchestrator._CONNECTION_ERROR_RETRY_DELAY", 0),
         ):
             with pytest.raises(Exception, match="Server disconnected"):

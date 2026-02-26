@@ -1,6 +1,5 @@
 """Unit tests for Mystery ID schema — validate and parse (v2 format)."""
 
-import pytest
 
 from mystery_agents.schemas.mystery_id import (
     REGION_CODES,

@@ -4,10 +4,7 @@ LOC の loc.gov JSON API を使用して、Chronicling America 以外の
 全デジタルコレクションを検索する。
 """
 
-import json
-from typing import Optional
 
-import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage
 from .archive_source_base import ArchiveSearchResult, ArchiveSource

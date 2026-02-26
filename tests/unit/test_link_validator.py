@@ -6,10 +6,6 @@ from unittest.mock import patch
 import responses
 from requests.exceptions import ConnectionError, InvalidURL, Timeout, TooManyRedirects
 
-from mystery_agents.schemas.document import (
-    ArchiveDocument,
-    SourceLanguage,
-)
 from mystery_agents.tools.link_validator import (
     LinkCheckResult,
     validate_documents,

@@ -5,10 +5,8 @@ wskey クエリパラメータ認証を使用。
 """
 
 import os
-import re
-from typing import Any, Optional
+from typing import Any
 
-import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage
 from .archive_source_base import ArchiveSearchResult, ArchiveSource

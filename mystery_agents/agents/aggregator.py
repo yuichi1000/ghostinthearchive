@@ -89,7 +89,7 @@ class AggregatorAgent(BaseAgent):
         summary = (
             f"Aggregated {total_docs} documents across "
             f"{len(active_languages)} languages: "
-            f"{', '.join(f'{l}({len(docs_by_lang[l])})' for l in active_languages)}"
+            f"{', '.join(f'{lang}({len(docs_by_lang[lang])})' for lang in active_languages)}"
         )
         logger.info(
             "Aggregator: %s",
@@ -98,7 +98,7 @@ class AggregatorAgent(BaseAgent):
                 "active_languages": active_languages,
                 "total_documents": total_docs,
                 "docs_per_language": {
-                    l: len(docs_by_lang[l]) for l in active_languages
+                    lang: len(docs_by_lang[lang]) for lang in active_languages
                 },
             },
         )

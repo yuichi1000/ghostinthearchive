@@ -258,7 +258,6 @@ class TestRemoveBackground:
     def test_skips_rembg_when_already_transparent(self, tmp_path):
         """既に透過ピクセルがある場合、rembg を呼ばずに成功を返す。"""
         from PIL import Image as PILImage
-        import numpy as np
 
         # 透過済み画像（背景=透明、前景=赤）
         img = PILImage.new("RGBA", (10, 10), (0, 0, 0, 0))

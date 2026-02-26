@@ -1,7 +1,6 @@
 """Unit tests for podcast_agents/tools/script_tools.py - save_podcast_script."""
 
 import json
-from unittest.mock import MagicMock
 
 from podcast_agents.tools.script_tools import save_podcast_script
 from tests.fakes import make_tool_context

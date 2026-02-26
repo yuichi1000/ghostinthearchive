@@ -4,7 +4,6 @@ import json
 import time
 from unittest.mock import patch
 
-from mystery_agents.schemas.document import ArchiveDocument, SourceLanguage
 from mystery_agents.tools.archive_source_base import ArchiveSearchResult
 from mystery_agents.tools.librarian_tools import (
     _TOTAL_DOCS_CAP,

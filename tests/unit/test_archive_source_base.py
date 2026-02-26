@@ -246,7 +246,7 @@ class TestEmptyDatesPerSource:
                 NYPLSource,
                 NYPL_BASE_URL,
                 {"nyplAPI": {"response": {"numResults": "0", "result": []}}},
-                {},
+                {"NYPL_API_TOKEN": "test-token"},
                 lambda url: "1500" not in url,
                 ["ghost"],
             ),

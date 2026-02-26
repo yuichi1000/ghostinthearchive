@@ -11,7 +11,6 @@ from mystery_agents.tools.source_registry import (
     resolve_newspaper_sources,
     resolve_sources,
 )
-from mystery_agents.schemas.document import SourceLanguage
 
 
 class FakeSource(ArchiveSource):

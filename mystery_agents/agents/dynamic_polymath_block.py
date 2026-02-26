@@ -41,7 +41,7 @@ def _build_analyses_section(meaningful_langs: list[str]) -> str:
         )
 
     lang_names = ", ".join(
-        SCHOLAR_CONFIGS[l]["language_name"] for l in meaningful_langs
+        SCHOLAR_CONFIGS[lang]["language_name"] for lang in meaningful_langs
     )
     return (
         "## Input: Scholar Analyses\n"

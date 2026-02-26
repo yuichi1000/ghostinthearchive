@@ -1,7 +1,6 @@
 """Unit tests for shared/language_validator.py."""
 
 from shared.language_validator import (
-    ValidationResult,
     _english_stop_word_density,
     _has_japanese_characters,
     validate_translation_language,
