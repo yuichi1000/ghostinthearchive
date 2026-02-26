@@ -19,11 +19,11 @@ import { useLanguage } from "@/contexts/language-context"
 import type { FirestoreMystery } from "@ghost/shared/src/types/mystery"
 import { ArrowLeft, FileText, Eye } from "lucide-react"
 
-// 管理画面は英語固定のため、i18n 辞書の代わりにハードコード定数を使用
+// 管理画面は日本語固定のため、公開サイト ja 辞書に準拠したハードコード定数を使用
 const PREVIEW_LABELS = {
-  confidence: { confirmedGhost: "Confirmed Ghost", suspectedGhost: "Suspected Ghost", archivalEcho: "Archival Echo" },
-  classification: { HIS: "History", FLK: "Folklore", ANT: "Anthropology", OCC: "Occult", URB: "Urban Legend", CRM: "Crime", REL: "Religion", LOC: "Locus" } as Record<string, string>,
-  sourceCoverage: { heading: "Ghost Assessment" },
+  confidence: { confirmedGhost: "確認済みゴースト", suspectedGhost: "疑わしいゴースト", archivalEcho: "アーカイブの残響" },
+  classification: { HIS: "歴史", FLK: "民俗", ANT: "人類学", OCC: "怪奇", URB: "都市伝説", CRM: "未解決事件", REL: "信仰・禁忌", LOC: "地霊・場所" } as Record<string, string>,
+  sourceCoverage: { heading: "Ghost 評価" },
 }
 
 /**
@@ -66,11 +66,11 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
   const tocSections: TocSection[] = [
     ...(narrativeHeadings.length > 0
       ? narrativeHeadings.map(h => ({ id: h.id, label: h.text }))
-      : [{ id: SECTION_IDS.narrative, label: "Narrative" }]),
-    ...(discrepancyDetected ? [{ id: SECTION_IDS.discrepancy, label: "Discovered Discrepancy" }] : []),
-    { id: SECTION_IDS.evidence, label: "Archival Evidence" },
-    ...(hypothesis ? [{ id: SECTION_IDS.hypothesis, label: "Hypothesis" }] : []),
-    ...(mystery.historical_context ? [{ id: SECTION_IDS.historicalContext, label: "Historical Context" }] : []),
+      : [{ id: SECTION_IDS.narrative, label: "本文" }]),
+    ...(discrepancyDetected ? [{ id: SECTION_IDS.discrepancy, label: "発見された矛盾" }] : []),
+    { id: SECTION_IDS.evidence, label: "アーカイブ証拠" },
+    ...(hypothesis ? [{ id: SECTION_IDS.hypothesis, label: "仮説" }] : []),
+    ...(mystery.historical_context ? [{ id: SECTION_IDS.historicalContext, label: "歴史的背景" }] : []),
   ]
 
   // publishedAt を安全に Date に変換
@@ -121,15 +121,16 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
             location={location}
             timePeriod={timePeriod}
             publishedAt={publishedAt}
-            publishedLabel={mystery.publishedAt ? "Published:" : "Created:"}
+            publishedLabel={mystery.publishedAt ? "公開日：" : "作成日："}
             confidenceLevel={mystery.confidence_level}
             confidenceLabels={PREVIEW_LABELS.confidence}
             classificationLabels={PREVIEW_LABELS.classification}
             storyteller={mystery.storyteller}
+            storytellerBylineLabel="語り部:"
           />
 
           {/* モバイル目次 */}
-          <TableOfContents sections={tocSections} heading="Table of Contents" variant="mobile" />
+          <TableOfContents sections={tocSections} heading="目次" variant="mobile" />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Main content */}
@@ -156,37 +157,40 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
               {/* Divider between narrative and archival data */}
               <div className="flex items-center gap-4">
                 <div className="h-px flex-1 bg-border" />
-                <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Archival Data</span>
+                <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">アーカイブデータ</span>
                 <div className="h-px flex-1 bg-border" />
               </div>
 
               {discrepancyDetected && (
-                <DiscrepancySection discrepancyDetected={discrepancyDetected} />
+                <DiscrepancySection discrepancyDetected={discrepancyDetected} label="発見された矛盾" />
               )}
 
               {/* Evidence */}
               <section id="section-evidence" className="scroll-mt-24">
                 <div className="flex items-center gap-3 mb-6">
                   <FileText className="w-5 h-5 text-gold" />
-                  <h2 className="font-serif text-xl text-parchment">Archival Evidence</h2>
+                  <h2 className="font-serif text-xl text-parchment">アーカイブ証拠</h2>
                 </div>
                 <div className="space-y-8">
                   <EvidenceBlock
                     evidence={mystery.evidence_a}
-                    label="Primary Source"
+                    label="主要資料"
                     translatedExcerpt={evidenceAExcerpt}
+                    labels={{ source: "出典", view: "閲覧", originalText: "原文" }}
                   />
                   <EvidenceBlock
                     evidence={mystery.evidence_b}
-                    label="Contrasting Source"
+                    label="対比資料"
                     translatedExcerpt={evidenceBExcerpt}
+                    labels={{ source: "出典", view: "閲覧", originalText: "原文" }}
                   />
                   {mystery.additional_evidence.map((ev, i) => (
                     <EvidenceBlock
                       key={i}
                       evidence={ev}
-                      label={`Additional Evidence ${i + 1}`}
+                      label={`追加証拠 ${i + 1}`}
                       translatedExcerpt={getTranslatedExcerpt(mystery, i, lang)}
+                      labels={{ source: "出典", view: "閲覧", originalText: "原文" }}
                     />
                   ))}
                 </div>
@@ -196,6 +200,7 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
                 <HypothesisSection
                   hypothesis={hypothesis}
                   alternativeHypotheses={alternativeHypotheses}
+                  labels={{ hypothesis: "仮説", alternativeHypotheses: "代替仮説：" }}
                 />
               )}
 
@@ -203,6 +208,7 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
                 <HistoricalContextSection
                   historicalContext={mystery.historical_context}
                   politicalClimate={politicalClimate}
+                  labels={{ historicalContext: "歴史的背景", relatedEvents: "関連する出来事：", keyFigures: "主要人物：" }}
                 />
               )}
             </div>
@@ -211,9 +217,13 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
               storyHooks={storyHooks}
               confidenceRationale={confidenceRationale}
               sourceCoverageLabels={PREVIEW_LABELS.sourceCoverage}
+              labels={{
+                storyAngles: "物語の視点",
+                classificationNotice: "このケースファイルはAIによるアーカイブ記録の分析です。すべてのソースを独自に検証してください。",
+              }}
             >
               {/* デスクトップ目次 */}
-              <TableOfContents sections={tocSections} heading="Table of Contents" variant="desktop" />
+              <TableOfContents sections={tocSections} heading="目次" variant="desktop" />
             </DetailSidebar>
           </div>
         </div>
