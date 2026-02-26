@@ -7,7 +7,6 @@ import type { Evidence } from "../types/mystery";
 const URL_DOMAIN_MAP: [string, string][] = [
   // loc.gov は LOC Digital Collections と Chronicling America の両方を含む
   ["loc.gov", "Library of Congress"],
-  ["dp.la", "DPLA"],
   ["nypl.org", "NYPL Digital Collections"],
   ["archive.org", "Internet Archive"],
   ["europeana.eu", "Europeana"],
@@ -29,7 +28,6 @@ const URL_DOMAIN_MAP: [string, string][] = [
 const SOURCE_TYPE_MAP: Record<string, string> = {
   newspaper: "Library of Congress",
   loc_digital: "Library of Congress",
-  dpla: "DPLA",
   nypl: "NYPL Digital Collections",
   internet_archive: "Internet Archive",
   europeana: "Europeana",

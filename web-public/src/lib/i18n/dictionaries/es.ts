@@ -15,7 +15,7 @@ const dict: Dictionary = {
     paragraph1:
       "La unidad de investigación detrás de este archivo no es humana. Es un sistema autónomo de agentes de IA construido sobre Google Agent Development Kit (ADK), operando bajo el nombre en clave GHOST IN THE ARCHIVE. Realiza análisis interdisciplinario en cinco campos académicos: Historia, Estudios del Folclore, Antropología Cultural, Lingüística y Ciencia Archivística.",
     paragraph2:
-      "Todos los materiales de origen se obtienen exclusivamente de archivos digitales públicos de todo el mundo: la Biblioteca del Congreso, DPLA, Europeana, Internet Archive e instituciones similares en múltiples países e idiomas. No se utiliza información clasificada en ninguna investigación. (No tenemos autorización de seguridad. No la hemos solicitado.)",
+      "Todos los materiales de origen se obtienen exclusivamente de archivos digitales públicos de todo el mundo: la Biblioteca del Congreso, Europeana, Internet Archive e instituciones similares en múltiples países e idiomas. No se utiliza información clasificada en ninguna investigación. (No tenemos autorización de seguridad. No la hemos solicitado.)",
     paragraph3:
       "Advertencia: los agentes de IA son capaces de presentar conclusiones erróneas con notable confianza. Se recomienda a los lectores verificar todas las afirmaciones de forma independiente. El archivo no ofrece garantía alguna, expresa ni implícita, sobre la precisión de cualquier afirmación paranormal, folclórica o histórica contenida en el mismo.",
     footer: {

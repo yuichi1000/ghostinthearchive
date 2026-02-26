@@ -34,7 +34,6 @@ services:
       - STORAGE_EMULATOR_HOST=http://host.docker.internal:9199
       - STORAGE_EMULATOR_PUBLIC_HOST=http://localhost:9199
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - DPLA_API_KEY=${DPLA_API_KEY}
       - DDB_API_KEY=${DDB_API_KEY}
       - EUROPEANA_API_KEY=${EUROPEANA_API_KEY}
       - TROVE_API_KEY=${TROVE_API_KEY}

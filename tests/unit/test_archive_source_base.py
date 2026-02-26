@@ -170,10 +170,9 @@ class TestRateLimit:
         assert elapsed < 0.05  # 実質遅延なし
 
 
-# === 空日付テスト（旧 test_dpla / test_loc_digital / test_internet_archive / test_nypl_digital） ===
+# === 空日付テスト（旧 test_loc_digital / test_internet_archive / test_nypl_digital） ===
 
 
-from mystery_agents.tools.dpla import BASE_URL as DPLA_BASE_URL, DPLASource
 from mystery_agents.tools.internet_archive import (
     BASE_URL as IA_BASE_URL,
     InternetArchiveSource,
@@ -195,14 +194,6 @@ class TestEmptyDatesPerSource:
     @pytest.mark.parametrize(
         "source_cls,base_url,mock_response,env_vars,date_check,keywords",
         [
-            (
-                DPLASource,
-                DPLA_BASE_URL,
-                {"count": 0, "docs": []},
-                {},
-                lambda url: "date.after" not in url and "date.before" not in url,
-                ["test"],
-            ),
             (
                 LOCDigitalSource,
                 LOC_BASE_URL,
@@ -228,7 +219,7 @@ class TestEmptyDatesPerSource:
                 ["ghost"],
             ),
         ],
-        ids=["dpla", "loc_digital", "internet_archive", "nypl_digital"],
+        ids=["loc_digital", "internet_archive", "nypl_digital"],
     )
     def test_empty_dates_omits_date_filter(
         self, source_cls, base_url, mock_response, env_vars, date_check, keywords

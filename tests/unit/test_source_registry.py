@@ -167,7 +167,7 @@ class TestEnsureAllLoaded:
 
         # 全 API ツールが登録されていること（Delpher は除外済み）
         expected_keys = {
-            "loc", "dpla", "nypl", "internet_archive",
+            "loc", "nypl", "internet_archive",
             "ddb", "europeana", "chronicling_america", "trove",
             "ndl", "wellcome",
         }
