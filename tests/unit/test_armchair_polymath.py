@@ -3,7 +3,6 @@
 from mystery_agents.agents.armchair_polymath import (
     armchair_polymath_agent,
 )
-from mystery_agents.tools.search_metadata import get_search_metadata
 
 
 class TestArmchairPolymathTools:

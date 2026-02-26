@@ -5,7 +5,6 @@ The agent definition lives in mystery_agents/agent.py (ADK convention).
 """
 
 import asyncio
-import logging
 import sys
 from pathlib import Path
 

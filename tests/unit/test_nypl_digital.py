@@ -1,6 +1,5 @@
 """Unit tests for NYPL Digital Collections API tool."""
 
-import os
 
 import pytest
 import responses

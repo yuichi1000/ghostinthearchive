@@ -1,7 +1,6 @@
 """Unit tests for DynamicPolymathBlock."""
 
 from mystery_agents.agents.dynamic_polymath_block import (
-    DynamicPolymathBlock,
     _build_analyses_section,
     create_dynamic_polymath_block,
 )

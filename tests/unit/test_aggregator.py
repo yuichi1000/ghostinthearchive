@@ -3,7 +3,6 @@
 raw_search_results からの言語別集約ロジックを検証する。
 """
 
-import pytest
 
 from mystery_agents.agents.aggregator import _format_documents, create_aggregator
 

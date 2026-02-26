@@ -2,8 +2,6 @@
 
 from mystery_agents.tools.style_registry import (
     ArtStyle,
-    CONTENT_TYPE_FACT,
-    CONTENT_TYPE_FOLKLORE,
     FALLBACK_REGION,
     get_all_regions,
     get_art_style,

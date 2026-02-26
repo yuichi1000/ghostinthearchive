@@ -13,16 +13,15 @@ from pathlib import Path
 from typing import Optional
 
 from google.adk.tools.tool_context import ToolContext
-
-logger = logging.getLogger(__name__)
-
 from shared.keyword_translator import translate_keywords
 
 from ..schemas.document import ArchiveDocument
 from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
 from .link_validator import ValidationSummary, validate_documents
-from .source_registry import get_all_sources, get_source, resolve_newspaper_sources
+from .source_registry import get_all_sources, resolve_newspaper_sources
+
+logger = logging.getLogger(__name__)
 
 # 並列実行の最大ワーカー数
 _MAX_WORKERS = 6

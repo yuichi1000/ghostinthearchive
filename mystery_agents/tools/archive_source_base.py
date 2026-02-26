@@ -11,7 +11,6 @@ import re
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Optional
 
 from shared.http_retry import create_retry_session
 

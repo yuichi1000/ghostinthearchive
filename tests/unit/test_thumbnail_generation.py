@@ -1,6 +1,5 @@
 """Unit tests for thumbnail generation."""
 
-import json
 from pathlib import Path
 
 from PIL import Image as PILImage

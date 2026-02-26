@@ -53,7 +53,7 @@ class TestCreateStorytellerModel:
         """gemini ストーリーテラーは Gemini（native）モデルを返すこと。"""
         from google.adk.models.google_llm import Gemini
 
-        result = create_storyteller_model("gemini")
+        create_storyteller_model("gemini")
         # Gemini は MagicMock なので呼び出しを検証
         last_call = Gemini.call_args
         assert last_call is not None

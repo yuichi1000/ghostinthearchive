@@ -15,7 +15,7 @@ import logging
 import os
 import sys
 from contextvars import ContextVar
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 

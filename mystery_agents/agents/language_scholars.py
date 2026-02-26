@@ -424,10 +424,10 @@ def create_scholar(
         if active_langs:
             # 動的討論: 参加言語のみ instruction に含める（肥大化防止）
             lang_references = "\n".join(
-                f"- {{scholar_analysis_{l}}}: "
-                f"{SCHOLAR_CONFIGS[l]['language_name']} cultural perspective analysis"
-                for l in active_langs
-                if l != lang_code
+                f"- {{scholar_analysis_{lang}}}: "
+                f"{SCHOLAR_CONFIGS[lang]['language_name']} cultural perspective analysis"
+                for lang in active_langs
+                if lang != lang_code
             )
             instruction = _DYNAMIC_DEBATE_INSTRUCTION.format(
                 language_name=config["language_name"],

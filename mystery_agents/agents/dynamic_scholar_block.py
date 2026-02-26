@@ -49,7 +49,7 @@ class DynamicScholarBlock(BaseAgent):
         active_langs = state.get("active_languages", [])[:MAX_LANGUAGES]
 
         # SCHOLAR_CONFIGS に定義がある言語のみ対象
-        available_langs = [l for l in active_langs if l in SCHOLAR_CONFIGS]
+        available_langs = [lang for lang in active_langs if lang in SCHOLAR_CONFIGS]
 
         if not available_langs:
             logger.warning("DynamicScholarBlock: ドキュメントなし — スキップ")

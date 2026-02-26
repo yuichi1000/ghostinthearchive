@@ -1,11 +1,9 @@
 """Unit tests for DynamicScholarBlock."""
 
-import pytest
 
 from mystery_agents.agents.dynamic_scholar_block import (
     MAX_DEBATE_ITERATIONS,
     MAX_LANGUAGES,
-    DynamicScholarBlock,
     _is_meaningful,
     create_dynamic_scholar_block,
 )

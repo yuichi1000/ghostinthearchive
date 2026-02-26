@@ -61,7 +61,7 @@ class TestUrlDomainCoverage:
                     uncovered.append(f"{key}: {domain}")
 
         assert not uncovered, (
-            f"以下のドメインが archive-name.ts の URL_DOMAIN_MAP に不足:\n"
+            "以下のドメインが archive-name.ts の URL_DOMAIN_MAP に不足:\n"
             + "\n".join(f"  - {u}" for u in uncovered)
         )
 
@@ -79,6 +79,6 @@ class TestSourceTypeCoverage:
                 uncovered.append(f"{key}: source_type={source.source_type}")
 
         assert not uncovered, (
-            f"以下の source_type が archive-name.ts の SOURCE_TYPE_MAP に不足:\n"
+            "以下の source_type が archive-name.ts の SOURCE_TYPE_MAP に不足:\n"
             + "\n".join(f"  - {u}" for u in uncovered)
         )

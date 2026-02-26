@@ -1,7 +1,6 @@
 """Unit tests for OpenAlex academic search tool."""
 
 import json
-import os
 
 import responses
 

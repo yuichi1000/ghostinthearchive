@@ -2,7 +2,6 @@
 
 import re
 
-import pytest
 
 from mystery_agents.schemas.document import ArchiveDocument, SourceLanguage
 
