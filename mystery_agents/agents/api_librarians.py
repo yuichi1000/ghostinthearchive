@@ -107,25 +107,22 @@ API_CONFIGS: dict[str, dict] = {
     "us_archives": {
         "api_display_name": "US Digital Archives",
         "api_capabilities": (
-            "You manage three major US digital archives plus historical newspapers:\n"
+            "You manage two major US digital archives plus historical newspapers:\n"
             "- **Library of Congress Digital Collections** (LOC): The world's largest library.\n"
             "  US government records, manuscripts, maps, photographs, newspapers, sound recordings.\n"
-            "- **Digital Public Library of America** (DPLA): Aggregates 45M+ items from US libraries,\n"
-            "  archives, and museums. Includes Spanish-language materials from Latino communities.\n"
             "- **NYPL Digital Collections**: 1M+ items from New York Public Library.\n"
             "  Strong in New York City history, performing arts, and rare manuscripts.\n"
             "- **Chronicling America** (via search_newspapers): Historical US newspapers (1690-1963).\n"
             "  LOC-curated, full-text searchable, includes Spanish-language newspapers."
         ),
         "relevance_guidance": (
-            "Your archives are primarily English-language and US-focused, but DPLA and\n"
-            "Chronicling America also contain significant Spanish-language materials.\n\n"
+            "Your archives are primarily English-language and US-focused.\n"
+            "Chronicling America also contains significant Spanish-language materials.\n\n"
             "**Always search** if the theme has ANY connection to:\n"
             "- United States history, culture, geography, or politics\n"
             "- English-speaking world topics (British colonial era, transatlantic events)\n"
             "- International events with US involvement or documentation\n"
-            "- Broadly applicable themes (folklore, supernatural, historical mysteries)\n"
-            "- Latin American or Spanish colonial topics (DPLA has Spanish materials)\n\n"
+            "- Broadly applicable themes (folklore, supernatural, historical mysteries)\n\n"
             "**Skip only** if the theme is exclusively about a non-US, non-English region\n"
             "with no plausible US archival record (e.g., purely local Japanese folklore\n"
             "with no Western documentation)."
@@ -133,7 +130,7 @@ API_CONFIGS: dict[str, dict] = {
         "search_strategy": (
             '1. Generate 3-5 focused search keywords in **English**\n'
             '2. Call **search_archives** with:\n'
-            '   - `sources="loc, dpla, nypl"`\n'
+            '   - `sources="loc, nypl"`\n'
             '   - `language="en"`\n'
             '   - Example: keywords="Bell Witch, Adams Tennessee, poltergeist"\n'
             "3. Call **search_newspapers** for historical newspaper articles\n"

@@ -33,7 +33,7 @@ _CATEGORY_SECTION = build_category_prompt_section()
 #
 # 過小表現のカテゴリを優先してください。
 #
-# ## 利用可能なアーカイブ API（全12件）
+# ## 利用可能なアーカイブ API（全11件）
 # Librarian エージェントが実際に検索できる API は以下の通りです。
 # テーマ提案時は、これらの API で一次資料がヒットするテーマのみ提案してください。
 #
@@ -41,7 +41,6 @@ _CATEGORY_SECTION = build_category_prompt_section()
 # |-----|------|-----------|
 # | Library of Congress Digital Collections | en | 米国・英語圏全般（書籍・写真・地図・手稿） |
 # | Chronicling America (LOC Newspapers) | en | 米国の歴史的新聞（1789-1963） |
-# | Digital Public Library of America (DPLA) | en, es | 全米3,100万点（図書館・博物館の統合検索） |
 # | NYPL Digital Collections | en | ニューヨーク公共図書館120万点（手稿・地図・写真・稀覯本） |
 # | Internet Archive | en, de, es, fr, nl, pt, ja | グローバル7,000万点超（書籍・雑誌・音声・映像・ウェブ） |
 # | Deutsche Digitale Bibliothek (DDB) | de | ドイツ語圏1,200万点超（ドイツ・オーストリア・スイスの文化遺産機関） |
@@ -64,9 +63,9 @@ _CATEGORY_SECTION = build_category_prompt_section()
 #
 # ## 地理的多様性（API カバレッジベース）
 # 以下の言語圏から幅広くテーマを選択すること。各言語圏の後のカッコ内は利用可能な API：
-# - **英語圏**（米国・英国・オーストラリア・NZ）— LOC, DPLA, NYPL, Chronicling America, Trove, Wellcome, DigitalNZ
+# - **英語圏**（米国・英国・オーストラリア・NZ）— LOC, NYPL, Chronicling America, Trove, Wellcome, DigitalNZ
 # - **ドイツ語圏**（ドイツ・オーストリア・スイス）— DDB, Europeana
-# - **スペイン語圏**（スペイン・中南米）— DPLA, Europeana, Internet Archive
+# - **スペイン語圏**（スペイン・中南米）— Europeana, Internet Archive
 # - **フランス語圏**（フランス・ベルギー・旧植民地）— Europeana, Internet Archive
 # - **オランダ語圏**（オランダ・フランドル・旧植民地）— Delpher, Europeana
 # - **ポルトガル語圏**（ポルトガル・ブラジル）— Europeana, Internet Archive
@@ -134,15 +133,14 @@ Current category distribution:
 
 Prioritize underrepresented categories.
 
-## Available Archive APIs (12 total)
-The Librarian agent can ONLY search the following 12 APIs. Suggest themes for which primary sources \
+## Available Archive APIs (11 total)
+The Librarian agent can ONLY search the following 11 APIs. Suggest themes for which primary sources \
 are likely to be found in at least one of these APIs:
 
 | API | Languages | Coverage |
 |-----|-----------|----------|
 | Library of Congress Digital Collections | en | US & English-language materials (books, photos, maps, manuscripts) |
 | Chronicling America (LOC Newspapers) | en | US historical newspapers (1789-1963) |
-| Digital Public Library of America (DPLA) | en, es | 31M+ items from US libraries & museums |
 | NYPL Digital Collections | en | 1.2M items (manuscripts, maps, photos, rare books) |
 | Internet Archive | en, de, es, fr, nl, pt, ja | 70M+ items globally (books, periodicals, audio, video, web) |
 | Deutsche Digitale Bibliothek (DDB) | de | 12M+ items from German-speaking cultural heritage institutions |
@@ -165,9 +163,9 @@ The following archives are NOT implemented. Do NOT suggest themes that can only 
 
 ## Geographic Diversity (API Coverage-Based)
 Select themes from a broad range of language spheres. APIs available for each sphere are shown in parentheses:
-- **English sphere** (US, UK, Australia, NZ) — LOC, DPLA, NYPL, Chronicling America, Trove, Wellcome, DigitalNZ
+- **English sphere** (US, UK, Australia, NZ) — LOC, NYPL, Chronicling America, Trove, Wellcome, DigitalNZ
 - **German sphere** (Germany, Austria, Switzerland) — DDB, Europeana
-- **Spanish sphere** (Spain, Latin America) — DPLA, Europeana, Internet Archive
+- **Spanish sphere** (Spain, Latin America) — Europeana, Internet Archive
 - **French sphere** (France, Belgium, former colonies) — Europeana, Internet Archive
 - **Dutch sphere** (Netherlands, Flanders, former colonies) — Delpher, Europeana
 - **Portuguese sphere** (Portugal, Brazil) — Europeana, Internet Archive
@@ -175,8 +173,8 @@ Select themes from a broad range of language spheres. APIs available for each sp
 Do NOT concentrate all 5 themes on a single language sphere. Cover at least 3 distinct language spheres.
 
 ## Theme Requirements
-- Any era worldwide is fair game (the constraint: primary sources must be findable via the 12 APIs above)
-- ONLY suggest themes for which at least one of the 12 APIs above is likely to return relevant primary sources
+- Any era worldwide is fair game (the constraint: primary sources must be findable via the 11 APIs above)
+- ONLY suggest themes for which at least one of the 11 APIs above is likely to return relevant primary sources
 - Amenable to interdisciplinary analysis (history, folklore, anthropology, linguistics, archival science)
 - Include specific dates, place names, and keywords usable as research queries
 

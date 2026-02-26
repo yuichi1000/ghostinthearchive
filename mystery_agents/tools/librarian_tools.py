@@ -450,7 +450,7 @@ def search_archives(
 ) -> str:
     """Search multiple public archive APIs in parallel.
 
-    Searches across LOC Digital Collections, DPLA, NYPL, Internet Archive,
+    Searches across LOC Digital Collections, NYPL, Internet Archive,
     Deutsche Digitale Bibliothek, and Europeana using ThreadPoolExecutor.
     Results are ranked by keyword match count and capped at a total limit.
 
@@ -459,7 +459,7 @@ def search_archives(
         date_start: Optional start year for filtering (e.g., "1700"). Omit to search all dates.
         date_end: Optional end year for filtering (e.g., "1800"). Omit to search all dates.
         sources: Comma-separated source names to search (default: all US sources).
-                 Options: loc, dpla, nypl, internet_archive, ddb, europeana
+                 Options: loc, nypl, internet_archive, ddb, europeana
         max_results: Max results per source (default: 10)
         language: Optional ISO 639-1 language code (en, de, fr, es, nl, pt).
                   When specified, applies language filter to supported APIs.
@@ -500,7 +500,7 @@ def search_archives(
         source_keys = [s.strip().lower() for s in sources.split(",") if s.strip()]
     else:
         # デフォルトは US ソース
-        source_keys = ["loc", "dpla", "nypl", "internet_archive"]
+        source_keys = ["loc", "nypl", "internet_archive"]
 
     # 動的 per-source 制限: ソース数で均等割（最低3件/ソース）
     valid_source_count = sum(1 for k in source_keys if k in all_sources_map)

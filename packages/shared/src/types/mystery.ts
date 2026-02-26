@@ -16,7 +16,7 @@ export type DiscrepancyType =
 export type ConfidenceLevel = "high" | "medium" | "low";
 
 /** ソースタイプ */
-export type SourceType = "newspaper" | "loc_digital" | "dpla" | "nypl"
+export type SourceType = "newspaper" | "loc_digital" | "nypl"
   | "pares" | "internet_archive" | "ddb" | "europeana" | "trove"
   | "delpher" | "ndl" | "wellcome" | "digitalnz"
   | "archive" | "book";
