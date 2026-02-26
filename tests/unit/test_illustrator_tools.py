@@ -9,16 +9,17 @@ import pytest
 
 
 from mystery_agents.tools.illustrator_tools import (
-    IMAGE_VARIANTS,
     MAX_RETRIES,
+    _get_variants,
+    generate_image,
+    validate_image,
+)
+from mystery_agents.tools.image_processing import IMAGE_VARIANTS, resize_image_variants
+from mystery_agents.tools.prompt_safety import (
     _build_contextual_safe_prompt,
     _build_safe_fallback_prompt,
-    _get_variants,
     _rewrite_safe_prompt,
     _sanitize_prompt,
-    generate_image,
-    resize_image_variants,
-    validate_image,
 )
 
 
@@ -601,7 +602,7 @@ class TestBuildSafeFallbackPrompt:
 
     def test_no_forbidden_words(self):
         """Should not contain any words from the sanitization dictionary."""
-        from mystery_agents.tools.illustrator_tools import _SANITIZE_REPLACEMENTS
+        from mystery_agents.tools.prompt_safety import _SANITIZE_REPLACEMENTS
 
         for style in ("fact", "folklore", "auto"):
             result = _build_safe_fallback_prompt(style).lower()

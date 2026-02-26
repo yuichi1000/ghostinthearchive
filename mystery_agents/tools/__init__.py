@@ -23,7 +23,8 @@ from .librarian_tools import (
 )
 
 # Illustrator Agent LLM-facing tools
-from .illustrator_tools import generate_image, resize_image_variants, validate_image
+from .illustrator_tools import generate_image, validate_image
+from .image_processing import resize_image_variants
 
 # Scholar Agent LLM-facing tools
 from .scholar_tools import (
