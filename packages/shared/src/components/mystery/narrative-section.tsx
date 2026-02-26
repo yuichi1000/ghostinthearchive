@@ -48,9 +48,12 @@ interface NarrativeSectionProps {
   narrativeContent?: string
   summary: string
   lang?: string
+  // extractHeadings で事前計算した ID 配列。渡された場合はこの ID を使い、
+  // TOC と DOM 見出しの ID 一致を保証する（スクロールスパイ修正の核心）
+  precomputedHeadingIds?: string[]
 }
 
-export function NarrativeSection({ narrativeContent, summary, lang = "en" }: NarrativeSectionProps) {
+export function NarrativeSection({ narrativeContent, summary, lang = "en", precomputedHeadingIds }: NarrativeSectionProps) {
   if (narrativeContent) {
     // 重複スラグを追跡するクロージャ（レンダーごとにリセット）
     const slugCounts = new Map<string, number>()
@@ -64,13 +67,18 @@ export function NarrativeSection({ narrativeContent, summary, lang = "en" }: Nar
         <ArchiveImage src={typeof src === "string" ? src : undefined} alt={alt} lang={lang} />
       ),
       h2: ({ children }) => {
+        const currentIndex = headingIndex
+        headingIndex++
+        // precomputedHeadingIds があればそれを使い、TOC と DOM の ID を一致させる
+        if (precomputedHeadingIds && currentIndex < precomputedHeadingIds.length) {
+          return <h2 id={precomputedHeadingIds[currentIndex]} className="scroll-mt-24">{children}</h2>
+        }
+        // フォールバック: 従来の getTextContent + slugify
         const text = getTextContent(children)
-        // 空スラグのフォールバック（Unicode 対応で解消済みだが安全策）
-        const baseSlug = slugify(text) || `heading-${headingIndex}`
+        const baseSlug = slugify(text) || `heading-${currentIndex}`
         const count = slugCounts.get(baseSlug) || 0
         const id = count > 0 ? `${baseSlug}-${count}` : baseSlug
         slugCounts.set(baseSlug, count + 1)
-        headingIndex++
         return <h2 id={id} className="scroll-mt-24">{children}</h2>
       },
     }
