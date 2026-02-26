@@ -830,14 +830,18 @@ class TestGetExpansionLanguages:
 class TestMultilingualKeywordExpansion:
     """search_archives の多言語キーワード展開テスト。"""
 
+    @patch("mystery_agents.tools.librarian_tools._translate_keywords_for_source")
     @patch("mystery_agents.tools.librarian_tools.translate_keywords")
     @patch("mystery_agents.tools.librarian_tools.validate_documents")
     @patch("mystery_agents.tools.librarian_tools.get_all_sources")
     def test_expansion_sent_to_multilingual_sources_only(
-        self, mock_get_all, mock_validate, mock_translate
+        self, mock_get_all, mock_validate, mock_translate, mock_per_source
     ):
         """展開キーワードは多言語ソースのみに渡される。"""
         from tests.fakes import make_tool_context
+
+        # ソース別自動翻訳を無効化してテスト対象を限定
+        mock_per_source.return_value = None
 
         # 多言語ソース（Europeana: 6言語対応）
         multi_source = _make_mock_source(
@@ -933,3 +937,104 @@ class TestMultilingualKeywordExpansion:
         )
 
         mock_translate.assert_not_called()
+
+
+class TestTranslateKeywordsForSource:
+    """_translate_keywords_for_source のテスト。"""
+
+    def test_ddb_english_keywords_triggers_translation(self):
+        """DDB（de 単一言語）に英語キーワード → 翻訳が呼ばれる。"""
+        from mystery_agents.tools.librarian_tools import _translate_keywords_for_source
+
+        ddb_source = _make_mock_source(
+            source_key="ddb", supported_languages={"de"},
+        )
+        with patch(
+            "mystery_agents.tools.librarian_tools.translate_keywords",
+            return_value={"de": ["Geist", "Spuk"]},
+        ) as mock_translate:
+            result = _translate_keywords_for_source(["ghost", "haunting"], ddb_source)
+
+        assert result == ["Geist", "Spuk"]
+        mock_translate.assert_called_once_with(["ghost", "haunting"], "en", ["de"])
+
+    def test_ndl_english_keywords_triggers_translation(self):
+        """NDL（ja 単一言語）に英語キーワード → 翻訳が呼ばれる。"""
+        from mystery_agents.tools.librarian_tools import _translate_keywords_for_source
+
+        ndl_source = _make_mock_source(
+            source_key="ndl", supported_languages={"ja"},
+        )
+        with patch(
+            "mystery_agents.tools.librarian_tools.translate_keywords",
+            return_value={"ja": ["幽霊", "怪奇"]},
+        ) as mock_translate:
+            result = _translate_keywords_for_source(["ghost", "haunting"], ndl_source)
+
+        assert result == ["幽霊", "怪奇"]
+        mock_translate.assert_called_once_with(["ghost", "haunting"], "en", ["ja"])
+
+    def test_english_source_skipped(self):
+        """英語ソース（LOC 等）→ None（スキップ）。"""
+        from mystery_agents.tools.librarian_tools import _translate_keywords_for_source
+
+        loc_source = _make_mock_source(
+            source_key="loc", supported_languages={"en"},
+        )
+        result = _translate_keywords_for_source(["ghost"], loc_source)
+        assert result is None
+
+    def test_multilingual_source_skipped(self):
+        """多言語ソース（Europeana 等）→ None（既存展開ロジックが担当）。"""
+        from mystery_agents.tools.librarian_tools import _translate_keywords_for_source
+
+        europeana_source = _make_mock_source(
+            source_key="europeana",
+            supported_languages={"en", "de", "es", "fr"},
+        )
+        result = _translate_keywords_for_source(["ghost"], europeana_source)
+        assert result is None
+
+    def test_non_ascii_keywords_skipped(self):
+        """非 ASCII キーワードが含まれる場合 → None（既にネイティブ言語あり）。"""
+        from mystery_agents.tools.librarian_tools import _translate_keywords_for_source
+
+        ddb_source = _make_mock_source(
+            source_key="ddb", supported_languages={"de"},
+        )
+        # ドイツ語キーワードが混在
+        result = _translate_keywords_for_source(["ghost", "Alpträume"], ddb_source)
+        assert result is None
+
+    def test_translation_failure_returns_none(self):
+        """翻訳失敗時 → None（元キーワードで続行）。"""
+        from mystery_agents.tools.librarian_tools import _translate_keywords_for_source
+
+        ddb_source = _make_mock_source(
+            source_key="ddb", supported_languages={"de"},
+        )
+        with patch(
+            "mystery_agents.tools.librarian_tools.translate_keywords",
+            return_value={},
+        ):
+            result = _translate_keywords_for_source(["ghost"], ddb_source)
+
+        assert result is None
+
+    def test_mismatch_warning_logged(self, caplog):
+        """不一致検出 + 自動翻訳成功時に WARNING ログが出力される。"""
+        import logging
+
+        from mystery_agents.tools.librarian_tools import _translate_keywords_for_source
+
+        ddb_source = _make_mock_source(
+            source_key="ddb", supported_languages={"de"},
+        )
+        with patch(
+            "mystery_agents.tools.librarian_tools.translate_keywords",
+            return_value={"de": ["Geist"]},
+        ):
+            with caplog.at_level(logging.WARNING):
+                _translate_keywords_for_source(["ghost"], ddb_source)
+
+        assert "キーワード言語不一致" in caplog.text or "自動翻訳" in caplog.text
