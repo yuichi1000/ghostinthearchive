@@ -68,6 +68,42 @@ class TestStorytellerAfterModel:
         assert "storyteller" in metadata
         assert "display_name" in metadata
 
+    def test_actual_model_recorded_from_response(self):
+        """actual_model が llm_response.model_version から記録される。"""
+        ctx = _make_callback_context()
+        response = _make_llm_response(text="A compelling narrative...")
+        response.model_version = "claude-sonnet-4-5-20250929"
+
+        _storyteller_after_model(ctx, response)
+
+        metadata = ctx.state["storyteller_llm_metadata"]
+        assert metadata["actual_model"] == "claude-sonnet-4-5-20250929"
+
+    def test_actual_model_none_when_not_available(self):
+        """model_version が None の場合、actual_model も None。"""
+        ctx = _make_callback_context()
+        response = _make_llm_response(text="A compelling narrative...")
+        response.model_version = None
+
+        _storyteller_after_model(ctx, response)
+
+        metadata = ctx.state["storyteller_llm_metadata"]
+        assert metadata["actual_model"] is None
+
+    def test_actual_model_in_error_metadata(self):
+        """異常応答でも actual_model が記録される。"""
+        ctx = _make_callback_context()
+        response = _make_llm_response(
+            error_code="SAFETY_FILTER",
+            prompt_tokens=3000,
+        )
+        response.model_version = "deepseek/deepseek-r1"
+
+        _storyteller_after_model(ctx, response)
+
+        metadata = ctx.state["storyteller_llm_metadata"]
+        assert metadata["actual_model"] == "deepseek/deepseek-r1"
+
     def test_empty_response_records_metadata(self, caplog):
         """空レスポンスでメタデータがセッション状態に記録される。"""
         ctx = _make_callback_context()
