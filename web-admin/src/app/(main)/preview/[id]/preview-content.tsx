@@ -2,38 +2,41 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { EvidenceBlock } from "@ghost/shared/src/components/evidence-block"
-import { CaseFileHeader } from "@ghost/shared/src/components/mystery/case-file-header"
-import { NarrativeSection } from "@ghost/shared/src/components/mystery/narrative-section"
-import { DiscrepancySection } from "@ghost/shared/src/components/mystery/discrepancy-section"
-import { HypothesisSection } from "@ghost/shared/src/components/mystery/hypothesis-section"
-import { HistoricalContextSection } from "@ghost/shared/src/components/mystery/historical-context-section"
-import { DetailSidebar } from "@ghost/shared/src/components/mystery/detail-sidebar"
-import { TableOfContents } from "@ghost/shared/src/components/table-of-contents"
-import { SECTION_IDS, type TocSection } from "@ghost/shared/src/lib/toc-config"
-import { extractHeadings } from "@ghost/shared/src/lib/markdown-headings"
-import { stripLeadingH1 } from "@ghost/shared/src/lib/utils"
+import { MysteryArticle } from "@ghost/shared/src/components/mystery/mystery-article"
+import type { MysteryArticleLabels } from "@ghost/shared/src/components/mystery/mystery-article"
 import { localizeMystery, getTranslatedExcerpt } from "@ghost/shared/src/lib/localize"
 import { LanguageSelector } from "@/components/language-selector"
 import { useLanguage } from "@/contexts/language-context"
 import type { FirestoreMystery } from "@ghost/shared/src/types/mystery"
-import { ArrowLeft, FileText, Eye } from "lucide-react"
+import { ArrowLeft, Eye } from "lucide-react"
 
 // 管理画面は日本語固定のため、公開サイト ja 辞書に準拠したハードコード定数を使用
-const PREVIEW_LABELS = {
+const ADMIN_LABELS: MysteryArticleLabels = {
+  publishedLabel: "公開日：",
+  storytellerBylineLabel: "語り部:",
   confidence: { confirmedGhost: "確認済みゴースト", suspectedGhost: "疑わしいゴースト", archivalEcho: "アーカイブの残響" },
-  classification: { HIS: "歴史", FLK: "民俗", ANT: "人類学", OCC: "怪奇", URB: "都市伝説", CRM: "未解決事件", REL: "信仰・禁忌", LOC: "地霊・場所" } as Record<string, string>,
+  classification: { HIS: "歴史", FLK: "民俗", ANT: "人類学", OCC: "怪奇", URB: "都市伝説", CRM: "未解決事件", REL: "信仰・禁忌", LOC: "地霊・場所" },
+  tableOfContents: "目次",
+  tocNarrative: "本文",
+  tocDiscrepancy: "発見された矛盾",
+  tocEvidence: "アーカイブ証拠",
+  tocHypothesis: "仮説",
+  tocHistoricalContext: "歴史的背景",
+  archivalData: "アーカイブデータ",
+  discoveredDiscrepancy: "発見された矛盾",
+  archivalEvidence: "アーカイブ証拠",
+  primarySource: "主要資料",
+  contrastingSource: "対比資料",
+  additionalEvidence: "追加証拠",
+  evidence: { source: "出典", view: "閲覧", originalText: "原文" },
+  hypothesis: "仮説",
+  alternativeHypotheses: "代替仮説：",
+  historicalContext: "歴史的背景",
+  relatedEvents: "関連する出来事：",
+  keyFigures: "主要人物：",
+  storyAngles: "物語の視点",
+  classificationNotice: "このケースファイルはAIによるアーカイブ記録の分析です。すべてのソースを独自に検証してください。",
   sourceCoverage: { heading: "Ghost 評価" },
-}
-
-/**
- * Date は Server→Client シリアライズで string になるため、
- * toLocaleDateString を安全に呼ぶヘルパー
- */
-function formatDate(d: Date | string | undefined): string {
-  if (!d) return ""
-  const date = typeof d === "string" ? new Date(d) : d
-  return date.toLocaleDateString()
 }
 
 interface PreviewContentProps {
@@ -48,30 +51,14 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
   // *_ja レガシーフィールドの有無
   const hasLegacyJa = !!(mystery.title_ja || mystery.narrative_content_ja)
 
-  const {
-    title, summary, narrativeContent, discrepancyDetected,
-    hypothesis, alternativeHypotheses, politicalClimate, storyHooks,
-    confidenceRationale,
-  } = localizeMystery(mystery, lang)
+  const localized = localizeMystery(mystery, lang)
 
   // 証拠の翻訳済み抜粋テキスト
-  const evidenceAExcerpt = getTranslatedExcerpt(mystery, "a", lang)
-  const evidenceBExcerpt = getTranslatedExcerpt(mystery, "b", lang)
-
-  const location = mystery.historical_context?.geographic_scope?.join(", ") || ""
-  const timePeriod = mystery.historical_context?.time_period || ""
-
-  // 本文見出しから TOC セクションを動的構築
-  const narrativeHeadings = extractHeadings(stripLeadingH1(narrativeContent || ""))
-  const tocSections: TocSection[] = [
-    ...(narrativeHeadings.length > 0
-      ? narrativeHeadings.map(h => ({ id: h.id, label: h.text }))
-      : [{ id: SECTION_IDS.narrative, label: "本文" }]),
-    ...(discrepancyDetected ? [{ id: SECTION_IDS.discrepancy, label: "発見された矛盾" }] : []),
-    { id: SECTION_IDS.evidence, label: "アーカイブ証拠" },
-    ...(hypothesis ? [{ id: SECTION_IDS.hypothesis, label: "仮説" }] : []),
-    ...(mystery.historical_context ? [{ id: SECTION_IDS.historicalContext, label: "歴史的背景" }] : []),
-  ]
+  const translatedExcerpts = {
+    a: getTranslatedExcerpt(mystery, "a", lang),
+    b: getTranslatedExcerpt(mystery, "b", lang),
+    additional: mystery.additional_evidence.map((_, i) => getTranslatedExcerpt(mystery, i, lang)),
+  }
 
   // publishedAt を安全に Date に変換
   const publishedAt = mystery.publishedAt
@@ -79,6 +66,28 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
     : mystery.createdAt
       ? (typeof mystery.createdAt === "string" ? new Date(mystery.createdAt) : mystery.createdAt)
       : undefined
+
+  // 管理画面固有: 未公開記事は「作成日」ラベルを使用
+  const labelsWithDate = mystery.publishedAt
+    ? ADMIN_LABELS
+    : { ...ADMIN_LABELS, publishedLabel: "作成日：" }
+
+  // ヒーロー画像（admin 固有: next/image + unoptimized for localhost）
+  const heroImage = mystery.images?.hero ? (
+    <figure className="mx-auto max-w-2xl">
+      <div className="aged-card letterpress-border rounded-sm overflow-hidden">
+        <Image
+          src={mystery.images.hero}
+          alt={localized.title}
+          width={1200}
+          height={675}
+          className="w-full h-auto"
+          priority
+          unoptimized={mystery.images.hero.includes('localhost')}
+        />
+      </div>
+    </figure>
+  ) : undefined
 
   return (
     <>
@@ -115,117 +124,15 @@ export function PreviewContent({ mystery }: PreviewContentProps) {
             Return to Dashboard
           </Link>
 
-          <CaseFileHeader
-            mysteryId={mystery.mystery_id}
-            title={title}
-            location={location}
-            timePeriod={timePeriod}
+          <MysteryArticle
+            mystery={mystery}
+            localized={localized}
+            lang={lang}
+            labels={labelsWithDate}
+            translatedExcerpts={translatedExcerpts}
+            heroImage={heroImage}
             publishedAt={publishedAt}
-            publishedLabel={mystery.publishedAt ? "公開日：" : "作成日："}
-            confidenceLevel={mystery.confidence_level}
-            confidenceLabels={PREVIEW_LABELS.confidence}
-            classificationLabels={PREVIEW_LABELS.classification}
-            storyteller={mystery.storyteller}
-            storytellerBylineLabel="語り部:"
           />
-
-          {/* モバイル目次 */}
-          <TableOfContents sections={tocSections} heading="目次" variant="mobile" />
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
-            {/* Main content */}
-            <div className="lg:col-span-2 space-y-12">
-              {/* Hero image */}
-              {mystery.images?.hero && (
-                <figure className="mx-auto max-w-2xl">
-                  <div className="aged-card letterpress-border rounded-sm overflow-hidden">
-                    <Image
-                      src={mystery.images.hero}
-                      alt={title}
-                      width={1200}
-                      height={675}
-                      className="w-full h-auto"
-                      priority
-                      unoptimized={mystery.images.hero.includes('localhost')}
-                    />
-                  </div>
-                </figure>
-              )}
-
-              <NarrativeSection narrativeContent={narrativeContent} summary={summary} lang={lang} />
-
-              {/* Divider between narrative and archival data */}
-              <div className="flex items-center gap-4">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">アーカイブデータ</span>
-                <div className="h-px flex-1 bg-border" />
-              </div>
-
-              {discrepancyDetected && (
-                <DiscrepancySection discrepancyDetected={discrepancyDetected} label="発見された矛盾" />
-              )}
-
-              {/* Evidence */}
-              <section id="section-evidence" className="scroll-mt-24">
-                <div className="flex items-center gap-3 mb-6">
-                  <FileText className="w-5 h-5 text-gold" />
-                  <h2 className="font-serif text-xl text-parchment">アーカイブ証拠</h2>
-                </div>
-                <div className="space-y-8">
-                  <EvidenceBlock
-                    evidence={mystery.evidence_a}
-                    label="主要資料"
-                    translatedExcerpt={evidenceAExcerpt}
-                    labels={{ source: "出典", view: "閲覧", originalText: "原文" }}
-                  />
-                  <EvidenceBlock
-                    evidence={mystery.evidence_b}
-                    label="対比資料"
-                    translatedExcerpt={evidenceBExcerpt}
-                    labels={{ source: "出典", view: "閲覧", originalText: "原文" }}
-                  />
-                  {mystery.additional_evidence.map((ev, i) => (
-                    <EvidenceBlock
-                      key={i}
-                      evidence={ev}
-                      label={`追加証拠 ${i + 1}`}
-                      translatedExcerpt={getTranslatedExcerpt(mystery, i, lang)}
-                      labels={{ source: "出典", view: "閲覧", originalText: "原文" }}
-                    />
-                  ))}
-                </div>
-              </section>
-
-              {hypothesis && (
-                <HypothesisSection
-                  hypothesis={hypothesis}
-                  alternativeHypotheses={alternativeHypotheses}
-                  labels={{ hypothesis: "仮説", alternativeHypotheses: "代替仮説：" }}
-                />
-              )}
-
-              {mystery.historical_context && (
-                <HistoricalContextSection
-                  historicalContext={mystery.historical_context}
-                  politicalClimate={politicalClimate}
-                  labels={{ historicalContext: "歴史的背景", relatedEvents: "関連する出来事：", keyFigures: "主要人物：" }}
-                />
-              )}
-            </div>
-
-            <DetailSidebar
-              storyHooks={storyHooks}
-              confidenceRationale={confidenceRationale}
-              sourceCoverageLabels={PREVIEW_LABELS.sourceCoverage}
-              labels={{
-                storyAngles: "物語の視点",
-                classificationNotice: "このケースファイルはAIによるアーカイブ記録の分析です。すべてのソースを独自に検証してください。",
-              }}
-            >
-              {/* デスクトップ目次 */}
-              <TableOfContents sections={tocSections} heading="目次" variant="desktop" />
-            </DetailSidebar>
-          </div>
         </div>
       </div>
     </>
