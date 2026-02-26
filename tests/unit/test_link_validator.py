@@ -1,5 +1,6 @@
 """Unit tests for link validator."""
 
+import time
 from unittest.mock import patch
 
 import responses
@@ -10,6 +11,7 @@ from mystery_agents.schemas.document import (
     SourceLanguage,
 )
 from mystery_agents.tools.link_validator import (
+    LinkCheckResult,
     validate_documents,
     verify_link,
 )
@@ -293,3 +295,84 @@ class TestValidateDocuments:
         assert summary.domain_mismatch == 0
         assert len(summary.removed_urls) == 1
         assert len(summary.verified_documents) == 2
+
+    def test_parallel_different_domains(self):
+        """Should process different domains in parallel, not sequentially."""
+        # 5つの異なるドメインに各1件ずつ。各検証に 0.3 秒かかる。
+        # 逐次なら 0.3 * 5 = 1.5 秒以上、並列なら 0.3 秒程度で完了するはず。
+        delay_per_link = 0.3
+        domains = [
+            "https://alpha.example.com/item/1",
+            "https://bravo.example.com/item/2",
+            "https://charlie.example.com/item/3",
+            "https://delta.example.com/item/4",
+            "https://echo.example.com/item/5",
+        ]
+
+        def _slow_verify(url, source_type, timeout=10.0):
+            time.sleep(delay_per_link)
+            return LinkCheckResult(
+                url=url,
+                status_code=200,
+                is_reachable=True,
+                is_domain_consistent=True,
+                final_url=None,
+                content_type="text/html",
+                error=None,
+                check_duration_ms=int(delay_per_link * 1000),
+            )
+
+        docs = [_make_doc(url=u, source_type="dpla") for u in domains]
+
+        with patch(
+            "mystery_agents.tools.link_validator.verify_link", side_effect=_slow_verify
+        ):
+            start = time.monotonic()
+            summary = validate_documents(docs, domain_delay=0)
+            elapsed = time.monotonic() - start
+
+        assert summary.total_checked == 5
+        assert len(summary.verified_documents) == 5
+        # 並列実行なら逐次合計（1.5秒）の半分未満で完了するはず
+        assert elapsed < delay_per_link * len(domains) * 0.5
+
+    def test_same_domain_sequential(self):
+        """Should process same-domain documents sequentially to respect rate limits."""
+        # 同一ドメインに3件。domain_delay=0.3 秒。
+        # 逐次なら domain_delay * (n-1) = 0.6 秒以上かかるはず。
+        domain_delay = 0.3
+        urls = [
+            "https://same.example.com/item/1",
+            "https://same.example.com/item/2",
+            "https://same.example.com/item/3",
+        ]
+
+        call_times: list[float] = []
+
+        def _tracking_verify(url, source_type, timeout=10.0):
+            call_times.append(time.monotonic())
+            return LinkCheckResult(
+                url=url,
+                status_code=200,
+                is_reachable=True,
+                is_domain_consistent=True,
+                final_url=None,
+                content_type="text/html",
+                error=None,
+                check_duration_ms=0,
+            )
+
+        docs = [_make_doc(url=u, source_type="dpla") for u in urls]
+
+        with patch(
+            "mystery_agents.tools.link_validator.verify_link",
+            side_effect=_tracking_verify,
+        ):
+            start = time.monotonic()
+            summary = validate_documents(docs, domain_delay=domain_delay)
+            elapsed = time.monotonic() - start
+
+        assert summary.total_checked == 3
+        assert len(summary.verified_documents) == 3
+        # 同一ドメイン3件は逐次処理されるため、domain_delay * (n-1) 以上かかる
+        assert elapsed >= domain_delay * (len(urls) - 1) * 0.8  # マージン 20%
