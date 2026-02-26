@@ -71,5 +71,5 @@ class TestPolymathMaxOutputTokens:
     """POLYMATH_MAX_OUTPUT_TOKENS 定数のテスト。"""
 
     def test_max_output_tokens_value(self):
-        """65536 であること。"""
-        assert POLYMATH_MAX_OUTPUT_TOKENS == 65536
+        """32768 であること（モデル暴走時の安全弁）。"""
+        assert POLYMATH_MAX_OUTPUT_TOKENS == 32768

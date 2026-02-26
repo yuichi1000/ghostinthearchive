@@ -230,7 +230,7 @@ async def run_pipeline(
     *,
     run_id: str | None = None,
     run_type: str = "blog",
-    timeout_seconds: int = 1800,
+    timeout_seconds: int = 2400,
     max_llm_calls: int = 120,
     skip_authors: set[str] | None = None,
     sequential_agents: set[str] | None = None,

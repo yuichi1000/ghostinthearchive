@@ -542,8 +542,8 @@ POLYMATH_TOOLS = [
     count_words,
 ]
 
-# 5,000〜10,000語のレポートを1ターンで出力するための max_output_tokens
-POLYMATH_MAX_OUTPUT_TOKENS = 65536
+# モデル暴走時の安全弁（通常は EOS で自然停止するため速度に影響なし）
+POLYMATH_MAX_OUTPUT_TOKENS = 32768
 
 # ツール呼び出しカウンター用ステートキー
 _TOOL_CALL_COUNT_KEY = "polymath_tool_call_count"
