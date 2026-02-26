@@ -139,6 +139,27 @@ class ArchiveSource(ABC):
         ...
 
     @staticmethod
+    def strip_html(text: str | list | None) -> str:
+        """HTML タグを除去する。
+
+        複数のソースモジュールに重複していた _strip_html を統一。
+
+        Args:
+            text: HTML を含む可能性のあるテキスト。
+                  list[str] の場合はスペース結合してからタグ除去する。
+
+        Returns:
+            タグ除去済みのプレーンテキスト。None の場合は空文字列。
+        """
+        if not text:
+            return ""
+        if isinstance(text, list):
+            text = " ".join(str(item) for item in text if item)
+        if not isinstance(text, str):
+            return str(text)
+        return re.sub(r"<[^>]+>", "", text).strip()
+
+    @staticmethod
     def parse_year(date_str: str, min_century: int = 13) -> str | None:
         """日付文字列から年を抽出し ISO 形式に変換する。
 

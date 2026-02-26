@@ -113,6 +113,38 @@ class TestArchiveSourceSearch:
         assert result.error is None
 
 
+class TestStripHtml:
+    """ArchiveSource.strip_html() のテスト。"""
+
+    def test_removes_html_tags(self):
+        """HTML タグが除去される。"""
+        assert ArchiveSource.strip_html("<p>Hello <b>world</b></p>") == "Hello world"
+
+    def test_none_returns_empty(self):
+        """None の場合は空文字列を返す。"""
+        assert ArchiveSource.strip_html(None) == ""
+
+    def test_empty_string_returns_empty(self):
+        """空文字列の場合はそのまま返す。"""
+        assert ArchiveSource.strip_html("") == ""
+
+    def test_plain_text_unchanged(self):
+        """タグなしテキストはそのまま返す。"""
+        assert ArchiveSource.strip_html("plain text") == "plain text"
+
+    def test_list_input_joined(self):
+        """list 型入力はスペース結合してからタグ除去する。"""
+        assert ArchiveSource.strip_html(["<p>a</p>", "<b>b</b>"]) == "a b"
+
+    def test_list_with_none_items(self):
+        """list 内の falsy 項目をスキップする。"""
+        assert ArchiveSource.strip_html(["<p>text</p>", None, ""]) == "text"
+
+    def test_empty_list_returns_empty(self):
+        """空リストの場合は空文字列を返す。"""
+        assert ArchiveSource.strip_html([]) == ""
+
+
 class TestParseYear:
     """ArchiveSource.parse_year() のテスト。"""
 

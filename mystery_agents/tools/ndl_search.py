@@ -19,6 +19,9 @@ from .source_registry import register_source
 
 logger = logging.getLogger(__name__)
 
+# archive_source_base.py に統一された strip_html を使用
+_strip_html = ArchiveSource.strip_html
+
 BASE_URL = "https://ndlsearch.ndl.go.jp/api/opensearch"
 _NDL_LAB_URL = "https://lab.ndl.go.jp/dl/api/book/layouttext/{pid}"
 
@@ -35,11 +38,6 @@ _NS = {
     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
 }
-
-
-def _strip_html(text: str) -> str:
-    """HTML タグを除去する。"""
-    return re.sub(r"<[^>]+>", "", text)
 
 
 def _extract_pid(url: str) -> str | None:
