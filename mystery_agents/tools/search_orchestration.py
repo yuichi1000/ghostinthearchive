@@ -9,6 +9,7 @@ from collections import defaultdict
 from typing import Optional
 
 from google.adk.tools.tool_context import ToolContext
+from shared.constants import LATIN_SCRIPT_LANGUAGES
 from shared.keyword_translator import translate_keywords
 from shared.state_keys import SELECTED_LANGUAGES
 
@@ -121,12 +122,12 @@ def _rank_documents(
     return result
 
 
-def _is_likely_english(keyword: str) -> bool:
-    """キーワードが英語である可能性が高いかを簡易判定する。
+def _is_ascii_only(keyword: str) -> bool:
+    """キーワードが ASCII 文字のみで構成されているか判定する。
 
-    ASCII 文字のみで構成されるキーワードを英語候補とみなす。
+    ASCII 文字のみで構成されるキーワードを検出する。
     ドイツ語のウムラウト（ä,ö,ü）、フランス語のアクセント（é,è）等の
-    非 ASCII 文字を含む場合は非英語と判定する。
+    非 ASCII 文字を含む場合は False を返す。
     """
     return all(ord(c) < 128 for c in keyword)
 
@@ -134,10 +135,21 @@ def _is_likely_english(keyword: str) -> bool:
 def _log_keyword_language_mismatch(
     keywords: list[str], language: str
 ) -> None:
-    """非英語 Librarian が英語キーワードのみで検索していないかログ出力する。"""
-    ascii_only = [kw for kw in keywords if _is_likely_english(kw)]
+    """非英語 Librarian が英語キーワードのみで検索していないかログ出力する。
+
+    ラテン文字言語（de, es, fr 等）は ASCII のみのキーワードでも正当な
+    ネイティブ語である可能性が高いため DEBUG レベルに抑制する。
+    非ラテン文字言語（ja, ko 等）では WARNING を維持する。
+    """
+    ascii_only = [kw for kw in keywords if _is_ascii_only(kw)]
     if len(ascii_only) == len(keywords) and keywords:
-        logger.warning(
+        log_level = (
+            logging.DEBUG
+            if language in LATIN_SCRIPT_LANGUAGES
+            else logging.WARNING
+        )
+        logger.log(
+            log_level,
             "キーワード言語不一致: language=%s だが全キーワードが ASCII のみ "
             "(ネイティブ言語キーワード未使用の可能性): %s",
             language,
@@ -184,8 +196,12 @@ def _translate_keywords_for_source(
     if primary_lang == "en":
         return None
 
+    # ラテン文字言語ソースは ASCII キーワードが正当なネイティブ語の可能性が高い → スキップ
+    if primary_lang in LATIN_SCRIPT_LANGUAGES:
+        return None
+
     # 非 ASCII キーワードが1つでもあればネイティブ言語が既に含まれている
-    if not all(_is_likely_english(kw) for kw in keyword_list):
+    if not all(_is_ascii_only(kw) for kw in keyword_list):
         return None
 
     # 英語キーワードをソースのネイティブ言語に翻訳

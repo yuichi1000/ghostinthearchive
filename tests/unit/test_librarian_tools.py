@@ -11,7 +11,7 @@ from mystery_agents.tools.librarian_tools import (
     search_newspapers,
 )
 from mystery_agents.tools.search_orchestration import (
-    _is_likely_english,
+    _is_ascii_only,
     _log_keyword_language_mismatch,
     _rank_documents,
     _search_single_source,
@@ -736,47 +736,72 @@ class TestNewspaperDispatcher:
 # === キーワード言語診断ログのテスト ===
 
 
-class TestIsLikelyEnglish:
-    """_is_likely_english のテスト"""
+class TestIsAsciiOnly:
+    """_is_ascii_only のテスト"""
 
-    def test_ascii_keyword_is_english(self):
-        """ASCII のみのキーワードは英語と判定される。"""
-        assert _is_likely_english("nightmare") is True
-        assert _is_likely_english("sleep paralysis") is True
+    def test_ascii_keyword_returns_true(self):
+        """ASCII のみのキーワードは True を返す。"""
+        assert _is_ascii_only("nightmare") is True
+        assert _is_ascii_only("sleep paralysis") is True
 
-    def test_german_keyword_is_not_english(self):
-        """ウムラウト含むキーワードは非英語と判定される。"""
-        assert _is_likely_english("Alpträume") is False
-        assert _is_likely_english("Ärzte") is False
+    def test_umlaut_keyword_returns_false(self):
+        """ウムラウト含むキーワードは False を返す。"""
+        assert _is_ascii_only("Alpträume") is False
+        assert _is_ascii_only("Ärzte") is False
 
-    def test_french_keyword_is_not_english(self):
-        """アクセント含むキーワードは非英語と判定される。"""
-        assert _is_likely_english("cauchemar médical") is False
+    def test_accent_keyword_returns_false(self):
+        """アクセント含むキーワードは False を返す。"""
+        assert _is_ascii_only("cauchemar médical") is False
 
-    def test_dutch_keyword_is_not_english(self):
-        """オランダ語特有のアクセントを含むキーワード。"""
-        assert _is_likely_english("geneeskunde") is True  # ASCII のみだが正しいオランダ語
-        assert _is_likely_english("coöperatie") is False
+    def test_dutch_mixed_keyword(self):
+        """オランダ語: ASCII のみなら True、非 ASCII があれば False。"""
+        assert _is_ascii_only("geneeskunde") is True
+        assert _is_ascii_only("coöperatie") is False
 
     def test_empty_string(self):
         """空文字列は ASCII のみ扱い。"""
-        assert _is_likely_english("") is True
+        assert _is_ascii_only("") is True
 
 
 class TestLogKeywordLanguageMismatch:
     """_log_keyword_language_mismatch のテスト"""
 
-    def test_warning_for_all_ascii_keywords_non_english_lang(self, caplog):
-        """非英語言語で全キーワードが ASCII のみの場合に警告が出る。"""
+    def test_no_warning_for_latin_script_language(self, caplog):
+        """ラテン文字言語（de）で全キーワードが ASCII → WARNING は出ない。"""
         import logging
 
-        with caplog.at_level(logging.WARNING):
+        with caplog.at_level(logging.DEBUG):
             _log_keyword_language_mismatch(
                 ["nightmare", "sleep paralysis"], "de"
             )
 
+        # WARNING レベルのログは出ないこと
+        warning_records = [r for r in caplog.records if r.levelno >= logging.WARNING]
+        assert not warning_records
+
+    def test_debug_log_for_latin_script_language(self, caplog):
+        """ラテン文字言語（de）で全キーワードが ASCII → DEBUG ログが出力される。"""
+        import logging
+
+        with caplog.at_level(logging.DEBUG):
+            _log_keyword_language_mismatch(
+                ["nightmare", "sleep paralysis"], "de"
+            )
+
+        debug_records = [r for r in caplog.records if r.levelno == logging.DEBUG]
+        assert any("キーワード言語不一致" in r.message for r in debug_records)
+
+    def test_warning_for_non_latin_script_language(self, caplog):
+        """非ラテン文字言語（ja）で全キーワードが ASCII → WARNING が出る。"""
+        import logging
+
+        with caplog.at_level(logging.WARNING):
+            _log_keyword_language_mismatch(
+                ["nightmare", "sleep paralysis"], "ja"
+            )
+
         assert "キーワード言語不一致" in caplog.text
-        assert "de" in caplog.text
+        assert "ja" in caplog.text
 
     def test_no_warning_for_native_keywords(self, caplog):
         """ネイティブ言語キーワードが含まれる場合は警告なし。"""
@@ -943,21 +968,15 @@ class TestMultilingualKeywordExpansion:
 class TestTranslateKeywordsForSource:
     """_translate_keywords_for_source のテスト。"""
 
-    def test_ddb_english_keywords_triggers_translation(self):
-        """DDB（de 単一言語）に英語キーワード → 翻訳が呼ばれる。"""
+    def test_ddb_latin_script_skips_translation(self):
+        """DDB（de: ラテン文字言語）に ASCII キーワード → 翻訳スキップ（None）。"""
         from mystery_agents.tools.search_orchestration import _translate_keywords_for_source
 
         ddb_source = _make_mock_source(
             source_key="ddb", supported_languages={"de"},
         )
-        with patch(
-            "mystery_agents.tools.search_orchestration.translate_keywords",
-            return_value={"de": ["Geist", "Spuk"]},
-        ) as mock_translate:
-            result = _translate_keywords_for_source(["ghost", "haunting"], ddb_source)
-
-        assert result == ["Geist", "Spuk"]
-        mock_translate.assert_called_once_with(["ghost", "haunting"], "en", ["de"])
+        result = _translate_keywords_for_source(["ghost", "haunting"], ddb_source)
+        assert result is None
 
     def test_ndl_english_keywords_triggers_translation(self):
         """NDL（ja 単一言語）に英語キーワード → 翻訳が呼ばれる。"""
@@ -1011,31 +1030,31 @@ class TestTranslateKeywordsForSource:
         """翻訳失敗時 → None（元キーワードで続行）。"""
         from mystery_agents.tools.search_orchestration import _translate_keywords_for_source
 
-        ddb_source = _make_mock_source(
-            source_key="ddb", supported_languages={"de"},
+        ndl_source = _make_mock_source(
+            source_key="ndl", supported_languages={"ja"},
         )
         with patch(
             "mystery_agents.tools.search_orchestration.translate_keywords",
             return_value={},
         ):
-            result = _translate_keywords_for_source(["ghost"], ddb_source)
+            result = _translate_keywords_for_source(["ghost"], ndl_source)
 
         assert result is None
 
-    def test_mismatch_warning_logged(self, caplog):
-        """不一致検出 + 自動翻訳成功時に WARNING ログが出力される。"""
+    def test_mismatch_warning_logged_for_non_latin(self, caplog):
+        """非ラテン文字ソース（NDL）で不一致検出時に WARNING ログが出力される。"""
         import logging
 
         from mystery_agents.tools.search_orchestration import _translate_keywords_for_source
 
-        ddb_source = _make_mock_source(
-            source_key="ddb", supported_languages={"de"},
+        ndl_source = _make_mock_source(
+            source_key="ndl", supported_languages={"ja"},
         )
         with patch(
             "mystery_agents.tools.search_orchestration.translate_keywords",
-            return_value={"de": ["Geist"]},
+            return_value={"ja": ["幽霊"]},
         ):
             with caplog.at_level(logging.WARNING):
-                _translate_keywords_for_source(["ghost"], ddb_source)
+                _translate_keywords_for_source(["ghost"], ndl_source)
 
         assert "キーワード言語不一致" in caplog.text or "自動翻訳" in caplog.text
