@@ -87,11 +87,11 @@ class TestPodcastSessionStateKeys:
 
         assert scriptwriter_agent.output_key == "podcast_script"
 
-    def test_producer_output_key(self):
-        """Producer agent should use 'audio_assets' output key."""
-        from podcast_agents.agents.producer import producer_agent
+    def test_script_planner_output_key(self):
+        """ScriptPlanner agent should use 'script_outline' output key."""
+        from podcast_agents.agents.script_planner import script_planner_agent
 
-        assert producer_agent.output_key == "audio_assets"
+        assert script_planner_agent.output_key == "script_outline"
 
 
 class TestInstructionPlaceholders:
@@ -140,11 +140,11 @@ class TestPodcastInstructionPlaceholders:
 
         assert "{creative_content}" in scriptwriter_agent.instruction
 
-    def test_producer_references_podcast_script(self):
-        """Producer instruction should reference {podcast_script}."""
-        from podcast_agents.agents.producer import producer_agent
+    def test_podcast_translator_references_podcast_script(self):
+        """Podcast Translator instruction should reference {podcast_script}."""
+        from podcast_agents.agents.podcast_translator import podcast_translator_ja
 
-        assert "{podcast_script}" in producer_agent.instruction
+        assert "{podcast_script}" in podcast_translator_ja.instruction
 
 
 class TestRootAgentConfiguration:
@@ -173,10 +173,10 @@ class TestRootAgentConfiguration:
         assert isinstance(root_agent, SequentialAgent)
 
     def test_podcast_commander_is_root_agent(self):
-        """podcast_commander should be exported as root_agent."""
-        from podcast_agents.agent import podcast_commander, root_agent
+        """podcast_script_commander should be exported as root_agent."""
+        from podcast_agents.agent import podcast_script_commander, root_agent
 
-        assert root_agent is podcast_commander
+        assert root_agent is podcast_script_commander
 
 
 class TestLanguageGateCallbacks:

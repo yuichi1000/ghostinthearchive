@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-from .agent import podcast_script_commander
+from .agent import build_pipeline, SKIP_AUTHORS
 from .tools.firestore_tools import (
     load_mystery,
     create_podcast,
@@ -103,7 +103,7 @@ async def generate_script(
     try:
         # Orchestrator 呼び出し
         result = await run_pipeline(
-            agent=podcast_script_commander,
+            agent=build_pipeline(),
             app_name="ghost_in_the_archive_podcast",
             user_message=f"以下のブログ記事からポッドキャストを作成してください: {title}",
             initial_state={
@@ -118,7 +118,7 @@ async def generate_script(
             run_type="podcast",
             timeout_seconds=PIPELINE_TIMEOUT_SECONDS,
             max_llm_calls=30,
-            skip_authors={"podcast_script_commander"},
+            skip_authors=SKIP_AUTHORS,
             sequential_agents={"script_planner", "scriptwriter", "podcast_translator_ja"},
             on_text=lambda text: print(text),
         )

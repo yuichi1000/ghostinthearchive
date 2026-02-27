@@ -7,14 +7,9 @@ Input: podcast_script (Scriptwriter のテキスト出力)
 Output: podcast_script_ja (日本語訳テキスト)
 """
 
-from pathlib import Path
-
-from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
 from shared.model_config import create_flash_model
-
-load_dotenv(Path(__file__).parent.parent / ".env")
 
 # === 日本語訳 ===
 # あなたは「Ghost in the Archive」プロジェクトのポッドキャスト脚本翻訳者です。
@@ -80,13 +75,23 @@ NO_TRANSLATION: No script available. Aborting translation.
 - Full translation (not a summary) — translate the complete script
 """
 
-podcast_translator_ja = LlmAgent(
-    name="podcast_translator_ja",
-    model=create_flash_model(),
-    description=(
-        "Translates English podcast scripts into Japanese for admin review. "
-        "Preserves segment structure and SFX/BGM cues while translating narration."
-    ),
-    instruction=PODCAST_TRANSLATOR_INSTRUCTION,
-    output_key="podcast_script_ja",
-)
+def create_podcast_translator() -> LlmAgent:
+    """Podcast Translator エージェントを生成する。
+
+    呼び出しごとにフレッシュなインスタンスを返す。
+    ADK の単一親制約を回避するため、build_pipeline() から呼び出す。
+    """
+    return LlmAgent(
+        name="podcast_translator_ja",
+        model=create_flash_model(),
+        description=(
+            "Translates English podcast scripts into Japanese for admin review. "
+            "Preserves segment structure and SFX/BGM cues while translating narration."
+        ),
+        instruction=PODCAST_TRANSLATOR_INSTRUCTION,
+        output_key="podcast_script_ja",
+    )
+
+
+# 後方互換: モジュールレベルシングルトン（テスト・既存 import 用）
+podcast_translator_ja = create_podcast_translator()
