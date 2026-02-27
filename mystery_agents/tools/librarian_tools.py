@@ -55,7 +55,8 @@ def _accumulate_archive_images(
             "thumbnail_url": d.get("thumbnail_url"),
         }
         for d in docs_dicts
-        if d.get("thumbnail_url") or d.get("image_url")
+        if (d.get("thumbnail_url") or d.get("image_url"))
+        and d.get("keywords_matched")
     ]
     if images_with_urls:
         existing_images = tool_context.state.get(ARCHIVE_IMAGES, [])

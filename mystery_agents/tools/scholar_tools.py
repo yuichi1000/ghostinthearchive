@@ -119,6 +119,15 @@ def _validate_evidence_grounding(
             raw_source_type = raw_doc.get("source_type")
             if raw_source_type:
                 ev["archive_source"] = raw_source_type
+
+            # キーワード妥当性チェック
+            kw_matched = raw_doc.get("keywords_matched", [])
+            ev["_kw_match_count"] = len(kw_matched)
+            if not kw_matched:
+                warnings.append(
+                    f"{label}: キーワード無一致 — false positive の可能性 "
+                    f"(title: {raw_doc.get('title', 'unknown')})"
+                )
         else:
             warnings.append(
                 f"{label}: source_url not found in collected documents"
@@ -234,6 +243,21 @@ def save_structured_report(
     # 証拠グラウンディング検証（URL 照合 + メタデータ修正）
     grounding_warnings = _validate_evidence_grounding(report_data, tool_context)
     warnings.extend(grounding_warnings)
+
+    # additional_evidence: キーワード無一致の項目を除外
+    additional = report_data.get("additional_evidence", [])
+    before_kw_filter = len(additional)
+    additional = [ev for ev in additional if ev.pop("_kw_match_count", 1) > 0]
+    kw_removed = before_kw_filter - len(additional)
+    if kw_removed:
+        warnings.append(f"additional_evidence: {kw_removed} 件除外 (キーワード無一致)")
+    report_data["additional_evidence"] = additional
+
+    # evidence_a / evidence_b の一時フィールドをクリーンアップ
+    for key in ("evidence_a", "evidence_b"):
+        ev = report_data.get(key)
+        if ev and isinstance(ev, dict):
+            ev.pop("_kw_match_count", None)
 
     # Store structured report in session state
     tool_context.state[STRUCTURED_REPORT] = report_data

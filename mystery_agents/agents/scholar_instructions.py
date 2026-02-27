@@ -26,6 +26,13 @@ Multilingual Scholar の instruction テンプレートを定義する。
 # - 解釈に影響する OCR アーティファクトや判読不能箇所に注意する
 # - `raw_text` がないドキュメント（メタデータのみ）でも、タイトル・サマリー・日付から分析可能
 #
+# ## 分析フレームワーク 0.5: ソース関連性検証
+# - 各ドキュメントを分析する前に、調査テーマとの主題的関連性を確認する
+# - アーカイブ API 検索は false positive を返すことがある（無関係な同音異義語やメタデータフィールドでのマッチ）
+# - ドキュメントのタイトルと説明文が調査テーマと明確な関連性を持たない場合:
+#   "FALSE POSITIVE: [タイトル] — 調査と無関係（キーワードの同音異義語またはメタデータマッチの可能性）"とフラグする
+# - false positive ドキュメントに基づいて分析結論を構築してはならない
+#
 # ## 分析フレームワーク 5: ソースカバレッジ評価
 # - デジタル化範囲: この時代・地域の {language_name} 語資料のうちデジタル化済みの割合
 # - OCR 品質: 当該時代の文書のOCR信頼性（活字体変遷、印刷品質、手書き文書）
@@ -68,6 +75,13 @@ INSUFFICIENT_DATA: No {language_name}-language documents available for analysis.
 - Compare specific passages across documents to identify textual discrepancies
 - Note OCR artifacts or illegible sections that may affect interpretation
 - Documents without `raw_text` (metadata only) can still be analyzed via title, summary, and date
+
+### 0.5 Source Relevance Verification
+- Before analyzing each document, verify it is topically relevant to the investigation theme.
+- Archive API searches may return false positives (documents matching on unrelated homonyms or metadata fields).
+- If a document's title and description have no clear connection to the investigation theme, flag it as:
+  "FALSE POSITIVE: [title] — appears unrelated to the investigation (possible keyword homonym or metadata match)"
+- Do NOT build analysis conclusions on false positive documents.
 
 ### 1. Source Analysis
 - Analyze {language_name}-language sources for their unique perspective on the investigation theme

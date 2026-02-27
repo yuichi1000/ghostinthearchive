@@ -92,6 +92,17 @@ def _search_single_source(
     return key, docs, total_hits, error, fallback_used
 
 
+def _filter_irrelevant_documents(
+    docs: list[ArchiveDocument],
+) -> tuple[list[ArchiveDocument], int]:
+    """keywords_matched が空のドキュメントを除外する。"""
+    filtered = [d for d in docs if d.keywords_matched]
+    removed = len(docs) - len(filtered)
+    if removed > 0:
+        logger.info("キーワード無一致ドキュメント除外: %d 件", removed)
+    return filtered, removed
+
+
 def _rank_documents(
     docs: list[ArchiveDocument],
 ) -> list[ArchiveDocument]:
@@ -101,6 +112,8 @@ def _rank_documents(
     ラウンドロビンで各ソースから1件ずつ取り出して最終リストを構築する。
     これにより、メタデータ豊富な特定ソースが上位を独占するのを防ぐ。
     """
+    docs, _ = _filter_irrelevant_documents(docs)
+
     # ソースごとにグループ化して各グループ内でランキング
     by_source: dict[str, list[ArchiveDocument]] = defaultdict(list)
     for doc in docs:
