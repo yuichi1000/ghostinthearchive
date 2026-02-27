@@ -6,18 +6,18 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 
-from mystery_agents.tools.publisher_tools import (
+from mystery_agents.tools.image_upload import (
     _cleanup_temp_images,
     _upload_images_internal,
-    publish_mystery,
     upload_images,
 )
+from mystery_agents.tools.publisher_tools import publish_mystery
 
 
 class TestUploadImagesContentType:
     """Tests for upload_images content_type detection."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_webp_content_type(self, mock_get_bucket, tmp_path):
         """Should set content_type to image/webp for .webp files."""
         mock_bucket = MagicMock()
@@ -39,7 +39,7 @@ class TestUploadImagesContentType:
             renamed_path, content_type="image/webp"
         )
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_png_content_type(self, mock_get_bucket, tmp_path):
         """Should set content_type to image/png for .png files."""
         mock_bucket = MagicMock()
@@ -65,7 +65,7 @@ class TestUploadImagesContentType:
 class TestUploadImagesRenaming:
     """Tests for upload_images mystery_id-based renaming."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_renames_to_mystery_id(self, mock_get_bucket, tmp_path):
         """Should rename original image to {mystery_id}.png on upload."""
         mock_bucket = MagicMock()
@@ -85,7 +85,7 @@ class TestUploadImagesRenaming:
         expected_blob = f"images/{mystery_id}/{mystery_id}.png"
         mock_bucket.blob.assert_called_once_with(expected_blob)
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_renames_variant_to_mystery_id(self, mock_get_bucket, tmp_path):
         """Should rename variant image to {mystery_id}_sm.webp on upload."""
         mock_bucket = MagicMock()
@@ -105,7 +105,7 @@ class TestUploadImagesRenaming:
         expected_blob = f"images/{mystery_id}/{mystery_id}_sm.webp"
         mock_bucket.blob.assert_called_once_with(expected_blob)
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_preserves_extension(self, mock_get_bucket, tmp_path):
         """Should preserve original file extension when renaming."""
         mock_bucket = MagicMock()
@@ -129,7 +129,7 @@ class TestUploadImagesRenaming:
 class TestUploadImagesLabel:
     """Tests for upload_images label field."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_returns_label_for_original(self, mock_get_bucket, tmp_path):
         """Should return label 'original' for the original image."""
         mock_bucket = MagicMock()
@@ -147,7 +147,7 @@ class TestUploadImagesLabel:
         assert result_data["status"] == "success"
         assert result_data["uploaded"][0]["label"] == "original"
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_returns_label_for_variant(self, mock_get_bucket, tmp_path):
         """Should return label 'sm' for a _sm variant image."""
         mock_bucket = MagicMock()
@@ -169,7 +169,7 @@ class TestUploadImagesLabel:
 class TestUploadImagesStructured:
     """Tests for upload_images structured images object."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_returns_structured_images(self, mock_get_bucket, tmp_path):
         """Should return structured images object with hero and variants."""
         mock_bucket = MagicMock()
@@ -202,7 +202,7 @@ class TestUploadImagesStructured:
         assert "lg" in images["variants"]
         assert "xl" in images["variants"]
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_images_hero_prefers_lg(self, mock_get_bucket, tmp_path):
         """Should use lg variant URL as hero when lg variant exists."""
         mock_bucket = MagicMock()
@@ -294,7 +294,7 @@ def _make_visual_assets_json(tmp_path):
 class TestPublishMysteryImageUpload:
     """Tests for publish_mystery with visual_assets_json integration."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_images_hero_set_to_lg_variant(
         self, mock_get_db, mock_get_bucket, tmp_path
@@ -324,7 +324,7 @@ class TestPublishMysteryImageUpload:
         # hero should contain the mystery_id and _lg.webp
         assert "_lg.webp" in saved_data["images"]["hero"]
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_images_variants_contain_all_sizes(
         self, mock_get_db, mock_get_bucket, tmp_path
@@ -354,7 +354,7 @@ class TestPublishMysteryImageUpload:
         assert "lg" in variants
         assert "xl" in variants
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_skip_image_processing_when_empty(
         self, mock_get_db, mock_get_bucket
@@ -379,7 +379,7 @@ class TestPublishMysteryImageUpload:
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert "images" not in saved_data
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_mystery_id_matches_between_images_and_firestore(
         self, mock_get_db, mock_get_bucket, tmp_path
@@ -415,7 +415,7 @@ class TestPublishMysteryImageUpload:
 class TestLocalFileCleanup:
     """Tests for local file cleanup after upload."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_local_file_deleted_after_upload(self, mock_get_bucket, tmp_path):
         """Should delete local file after successful upload."""
         mock_bucket = MagicMock()
@@ -435,7 +435,7 @@ class TestLocalFileCleanup:
         renamed_file = tmp_path / f"{mystery_id}.png"
         assert not renamed_file.exists()
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_local_variant_deleted_after_upload(self, mock_get_bucket, tmp_path):
         """Should delete local variant file after successful upload."""
         mock_bucket = MagicMock()
@@ -455,7 +455,7 @@ class TestLocalFileCleanup:
         renamed_file = tmp_path / f"{mystery_id}_sm.webp"
         assert not renamed_file.exists()
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_local_files_cleaned_up_via_publish_mystery(
         self, mock_get_db, mock_get_bucket, tmp_path
@@ -492,7 +492,7 @@ class TestLocalFileCleanup:
 class TestUploadErrorHandling:
     """Tests for _upload_images_internal error handling and logging."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_publish_mystery_saves_to_firestore_when_image_upload_fails(
         self, mock_get_db, mock_get_bucket, tmp_path
@@ -521,7 +521,7 @@ class TestUploadErrorHandling:
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert "images" not in saved_data
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_images_internal_logs_on_failure(self, mock_get_bucket, tmp_path, caplog):
         """Should log an error when upload_from_filename fails."""
 
@@ -540,7 +540,7 @@ class TestUploadErrorHandling:
 
         assert any("Network error" in record.message for record in caplog.records)
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_partial_upload_failure_does_not_block_others(self, mock_get_bucket, tmp_path):
         """When one file fails to upload, other files should still succeed."""
 
@@ -639,7 +639,7 @@ class TestCleanupTempImages:
 class TestPublishMysterySchemaVersion:
     """Tests for schema_version field in publish_mystery()."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_schema_version_set_to_2(self, mock_get_db, mock_get_bucket):
         """publish_mystery() は schema_version: 2 を設定する。"""
@@ -662,7 +662,7 @@ class TestPublishMysterySchemaVersion:
 class TestPublishMysteryEvidenceFiltering:
     """Tests for evidence excerpt validation in publish_mystery()."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_empty_excerpt_additional_evidence_filtered(
         self, mock_get_db, mock_get_bucket
@@ -689,7 +689,7 @@ class TestPublishMysteryEvidenceFiltering:
         assert len(saved["additional_evidence"]) == 2
         assert all(ev["relevant_excerpt"] for ev in saved["additional_evidence"])
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_valid_additional_evidence_preserved(
         self, mock_get_db, mock_get_bucket
@@ -714,7 +714,7 @@ class TestPublishMysteryEvidenceFiltering:
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert len(saved["additional_evidence"]) == 2
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_empty_excerpt_evidence_a_gets_fallback(
         self, mock_get_db, mock_get_bucket, caplog
@@ -753,7 +753,7 @@ class TestPublishMysteryEvidenceFiltering:
 class TestPublishMysteryStateWriteback:
     """publish_mystery が tool_context.state に published_mystery_id を書き込むテスト"""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_sets_published_mystery_id_in_state(self, mock_get_db, mock_get_bucket):
         """成功時に tool_context.state["published_mystery_id"] が設定される。"""
@@ -773,7 +773,7 @@ class TestPublishMysteryStateWriteback:
         # mystery_id 形式チェック
         assert state["published_mystery_id"].startswith("OCC-US-BOS-")
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_no_state_write_without_tool_context(self, mock_get_db, mock_get_bucket):
         """tool_context が None の場合でもエラーにならない。"""
@@ -789,7 +789,7 @@ class TestPublishMysteryStateWriteback:
 class TestPublishMysteryStateDirectRead:
     """publish_mystery が creative_content / collected_documents_en を state から直接読み取るテスト"""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_narrative_content_from_state(self, mock_get_db, mock_get_bucket):
         """state の creative_content が narrative_content として保存される。"""
@@ -807,7 +807,7 @@ class TestPublishMysteryStateDirectRead:
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert saved["narrative_content"] == "# The Haunting of Salem\n\nA long blog article..."
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_raw_data_from_state(self, mock_get_db, mock_get_bucket):
         """state の collected_documents_en が raw_data として保存される。"""
@@ -825,7 +825,7 @@ class TestPublishMysteryStateDirectRead:
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert saved["raw_data"] == "Search results from LOC and DPLA..."
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_state_overrides_llm_json(self, mock_get_db, mock_get_bucket):
         """state 値が mystery_json の値より優先される。"""
@@ -852,7 +852,7 @@ class TestPublishMysteryStateDirectRead:
         assert saved["narrative_content"] == "Full article from state"
         assert saved["raw_data"] == "Full raw data from state"
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_skips_failure_marker(self, mock_get_db, mock_get_bucket):
         """NO_CONTENT の creative_content は state から注入しない。"""
@@ -872,7 +872,7 @@ class TestPublishMysteryStateDirectRead:
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert saved["narrative_content"] == "LLM fallback content"
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_empty_json_with_full_state(self, mock_get_db, mock_get_bucket):
         """空 JSON + structured_report + state で全フィールドが揃う。"""
@@ -928,7 +928,7 @@ class TestPublishMysteryStateDirectRead:
         assert saved["raw_data"] == "LOC search results..."
         assert saved["hypothesis"] == "Test hypothesis"
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_no_tool_context_fallback(self, mock_get_db, mock_get_bucket):
         """tool_context=None では LLM の mystery_json がそのまま使われる。"""
@@ -947,7 +947,7 @@ class TestPublishMysteryStateDirectRead:
         assert saved["narrative_content"] == "LLM provided content"
         assert saved["raw_data"] == "LLM provided raw data"
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_mystery_report_saved_to_firestore(self, mock_get_db, mock_get_bucket):
         """state の mystery_report が Firestore に保存される。"""
@@ -966,7 +966,7 @@ class TestPublishMysteryStateDirectRead:
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert saved["mystery_report"] == report_text
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_mystery_report_skips_insufficient_data(self, mock_get_db, mock_get_bucket):
         """INSUFFICIENT_DATA の mystery_report は保存しない。"""
@@ -988,7 +988,7 @@ class TestPublishMysteryStateDirectRead:
 class TestThumbnailUpload:
     """サムネイルアップロードのテスト。"""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_thumb_suffix_stored_as_thumbnail(self, mock_get_bucket, tmp_path):
         """_thumb サフィックスが images["thumbnail"] に格納される。"""
         mock_bucket = MagicMock()
@@ -1007,7 +1007,7 @@ class TestThumbnailUpload:
         assert "thumbnail" in result_data["images"]
         assert result_data["images"]["thumbnail"].endswith("alt=media")
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_thumb_and_variants_together(self, mock_get_bucket, tmp_path):
         """サムネイルとバリアントが同時にアップロードされる。"""
         mock_bucket = MagicMock()
@@ -1029,7 +1029,7 @@ class TestThumbnailUpload:
         assert "thumbnail" in result_data["images"]
         assert "hero" in result_data["images"]
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_internal_upload_thumb_suffix(self, mock_get_bucket, tmp_path):
         """_upload_images_internal が _thumb を images["thumbnail"] に格納する。"""
         mock_bucket = MagicMock()
@@ -1050,7 +1050,7 @@ class TestThumbnailUpload:
 class TestPublishMysteryStructuredDataExtension:
     """source_coverage / confidence_rationale の Firestore 保存テスト。"""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_source_coverage_from_structured_report(self, mock_get_db, mock_get_bucket):
         """structured_report の source_coverage が Firestore に保存される。"""
@@ -1085,7 +1085,7 @@ class TestPublishMysteryStructuredDataExtension:
         assert saved["source_coverage"]["apis_searched"] == ["chronicling_america", "loc"]
         assert saved["source_coverage"]["coverage_assessment"] == "Limited coverage"
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_confidence_rationale_from_structured_report(self, mock_get_db, mock_get_bucket):
         """structured_report の confidence_rationale が Firestore に保存される。"""
@@ -1112,7 +1112,7 @@ class TestPublishMysteryStructuredDataExtension:
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert saved["confidence_rationale"] == "Rated MEDIUM because two sources conflict but DPLA was unavailable."
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_missing_new_fields_does_not_break(self, mock_get_db, mock_get_bucket):
         """source_coverage / confidence_rationale がなくても後方互換で動作する。"""
@@ -1144,7 +1144,7 @@ class TestPublishMysteryStructuredDataExtension:
 class TestSourceCoverageProgrammaticOverwrite:
     """source_coverage の API フィールドが raw_search_results から programmatic に上書きされるテスト。"""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_overwrites_apis_from_raw_search_results(self, mock_get_db, mock_get_bucket):
         """raw_search_results がある場合、source_coverage の API フィールドが上書きされる。"""
@@ -1191,7 +1191,7 @@ class TestSourceCoverageProgrammaticOverwrite:
         assert sc["known_undigitized_sources"] == ["Parish registers"]
         assert sc["coverage_assessment"] == "Limited coverage"
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_creates_source_coverage_when_missing(self, mock_get_db, mock_get_bucket):
         """structured_report に source_coverage がなくても raw_search_results から生成される。"""
@@ -1224,7 +1224,7 @@ class TestSourceCoverageProgrammaticOverwrite:
         assert sc["apis_with_results"] == ["europeana"]
         assert sc["apis_without_results"] == []
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_no_overwrite_without_raw_search_results(self, mock_get_db, mock_get_bucket):
         """raw_search_results がない場合、LLM 生成の source_coverage がそのまま使われる。"""
@@ -1258,7 +1258,7 @@ class TestSourceCoverageProgrammaticOverwrite:
         # LLM 生成値がそのまま残る
         assert sc["apis_searched"] == ["chronicling_america"]
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_api_errors_saved_to_source_coverage(self, mock_get_db, mock_get_bucket):
         """API エラーがある場合、source_coverage.api_errors に保存される。"""
@@ -1300,7 +1300,7 @@ class TestSourceCoverageProgrammaticOverwrite:
         # エラーのない europeana は api_errors に含まれない
         assert "europeana" not in sc["api_errors"]
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_no_api_errors_field_when_no_errors(self, mock_get_db, mock_get_bucket):
         """API エラーがない場合、api_errors フィールドは存在しない。"""

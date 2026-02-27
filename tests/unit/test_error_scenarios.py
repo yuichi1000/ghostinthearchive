@@ -19,7 +19,7 @@ from tests.fakes import make_tool_context
 class TestPublishMysteryFirestoreTimeout:
     """publisher_tools: Firestore タイムアウト時のエラーハンドリング。"""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_firestore_timeout_returns_error_json(self, mock_get_db, mock_get_bucket):
         """Firestore タイムアウト時にエラー JSON を返す。"""

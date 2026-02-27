@@ -5,7 +5,8 @@ import logging
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from mystery_agents.tools.publisher_tools import _extract_json_from_text, publish_mystery
+from mystery_agents.tools.publisher_tools import publish_mystery
+from mystery_agents.tools.publisher_utils import _extract_json_from_text
 from tests.fakes import make_tool_context
 
 _FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
@@ -22,7 +23,7 @@ def _make_mystery_json(**overrides):
 class TestPublisherTranslationsMap:
     """Tests for translations map construction from session state."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_builds_translations_map_from_session_state(
         self, mock_get_db, mock_get_bucket
@@ -61,7 +62,7 @@ class TestPublisherTranslationsMap:
         assert saved_data["translations"]["ja"]["title"] == "テストミステリー"
         assert saved_data["translations"]["es"]["title"] == "Misterio de prueba"
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_skips_no_translation_results(
         self, mock_get_db, mock_get_bucket
@@ -89,7 +90,7 @@ class TestPublisherTranslationsMap:
         assert "es" not in saved_data["translations"]
         assert "de" not in saved_data["translations"]
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_no_translations_key_when_all_fail(
         self, mock_get_db, mock_get_bucket
@@ -112,7 +113,7 @@ class TestPublisherTranslationsMap:
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert "translations" not in saved_data
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_handles_dict_translation_result(
         self, mock_get_db, mock_get_bucket
@@ -137,7 +138,7 @@ class TestPublisherTranslationsMap:
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert saved_data["translations"]["de"]["title"] == "Testgeheimnis"
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_handles_malformed_json_translation(
         self, mock_get_db, mock_get_bucket
@@ -161,7 +162,7 @@ class TestPublisherTranslationsMap:
         assert "ja" in saved_data["translations"]
         assert "es" not in saved_data["translations"]
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_all_three_languages_in_translations(
         self, mock_get_db, mock_get_bucket
@@ -239,7 +240,7 @@ class TestExtractJsonFromText:
 class TestPublisherCodeblockTranslation:
     """Tests for Publisher handling markdown codeblock-wrapped translations."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_parses_codeblock_wrapped_translation(
         self, mock_get_db, mock_get_bucket
@@ -266,7 +267,7 @@ class TestPublisherCodeblockTranslation:
         assert saved_data["translations"]["es"]["title"] == "Título en español"
         assert saved_data["translations"]["de"]["title"] == "Deutscher Titel"
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_logs_translation_summary(
         self, mock_get_db, mock_get_bucket, caplog
@@ -292,7 +293,7 @@ class TestPublisherCodeblockTranslation:
 class TestPublisherLanguageValidation:
     """翻訳言語バリデーションによる拒否テスト。"""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_rejects_english_text_as_spanish(
         self, mock_get_db, mock_get_bucket
@@ -339,7 +340,7 @@ class TestPublisherLanguageValidation:
         assert "ja" in saved_data["translations"]
         assert "es" not in saved_data["translations"]
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_accepts_valid_spanish_translation(
         self, mock_get_db, mock_get_bucket
@@ -370,7 +371,7 @@ class TestPublisherLanguageValidation:
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert "es" in saved_data["translations"]
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_logs_warning_on_rejection(
         self, mock_get_db, mock_get_bucket, caplog
