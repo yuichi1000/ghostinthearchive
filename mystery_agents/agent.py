@@ -3,11 +3,12 @@
 Defines root_agent (ghost_commander) as a SequentialAgent that orchestrates
 the multilingual investigation pipeline:
 
-  ParallelAPILibrarians → Aggregator → DynamicScholarBlock
+  BatchedAPILibrarians → Aggregator → DynamicScholarBlock
     → DynamicPolymathBlock → StorytellerBlock → PostStoryBlock
 
-API ベース Librarian（7グループ）が並列で検索し、AggregatorAgent が
-検索結果を言語別に集約。DynamicScholarBlock が active_languages に基づき
+API ベース Librarian（7グループ）を2バッチ（4+3）に分割して逐次実行し、
+Vertex AI QPM レートリミットを回避する。AggregatorAgent が検索結果を
+言語別に集約。DynamicScholarBlock が active_languages に基づき
 Scholar を動的に生成・実行し、分析→討論を一貫制御する。
 DynamicPolymathBlock がアクティブ言語のみの instruction で Polymath を実行。
 PostStoryBlock では Illustrator と3言語翻訳が並列実行される。
@@ -48,7 +49,7 @@ if TYPE_CHECKING:
 # パイプライン説明文（build_pipeline 内で共有）
 _PIPELINE_DESCRIPTION = (
     "Ghost in the Archive multilingual blog creation pipeline. "
-    "Executes ParallelAPILibrarians(7 API groups) → Aggregator "
+    "Executes BatchedAPILibrarians(7 API groups in 2 batches) → Aggregator "
     "→ DynamicScholarBlock(analysis + debate) → DynamicPolymathBlock "
     "→ StorytellerBlock → PostStoryBlock "
     "to research, analyze, debate, create content, generate images, "
@@ -59,11 +60,19 @@ _PIPELINE_DESCRIPTION = (
     "Pipeline gates skip downstream agents when upstream stages fail."
 )
 
+# Vertex AI QPM 対策: 7並列 → 2バッチに分割して逐次実行
+# ParallelAgent は全 sub_agents を同時起動するため、7 Librarian が同時に
+# gemini-2.5-flash を呼び出すと QPM を超過する。SequentialAgent で
+# 2バッチに分けることで同時リクエスト数を半減させる。
+_LIBRARIAN_BATCH_SIZE = 4
+
 # オーケストレーター/パラレルエージェントはログ対象外
 # 実際にテキストを生成するリーフエージェントのみ進捗表示する
 SKIP_AUTHORS = {
     "ghost_commander",
-    "parallel_api_librarians",
+    "batched_api_librarians",
+    "parallel_api_librarians_batch_1",
+    "parallel_api_librarians_batch_2",
     "aggregator",
     # DynamicScholarBlock / DynamicPolymathBlock 内部のオーケストレーターエージェント
     "dynamic_scholar_block",
@@ -115,7 +124,7 @@ def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
     agg = create_aggregator()
 
     # ファクトリエージェント（既に毎回新規生成）
-    api_libs = create_all_api_librarians()
+    api_libs = create_all_api_librarians()  # 7 Librarian のフラットリスト
     translators = create_all_translators()
 
     # DynamicScholarBlock: 分析 + 討論を一貫制御
@@ -156,15 +165,28 @@ def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
         before_agent_callback=make_post_story_gate(),
     )
 
+    # Librarian バッチ分割: 7並列 → 2バッチ（4+3）逐次実行
+    # Vertex AI QPM 超過を回避するため SequentialAgent でバッチを順番に実行
+    batched_librarians = SequentialAgent(
+        name="batched_api_librarians",
+        sub_agents=[
+            ParallelAgent(
+                name="parallel_api_librarians_batch_1",
+                sub_agents=api_libs[:_LIBRARIAN_BATCH_SIZE],
+            ),
+            ParallelAgent(
+                name="parallel_api_librarians_batch_2",
+                sub_agents=api_libs[_LIBRARIAN_BATCH_SIZE:],
+            ),
+        ],
+    )
+
     # メインパイプライン
     return SequentialAgent(
         name="ghost_commander",
         description=_PIPELINE_DESCRIPTION,
         sub_agents=[
-            ParallelAgent(
-                name="parallel_api_librarians",
-                sub_agents=api_libs,
-            ),
+            batched_librarians,
             agg,
             dsb,
             dpb,
