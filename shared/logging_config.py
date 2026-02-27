@@ -141,6 +141,27 @@ def _is_cloud_run() -> bool:
     return bool(os.environ.get("K_SERVICE"))
 
 
+class HealthCheckFilter(logging.Filter):
+    """ヘルスチェック（/health）の INFO ログを抑制する。
+
+    Cloud Run のヘルスチェックは数秒ごとに発火し、ログが大量に生成されるため
+    INFO 以下を除外する。WARNING 以上は通す。
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno >= logging.WARNING:
+            return True
+        msg = record.getMessage()
+        if "/health" in msg:
+            return False
+        return True
+
+
+def suppress_health_check_logs() -> None:
+    """uvicorn のアクセスログにヘルスチェックフィルタを適用する。"""
+    logging.getLogger("uvicorn.access").addFilter(HealthCheckFilter())
+
+
 def setup_logging(*, force: bool = False) -> None:
     """root logger を初期化する。
 

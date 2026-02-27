@@ -302,39 +302,21 @@ class TestTranslateSuggestionsMerge:
             ]
         })
 
-        # Runner.run_async をモックし、Translator の出力をシミュレート
-        mock_event = MagicMock()
-        mock_part = MagicMock()
-        mock_part.text = translator_output
-        mock_event.content.parts = [mock_part]
+        # run_single_agent をモックし、user_message をキャプチャ
+        captured_messages = []
 
-        async def mock_run_async(**kwargs):
-            yield mock_event
+        async def mock_run(agent, **kwargs):
+            captured_messages.append(kwargs.get("user_message", ""))
+            return translator_output
 
-        # json.dumps をスパイして translation_input をキャプチャ
-        captured_inputs = []
-        _original_dumps = json.dumps
-
-        def _spy_dumps(obj, *args, **kwargs):
-            if isinstance(obj, dict) and "suggestions" in obj:
-                captured_inputs.append(obj)
-            return _original_dumps(obj, *args, **kwargs)
-
-        with patch("services.curator.Runner") as MockRunner, \
-             patch("services.curator.InMemorySessionService") as MockSessionService, \
-             patch.object(json, "dumps", side_effect=_spy_dumps):
-            mock_runner_instance = MagicMock()
-            mock_runner_instance.run_async = mock_run_async
-            MockRunner.return_value = mock_runner_instance
-            mock_session = AsyncMock()
-            MockSessionService.return_value = mock_session
-
+        with patch("services.curator.run_single_agent", side_effect=mock_run):
             from services.curator import translate_suggestions
             result = await translate_suggestions(en_suggestions)
 
         # Translator への入力に category が含まれないことを検証
-        assert len(captured_inputs) == 1
-        for s in captured_inputs[0]["suggestions"]:
+        assert len(captured_messages) == 1
+        input_json = json.loads(captured_messages[0].split("\n\n", 1)[1])
+        for s in input_json["suggestions"]:
             assert "category" not in s, "Translator 入力に category が混入している"
 
         assert len(result) == 2
@@ -351,22 +333,10 @@ class TestTranslateSuggestionsMerge:
             {"theme": "Ghost Ships", "description": "Maritime mysteries"},
         ]
 
-        mock_event = MagicMock()
-        mock_part = MagicMock()
-        mock_part.text = "not valid json"
-        mock_event.content.parts = [mock_part]
+        async def mock_run(agent, **kwargs):
+            return "not valid json"
 
-        async def mock_run_async(**kwargs):
-            yield mock_event
-
-        with patch("services.curator.Runner") as MockRunner, \
-             patch("services.curator.InMemorySessionService") as MockSessionService:
-            mock_runner_instance = MagicMock()
-            mock_runner_instance.run_async = mock_run_async
-            MockRunner.return_value = mock_runner_instance
-            mock_session = AsyncMock()
-            MockSessionService.return_value = mock_session
-
+        with patch("services.curator.run_single_agent", side_effect=mock_run):
             from services.curator import translate_suggestions
             with caplog.at_level(logging.WARNING, logger="services.curator"):
                 result = await translate_suggestions(en_suggestions)
