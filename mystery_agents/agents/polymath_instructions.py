@@ -132,7 +132,8 @@ Armchair Polymath の instruction を構成する3つのセクション
 #
 # ## 語数検証（必須）
 # レポート完成後、`count_words` ツールに全文テキストと min_words=5000, max_words=10000 を渡して呼び出す。
-# within_range が false の場合、確定前にレポートを修正すること。
+# - within_range が false の場合：語数を満たすようレポートを修正し、再度 count_words を呼ぶ。
+# - within_range が true の場合：count_words を再度呼ばず、直ちに save_structured_report に進む。
 #
 # ## ガード
 # - 全言語の分析が空 → INSUFFICIENT_DATA を出力
@@ -505,8 +506,9 @@ This call is mandatory — do NOT skip it.
 ## Word Count Verification (MANDATORY)
 
 After completing your report text, call `count_words` with your full report text
-and `min_words=5000`, `max_words=10000`. If the result shows `within_range` is false,
-revise your report accordingly before finalizing.
+and `min_words=5000`, `max_words=10000`.
+- If `within_range` is **false**: revise your report to meet the word count, then call `count_words` again.
+- If `within_range` is **true**: do NOT call `count_words` again. Proceed immediately to `save_structured_report`.
 
 **CRITICAL: Every evidence object MUST include a non-empty `relevant_excerpt`.**
 If you cannot find a specific verbatim quote, write a brief paraphrase of the source material.

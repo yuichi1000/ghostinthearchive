@@ -43,19 +43,45 @@ POLYMATH_MAX_OUTPUT_TOKENS = 32768
 # ツール呼び出しカウンター用ステートキー
 _TOOL_CALL_COUNT_KEY = "polymath_tool_call_count"
 
+# count_words 専用カウンターキーと上限
+_COUNT_WORDS_CALL_KEY = "polymath_count_words_calls"
+_MAX_COUNT_WORDS_CALLS = 3
+
 # ログに出力する args 値の最大文字数
 _TRUNCATE_THRESHOLD = 200
 
 
 def log_polymath_tool_call(tool, args, tool_context):
-    """Polymath のツール呼び出しをログに記録する。
+    """Polymath のツール呼び出しをログに記録し、count_words の無限ループを防止する。
 
     カウンターをインクリメントし、ツール名と引数をログ出力する。
     長文フィールド（200字超）はトランケートする。
-    常に None を返し、ツール実行をブロックしない。
+
+    count_words が _MAX_COUNT_WORDS_CALLS 回を超えた場合、ツール実行をスキップし
+    within_range=True のレスポンスを返して save_structured_report に誘導する。
     """
     count = tool_context.state.get(_TOOL_CALL_COUNT_KEY, 0) + 1
     tool_context.state[_TOOL_CALL_COUNT_KEY] = count
+
+    # count_words の呼び出し上限ガード
+    if tool.name == "count_words":
+        cw_count = tool_context.state.get(_COUNT_WORDS_CALL_KEY, 0) + 1
+        tool_context.state[_COUNT_WORDS_CALL_KEY] = cw_count
+        if cw_count > _MAX_COUNT_WORDS_CALLS:
+            logger.warning(
+                "count_words called %d times (limit: %d) — short-circuiting",
+                cw_count,
+                _MAX_COUNT_WORDS_CALLS,
+            )
+            return {
+                "word_count": "(skipped)",
+                "within_range": True,
+                "message": (
+                    f"count_words has been called {_MAX_COUNT_WORDS_CALLS} times "
+                    "already. Your word count has been verified. "
+                    "Proceed immediately to save_structured_report."
+                ),
+            }
 
     # args の長文フィールドをトランケート
     truncated_args = {}
