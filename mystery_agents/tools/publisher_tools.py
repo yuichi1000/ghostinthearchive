@@ -26,6 +26,17 @@ from shared.constants import (
 )
 from shared.firestore import get_firestore_client, get_storage_bucket
 from shared.language_validator import validate_translation_language
+from shared.state_keys import (
+    ACTIVE_LANGUAGES,
+    CREATIVE_CONTENT,
+    IMAGE_METADATA,
+    MYSTERY_REPORT,
+    PUBLISHED_MYSTERY_ID,
+    STRUCTURED_REPORT,
+    collected_documents_key,
+    scholar_analysis_key,
+    translation_result_key,
+)
 
 from mystery_agents.tools.search_metadata import get_search_metadata as _get_search_metadata
 
@@ -269,7 +280,7 @@ def publish_mystery(
 
         # Overlay structured report from session state (more accurate than LLM text)
         if tool_context is not None:
-            structured_report = tool_context.state.get("structured_report")
+            structured_report = tool_context.state.get(STRUCTURED_REPORT)
             if structured_report and isinstance(structured_report, dict):
                 # Use structured data for critical fields, preferring state over LLM text
                 for key in (
@@ -285,7 +296,7 @@ def publish_mystery(
                         data[key] = structured_report[key]
 
             # narrative_content: creative_content セッション状態から直接読み取り
-            creative_content = tool_context.state.get("creative_content")
+            creative_content = tool_context.state.get(CREATIVE_CONTENT)
             if creative_content and isinstance(creative_content, str):
                 if not any(marker in creative_content for marker in ("NO_CONTENT", "NO_DOCUMENTS_FOUND")):
                     data["narrative_content"] = creative_content
@@ -299,20 +310,20 @@ def publish_mystery(
                     data["images"] = images_dict
 
             # raw_data: collected_documents_en セッション状態から直接読み取り
-            collected_docs = tool_context.state.get("collected_documents_en")
+            collected_docs = tool_context.state.get(collected_documents_key("en"))
             if collected_docs:
                 data["raw_data"] = collected_docs if isinstance(collected_docs, str) else str(collected_docs)
 
             # 各言語の Scholar 分析を multilingual_analysis として保存
             # active_languages を参照し、動的に検出された全言語をカバーする
             multilingual = {}
-            active_langs = tool_context.state.get("active_languages", [])
+            active_langs = tool_context.state.get(ACTIVE_LANGUAGES, [])
             for lang in active_langs:
-                analysis = tool_context.state.get(f"scholar_analysis_{lang}")
+                analysis = tool_context.state.get(scholar_analysis_key(lang))
                 if analysis and "INSUFFICIENT_DATA" not in str(analysis):
                     multilingual[lang] = str(analysis)
             # Multilingual Scholar の分析も保存
-            ml_analysis = tool_context.state.get("scholar_analysis_multilingual")
+            ml_analysis = tool_context.state.get(scholar_analysis_key("multilingual"))
             if ml_analysis and "INSUFFICIENT_DATA" not in str(ml_analysis):
                 multilingual["multilingual"] = str(ml_analysis)
             if multilingual:
@@ -320,7 +331,7 @@ def publish_mystery(
                 data["languages_analyzed"] = list(multilingual.keys())
 
             # mystery_report: Armchair Polymath の統合分析レポート全文を保存
-            mystery_report = tool_context.state.get("mystery_report")
+            mystery_report = tool_context.state.get(MYSTERY_REPORT)
             if mystery_report and isinstance(mystery_report, str):
                 if "INSUFFICIENT_DATA" not in mystery_report:
                     data["mystery_report"] = mystery_report
@@ -350,7 +361,7 @@ def publish_mystery(
             translations: dict[str, dict] = {}
             rejected_languages: list[str] = []
             for lang in TRANSLATION_LANGUAGES:
-                translation_result = tool_context.state.get(f"translation_result_{lang}")
+                translation_result = tool_context.state.get(translation_result_key(lang))
                 if not translation_result:
                     continue
                 # output_key の値は LLM テキスト出力（JSON 文字列の場合がある）
@@ -422,7 +433,7 @@ def publish_mystery(
         # Upload images: prefer image_metadata from session state, fall back to LLM text
         image_source = None
         if tool_context is not None:
-            image_source = tool_context.state.get("image_metadata")
+            image_source = tool_context.state.get(IMAGE_METADATA)
 
         if image_source and isinstance(image_source, dict):
             # Use accurate image metadata from session state
@@ -528,7 +539,7 @@ def publish_mystery(
 
         # mystery_id をセッション状態に直接保存（LLM テキスト解析に依存しない確実な受け渡し）
         if tool_context is not None:
-            tool_context.state["published_mystery_id"] = mystery_id
+            tool_context.state[PUBLISHED_MYSTERY_ID] = mystery_id
 
         return json.dumps({
             "status": "success",

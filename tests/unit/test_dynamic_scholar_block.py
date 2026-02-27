@@ -3,9 +3,9 @@
 
 from mystery_agents.agents.dynamic_scholar_block import (
     MAX_DEBATE_ITERATIONS,
-    _is_meaningful,
     create_dynamic_scholar_block,
 )
+from shared.constants import is_meaningful as _is_meaningful
 
 
 class TestDynamicScholarBlockCreation:

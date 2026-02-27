@@ -17,6 +17,12 @@ from google.adk.events.event import Event, EventActions
 from google.genai import types
 
 from shared.language_names import get_language_name
+from shared.state_keys import (
+    ACTIVE_LANGUAGES,
+    RAW_SEARCH_RESULTS,
+    SELECTED_LANGUAGES,
+    collected_documents_key,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +43,7 @@ class AggregatorAgent(BaseAgent):
         docs_by_lang: dict[str, list[dict]] = defaultdict(list)
 
         for key in list(state.keys()):
-            if not key.startswith("raw_search_results"):
+            if not key.startswith(RAW_SEARCH_RESULTS):
                 continue
             value = state.get(key)
             if not value or not isinstance(value, list):
@@ -62,13 +68,13 @@ class AggregatorAgent(BaseAgent):
         for lang in active_languages:
             docs = docs_by_lang[lang]
             text = _format_documents(lang, docs)
-            state_delta[f"collected_documents_{lang}"] = text
+            state_delta[collected_documents_key(lang)] = text
 
-        state_delta["active_languages"] = active_languages
+        state_delta[ACTIVE_LANGUAGES] = active_languages
 
         # selected_languages を active_languages で更新（Scholar/debate layer 互換）
         if active_languages:
-            state_delta["selected_languages"] = active_languages
+            state_delta[SELECTED_LANGUAGES] = active_languages
 
         total_docs = sum(len(d) for d in docs_by_lang.values())
         summary = (

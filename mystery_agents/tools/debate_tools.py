@@ -11,6 +11,8 @@ import re
 
 from google.adk.tools.tool_context import ToolContext
 
+from shared.state_keys import DEBATE_WHITEBOARD
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,10 +37,10 @@ def append_to_whiteboard(
     Returns:
         Confirmation message.
     """
-    current = tool_context.state.get("debate_whiteboard", "")
+    current = tool_context.state.get(DEBATE_WHITEBOARD, "")
 
     entry = f"### [Round {round_number}] {speaker} Perspective\n\n{contribution}\n\n"
-    tool_context.state["debate_whiteboard"] = current + entry
+    tool_context.state[DEBATE_WHITEBOARD] = current + entry
 
     return f"Contribution from {speaker} (Round {round_number}) appended to whiteboard."
 
@@ -129,7 +131,7 @@ def check_debate_convergence(tool_context: ToolContext) -> str:
     Returns:
         収束判定結果のメッセージ。
     """
-    whiteboard = tool_context.state.get("debate_whiteboard", "")
+    whiteboard = tool_context.state.get(DEBATE_WHITEBOARD, "")
     if not whiteboard:
         return "No whiteboard content found. Debate should continue."
 

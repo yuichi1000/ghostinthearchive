@@ -19,6 +19,7 @@ from google.genai import types
 
 from shared.constants import is_meaningful
 from shared.model_config import create_pro_model
+from shared.state_keys import ACTIVE_LANGUAGES, scholar_analysis_key
 
 from .armchair_polymath import (
     INSTRUCTION_BODY,
@@ -80,16 +81,16 @@ class DynamicPolymathBlock(BaseAgent):
         state = ctx.session.state
 
         # 有意な分析がある Named Scholar の言語を特定
-        active_langs = state.get("active_languages", [])
+        active_langs = state.get(ACTIVE_LANGUAGES, [])
         meaningful_langs = [
             lang
             for lang in active_langs
-            if is_meaningful(state.get(f"scholar_analysis_{lang}", ""))
+            if is_meaningful(state.get(scholar_analysis_key(lang), ""))
         ]
 
         # Multilingual Scholar の有意性チェック
         has_multilingual = is_meaningful(
-            state.get("scholar_analysis_multilingual", "")
+            state.get(scholar_analysis_key("multilingual"), "")
         )
 
         total_meaningful = len(meaningful_langs) + (1 if has_multilingual else 0)
