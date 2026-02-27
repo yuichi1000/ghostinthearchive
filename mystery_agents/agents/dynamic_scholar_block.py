@@ -23,6 +23,7 @@ from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events.event import Event, EventActions
 from google.genai import types
 
+from shared.constants import is_meaningful
 from shared.language_names import get_language_name
 
 from ..tools.debate_tools import is_debate_converged
@@ -32,7 +33,6 @@ from .language_scholars import (
     create_scholar,
     get_scholar_config,
 )
-from .pipeline_gate import _is_meaningful
 
 logger = logging.getLogger(__name__)
 
@@ -104,12 +104,12 @@ class DynamicScholarBlock(BaseAgent):
         # 有意な分析を出した Named Scholar を特定
         meaningful_named = [
             lang for lang in named_langs
-            if _is_meaningful(state.get(f"scholar_analysis_{lang}", ""))
+            if is_meaningful(state.get(f"scholar_analysis_{lang}", ""))
         ]
         # Multilingual Scholar の有意性チェック
         has_meaningful_multilingual = (
             bool(other_langs)
-            and _is_meaningful(state.get("scholar_analysis_multilingual", ""))
+            and is_meaningful(state.get("scholar_analysis_multilingual", ""))
         )
 
         # active_analyses_summary をステートに書き込み（ログ/診断用）

@@ -17,6 +17,7 @@ from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events.event import Event
 from google.genai import types
 
+from shared.constants import is_meaningful
 from shared.model_config import create_pro_model
 
 from .armchair_polymath import (
@@ -28,7 +29,7 @@ from .armchair_polymath import (
     log_polymath_tool_call,
 )
 from .language_scholars import get_scholar_config
-from .pipeline_gate import _is_meaningful, _log_and_record_failure
+from .pipeline_gate import _log_and_record_failure
 
 logger = logging.getLogger(__name__)
 
@@ -83,11 +84,11 @@ class DynamicPolymathBlock(BaseAgent):
         meaningful_langs = [
             lang
             for lang in active_langs
-            if _is_meaningful(state.get(f"scholar_analysis_{lang}", ""))
+            if is_meaningful(state.get(f"scholar_analysis_{lang}", ""))
         ]
 
         # Multilingual Scholar の有意性チェック
-        has_multilingual = _is_meaningful(
+        has_multilingual = is_meaningful(
             state.get("scholar_analysis_multilingual", "")
         )
 

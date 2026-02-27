@@ -21,8 +21,8 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from mystery_agents.agents.pipeline_gate import _is_meaningful
 from mystery_agents.utils.pipeline_logger import PipelineLogger
+from shared.constants import is_meaningful
 from shared.logging_config import PipelineContext, set_pipeline_context
 from shared.search_metrics import extract_search_metrics, save_search_metrics
 from shared.pipeline_run import (
@@ -133,7 +133,7 @@ def _detect_gate_failure(session_state: dict) -> tuple[str, dict]:
         detail["storyteller_llm_metadata"] = llm_meta
 
     mystery_report = session_state.get("mystery_report", "")
-    if not _is_meaningful(mystery_report):
+    if not is_meaningful(mystery_report):
         return "十分な資料が見つからなかったため、記事を生成できませんでした", {
             "error_type": "gate_failure",
             "failed_stage": "scholar/polymath",
@@ -141,7 +141,7 @@ def _detect_gate_failure(session_state: dict) -> tuple[str, dict]:
         }
 
     creative_content = session_state.get("creative_content", "")
-    if not _is_meaningful(creative_content):
+    if not is_meaningful(creative_content):
         return "記事の生成に失敗しました", {
             "error_type": "gate_failure",
             "failed_stage": "storyteller",
