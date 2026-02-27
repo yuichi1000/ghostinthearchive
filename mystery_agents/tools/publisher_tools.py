@@ -19,7 +19,6 @@ from typing import Optional
 from google.adk.tools.tool_context import ToolContext
 
 from shared.constants import (
-    ALLOWED_LANGUAGES,
     SCHEMA_VERSION,
     STATUS_PENDING,
     STATUS_PUBLISHED,

@@ -74,8 +74,8 @@ class DynamicScholarBlock(BaseAgent):
             return
 
         # 2層振り分け
-        named_langs = [l for l in active_langs if l in NAMED_SCHOLAR_LANGUAGES]
-        other_langs = [l for l in active_langs if l not in NAMED_SCHOLAR_LANGUAGES]
+        named_langs = [lang for lang in active_langs if lang in NAMED_SCHOLAR_LANGUAGES]
+        other_langs = [lang for lang in active_langs if lang not in NAMED_SCHOLAR_LANGUAGES]
 
         logger.info(
             "DynamicScholarBlock: 分析フェーズ開始 — Named %d (%s), Other %d (%s)",
@@ -118,7 +118,7 @@ class DynamicScholarBlock(BaseAgent):
             lang_name = get_scholar_config(lang)["language_name"]
             summary_lines.append(f"- {lang_name} ({lang})")
         if has_meaningful_multilingual:
-            ml_names = ", ".join(get_language_name(l) for l in other_langs)
+            ml_names = ", ".join(get_language_name(lang) for lang in other_langs)
             summary_lines.append(f"- Multilingual ({ml_names})")
 
         total_meaningful = len(meaningful_named) + (1 if has_meaningful_multilingual else 0)
