@@ -92,6 +92,10 @@ Armchair Polymath の instruction を構成する3つのセクション
 #    文書だけでなく、全アーカイブの全文書を表示する。証拠選定を確定する前に確認し、
 #    機関アーカイブの価値ある一次資料が Scholar の分析で簡潔にしか言及されていない
 #    可能性を考慮する。
+# 5. **主題的関連性は妥協不可**: すべての証拠（evidence_a, evidence_b, additional_evidence）は
+#    調査対象のミステリーと直接的かつ実質的な関連を持たなければならない。
+#    語呂合わせ、比喩、同音異義語、テーマ的類推でのみ繋がるソースは有効な証拠ではない。
+#    文書のタイトルが調査対象と関連しない場合、解釈的つながりがどれほど巧みでも選択しない。
 #
 # ## 文字数
 # **5,000〜10,000 words（英語）** — このレポートは Storyteller への唯一の入力である。
@@ -373,6 +377,12 @@ to see all documents collected by the Librarian, organized by archive.
    not just what was prominent in the Scholar analyses. Check it before finalizing evidence
    selection — there may be valuable primary sources from institutional archives that
    the Scholars mentioned only briefly.
+
+5. **Topical relevance is non-negotiable**: Every piece of evidence (evidence_a, evidence_b,
+   additional_evidence) must have a direct, substantive connection to the mystery under
+   investigation. A source connected only through wordplay, metaphor, homonym, or thematic
+   analogy is NOT valid evidence. If a document's title does not relate to the investigation
+   subject, do not select it — regardless of how clever the interpretive connection may seem.
 
 ## Save Structured Report (MANDATORY)
 

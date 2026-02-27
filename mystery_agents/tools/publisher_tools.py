@@ -35,12 +35,29 @@ from shared.state_keys import (
     translation_result_key,
 )
 
+from mystery_agents.tools.scholar_tools import _build_url_index
 from mystery_agents.tools.search_metadata import get_search_metadata as _get_search_metadata
 
 from .image_upload import _upload_images_internal
 from .publisher_utils import _extract_json_from_text, _generate_mystery_id
 
 logger = logging.getLogger(__name__)
+
+
+def _audit_evidence_relevance(data: dict, tool_context: ToolContext) -> None:
+    """証拠の妥当性を監査ログに記録する（ブロッキングなし）。"""
+    url_index = _build_url_index(tool_context)
+    if not url_index:
+        return
+    for key in ("evidence_a", "evidence_b"):
+        ev = data.get(key, {})
+        url = ev.get("source_url", "")
+        raw = url_index.get(url)
+        if raw and not raw.get("keywords_matched"):
+            logger.warning(
+                "証拠妥当性監査: %s はキーワード無一致 (title: %s)",
+                key, raw.get("title", "unknown"),
+            )
 
 
 def publish_mystery(
@@ -342,6 +359,10 @@ def publish_mystery(
         data.setdefault("research_questions", [])
         data.setdefault("story_hooks", [])
         data.setdefault("pipeline_log", [])
+
+        # 証拠妥当性の監査ログ（ブロッキングなし、ログ記録のみ）
+        if tool_context is not None:
+            _audit_evidence_relevance(data, tool_context)
 
         mystery_id = data["mystery_id"]
         db.collection("mysteries").document(mystery_id).set(data)

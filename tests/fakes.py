@@ -67,5 +67,5 @@ def make_archive_doc(
         language=SourceLanguage.EN,
         location="Test",
         source_type=source_type,
-        keywords_matched=keywords_matched or [],
+        keywords_matched=keywords_matched if keywords_matched is not None else ["test"],
     )
