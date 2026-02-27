@@ -11,33 +11,15 @@ from typing import TYPE_CHECKING, Optional
 
 from google.genai import types
 
-from shared.constants import DEFAULT_SELECTED_LANGUAGES
+from shared.constants import DEFAULT_SELECTED_LANGUAGES, is_meaningful
 
 if TYPE_CHECKING:
     from google.adk.agents.callback_context import CallbackContext
 
 logger = logging.getLogger(__name__)
 
-# 失敗マーカー
-_FAILURE_MARKERS = frozenset({
-    "NO_DOCUMENTS_FOUND",
-    "INSUFFICIENT_DATA",
-    "NO_CONTENT",
-    "Not available",
-})
-
-
-def _is_meaningful(value: str) -> bool:
-    """セッション状態の値が有意なデータを含むか判定する。
-
-    テキストの先頭が失敗マーカーで始まる場合のみ「無意味」と判定する。
-    ドキュメント本文の途中や末尾に部分的な失敗マーカーが含まれていても、
-    先頭に有意なデータがあれば有意とみなす。
-    """
-    if not value:
-        return False
-    text = str(value).strip()
-    return not any(text.startswith(marker) for marker in _FAILURE_MARKERS)
+# 後方互換エイリアス（既存コードが _is_meaningful を参照）
+_is_meaningful = is_meaningful
 
 
 def _log_and_record_failure(callback_context: CallbackContext, stage: str, message: str) -> None:

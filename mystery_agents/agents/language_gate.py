@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Optional
 
 from google.genai import types
 
-from shared.constants import DEFAULT_SELECTED_LANGUAGES
+from shared.constants import DEFAULT_SELECTED_LANGUAGES, is_meaningful
 
 if TYPE_CHECKING:
     from google.adk.agents.callback_context import CallbackContext
@@ -34,7 +34,7 @@ def make_debate_gate(lang_code: str):
             )
         # Scholar が有意な分析を出していない場合もスキップ
         analysis = callback_context.state.get(f"scholar_analysis_{lang_code}", "")
-        if not analysis or "INSUFFICIENT_DATA" in str(analysis) or "Not available" in str(analysis):
+        if not is_meaningful(analysis):
             return types.Content(
                 parts=[types.Part(text="")], role="model"
             )
@@ -59,11 +59,7 @@ def make_debate_loop_gate():
         meaningful = 0
         for lang in selected:
             analysis = callback_context.state.get(f"scholar_analysis_{lang}", "")
-            if (
-                analysis
-                and "INSUFFICIENT_DATA" not in str(analysis)
-                and "Not available" not in str(analysis)
-            ):
+            if is_meaningful(analysis):
                 meaningful += 1
 
         if meaningful < 2:
