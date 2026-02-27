@@ -22,6 +22,11 @@ DEFAULT_SELECTED_LANGUAGES: list[str] = sorted(ALLOWED_LANGUAGES)
 # Translator が翻訳する対象言語（英語から各言語へ）
 TRANSLATION_LANGUAGES: list[str] = ["ja", "es", "de"]
 
+# ラテン文字系言語（ASCII ヒューリスティックで英語と区別不能）
+LATIN_SCRIPT_LANGUAGES: frozenset[str] = frozenset({
+    "de", "es", "fr", "nl", "pt", "en",
+})
+
 # ---------------------------------------------------------------------------
 # ステータス / スキーマ
 # ---------------------------------------------------------------------------
