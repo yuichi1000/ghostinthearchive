@@ -6,7 +6,7 @@ Internet Archive の膨大なコレクション（書籍、雑誌、ウェブペ
 
 
 
-from ..schemas.document import ArchiveDocument, SourceLanguage
+from ..schemas.document import ArchiveDocument
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
 from .search_utils import build_search_query
 from .source_registry import register_source
@@ -140,17 +140,18 @@ class InternetArchiveSource(ArchiveSource):
         return ArchiveSearchResult(documents=documents, total_hits=total_hits)
 
 
-def _detect_source_language(lang_str: str) -> SourceLanguage:
-    """メタデータの言語文字列から SourceLanguage を判定する。"""
+def _detect_source_language(lang_str: str) -> str:
+    """メタデータの言語文字列から ISO 639-1 コードを返す。
+
+    _LANG_CODE_MAP でマッピング可能ならそのコードを返す。
+    不明な場合はフォールバックとして "en" を返す。
+    """
     lower = lang_str.lower()
     for lang_code, identifiers in _LANG_CODE_MAP.items():
         for ident in identifiers:
             if ident in lower:
-                try:
-                    return SourceLanguage(lang_code)
-                except ValueError:
-                    break
-    return SourceLanguage.EN
+                return lang_code
+    return "en"
 
 
 # レジストリに自動登録

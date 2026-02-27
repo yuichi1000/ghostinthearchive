@@ -166,13 +166,18 @@ API_CONFIGS: dict[str, dict] = {
         ),
         "search_strategy": (
             "1. Analyze the theme and determine which European languages are relevant\n"
-            "2. Generate 3-5 keywords in the most relevant European language\n"
-            '3. Call **search_archives** with:\n'
+            "   (up to 3 languages)\n"
+            "2. For EACH relevant language, generate 3-5 keywords in that language\n"
+            '3. Call **search_archives** once per language with:\n'
             '   - `sources="europeana"`\n'
-            "   - `language` set to the most relevant language code\n"
-            "   - Example: keywords=\"Geisterschiff, Nordsee, Schiffbruch\", language=\"de\"\n"
-            "4. If the theme spans multiple European cultures, prioritize the language\n"
-            "   most likely to yield results for this specific topic\n"
+            "   - `language` set to the relevant language code\n"
+            "   - Example for a German theme:\n"
+            '     Call 1: keywords="Geisterschiff, Nordsee, Schiffbruch", language="de"\n'
+            "   - Example for a Franco-German border theme:\n"
+            '     Call 1: keywords="Geisterschiff, Rhein, Grenze", language="de"\n'
+            '     Call 2: keywords="vaisseau fantôme, Rhin, frontière", language="fr"\n'
+            "4. Always search in the primary language of the theme's region.\n"
+            "   Add additional languages when the theme spans borders or cultures.\n"
             "5. Date filtering is OPTIONAL — use only when the time period is clear"
         ),
         "has_newspapers": False,

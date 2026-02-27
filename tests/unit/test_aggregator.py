@@ -75,7 +75,6 @@ class TestFormatDocuments:
         ]
         result = _format_documents("en", docs)
         assert "..." in result
-        # 500文字 + "..." が含まれる
         assert "x" * 500 in result
 
     def test_language_name_in_header(self):
@@ -106,6 +105,34 @@ class TestFormatDocuments:
         result = _format_documents("ja", docs)
         assert "Japanese" in result
 
+    def test_unknown_language_name_in_header(self):
+        """未知の言語コードでもヘッダーに言語名が表示される。"""
+        docs = [
+            {
+                "title": "Dokument po polsku",
+                "source_url": "https://example.com/pl",
+                "summary": "Polski tekst",
+                "language": "pl",
+                "source_type": "europeana",
+            }
+        ]
+        result = _format_documents("pl", docs)
+        assert "Polish" in result
+
+    def test_italian_language_name(self):
+        """イタリア語ドキュメントのヘッダーに Italian が含まれる。"""
+        docs = [
+            {
+                "title": "Documento",
+                "source_url": "https://example.com/it",
+                "summary": "Un test",
+                "language": "it",
+                "source_type": "europeana",
+            }
+        ]
+        result = _format_documents("it", docs)
+        assert "Italian" in result
+
 
 class TestCreateAggregator:
     """create_aggregator ファクトリのテスト。"""
@@ -120,5 +147,4 @@ class TestCreateAggregator:
     def test_agent_name(self):
         """エージェント名が 'aggregator' である。"""
         agg = create_aggregator()
-        # BaseAgent の name プロパティは直接比較可能
         assert "aggregator" in repr(agg)

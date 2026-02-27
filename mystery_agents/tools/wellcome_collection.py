@@ -7,7 +7,7 @@ Wellcome Collection（ロンドン）の Catalogue API v2 を使用して
 
 import logging
 
-from ..schemas.document import ArchiveDocument, SourceLanguage
+from ..schemas.document import ArchiveDocument
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
 from .search_utils import build_search_query
 from .source_registry import register_source
@@ -19,18 +19,24 @@ _strip_html = ArchiveSource.strip_html
 
 BASE_URL = "https://api.wellcomecollection.org/catalogue/v2/works"
 
-# ISO 639-3 → SourceLanguage マッピング
-_LANG_MAP: dict[str, SourceLanguage] = {
-    "eng": SourceLanguage.EN,
-    "fre": SourceLanguage.FR,
-    "fra": SourceLanguage.FR,
-    "deu": SourceLanguage.DE,
-    "ger": SourceLanguage.DE,
-    "spa": SourceLanguage.ES,
-    "nld": SourceLanguage.NL,
-    "dut": SourceLanguage.NL,
-    "por": SourceLanguage.PT,
-    "jpn": SourceLanguage.JA,
+# ISO 639-3 → ISO 639-1 マッピング（言語検出用）
+_LANG_MAP: dict[str, str] = {
+    "eng": "en",
+    "fre": "fr",
+    "fra": "fr",
+    "deu": "de",
+    "ger": "de",
+    "spa": "es",
+    "nld": "nl",
+    "dut": "nl",
+    "por": "pt",
+    "jpn": "ja",
+    "ita": "it",
+    "lat": "la",
+    "rus": "ru",
+    "ara": "ar",
+    "zho": "zh",
+    "chi": "zh",
 }
 
 # ISO 639-1 → 639-3 マッピング（言語フィルタ用）
@@ -79,21 +85,21 @@ def _extract_location(work: dict) -> str:
     return "United Kingdom"
 
 
-def _detect_language(work: dict) -> SourceLanguage:
-    """languages フィールドから SourceLanguage を検出する。
+def _detect_language(work: dict) -> str:
+    """languages フィールドから ISO 639-1 コードを返す。
 
     Args:
         work: Wellcome API の work オブジェクト
 
     Returns:
-        検出された SourceLanguage。不明な場合は EN をデフォルトにする。
+        ISO 639-1 言語コード。不明な場合は "en" をデフォルトにする。
     """
     languages = work.get("languages", [])
     if languages:
         lang_id = languages[0].get("id", "")
         if lang_id in _LANG_MAP:
             return _LANG_MAP[lang_id]
-    return SourceLanguage.EN
+    return "en"
 
 
 def _parse_wellcome_response(

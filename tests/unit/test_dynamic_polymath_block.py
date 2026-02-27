@@ -34,18 +34,14 @@ class TestBuildAnalysesSection:
         section = _build_analyses_section(["en", "ja"])
         assert "{scholar_analysis_en}" in section
         assert "{scholar_analysis_ja}" in section
-        # 非アクティブ言語は含まれない
         assert "{scholar_analysis_de}" not in section
         assert "{scholar_analysis_es}" not in section
-        assert "{scholar_analysis_fr}" not in section
-        assert "{scholar_analysis_nl}" not in section
-        assert "{scholar_analysis_pt}" not in section
 
     def test_single_language(self):
         """1言語のみの場合でも正しくセクションを構築すること。"""
         section = _build_analyses_section(["de"])
         assert "{scholar_analysis_de}" in section
-        assert "1 language(s)" in section
+        assert "1 source(s)" in section
         assert "{scholar_analysis_en}" not in section
 
     def test_includes_language_names(self):
@@ -54,13 +50,28 @@ class TestBuildAnalysesSection:
         assert "English" in section
         assert "German" in section
 
-    def test_all_seven_languages(self):
-        """全7言語を指定した場合、全プレースホルダーが含まれること。"""
-        all_langs = ["en", "de", "es", "fr", "nl", "pt", "ja"]
+    def test_with_multilingual(self):
+        """has_multilingual=True で multilingual プレースホルダーが含まれること。"""
+        section = _build_analyses_section(["en", "de"], has_multilingual=True)
+        assert "{scholar_analysis_en}" in section
+        assert "{scholar_analysis_de}" in section
+        assert "{scholar_analysis_multilingual}" in section
+        assert "Multilingual" in section
+        assert "3 source(s)" in section
+
+    def test_without_multilingual(self):
+        """has_multilingual=False で multilingual プレースホルダーが含まれないこと。"""
+        section = _build_analyses_section(["en", "de"], has_multilingual=False)
+        assert "{scholar_analysis_multilingual}" not in section
+        assert "2 source(s)" in section
+
+    def test_all_named_languages(self):
+        """Named Scholar 全6言語を指定した場合のテスト。"""
+        all_langs = ["en", "de", "es", "fr", "ja", "it"]
         section = _build_analyses_section(all_langs)
         for lang in all_langs:
             assert f"{{scholar_analysis_{lang}}}" in section
-        assert "7 language(s)" in section
+        assert "6 source(s)" in section
 
 
 class TestInstructionComposition:

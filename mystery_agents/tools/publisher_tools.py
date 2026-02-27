@@ -305,11 +305,17 @@ def publish_mystery(
                 data["raw_data"] = collected_docs if isinstance(collected_docs, str) else str(collected_docs)
 
             # 各言語の Scholar 分析を multilingual_analysis として保存
+            # active_languages を参照し、動的に検出された全言語をカバーする
             multilingual = {}
-            for lang in ALLOWED_LANGUAGES:
+            active_langs = tool_context.state.get("active_languages", [])
+            for lang in active_langs:
                 analysis = tool_context.state.get(f"scholar_analysis_{lang}")
                 if analysis and "INSUFFICIENT_DATA" not in str(analysis):
                     multilingual[lang] = str(analysis)
+            # Multilingual Scholar の分析も保存
+            ml_analysis = tool_context.state.get("scholar_analysis_multilingual")
+            if ml_analysis and "INSUFFICIENT_DATA" not in str(ml_analysis):
+                multilingual["multilingual"] = str(ml_analysis)
             if multilingual:
                 data["multilingual_analysis"] = multilingual
                 data["languages_analyzed"] = list(multilingual.keys())

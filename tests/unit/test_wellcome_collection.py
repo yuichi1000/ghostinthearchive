@@ -305,9 +305,13 @@ class TestHelperFunctions:
         assert _detect_language({"languages": [{"id": "ger"}]}) == SourceLanguage.DE
         assert _detect_language({"languages": [{"id": "deu"}]}) == SourceLanguage.DE
 
+    def test_detect_language_chinese(self):
+        """中国語（zho）は zh にマッピングされる。"""
+        assert _detect_language({"languages": [{"id": "zho"}]}) == "zh"
+
     def test_detect_language_unknown_defaults_to_en(self):
         """不明な言語コードは EN をデフォルトにする。"""
-        assert _detect_language({"languages": [{"id": "zho"}]}) == SourceLanguage.EN
+        assert _detect_language({"languages": [{"id": "xyz"}]}) == "en"
 
     def test_detect_language_empty_languages(self):
         """languages が空の場合は EN。"""
