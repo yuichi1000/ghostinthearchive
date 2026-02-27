@@ -25,6 +25,7 @@ from google.genai import types
 
 from shared.constants import is_meaningful
 from shared.language_names import get_language_name
+from shared.state_keys import ACTIVE_LANGUAGES, DEBATE_WHITEBOARD, scholar_analysis_key
 
 from ..tools.debate_tools import is_debate_converged
 from .language_scholars import (
@@ -56,7 +57,7 @@ class DynamicScholarBlock(BaseAgent):
         state = ctx.session.state
 
         # Aggregator が設定した active_languages を取得
-        active_langs: list[str] = state.get("active_languages", [])
+        active_langs: list[str] = state.get(ACTIVE_LANGUAGES, [])
 
         if not active_langs:
             logger.warning("DynamicScholarBlock: ドキュメントなし — スキップ")
@@ -104,12 +105,12 @@ class DynamicScholarBlock(BaseAgent):
         # 有意な分析を出した Named Scholar を特定
         meaningful_named = [
             lang for lang in named_langs
-            if is_meaningful(state.get(f"scholar_analysis_{lang}", ""))
+            if is_meaningful(state.get(scholar_analysis_key(lang), ""))
         ]
         # Multilingual Scholar の有意性チェック
         has_meaningful_multilingual = (
             bool(other_langs)
-            and is_meaningful(state.get("scholar_analysis_multilingual", ""))
+            and is_meaningful(state.get(scholar_analysis_key("multilingual"), ""))
         )
 
         # active_analyses_summary をステートに書き込み（ログ/診断用）
@@ -194,7 +195,7 @@ class DynamicScholarBlock(BaseAgent):
                 yield event
 
             # 収束判定（LLM を介さず直接チェック）
-            whiteboard = state.get("debate_whiteboard", "")
+            whiteboard = state.get(DEBATE_WHITEBOARD, "")
             if is_debate_converged(whiteboard):
                 logger.info(
                     "DynamicScholarBlock: 討論収束 — ラウンド %d で終了",

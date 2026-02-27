@@ -17,6 +17,8 @@ from typing import Any, Optional
 
 from google.adk.tools.tool_context import ToolContext
 
+from shared.state_keys import RAW_SEARCH_RESULTS
+
 logger = logging.getLogger(__name__)
 
 # アーカイブ名マッピング（source_type → 表示名）
@@ -83,7 +85,7 @@ def get_document_inventory(tool_context: Optional[ToolContext] = None) -> str:
     all_results: list[dict[str, Any]] = []
 
     # ベースキー
-    base_results = state.get("raw_search_results")
+    base_results = state.get(RAW_SEARCH_RESULTS)
     if base_results and isinstance(base_results, list):
         for r in base_results:
             if isinstance(r, dict):
@@ -92,7 +94,7 @@ def get_document_inventory(tool_context: Optional[ToolContext] = None) -> str:
     # 言語別キー
     state_dict = state.to_dict() if hasattr(state, "to_dict") else state
     for key in list(state_dict.keys()):
-        if key.startswith("raw_search_results_") and key != "raw_search_results":
+        if key.startswith(RAW_SEARCH_RESULTS + "_") and key != RAW_SEARCH_RESULTS:
             lang_results = state.get(key)
             if lang_results and isinstance(lang_results, list):
                 for r in lang_results:

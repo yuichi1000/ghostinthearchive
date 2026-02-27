@@ -13,6 +13,8 @@ from typing import Any, Optional
 
 from google.adk.tools.tool_context import ToolContext
 
+from shared.state_keys import RAW_SEARCH_RESULTS
+
 logger = logging.getLogger(__name__)
 
 # 検索結果がない場合のレスポンス
@@ -98,7 +100,7 @@ def get_search_metadata(tool_context: Optional[ToolContext] = None) -> str:
     all_results: list[tuple[str, list]] = []
 
     # ベースキー
-    base_results = state.get("raw_search_results")
+    base_results = state.get(RAW_SEARCH_RESULTS)
     if base_results and isinstance(base_results, list):
         all_results.append(("base", base_results))
 
@@ -107,7 +109,7 @@ def get_search_metadata(tool_context: Optional[ToolContext] = None) -> str:
     # ADK State は .keys() を持たないため to_dict() 経由、テスト用 dict はそのまま
     state_dict = state.to_dict() if hasattr(state, "to_dict") else state
     for key in list(state_dict.keys()):
-        if key.startswith("raw_search_results_") and key != "raw_search_results":
+        if key.startswith(RAW_SEARCH_RESULTS + "_") and key != RAW_SEARCH_RESULTS:
             lang = key.replace("raw_search_results_", "")
             lang_results = state.get(key)
             if lang_results and isinstance(lang_results, list):

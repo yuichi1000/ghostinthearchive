@@ -24,6 +24,15 @@ from google.genai import types
 from mystery_agents.utils.pipeline_logger import PipelineLogger
 from shared.constants import is_meaningful
 from shared.logging_config import PipelineContext, set_pipeline_context
+from shared.state_keys import (
+    CREATIVE_CONTENT,
+    IMAGE_METADATA,
+    MYSTERY_REPORT,
+    PIPELINE_RUN_ID,
+    PUBLISHED_EPISODE,
+    PUBLISHED_MYSTERY_ID,
+    STRUCTURED_REPORT,
+)
 from shared.search_metrics import extract_search_metrics, save_search_metrics
 from shared.pipeline_run import (
     create_pipeline_run,
@@ -101,8 +110,8 @@ OnText = Callable[[str], None]
 def _build_state_summary(session_state: dict) -> dict:
     """デバッグ用にセッション状態キーの存在と長さをサマリ化する。"""
     keys = [
-        "mystery_report", "creative_content", "structured_report",
-        "image_metadata", "published_mystery_id", "published_episode",
+        MYSTERY_REPORT, CREATIVE_CONTENT, STRUCTURED_REPORT,
+        IMAGE_METADATA, PUBLISHED_MYSTERY_ID, PUBLISHED_EPISODE,
     ]
     summary = {}
     for k in keys:
@@ -132,7 +141,7 @@ def _detect_gate_failure(session_state: dict) -> tuple[str, dict]:
     if llm_meta:
         detail["storyteller_llm_metadata"] = llm_meta
 
-    mystery_report = session_state.get("mystery_report", "")
+    mystery_report = session_state.get(MYSTERY_REPORT, "")
     if not is_meaningful(mystery_report):
         return "十分な資料が見つからなかったため、記事を生成できませんでした", {
             "error_type": "gate_failure",
@@ -140,7 +149,7 @@ def _detect_gate_failure(session_state: dict) -> tuple[str, dict]:
             **detail,
         }
 
-    creative_content = session_state.get("creative_content", "")
+    creative_content = session_state.get(CREATIVE_CONTENT, "")
     if not is_meaningful(creative_content):
         return "記事の生成に失敗しました", {
             "error_type": "gate_failure",
@@ -316,7 +325,7 @@ async def run_pipeline(
 
         state = {
             "pipeline_log": [],
-            "pipeline_run_id": run_id,
+            PIPELINE_RUN_ID: run_id,
             **initial_state,
         }
 
@@ -426,11 +435,11 @@ async def run_pipeline(
             mystery_id = None
             if run_type == "blog" and session_state:
                 # 優先: ツールがセッション状態に直接書き込んだ mystery_id
-                mystery_id = session_state.get("published_mystery_id")
+                mystery_id = session_state.get(PUBLISHED_MYSTERY_ID)
 
                 # フォールバック: published_episode テキストから抽出
                 if not mystery_id:
-                    published = session_state.get("published_episode", "")
+                    published = session_state.get(PUBLISHED_EPISODE, "")
                     if isinstance(published, str):
                         text = published.strip()
                         if text.startswith("{"):

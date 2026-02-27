@@ -12,6 +12,14 @@ from typing import TYPE_CHECKING, Optional
 from google.genai import types
 
 from shared.constants import DEFAULT_SELECTED_LANGUAGES, is_meaningful
+from shared.state_keys import (
+    CREATIVE_CONTENT,
+    INVESTIGATION_QUERY,
+    MYSTERY_REPORT,
+    PIPELINE_RUN_ID,
+    SELECTED_LANGUAGES,
+    collected_documents_key,
+)
 
 if TYPE_CHECKING:
     from google.adk.agents.callback_context import CallbackContext
@@ -31,8 +39,8 @@ def _log_and_record_failure(callback_context: CallbackContext, stage: str, messa
     try:
         from shared.pipeline_failure import log_pipeline_failure
 
-        theme = callback_context.state.get("investigation_query", "unknown")
-        run_id = callback_context.state.get("pipeline_run_id")
+        theme = callback_context.state.get(INVESTIGATION_QUERY, "unknown")
+        run_id = callback_context.state.get(PIPELINE_RUN_ID)
         log_pipeline_failure(
             theme=str(theme),
             stage=stage,
@@ -48,12 +56,12 @@ def make_scholar_gate():
     """全 Librarian が失敗した場合に ParallelScholars をスキップ。"""
 
     def gate(callback_context: CallbackContext) -> Optional[types.Content]:
-        selected = callback_context.state.get("selected_languages", DEFAULT_SELECTED_LANGUAGES)
+        selected = callback_context.state.get(SELECTED_LANGUAGES, DEFAULT_SELECTED_LANGUAGES)
         if not isinstance(selected, list):
             selected = list(DEFAULT_SELECTED_LANGUAGES)
 
         for lang in selected:
-            docs = callback_context.state.get(f"collected_documents_{lang}", "")
+            docs = callback_context.state.get(collected_documents_key(lang), "")
             if _is_meaningful(docs):
                 logger.info(
                     "Pipeline gate [scholar]: 通過（%s に有意なデータあり）", lang,
@@ -78,7 +86,7 @@ def make_storyteller_gate():
     """mystery_report が空なら Storyteller をスキップ。"""
 
     def gate(callback_context: CallbackContext) -> Optional[types.Content]:
-        report = callback_context.state.get("mystery_report", "")
+        report = callback_context.state.get(MYSTERY_REPORT, "")
         if _is_meaningful(report):
             logger.info(
                 "Pipeline gate [storyteller]: 通過",
@@ -100,7 +108,7 @@ def make_post_story_gate():
     """creative_content が空なら Illustrator/Translator/Publisher をスキップ。"""
 
     def gate(callback_context: CallbackContext) -> Optional[types.Content]:
-        content = callback_context.state.get("creative_content", "")
+        content = callback_context.state.get(CREATIVE_CONTENT, "")
         if _is_meaningful(content):
             logger.info(
                 "Pipeline gate [post_story]: 通過",

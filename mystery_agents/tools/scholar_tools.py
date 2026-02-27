@@ -14,6 +14,8 @@ from typing import Any, Optional
 
 from google.adk.tools.tool_context import ToolContext
 
+from shared.state_keys import RAW_SEARCH_RESULTS, STRUCTURED_REPORT
+
 
 def load_search_results(filepath: str) -> str:
     """Load search results from the data directory.
@@ -491,7 +493,7 @@ def _build_url_index(tool_context: ToolContext) -> dict[str, dict[str, Any]]:
     state = tool_context.state
 
     # ベースキー
-    base = state.get("raw_search_results")
+    base = state.get(RAW_SEARCH_RESULTS)
     if base and isinstance(base, list):
         for result in base:
             if isinstance(result, dict):
@@ -503,7 +505,7 @@ def _build_url_index(tool_context: ToolContext) -> dict[str, dict[str, Any]]:
     # 言語別キー
     state_dict = state.to_dict() if hasattr(state, "to_dict") else state
     for key in list(state_dict.keys()):
-        if key.startswith("raw_search_results_") and key != "raw_search_results":
+        if key.startswith(RAW_SEARCH_RESULTS + "_") and key != RAW_SEARCH_RESULTS:
             lang_results = state.get(key)
             if lang_results and isinstance(lang_results, list):
                 for result in lang_results:
@@ -684,7 +686,7 @@ def save_structured_report(
     warnings.extend(grounding_warnings)
 
     # Store structured report in session state
-    tool_context.state["structured_report"] = report_data
+    tool_context.state[STRUCTURED_REPORT] = report_data
 
     return json.dumps(
         {

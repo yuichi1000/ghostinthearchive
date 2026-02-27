@@ -14,6 +14,12 @@ from typing import Optional
 
 from google.adk.tools.tool_context import ToolContext
 from shared.keyword_translator import translate_keywords
+from shared.state_keys import (
+    ARCHIVE_IMAGES,
+    RAW_SEARCH_RESULTS,
+    SELECTED_LANGUAGES,
+    raw_search_results_key,
+)
 
 from ..schemas.document import ArchiveDocument
 from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
@@ -47,9 +53,9 @@ def _accumulate_archive_images(
         if d.get("thumbnail_url") or d.get("image_url")
     ]
     if images_with_urls:
-        existing_images = tool_context.state.get("archive_images", [])
+        existing_images = tool_context.state.get(ARCHIVE_IMAGES, [])
         existing_images.extend(images_with_urls)
-        tool_context.state["archive_images"] = existing_images
+        tool_context.state[ARCHIVE_IMAGES] = existing_images
 
 
 def search_newspapers(
@@ -108,9 +114,9 @@ def search_newspapers(
             },
         }
         if tool_context is not None:
-            existing = tool_context.state.get("raw_search_results", [])
+            existing = tool_context.state.get(RAW_SEARCH_RESULTS, [])
             existing.append(empty_result)
-            tool_context.state["raw_search_results"] = existing
+            tool_context.state[RAW_SEARCH_RESULTS] = existing
         return json.dumps(empty_result, ensure_ascii=False, indent=2)
 
     # --- Chronicling America フォールバックロジック ---
@@ -235,9 +241,9 @@ def search_newspapers(
 
     # セッション状態に保存
     if tool_context is not None:
-        existing = tool_context.state.get("raw_search_results", [])
+        existing = tool_context.state.get(RAW_SEARCH_RESULTS, [])
         existing.append(result)
-        tool_context.state["raw_search_results"] = existing
+        tool_context.state[RAW_SEARCH_RESULTS] = existing
         _accumulate_archive_images(tool_context, docs)
 
     return json.dumps(result, ensure_ascii=False, indent=2)
@@ -437,7 +443,7 @@ def _get_expansion_languages(tool_context: Optional[ToolContext], current_lang: 
     """
     if tool_context is None:
         return []
-    selected = tool_context.state.get("selected_languages", [])
+    selected = tool_context.state.get(SELECTED_LANGUAGES, [])
     if not isinstance(selected, list) or len(selected) <= 1:
         return []
     return [lang for lang in selected if lang != current_lang]
@@ -694,7 +700,7 @@ def search_archives(
 
     # セッション状態に保存
     if tool_context is not None:
-        state_key = f"raw_search_results_{language}" if language else "raw_search_results"
+        state_key = raw_search_results_key(language) if language else RAW_SEARCH_RESULTS
         existing = tool_context.state.get(state_key, [])
         existing.append(result)
         tool_context.state[state_key] = existing

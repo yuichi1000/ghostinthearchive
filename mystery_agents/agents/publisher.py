@@ -19,6 +19,8 @@ from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events.event import Event, EventActions
 from google.genai import types
 
+from shared.state_keys import PUBLISHED_EPISODE, PUBLISHED_MYSTERY_ID, STRUCTURED_REPORT
+
 from ..tools.publisher_tools import _PublishContext, publish_mystery
 
 load_dotenv(Path(__file__).parent.parent / ".env")  # mystery_agents/.env
@@ -35,7 +37,7 @@ class PublisherAgent(BaseAgent):
         state = ctx.session.state
 
         # structured_report から ID 生成用データを取得
-        sr = state.get("structured_report", {})
+        sr = state.get(STRUCTURED_REPORT, {})
         if not isinstance(sr, dict):
             sr = {}
         minimal_json = json.dumps(
@@ -52,10 +54,10 @@ class PublisherAgent(BaseAgent):
         result_json = publish_mystery(minimal_json, "", publish_ctx)
 
         # state_delta: published_mystery_id + published_episode をセッションに反映
-        state_delta: dict[str, object] = {"published_episode": result_json}
-        mystery_id = state_copy.get("published_mystery_id")
+        state_delta: dict[str, object] = {PUBLISHED_EPISODE: result_json}
+        mystery_id = state_copy.get(PUBLISHED_MYSTERY_ID)
         if mystery_id:
-            state_delta["published_mystery_id"] = mystery_id
+            state_delta[PUBLISHED_MYSTERY_ID] = mystery_id
 
         yield Event(
             invocation_id=ctx.invocation_id,
