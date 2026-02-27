@@ -11,6 +11,7 @@ Usage:
 """
 
 import asyncio
+import json
 import sys
 from pathlib import Path
 
@@ -18,7 +19,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-from .agent import alchemist_commander, SKIP_AUTHORS
+from .agent import build_design_pipeline, SKIP_AUTHORS
 from .tools.firestore_tools import (
     load_mystery,
     create_design,
@@ -116,14 +117,15 @@ async def generate_design(
         })
 
     try:
-        # Orchestrator 呼び出し
+        # Orchestrator 呼び出し（毎回フレッシュなパイプラインを構築）
+        pipeline = build_design_pipeline()
         result = await run_pipeline(
-            agent=alchemist_commander,
+            agent=pipeline,
             app_name="ghost_in_the_archive_alchemist",
             user_message=f"以下のブログ記事からプロダクトデザインを作成してください: {title}",
             initial_state={
                 "creative_content": narrative_content,
-                "mystery_metadata": str(mystery_metadata),
+                "mystery_metadata": json.dumps(mystery_metadata, ensure_ascii=False),
                 "custom_instructions": custom_instructions,
                 "design_proposals": "",
             },
@@ -215,19 +217,20 @@ async def render_assets(
     set_design_status(design_id, "rendering")
 
     try:
-        # Phase 2: AlchemistRenderer パイプライン実行
-        from .agent import alchemist_render_commander
+        # Phase 2: AlchemistRenderer パイプライン実行（毎回フレッシュ）
+        from .agent import build_render_pipeline
 
         if run_id is None:
             run_id = create_pipeline_run("design_render", mystery_id=mystery_id)
 
+        pipeline = build_render_pipeline()
         result = await run_pipeline(
-            agent=alchemist_render_commander,
+            agent=pipeline,
             app_name="ghost_in_the_archive_alchemist_render",
             user_message=f"以下のデザイン提案のアセット画像を生成してください: {design_id}",
             initial_state={
                 "structured_design_proposal": proposal,
-                "mystery_metadata": str({"mystery_id": mystery_id, "region": design.get("region", "")}),
+                "mystery_metadata": json.dumps({"mystery_id": mystery_id, "region": design.get("region", "")}, ensure_ascii=False),
                 "render_summary": "",
             },
             run_id=run_id,

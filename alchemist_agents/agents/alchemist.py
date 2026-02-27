@@ -232,15 +232,25 @@ In addition to the tool call, output a human-readable summary of the design
 concept. This serves as pipeline logging and admin reference.
 """
 
-alchemist_agent = LlmAgent(
-    name="alchemist",
-    model=create_pro_model(),
-    description=(
-        "Alchemist agent that analyzes published blog articles and generates "
-        "product design proposals for T-shirts and mugs. Transforms historical "
-        "themes, regional character, and uncanny elements into visual designs."
-    ),
-    instruction=ALCHEMIST_INSTRUCTION,
-    tools=[save_design_proposal],
-    output_key="design_proposals",
-)
+def create_alchemist() -> LlmAgent:
+    """Alchemist エージェントを生成する。
+
+    ADK の single-parent 制約に対応するため、呼び出しごとに新しいインスタンスを返す。
+    """
+    return LlmAgent(
+        name="alchemist",
+        model=create_pro_model(),
+        description=(
+            "Alchemist agent that analyzes published blog articles and generates "
+            "product design proposals for T-shirts and mugs. Transforms historical "
+            "themes, regional character, and uncanny elements into visual designs."
+        ),
+        instruction=ALCHEMIST_INSTRUCTION,
+        tools=[save_design_proposal],
+        output_key="design_proposals",
+        include_contents="none",
+    )
+
+
+# 後方互換用
+alchemist_agent = create_alchemist()

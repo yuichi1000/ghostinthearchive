@@ -84,15 +84,25 @@ Call the tool with these parameters for each product's prompt:
   status of each product (success/fallback/error).
 """
 
-alchemist_renderer_agent = LlmAgent(
-    name="alchemist_renderer",
-    model=create_pro_model(),
-    description=(
-        "AlchemistRenderer agent that reads design proposals and generates "
-        "asset images using Imagen 3. Handles background and decorative layers "
-        "for each product type."
-    ),
-    instruction=ALCHEMIST_RENDERER_INSTRUCTION,
-    tools=[generate_design_asset],
-    output_key="render_summary",
-)
+def create_alchemist_renderer() -> LlmAgent:
+    """AlchemistRenderer エージェントを生成する。
+
+    ADK の single-parent 制約に対応するため、呼び出しごとに新しいインスタンスを返す。
+    """
+    return LlmAgent(
+        name="alchemist_renderer",
+        model=create_pro_model(),
+        description=(
+            "AlchemistRenderer agent that reads design proposals and generates "
+            "asset images using Imagen 3. Handles background and decorative layers "
+            "for each product type."
+        ),
+        instruction=ALCHEMIST_RENDERER_INSTRUCTION,
+        tools=[generate_design_asset],
+        output_key="render_summary",
+        include_contents="none",
+    )
+
+
+# 後方互換用
+alchemist_renderer_agent = create_alchemist_renderer()
