@@ -8,22 +8,12 @@ import os
 from typing import Any
 
 
-from ..schemas.document import ArchiveDocument, SourceLanguage
+from ..schemas.document import ArchiveDocument
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
 from .search_utils import build_search_query
 from .source_registry import register_source
 
 BASE_URL = "https://api.europeana.eu/record/v2/search.json"
-
-# Europeana の language フィールドから SourceLanguage へのマッピング
-_LANG_MAP: dict[str, SourceLanguage] = {
-    "en": SourceLanguage.EN,
-    "es": SourceLanguage.ES,
-    "de": SourceLanguage.DE,
-    "fr": SourceLanguage.FR,
-    "nl": SourceLanguage.NL,
-    "pt": SourceLanguage.PT,
-}
 
 # 言語コード → Europeana COUNTRY フィルタ値マッピング
 # LANGUAGE フィルタではなく COUNTRY フィルタを使用する理由:
@@ -34,6 +24,7 @@ _LANG_TO_COUNTRY: dict[str, str] = {
     "de": "germany",
     "es": "spain",
     "fr": "france",
+    "it": "italy",
     "nl": "netherlands",
     "pt": "portugal",
 }
@@ -170,16 +161,20 @@ class EuropeanaSource(ArchiveSource):
         return ArchiveSearchResult(documents=documents, total_hits=total_hits)
 
 
-def _detect_language(item: dict) -> SourceLanguage:
-    """アイテムの language フィールドから SourceLanguage を検出する。"""
+def _detect_language(item: dict) -> str:
+    """アイテムの language フィールドから ISO 639-1 コードを返す。
+
+    API レスポンスの language フィールドをそのまま ISO 639-1 文字列として返す。
+    フォールバック: "en"。
+    """
     languages = item.get("language", [])
     if isinstance(languages, list):
         for lang in languages:
-            if lang and lang.lower() in _LANG_MAP:
-                return _LANG_MAP[lang.lower()]
-    elif isinstance(languages, str) and languages.lower() in _LANG_MAP:
-        return _LANG_MAP[languages.lower()]
-    return SourceLanguage.EN
+            if lang and len(lang.strip()) >= 2:
+                return lang.strip().lower()[:2]
+    elif isinstance(languages, str) and len(languages.strip()) >= 2:
+        return languages.strip().lower()[:2]
+    return "en"
 
 
 def _extract_location(item: dict) -> str:

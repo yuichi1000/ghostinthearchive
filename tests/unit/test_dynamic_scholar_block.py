@@ -3,7 +3,6 @@
 
 from mystery_agents.agents.dynamic_scholar_block import (
     MAX_DEBATE_ITERATIONS,
-    MAX_LANGUAGES,
     _is_meaningful,
     create_dynamic_scholar_block,
 )
@@ -27,6 +26,11 @@ class TestDynamicScholarBlockCreation:
         dsb = create_dynamic_scholar_block()
         assert dsb.description
         assert "dynamically" in dsb.description.lower()
+
+    def test_description_mentions_2_layer(self):
+        """description が2層構造に言及すること。"""
+        dsb = create_dynamic_scholar_block()
+        assert "named" in dsb.description.lower() or "multilingual" in dsb.description.lower()
 
 
 class TestIsMeaningful:
@@ -61,11 +65,30 @@ class TestIsMeaningful:
 class TestConstants:
     """定数のテスト。"""
 
-    def test_max_languages(self):
-        assert MAX_LANGUAGES == 7
-
     def test_max_debate_iterations(self):
         assert MAX_DEBATE_ITERATIONS == 2
+
+
+class TestTwoLayerRouting:
+    """2層ルーティング（Named + Multilingual）のテスト。"""
+
+    def test_named_scholar_languages_import(self):
+        """NAMED_SCHOLAR_LANGUAGES がインポートできること。"""
+        from mystery_agents.agents.language_scholars import NAMED_SCHOLAR_LANGUAGES
+
+        assert "en" in NAMED_SCHOLAR_LANGUAGES
+        assert "it" in NAMED_SCHOLAR_LANGUAGES
+        assert "nl" not in NAMED_SCHOLAR_LANGUAGES
+
+    def test_named_langs_filtered(self):
+        """active_langs から Named と Other が正しく分離される。"""
+        from mystery_agents.agents.language_scholars import NAMED_SCHOLAR_LANGUAGES
+
+        active = ["en", "de", "nl", "pt", "pl"]
+        named = [l for l in active if l in NAMED_SCHOLAR_LANGUAGES]
+        other = [l for l in active if l not in NAMED_SCHOLAR_LANGUAGES]
+        assert named == ["en", "de"]
+        assert other == ["nl", "pt", "pl"]
 
 
 class TestDynamicDebateInstruction:
@@ -76,14 +99,10 @@ class TestDynamicDebateInstruction:
         from mystery_agents.agents.language_scholars import create_scholar
 
         scholar = create_scholar("en", mode="debate", active_langs=["en", "de", "ja"])
-        # 自分以外の2言語が参照されていること
         assert "{scholar_analysis_de}" in scholar.instruction
         assert "{scholar_analysis_ja}" in scholar.instruction
-        # 不参加言語は参照されていないこと
         assert "{scholar_analysis_es}" not in scholar.instruction
         assert "{scholar_analysis_fr}" not in scholar.instruction
-        assert "{scholar_analysis_nl}" not in scholar.instruction
-        assert "{scholar_analysis_pt}" not in scholar.instruction
 
     def test_dynamic_debate_excludes_self(self):
         """自分自身の分析結果は instruction に含まれないこと。"""
@@ -93,26 +112,15 @@ class TestDynamicDebateInstruction:
         assert "{scholar_analysis_en}" in scholar.instruction
         assert "{scholar_analysis_de}" not in scholar.instruction
 
-    def test_dynamic_debate_uses_dynamic_template(self):
-        """active_langs 指定時は動的テンプレートが使用されること。"""
+    def test_dynamic_debate_with_multilingual_reference(self):
+        """active_langs に 'multilingual' が含まれる場合、参照される。"""
         from mystery_agents.agents.language_scholars import create_scholar
 
-        scholar = create_scholar("en", mode="debate", active_langs=["en", "de"])
-        # 動的テンプレートは全7言語のハードコード参照を含まない
-        # 静的テンプレートにのみ存在する French/Dutch/Portuguese の参照がないことを確認
-        assert "{scholar_analysis_fr}" not in scholar.instruction
-        assert "{scholar_analysis_nl}" not in scholar.instruction
-        assert "{scholar_analysis_pt}" not in scholar.instruction
-
-    def test_static_debate_uses_static_template(self):
-        """active_langs 未指定時は静的テンプレート（全7言語参照）が使用されること。"""
-        from mystery_agents.agents.language_scholars import create_scholar
-
-        scholar = create_scholar("en", mode="debate")
-        # 静的テンプレートは全7言語の参照をハードコードで含む
-        assert "{scholar_analysis_fr}" in scholar.instruction
-        assert "{scholar_analysis_nl}" in scholar.instruction
-        assert "{scholar_analysis_pt}" in scholar.instruction
+        scholar = create_scholar(
+            "en", mode="debate", active_langs=["en", "de", "multilingual"]
+        )
+        assert "{scholar_analysis_de}" in scholar.instruction
+        assert "{scholar_analysis_multilingual}" in scholar.instruction
 
     def test_dynamic_debate_has_whiteboard_reference(self):
         """動的討論の instruction が debate_whiteboard を参照すること。"""
@@ -128,6 +136,15 @@ class TestDynamicDebateInstruction:
 
         scholar = create_scholar("en", mode="debate", active_langs=["en", "de"])
         assert append_to_whiteboard in scholar.tools
+
+    def test_static_debate_uses_static_template(self):
+        """active_langs 未指定時は静的テンプレート（全言語参照）が使用されること。"""
+        from mystery_agents.agents.language_scholars import create_scholar
+
+        scholar = create_scholar("en", mode="debate")
+        assert "{scholar_analysis_fr}" in scholar.instruction
+        assert "{scholar_analysis_nl}" in scholar.instruction
+        assert "{scholar_analysis_pt}" in scholar.instruction
 
 
 class TestIsDebateConverged:

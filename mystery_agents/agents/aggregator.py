@@ -1,11 +1,10 @@
 """AggregatorAgent — API Librarian の検索結果を言語別に集約する。
 
-LLM を介さず、セッション状態の raw_search_results から
-ドキュメントを言語別にグループ化し、collected_documents_{lang} に
-Scholar が読める形式でテキストを書き込む。
+LLM を介さず、セッション状態の raw_search_results* キーを動的スキャンし、
+ドキュメントを言語別にグループ化して collected_documents_{lang} に書き込む。
 
 また active_languages（ドキュメント数ランキング）をステートに書き込み、
-後段の DynamicScholarBlock（PR 3）が参照する。
+後段の DynamicScholarBlock が参照する。
 """
 
 import logging
@@ -17,27 +16,15 @@ from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events.event import Event, EventActions
 from google.genai import types
 
+from shared.language_names import get_language_name
+
 logger = logging.getLogger(__name__)
-
-# 言語名マッピング（ログ・ヘッダー表示用）
-_LANGUAGE_NAMES: dict[str, str] = {
-    "en": "English",
-    "de": "German",
-    "es": "Spanish",
-    "fr": "French",
-    "ja": "Japanese",
-    "nl": "Dutch",
-    "pt": "Portuguese",
-}
-
-# 収集対象の raw_search_results キーサフィックス
-_KNOWN_LANGUAGES = ["en", "de", "es", "fr", "ja", "nl", "pt"]
 
 
 class AggregatorAgent(BaseAgent):
     """API Librarian 出力を言語別に集約する LLM 不使用エージェント。
 
-    raw_search_results* からドキュメントを抽出し、
+    raw_search_results* キーを動的スキャンし、
     各ドキュメントの language フィールドに基づいて言語別にグループ化する。
     """
 
@@ -46,14 +33,12 @@ class AggregatorAgent(BaseAgent):
     ) -> AsyncGenerator[Event, None]:
         state = ctx.session.state
 
-        # 全 raw_search_results を収集（既知キーパターンを安全にチェック）
+        # raw_search_results* キーを動的スキャン
         docs_by_lang: dict[str, list[dict]] = defaultdict(list)
 
-        keys_to_check = ["raw_search_results"] + [
-            f"raw_search_results_{lang}" for lang in _KNOWN_LANGUAGES
-        ]
-
-        for key in keys_to_check:
+        for key in list(state.keys()):
+            if not key.startswith("raw_search_results"):
+                continue
             value = state.get(key)
             if not value or not isinstance(value, list):
                 continue
@@ -131,11 +116,11 @@ def _format_documents(lang: str, docs: list[dict]) -> str:
         elif not url:
             unique_docs.append(doc)
 
+    lang_name = get_language_name(lang)
+
     if not unique_docs:
-        lang_name = _LANGUAGE_NAMES.get(lang, lang)
         return f"NO_DOCUMENTS_FOUND: No {lang_name}-language documents collected."
 
-    lang_name = _LANGUAGE_NAMES.get(lang, lang)
     lines = [
         f"# Collected Documents ({lang_name}) — {len(unique_docs)} documents\n"
     ]
@@ -172,6 +157,7 @@ def create_aggregator() -> AggregatorAgent:
         name="aggregator",
         description=(
             "Aggregates search results from all API Librarians by document language. "
+            "Dynamically scans raw_search_results* keys. "
             "Writes collected_documents_{lang} for each language found. "
             "Deterministic execution without LLM."
         ),

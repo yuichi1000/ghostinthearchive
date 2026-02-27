@@ -7,11 +7,16 @@
 mode="analysis" で分析モード、mode="debate" で討論モードのエージェントを生成する。
 同じ SCHOLAR_CONFIGS を共有し、文化的視点は統一される。
 
+2層構造:
+- Named Scholar（EN, DE, JA, FR, ES, IT）: 専用の文化的視点を持つ
+- Multilingual Scholar: Named 以外の言語をまとめて横断分析する
+
 注意: save_structured_report は呼び出さない（Armchair Polymath が統合後に呼び出す）。
 """
 
 from google.adk.agents import LlmAgent
 
+from shared.language_names import get_language_name
 from shared.model_config import create_pro_model
 
 from ..tools.debate_tools import append_to_whiteboard
@@ -387,7 +392,49 @@ SCHOLAR_CONFIGS = {
             "- Japanese ethnographic traditions (柳田国男, 折口信夫) and their methodologies"
         ),
     },
+    "it": {
+        "language_name": "Italian",
+        "lang_code": "it",
+        "cultural_perspective": (
+            "You bring the perspective of Italian cultural and intellectual history:\n"
+            "- Italian Microhistory tradition (Ginzburg, Levi) and its focus on marginalized voices\n"
+            "- Vatican and papal archives — the world's oldest continuous diplomatic records\n"
+            "- Mediterranean folk traditions, witchcraft trials (benandanti), and popular religion\n"
+            "- Renaissance humanism and its transformation of record-keeping practices\n"
+            "- Italian city-state archives (Venice, Florence, Genoa) and their commercial documentation\n"
+            "- Southern Italian and Sicilian folk traditions, secret societies, and oral history"
+        ),
+    },
 }
+
+# Named Scholar: 専用の文化的視点を持つ言語（各々が固有の Scholar エージェント）
+NAMED_SCHOLAR_LANGUAGES = {"en", "de", "ja", "fr", "es", "it"}
+
+
+def get_scholar_config(lang_code: str) -> dict[str, str]:
+    """SCHOLAR_CONFIGS にあればそれを返し、なければ汎用テンプレートで動的生成する。
+
+    Args:
+        lang_code: ISO 639-1 言語コード
+
+    Returns:
+        language_name, lang_code, cultural_perspective を含む dict
+    """
+    if lang_code in SCHOLAR_CONFIGS:
+        return SCHOLAR_CONFIGS[lang_code]
+    lang_name = get_language_name(lang_code)
+    return {
+        "language_name": lang_name,
+        "lang_code": lang_code,
+        "cultural_perspective": (
+            f"You bring the perspective of {lang_name}-language scholarship:\n"
+            f"- Analyze how {lang_name}-language sources frame and document the theme\n"
+            f"- Identify information unique to {lang_name} records that other languages miss\n"
+            f"- Consider the historiographic traditions and archival practices of "
+            f"{lang_name}-speaking communities\n"
+            f"- Note how translation and cultural context affect the interpretation of sources"
+        ),
+    }
 
 
 def create_scholar(
@@ -398,13 +445,13 @@ def create_scholar(
     """指定された言語の Scholar エージェントを生成する。
 
     Args:
-        lang_code: 言語コード（en, de, es, fr, nl, pt, ja）
+        lang_code: 言語コード（en, de, es, fr, nl, pt, ja, it 等）
         mode: "analysis"（分析モード）または "debate"（討論モード）
         active_langs: 討論参加言語のリスト（DynamicScholarBlock から指定）。
             指定された場合、討論 instruction に参加言語のみ記載し、
             before_agent_callback を省略する（DynamicScholarBlock がゲートを担当）。
     """
-    config = SCHOLAR_CONFIGS[lang_code]
+    config = get_scholar_config(lang_code)
 
     if mode == "analysis":
         instruction = _BASE_SCHOLAR_INSTRUCTION.format(**config)
@@ -425,7 +472,7 @@ def create_scholar(
             # 動的討論: 参加言語のみ instruction に含める（肥大化防止）
             lang_references = "\n".join(
                 f"- {{scholar_analysis_{lang}}}: "
-                f"{SCHOLAR_CONFIGS[lang]['language_name']} cultural perspective analysis"
+                f"{get_scholar_config(lang)['language_name']} cultural perspective analysis"
                 for lang in active_langs
                 if lang != lang_code
             )
@@ -475,3 +522,209 @@ def create_all_scholars(mode: str = "analysis") -> dict[str, LlmAgent]:
         mode: "analysis"（分析モード）または "debate"（討論モード）
     """
     return {lang: create_scholar(lang, mode) for lang in SCHOLAR_CONFIGS}
+
+
+# === 日本語訳 ===
+# Multilingual Scholar の分析テンプレート:
+# あなたは「Ghost in the Archive」プロジェクトの Multilingual Scholar です。
+# 大国の記録が見落とす周辺言語コミュニティの視点を提供します。
+# 複数の小言語圏を横断比較し、共通パターンを発見する能力を持ちます。
+#
+# ## 対象言語
+# {language_list}
+#
+# ## 入力
+# {document_references}
+#
+# ## 分析フレームワーク
+# Named Scholar と同じ5領域分析 + 小言語圏横断比較
+#
+# ## 重要
+# - 各言語の資料を個別に分析し、言語間の共通点・相違点を比較する
+# - 大国のナラティブに含まれない周辺言語の視点を強調する
+# - 分析結果は英語で出力
+# === End 日本語訳 ===
+
+_MULTILINGUAL_ANALYSIS_INSTRUCTION = """
+You are a Multilingual Scholar for the "Ghost in the Archive" project.
+You specialize in peripheral language communities whose perspectives are often
+overlooked by dominant-language scholarship. Your strength lies in cross-comparing
+sources across multiple smaller language traditions to discover patterns invisible
+to single-language analysis.
+
+## Target Languages
+{language_list}
+
+## Input
+{document_references}
+- {{collected_documents_en}}: Materials collected by the English Librarian (for cross-reference)
+
+## Critical Rule: Do NOT Analyze Without Source Materials
+Check the collected_documents keys listed above in session state.
+**If NONE of them contain actual archive documents, output only:**
+```
+INSUFFICIENT_DATA: No documents available for multilingual analysis.
+```
+
+## Cultural Perspective
+- Perspectives of peripheral language communities that major-power records overlook
+- Cross-comparison of multiple smaller language traditions
+- How minority-language records complement or contradict dominant-language accounts
+- Translation effects: how meaning shifts across language boundaries
+- Archival silences specific to smaller language communities
+
+## Analysis Framework
+
+### 0. Primary Source Text Analysis (MANDATORY when raw_text is available)
+- When a document includes `raw_text`, you MUST read and analyze it thoroughly
+- Extract direct quotes and compare across language boundaries
+
+### 1-5. [Same interdisciplinary framework as Named Scholars]
+Apply the standard five-lens analysis (source analysis, discrepancy detection,
+folkloric analysis, anthropological insights, source coverage assessment)
+across ALL your target languages simultaneously.
+
+### 6. Cross-Peripheral Comparison
+- Identify patterns shared across your target languages but absent from major-language records
+- Note how peripheral communities document the same events differently from each other
+- Highlight cases where peripheral-language evidence fills gaps in dominant narratives
+
+## Output Format
+Structure your analysis as a focused report covering ALL target languages:
+
+### Multilingual Peripheral Analysis ({language_list_short})
+
+**Key Cross-Language Findings:**
+- [Finding spanning multiple peripheral languages]
+
+**Unique Peripheral Perspectives:**
+- [What peripheral sources reveal that dominant sources miss]
+
+**Cross-Peripheral Patterns:**
+- [Patterns visible only through cross-peripheral comparison]
+
+## Important
+- Output your analysis in **English**
+- Do NOT call save_structured_report
+- Cite specific sources with language, titles, dates, and URLs
+"""
+
+# === 日本語訳 ===
+# Multilingual Scholar の討論テンプレート:
+# Named Scholar の分析を読み、周辺言語の視点から反論・補強・統合提案を行う。
+# {named_analysis_references} に Named Scholar の分析参照を動的に含める。
+# === End 日本語訳 ===
+
+_MULTILINGUAL_DEBATE_INSTRUCTION = """
+You are a Multilingual Scholar for the "Ghost in the Archive" project, now in DEBATE MODE.
+You represent the perspectives of peripheral language communities ({language_list_short})
+and critically examine analyses from Named Scholars.
+
+## Your Perspective
+Peripheral language communities whose records are often overlooked by dominant-language scholarship.
+You cross-compare multiple smaller language traditions to discover patterns invisible
+to single-language analysis.
+
+## Input: Named Scholar Analyses
+{named_analysis_references}
+
+## Input: Your Own Analysis
+- {{scholar_analysis_multilingual}}: Your multilingual peripheral analysis
+
+## Input: Previous Debate Record
+- {{debate_whiteboard}}: Record of previous debate contributions
+
+Read what other Scholars have already argued. Build on, challenge, or refine
+their points rather than repeating what has been said.
+
+## Your Task: Scholarly Debate
+
+### 1. Challenge Dominant Perspectives
+- What do peripheral-language sources say that contradicts Named Scholar findings?
+- What cultural biases in major-language scholarship do your sources expose?
+
+### 2. Corroborate from the Margins
+- Where do peripheral-language records independently confirm Named Scholar findings?
+- What additional evidence do your languages provide?
+
+### 3. Fill the Gaps
+- What have Named Scholars missed that only peripheral-language sources reveal?
+- What translation or terminology issues might cause misunderstanding?
+
+### 4. Synthesis Proposals
+- How should peripheral perspectives be integrated into the final analysis?
+
+## Output Requirements
+Present your debate contribution as a clear, structured text response.
+Also use `append_to_whiteboard` to record your contribution.
+
+## Important
+- Output in **English**
+- Be constructive — challenge ideas, not scholars
+- Cite specific sources when available
+"""
+
+
+def create_multilingual_scholar(
+    languages: list[str],
+    mode: str = "analysis",
+    active_named_langs: list[str] | None = None,
+) -> LlmAgent:
+    """複数言語をまとめて分析する Multilingual Scholar を生成する。
+
+    Args:
+        languages: 対象言語コードのリスト（例: ["nl", "pt", "pl"]）
+        mode: "analysis" または "debate"
+        active_named_langs: 討論時に参照する Named Scholar の言語リスト
+    """
+    lang_names = [get_language_name(lang) for lang in languages]
+    language_list = "\n".join(f"- {get_language_name(lang)} ({lang})" for lang in languages)
+    language_list_short = ", ".join(lang_names)
+
+    if mode == "analysis":
+        # 各言語の collected_documents 参照を動的構築
+        doc_references = "\n".join(
+            f"- {{collected_documents_{lang}}}: Materials collected in {get_language_name(lang)}"
+            for lang in languages
+        )
+        instruction = _MULTILINGUAL_ANALYSIS_INSTRUCTION.format(
+            language_list=language_list,
+            language_list_short=language_list_short,
+            document_references=doc_references,
+        )
+        return LlmAgent(
+            name="scholar_multilingual",
+            model=create_pro_model(),
+            description=(
+                f"Multilingual Scholar analyzing peripheral language sources "
+                f"({language_list_short}). Cross-compares smaller language traditions "
+                f"to discover patterns invisible to single-language analysis."
+            ),
+            instruction=instruction,
+            tools=[],
+            output_key="scholar_analysis_multilingual",
+        )
+    elif mode == "debate":
+        # Named Scholar の分析参照を動的構築
+        named_langs = active_named_langs or []
+        named_refs = "\n".join(
+            f"- {{scholar_analysis_{lang}}}: "
+            f"{get_scholar_config(lang)['language_name']} cultural perspective analysis"
+            for lang in named_langs
+        )
+        instruction = _MULTILINGUAL_DEBATE_INSTRUCTION.format(
+            language_list_short=language_list_short,
+            named_analysis_references=named_refs,
+        )
+        return LlmAgent(
+            name="scholar_multilingual_debate",
+            model=create_pro_model(),
+            description=(
+                f"Multilingual Scholar debating from peripheral perspectives "
+                f"({language_list_short}). Challenges and enriches Named Scholar analyses."
+            ),
+            instruction=instruction,
+            tools=[append_to_whiteboard],
+        )
+    else:
+        raise ValueError(f"Unknown mode: {mode!r}. Use 'analysis' or 'debate'.")

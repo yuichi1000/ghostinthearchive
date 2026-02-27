@@ -11,7 +11,6 @@ from mystery_agents.tools.europeana import (
     _extract_location,
 )
 from mystery_agents.tools.archive_source_base import ArchiveSource
-from mystery_agents.schemas.document import SourceLanguage
 
 
 class TestSearchEuropeana:
@@ -59,7 +58,7 @@ class TestSearchEuropeana:
         assert len(result.documents) == 1
         doc = result.documents[0]
         assert doc.title == "Medieval Manuscript from Paris"
-        assert doc.language == SourceLanguage.FR
+        assert doc.language == "fr"
         assert doc.source_type == "europeana"
         assert "europeana.eu" in doc.source_url
 
@@ -75,7 +74,6 @@ class TestSearchEuropeana:
 
         request = responses.calls[0].request
         assert "COUNTRY%3Agermany" in request.url or "COUNTRY:germany" in request.url
-        # LANGUAGE フィルタは送信されないことを確認
         assert "LANGUAGE" not in request.url
 
     @responses.activate
@@ -90,6 +88,19 @@ class TestSearchEuropeana:
 
         request = responses.calls[0].request
         assert "COUNTRY%3Afrance" in request.url or "COUNTRY:france" in request.url
+
+    @responses.activate
+    def test_country_filter_italian(self):
+        """イタリア語 → COUNTRY:italy で送信される。"""
+        mock_response = {"success": True, "totalResults": 0, "items": []}
+        responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
+
+        source = EuropeanaSource()
+        with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
+            source.search(keywords=["test"], language="it")
+
+        request = responses.calls[0].request
+        assert "COUNTRY%3Aitaly" in request.url or "COUNTRY:italy" in request.url
 
     @responses.activate
     def test_unmapped_language_no_country_filter(self):
@@ -185,22 +196,29 @@ class TestSearchEuropeana:
 
 
 class TestDetectLanguage:
-    """Tests for _detect_language helper."""
+    """Tests for _detect_language helper — returns ISO 639-1 str."""
 
     def test_detect_french(self):
-        assert _detect_language({"language": ["fr"]}) == SourceLanguage.FR
+        assert _detect_language({"language": ["fr"]}) == "fr"
 
     def test_detect_german(self):
-        assert _detect_language({"language": ["de"]}) == SourceLanguage.DE
+        assert _detect_language({"language": ["de"]}) == "de"
 
     def test_default_to_english(self):
-        assert _detect_language({"language": []}) == SourceLanguage.EN
+        assert _detect_language({"language": []}) == "en"
 
-    def test_unknown_language(self):
-        assert _detect_language({"language": ["zz"]}) == SourceLanguage.EN
+    def test_unknown_language_passes_through(self):
+        """未知の言語コードもそのまま ISO 639-1 として返す。"""
+        assert _detect_language({"language": ["pl"]}) == "pl"
+
+    def test_italian_detected(self):
+        assert _detect_language({"language": ["it"]}) == "it"
 
     def test_string_language(self):
-        assert _detect_language({"language": "nl"}) == SourceLanguage.NL
+        assert _detect_language({"language": "nl"}) == "nl"
+
+    def test_no_language_field(self):
+        assert _detect_language({}) == "en"
 
 
 class TestExtractLocation:
@@ -231,7 +249,6 @@ class TestEmptyDates:
             source.search(keywords=["test"], date_start="", date_end="")
 
         request = responses.calls[0].request
-        # YEAR フィルタが URL に含まれないことを確認
         assert "YEAR" not in request.url
 
 
