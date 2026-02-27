@@ -165,6 +165,35 @@ def _detect_gate_failure(session_state: dict) -> tuple[str, dict]:
     }
 
 
+def _extract_mystery_id(session_state: dict) -> str | None:
+    """セッション状態から mystery_id を抽出する純粋関数。
+
+    優先順位:
+    1. PUBLISHED_MYSTERY_ID（ツールが直接書き込んだ値）
+    2. PUBLISHED_EPISODE テキストからの JSON パース
+    3. PUBLISHED_EPISODE dict からの取得
+    """
+    # 優先: ツールがセッション状態に直接書き込んだ mystery_id
+    mystery_id = session_state.get(PUBLISHED_MYSTERY_ID)
+    if mystery_id:
+        return mystery_id
+
+    # フォールバック: published_episode から抽出
+    published = session_state.get(PUBLISHED_EPISODE, "")
+    if isinstance(published, str):
+        text = published.strip()
+        if text.startswith("{"):
+            try:
+                published_data = json.loads(text)
+                return published_data.get("mystery_id")
+            except (json.JSONDecodeError, AttributeError):
+                pass
+    elif isinstance(published, dict):
+        return published.get("mystery_id")
+
+    return None
+
+
 @dataclass
 class PipelineResult:
     """パイプライン実行結果"""
@@ -434,22 +463,7 @@ async def run_pipeline(
             # mystery_id 抽出（blog パイプラインのみ）
             mystery_id = None
             if run_type == "blog" and session_state:
-                # 優先: ツールがセッション状態に直接書き込んだ mystery_id
-                mystery_id = session_state.get(PUBLISHED_MYSTERY_ID)
-
-                # フォールバック: published_episode テキストから抽出
-                if not mystery_id:
-                    published = session_state.get(PUBLISHED_EPISODE, "")
-                    if isinstance(published, str):
-                        text = published.strip()
-                        if text.startswith("{"):
-                            try:
-                                published_data = json.loads(text)
-                                mystery_id = published_data.get("mystery_id")
-                            except (json.JSONDecodeError, AttributeError):
-                                pass
-                    elif isinstance(published, dict):
-                        mystery_id = published.get("mystery_id")
+                mystery_id = _extract_mystery_id(session_state)
 
             # mystery_id をコンテキストに追加
             if mystery_id:

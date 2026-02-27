@@ -1,6 +1,7 @@
 """Unit tests for shared/orchestrator.py"""
 
 import asyncio
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,9 +10,11 @@ from shared.orchestrator import (
     PipelineResult,
     _build_state_summary,
     _detect_gate_failure,
+    _extract_mystery_id,
     _format_exception_group,
     run_pipeline,
 )
+from shared.state_keys import PUBLISHED_EPISODE, PUBLISHED_MYSTERY_ID
 from tests.fakes import FakeInMemorySessionService
 
 
@@ -952,6 +955,67 @@ class TestErrorRemainingAgents:
         error_detail = mock_error.call_args[1]["error_detail"]
         assert "pipeline_log" in error_detail
         assert isinstance(error_detail["pipeline_log"], list)
+
+
+class TestExtractMysteryId:
+    """_extract_mystery_id: セッション状態から mystery_id を抽出する純粋関数。"""
+
+    def test_from_published_mystery_id_key(self):
+        """Should return mystery_id from PUBLISHED_MYSTERY_ID (priority 1)."""
+        state = {PUBLISHED_MYSTERY_ID: "OCC-US-BOS-20260207143025"}
+        assert _extract_mystery_id(state) == "OCC-US-BOS-20260207143025"
+
+    def test_from_published_episode_json_string(self):
+        """Should extract mystery_id from PUBLISHED_EPISODE JSON string (fallback)."""
+        state = {
+            PUBLISHED_EPISODE: json.dumps({
+                "status": "success",
+                "mystery_id": "HIS-GB-EDI-20260301120000",
+            }),
+        }
+        assert _extract_mystery_id(state) == "HIS-GB-EDI-20260301120000"
+
+    def test_from_published_episode_dict(self):
+        """Should extract mystery_id from PUBLISHED_EPISODE dict."""
+        state = {
+            PUBLISHED_EPISODE: {
+                "status": "success",
+                "mystery_id": "FLK-JP-KYO-20260315090000",
+            },
+        }
+        assert _extract_mystery_id(state) == "FLK-JP-KYO-20260315090000"
+
+    def test_published_mystery_id_takes_priority(self):
+        """Should prefer PUBLISHED_MYSTERY_ID over PUBLISHED_EPISODE."""
+        state = {
+            PUBLISHED_MYSTERY_ID: "OCC-US-BOS-20260207143025",
+            PUBLISHED_EPISODE: json.dumps({"mystery_id": "WRONG-ID"}),
+        }
+        assert _extract_mystery_id(state) == "OCC-US-BOS-20260207143025"
+
+    def test_empty_state_returns_none(self):
+        """Should return None for empty session state."""
+        assert _extract_mystery_id({}) is None
+
+    def test_no_mystery_id_in_published_episode(self):
+        """Should return None when PUBLISHED_EPISODE has no mystery_id."""
+        state = {PUBLISHED_EPISODE: json.dumps({"status": "error"})}
+        assert _extract_mystery_id(state) is None
+
+    def test_invalid_json_returns_none(self):
+        """Should return None when PUBLISHED_EPISODE is invalid JSON."""
+        state = {PUBLISHED_EPISODE: "not valid json"}
+        assert _extract_mystery_id(state) is None
+
+    def test_non_json_text_returns_none(self):
+        """Should return None when PUBLISHED_EPISODE is plain text."""
+        state = {PUBLISHED_EPISODE: "Pipeline completed successfully"}
+        assert _extract_mystery_id(state) is None
+
+    def test_empty_string_published_episode(self):
+        """Should return None when PUBLISHED_EPISODE is empty string."""
+        state = {PUBLISHED_EPISODE: ""}
+        assert _extract_mystery_id(state) is None
 
 
 class TestBuildStateSummary:
