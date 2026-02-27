@@ -137,6 +137,31 @@ STATE_KEYS: list[StateKey] = [
         written_by=("publisher",),
         read_by=(),
     ),
+    # --- Alchemist パイプライン ---
+    StateKey(
+        name="design_proposals",
+        description="Alchemist のデザイン提案テキスト（output_key）",
+        written_by=("alchemist",),
+        read_by=("alchemist_cli",),
+    ),
+    StateKey(
+        name="structured_design_proposal",
+        description="Alchemist の構造化デザイン提案 JSON（ツール書き込み）",
+        written_by=("design_tools",),
+        read_by=("alchemist_renderer", "alchemist_cli"),
+    ),
+    StateKey(
+        name="design_assets",
+        description="AlchemistRenderer が生成したアセット画像リスト（ツール累積書き込み）",
+        written_by=("render_tools",),
+        read_by=("alchemist_cli",),
+    ),
+    StateKey(
+        name="render_summary",
+        description="AlchemistRenderer のレンダリングサマリー（output_key）",
+        written_by=("alchemist_renderer",),
+        read_by=("alchemist_cli",),
+    ),
     # --- Podcast パイプライン ---
     StateKey(
         name="podcast_script",
