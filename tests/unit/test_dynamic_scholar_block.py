@@ -85,8 +85,8 @@ class TestTwoLayerRouting:
         from mystery_agents.agents.language_scholars import NAMED_SCHOLAR_LANGUAGES
 
         active = ["en", "de", "nl", "pt", "pl"]
-        named = [l for l in active if l in NAMED_SCHOLAR_LANGUAGES]
-        other = [l for l in active if l not in NAMED_SCHOLAR_LANGUAGES]
+        named = [lang for lang in active if lang in NAMED_SCHOLAR_LANGUAGES]
+        other = [lang for lang in active if lang not in NAMED_SCHOLAR_LANGUAGES]
         assert named == ["en", "de"]
         assert other == ["nl", "pt", "pl"]
 
