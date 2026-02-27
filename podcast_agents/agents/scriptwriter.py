@@ -10,16 +10,11 @@ Input: creative_content (ブログ記事), script_outline (アウトライン), 
 Output: podcast_script (テキスト), structured_script (JSON via finalize_script)
 """
 
-from pathlib import Path
-
-from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
 from shared.model_config import create_pro_model
 
 from ..tools.script_tools import save_segment, finalize_script
-
-load_dotenv(Path(__file__).parent.parent / ".env")
 
 # === 日本語訳 ===
 # あなたは「Ghost in the Archive」プロジェクトの脚本家（Scriptwriter Agent）です。
@@ -339,15 +334,25 @@ Example: "Until next time, keep digging through the archives."
 **NOTE: Do NOT include the AI disclosure text — it is automatically appended during audio generation.**
 """
 
-scriptwriter_agent = LlmAgent(
-    name="scriptwriter",
-    model=create_pro_model(),
-    description=(
-        "Scriptwriter agent that writes podcast scripts segment by segment "
-        "in the fixed 5-segment structure (overview + 4 acts). Uses save_segment "
-        "for each segment and finalize_script to assemble the final structured script."
-    ),
-    instruction=SCRIPTWRITER_INSTRUCTION,
-    tools=[save_segment, finalize_script],
-    output_key="podcast_script",
-)
+def create_scriptwriter() -> LlmAgent:
+    """Scriptwriter エージェントを生成する。
+
+    呼び出しごとにフレッシュなインスタンスを返す。
+    ADK の単一親制約を回避するため、build_pipeline() から呼び出す。
+    """
+    return LlmAgent(
+        name="scriptwriter",
+        model=create_pro_model(),
+        description=(
+            "Scriptwriter agent that writes podcast scripts segment by segment "
+            "in the fixed 5-segment structure (overview + 4 acts). Uses save_segment "
+            "for each segment and finalize_script to assemble the final structured script."
+        ),
+        instruction=SCRIPTWRITER_INSTRUCTION,
+        tools=[save_segment, finalize_script],
+        output_key="podcast_script",
+    )
+
+
+# 後方互換: モジュールレベルシングルトン（テスト・既存 import 用）
+scriptwriter_agent = create_scriptwriter()

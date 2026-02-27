@@ -164,6 +164,24 @@ STATE_KEYS: list[StateKey] = [
     ),
     # --- Podcast パイプライン ---
     StateKey(
+        name="script_outline",
+        description="ScriptPlanner のテキストアウトライン（output_key）",
+        written_by=("script_planner",),
+        read_by=("scriptwriter",),
+    ),
+    StateKey(
+        name="structured_outline",
+        description="ScriptPlanner の構造化アウトライン JSON（ツール書き込み）",
+        written_by=("script_tools",),
+        read_by=("script_tools",),
+    ),
+    StateKey(
+        name="segment_buffer",
+        description="Scriptwriter のセグメント蓄積バッファ（ツール書き込み）",
+        written_by=("script_tools",),
+        read_by=("script_tools",),
+    ),
+    StateKey(
         name="podcast_script",
         description="Scriptwriter のポッドキャスト台本（output_key）",
         written_by=("scriptwriter",),
@@ -180,6 +198,12 @@ STATE_KEYS: list[StateKey] = [
         description="Podcast Translator の日本語台本（output_key）",
         written_by=("podcast_translator",),
         read_by=("podcast_cli",),
+    ),
+    StateKey(
+        name="custom_instructions",
+        description="管理者からのカスタム指示（パイプライン初期化時にセット）",
+        written_by=("pipeline_init",),
+        read_by=("script_planner", "scriptwriter", "alchemist"),
     ),
 ]
 
