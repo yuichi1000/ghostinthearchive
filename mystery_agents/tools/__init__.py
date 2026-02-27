@@ -27,13 +27,15 @@ from .illustrator_tools import generate_image, validate_image
 from .image_processing import resize_image_variants
 
 # Scholar Agent LLM-facing tools
-from .scholar_tools import (
+from .scholar_tools import save_structured_report
+
+# Scholar Agent legacy file I/O
+from .scholar_file_io import (
     build_analysis_context,
     list_available_results,
     load_multiple_search_results,
     load_search_results,
     save_mystery_report,
-    save_structured_report,
 )
 
 # Debate tools

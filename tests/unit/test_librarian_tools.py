@@ -7,12 +7,14 @@ from unittest.mock import patch
 from mystery_agents.tools.archive_source_base import ArchiveSearchResult
 from mystery_agents.tools.librarian_tools import (
     _TOTAL_DOCS_CAP,
+    search_archives,
+    search_newspapers,
+)
+from mystery_agents.tools.search_orchestration import (
     _is_likely_english,
     _log_keyword_language_mismatch,
     _rank_documents,
     _search_single_source,
-    search_archives,
-    search_newspapers,
 )
 from tests.fakes import make_archive_doc as _make_doc
 
@@ -802,7 +804,7 @@ class TestGetExpansionLanguages:
 
     def test_returns_other_languages(self):
         """自言語を除いた他の言語を返す。"""
-        from mystery_agents.tools.librarian_tools import _get_expansion_languages
+        from mystery_agents.tools.search_orchestration import _get_expansion_languages
         from tests.fakes import make_tool_context
 
         ctx = make_tool_context({"selected_languages": ["en", "de", "fr"]})
@@ -811,7 +813,7 @@ class TestGetExpansionLanguages:
 
     def test_single_language_returns_empty(self):
         """1言語のみなら空リスト。"""
-        from mystery_agents.tools.librarian_tools import _get_expansion_languages
+        from mystery_agents.tools.search_orchestration import _get_expansion_languages
         from tests.fakes import make_tool_context
 
         ctx = make_tool_context({"selected_languages": ["en"]})
@@ -820,7 +822,7 @@ class TestGetExpansionLanguages:
 
     def test_none_context_returns_empty(self):
         """tool_context が None なら空リスト。"""
-        from mystery_agents.tools.librarian_tools import _get_expansion_languages
+        from mystery_agents.tools.search_orchestration import _get_expansion_languages
 
         result = _get_expansion_languages(None, "en")
         assert result == []
@@ -943,13 +945,13 @@ class TestTranslateKeywordsForSource:
 
     def test_ddb_english_keywords_triggers_translation(self):
         """DDB（de 単一言語）に英語キーワード → 翻訳が呼ばれる。"""
-        from mystery_agents.tools.librarian_tools import _translate_keywords_for_source
+        from mystery_agents.tools.search_orchestration import _translate_keywords_for_source
 
         ddb_source = _make_mock_source(
             source_key="ddb", supported_languages={"de"},
         )
         with patch(
-            "mystery_agents.tools.librarian_tools.translate_keywords",
+            "mystery_agents.tools.search_orchestration.translate_keywords",
             return_value={"de": ["Geist", "Spuk"]},
         ) as mock_translate:
             result = _translate_keywords_for_source(["ghost", "haunting"], ddb_source)
@@ -959,13 +961,13 @@ class TestTranslateKeywordsForSource:
 
     def test_ndl_english_keywords_triggers_translation(self):
         """NDL（ja 単一言語）に英語キーワード → 翻訳が呼ばれる。"""
-        from mystery_agents.tools.librarian_tools import _translate_keywords_for_source
+        from mystery_agents.tools.search_orchestration import _translate_keywords_for_source
 
         ndl_source = _make_mock_source(
             source_key="ndl", supported_languages={"ja"},
         )
         with patch(
-            "mystery_agents.tools.librarian_tools.translate_keywords",
+            "mystery_agents.tools.search_orchestration.translate_keywords",
             return_value={"ja": ["幽霊", "怪奇"]},
         ) as mock_translate:
             result = _translate_keywords_for_source(["ghost", "haunting"], ndl_source)
@@ -975,7 +977,7 @@ class TestTranslateKeywordsForSource:
 
     def test_english_source_skipped(self):
         """英語ソース（LOC 等）→ None（スキップ）。"""
-        from mystery_agents.tools.librarian_tools import _translate_keywords_for_source
+        from mystery_agents.tools.search_orchestration import _translate_keywords_for_source
 
         loc_source = _make_mock_source(
             source_key="loc", supported_languages={"en"},
@@ -985,7 +987,7 @@ class TestTranslateKeywordsForSource:
 
     def test_multilingual_source_skipped(self):
         """多言語ソース（Europeana 等）→ None（既存展開ロジックが担当）。"""
-        from mystery_agents.tools.librarian_tools import _translate_keywords_for_source
+        from mystery_agents.tools.search_orchestration import _translate_keywords_for_source
 
         europeana_source = _make_mock_source(
             source_key="europeana",
@@ -996,7 +998,7 @@ class TestTranslateKeywordsForSource:
 
     def test_non_ascii_keywords_skipped(self):
         """非 ASCII キーワードが含まれる場合 → None（既にネイティブ言語あり）。"""
-        from mystery_agents.tools.librarian_tools import _translate_keywords_for_source
+        from mystery_agents.tools.search_orchestration import _translate_keywords_for_source
 
         ddb_source = _make_mock_source(
             source_key="ddb", supported_languages={"de"},
@@ -1007,13 +1009,13 @@ class TestTranslateKeywordsForSource:
 
     def test_translation_failure_returns_none(self):
         """翻訳失敗時 → None（元キーワードで続行）。"""
-        from mystery_agents.tools.librarian_tools import _translate_keywords_for_source
+        from mystery_agents.tools.search_orchestration import _translate_keywords_for_source
 
         ddb_source = _make_mock_source(
             source_key="ddb", supported_languages={"de"},
         )
         with patch(
-            "mystery_agents.tools.librarian_tools.translate_keywords",
+            "mystery_agents.tools.search_orchestration.translate_keywords",
             return_value={},
         ):
             result = _translate_keywords_for_source(["ghost"], ddb_source)
@@ -1024,13 +1026,13 @@ class TestTranslateKeywordsForSource:
         """不一致検出 + 自動翻訳成功時に WARNING ログが出力される。"""
         import logging
 
-        from mystery_agents.tools.librarian_tools import _translate_keywords_for_source
+        from mystery_agents.tools.search_orchestration import _translate_keywords_for_source
 
         ddb_source = _make_mock_source(
             source_key="ddb", supported_languages={"de"},
         )
         with patch(
-            "mystery_agents.tools.librarian_tools.translate_keywords",
+            "mystery_agents.tools.search_orchestration.translate_keywords",
             return_value={"de": ["Geist"]},
         ):
             with caplog.at_level(logging.WARNING):
