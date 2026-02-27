@@ -47,7 +47,7 @@ def validate_suggestions(raw: list) -> list[dict]:
         try:
             suggestion = ThemeSuggestion.model_validate(item)
             valid.append(suggestion.model_dump())
-        except (ValidationError, Exception) as e:
+        except ValidationError as e:
             logger.warning("テーマ提案 #%d を除外: %s (データ: %s)", i, e, item)
     return valid
 

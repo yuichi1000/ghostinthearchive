@@ -9,7 +9,6 @@ Endpoints:
     GET  /health         - Health check
 """
 
-import asyncio
 import json
 import logging
 import os
@@ -18,43 +17,34 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 import uvicorn
 
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
-from google.genai import types
-
-from curator_agents.agents.curator import curator_agent
-from curator_agents.queries import (
-    get_existing_titles,
-    get_category_distribution,
-    format_category_distribution,
-)
-from curator_agents.schemas import strip_markdown_codeblock, validate_suggestions
+from curator_agents.core import suggest_themes as run_curator
+from curator_agents.runner import run_single_agent
+from curator_agents.schemas import strip_markdown_codeblock
 from mystery_agents.agents.translator import translator_agent
-from shared.logging_config import PipelineContext, set_pipeline_context, setup_logging
-from shared.pipeline_failure import get_recent_failures
+from shared.logging_config import (
+    PipelineContext,
+    set_pipeline_context,
+    setup_logging,
+    suppress_health_check_logs,
+)
 
 # プロジェクト全体のログを有効化（Cloud Run: JSON / ローカル: プレーンテキスト）
 setup_logging()
+suppress_health_check_logs()
 
 logger = logging.getLogger(__name__)
 
-
-class _HealthCheckFilter(logging.Filter):
-    """ヘルスチェック（/health）の INFO ログを抑制する。"""
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        if record.levelno >= logging.WARNING:
-            return True
-        msg = record.getMessage()
-        if "/health" in msg:
-            return False
-        return True
-
-
-logging.getLogger("uvicorn.access").addFilter(_HealthCheckFilter())
-
 # 認証エラーを示すキーワード
 _AUTH_ERROR_KEYWORDS = ("reauthentication", "default credentials", "invalid_grant")
+
+# Translator のインストラクションが {creative_content}, {mystery_report},
+# {structured_report} を参照するため、空文字で初期化する必須ワークアラウンド。
+# Curator 経由の場合はユーザーメッセージの JSON が翻訳ソースとなる。
+_TRANSLATOR_EMPTY_STATE = {
+    "creative_content": "",
+    "mystery_report": "",
+    "structured_report": "",
+}
 
 app = FastAPI()
 
@@ -63,71 +53,6 @@ def _is_auth_error(error: Exception) -> bool:
     """例外が Google Cloud 認証エラーかどうかを判定する。"""
     msg = str(error).lower()
     return any(kw in msg for kw in _AUTH_ERROR_KEYWORDS)
-
-
-async def run_curator() -> list[dict]:
-    """Run the Curator agent and return parsed English suggestions."""
-    # 3つの Firestore クエリを並列実行
-    existing_titles, recent_failures, distribution = await asyncio.gather(
-        asyncio.to_thread(get_existing_titles),
-        asyncio.to_thread(get_recent_failures, 20),
-        asyncio.to_thread(get_category_distribution),
-    )
-
-    titles_text = (
-        "\n".join(f"- {t}" for t in existing_titles)
-        if existing_titles
-        else "(None - no themes have been investigated yet)"
-    )
-
-    failed_themes = list({f["theme"] for f in recent_failures if f.get("theme")})
-    failed_themes_text = (
-        "\n".join(f"- {t}" for t in failed_themes)
-        if failed_themes
-        else "(None)"
-    )
-
-    category_distribution_text = format_category_distribution(distribution)
-
-    session_service = InMemorySessionService()
-    runner = Runner(
-        agent=curator_agent,
-        app_name="ghost_in_the_archive_curator",
-        session_service=session_service,
-    )
-
-    user_id = "curator"
-    session_id = "theme_suggestion"
-
-    await session_service.create_session(
-        app_name="ghost_in_the_archive_curator",
-        user_id=user_id,
-        session_id=session_id,
-        state={
-            "existing_titles": titles_text,
-            "failed_themes": failed_themes_text,
-            "category_distribution": category_distribution_text,
-        },
-    )
-
-    result_text = ""
-    async for event in runner.run_async(
-        user_id=user_id,
-        session_id=session_id,
-        new_message=types.Content(
-            role="user",
-            parts=[types.Part(text="Suggest 5 research themes.")],
-        ),
-    ):
-        if event.content and event.content.parts:
-            for part in event.content.parts:
-                if hasattr(part, "text") and part.text:
-                    result_text += part.text
-
-    # マークダウンコードブロック除去 + JSON パース + スキーマ検証
-    cleaned = strip_markdown_codeblock(result_text)
-    raw_suggestions = json.loads(cleaned)
-    return validate_suggestions(raw_suggestions)
 
 
 async def translate_suggestions(suggestions: list[dict]) -> list[dict]:
@@ -147,46 +72,17 @@ async def translate_suggestions(suggestions: list[dict]) -> list[dict]:
         ],
     }
 
-    session_service = InMemorySessionService()
-    runner = Runner(
-        agent=translator_agent,
+    result_text = await run_single_agent(
+        translator_agent,
         app_name="ghost_in_the_archive_curator_translator",
-        session_service=session_service,
-    )
-
-    user_id = "curator_translator"
-    session_id = "theme_translation"
-
-    await session_service.create_session(
-        app_name="ghost_in_the_archive_curator_translator",
-        user_id=user_id,
-        session_id=session_id,
-        # Translator のインストラクションが {creative_content}, {mystery_report},
-        # {structured_report} を参照するため、空文字で初期化する。
-        # Curator 経由の場合はユーザーメッセージの JSON が翻訳ソースとなる。
-        state={
-            "creative_content": "",
-            "mystery_report": "",
-            "structured_report": "",
-        },
-    )
-
-    result_text = ""
-    async for event in runner.run_async(
-        user_id=user_id,
-        session_id=session_id,
-        new_message=types.Content(
-            role="user",
-            parts=[types.Part(text=(
-                f"Translate the following theme suggestions to Japanese:\n\n"
-                f"{json.dumps(translation_input, ensure_ascii=False, indent=2)}"
-            ))],
+        user_id="curator_translator",
+        session_id="theme_translation",
+        state=_TRANSLATOR_EMPTY_STATE,
+        user_message=(
+            f"Translate the following theme suggestions to Japanese:\n\n"
+            f"{json.dumps(translation_input, ensure_ascii=False, indent=2)}"
         ),
-    ):
-        if event.content and event.content.parts:
-            for part in event.content.parts:
-                if hasattr(part, "text") and part.text:
-                    result_text += part.text
+    )
 
     # マークダウンコードブロック除去
     cleaned = strip_markdown_codeblock(result_text)
