@@ -161,6 +161,7 @@ async def generate_script(
             user_message=f"以下のブログ記事からポッドキャストを作成してください: {title}",
             initial_state={
                 "creative_content": narrative_content,
+                "mystery_title": title,
                 "custom_instructions": custom_instructions,
                 # Polymath 統合分析テキスト（最も情報量が多い補助材料）
                 "mystery_report": mystery.get("mystery_report", ""),
