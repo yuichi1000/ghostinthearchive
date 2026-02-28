@@ -375,6 +375,32 @@ def publish_mystery(
         data.setdefault("story_hooks", [])
         data.setdefault("pipeline_log", [])
 
+        # コンテンツ定量指標の自動計算
+        narrative = data.get("narrative_content")
+        if narrative and isinstance(narrative, str) and narrative.strip():
+            word_count = len(narrative.split())
+            data["word_count"] = word_count
+            data["reading_time_minutes"] = max(1, round(word_count / 200))
+
+        # 証拠数・ソース数の集計
+        ev_count = 0
+        source_urls: set[str] = set()
+        for key in ("evidence_a", "evidence_b"):
+            ev = data.get(key)
+            if ev and isinstance(ev, dict):
+                ev_count += 1
+                url = ev.get("source_url", "")
+                if url:
+                    source_urls.add(url)
+        for ev in data.get("additional_evidence", []):
+            if isinstance(ev, dict):
+                ev_count += 1
+                url = ev.get("source_url", "")
+                if url:
+                    source_urls.add(url)
+        data["evidence_count"] = ev_count
+        data["source_count"] = len(source_urls)
+
         # 証拠妥当性の監査ログ（ブロッキングなし、ログ記録のみ）
         if tool_context is not None:
             _audit_evidence_relevance(data, tool_context)

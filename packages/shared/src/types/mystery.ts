@@ -326,6 +326,14 @@ export interface FirestoreMystery extends MysteryReport {
   storyteller_llm_metadata?: StorytellerLlmMetadata;
   /** 検索活動ログ（再現性条件の担保） */
   search_log?: SearchLogEntry[];
+  /** 語数（英語、split() ベース） */
+  word_count?: number;
+  /** 推定読了時間（分、200wpm ベース、最小1） */
+  reading_time_minutes?: number;
+  /** 証拠数（evidence_a + evidence_b + additional_evidence） */
+  evidence_count?: number;
+  /** ユニークソース URL 数 */
+  source_count?: number;
   /** ステータス: pending, translating, published, archived */
   status: MysteryStatus;
   /** 作成日時（Firestoreタイムスタンプ） */

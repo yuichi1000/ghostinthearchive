@@ -14,6 +14,7 @@ import { isValidLang, SUPPORTED_LANGS } from "@/lib/i18n/config"
 import type { SupportedLang } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 import { buildOgpMetadata, buildAlternates } from "@/lib/seo"
+import { ArchivePageTracker } from "@/components/trackers/archive-page-tracker"
 
 export async function generateStaticParams() {
   const mysteries = await getPublishedMysteries(1000)
@@ -99,6 +100,7 @@ export default async function ArchivePage({
   return (
     <div className="min-h-screen flex flex-col film-grain">
       <Header lang={lang as SupportedLang} nav={dict.nav} />
+      <ArchivePageTracker pageNumber={currentPage} lang={lang} />
 
       <main className="flex-1">
         <section className="py-16 md:py-24">
