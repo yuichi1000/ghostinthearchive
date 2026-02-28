@@ -79,6 +79,9 @@ class TestCountWordsLimiter:
         assert result is not None
         assert result["within_range"] is True
         assert "save_structured_report" in result["message"]
+        # short-circuit 時に _word_count_verified が設定され、
+        # save_structured_report のフラグチェックを通過できること
+        assert mock_tool_context.state["_word_count_verified"] is True
 
     def test_does_not_limit_other_tools(
         self, mock_other_tool, mock_tool_context,
@@ -115,3 +118,4 @@ class TestCountWordsLimiter:
         )
         assert result is not None
         assert result["within_range"] is True
+        assert mock_tool_context.state["_word_count_verified"] is True
