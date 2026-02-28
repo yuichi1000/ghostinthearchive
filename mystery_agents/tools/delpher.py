@@ -2,10 +2,13 @@
 
 SRU v1.2 プロトコルでオランダ語の歴史的新聞・書籍（1618年〜）を検索する。
 認証不要（API キー不要）。レスポンスは Dublin Core XML。
+resolver URL + :ocr サフィックスによる OCR 全文テキスト取得にも対応。
 """
 
 import logging
 import xml.etree.ElementTree as ET
+
+import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
@@ -15,6 +18,42 @@ from .source_registry import register_source
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://jsru.kb.nl/sru/sru"
+
+# 全文取得の上限設定
+_MAX_FULLTEXT_FETCHES = 5
+_FULLTEXT_TIMEOUT = 15
+_MAX_TEXT_LENGTH = 5000
+
+
+def _fetch_ocr_text(
+    session: requests.Session, resolver_url: str
+) -> str | None:
+    """Delpher resolver URL から OCR テキストを取得する。
+
+    resolver URL に :ocr サフィックスを付けてリクエストする。
+
+    Args:
+        session: HTTP セッション
+        resolver_url: Delpher resolver URL（例: http://resolver.kb.nl/resolve?urn=...）
+
+    Returns:
+        OCR テキスト（最大5000文字）。取得失敗時は None。
+    """
+    try:
+        ocr_url = f"{resolver_url.rstrip('/')}:ocr"
+        resp = session.get(
+            ocr_url,
+            timeout=_FULLTEXT_TIMEOUT,
+            headers={"User-Agent": "GhostInTheArchive/1.0"},
+        )
+        if resp.status_code != 200:
+            logger.debug("Delpher OCR %d for %s", resp.status_code, resolver_url)
+            return None
+        text = resp.text.strip()
+        return text[:_MAX_TEXT_LENGTH] if text else None
+    except (requests.RequestException, ValueError) as e:
+        logger.debug("Delpher OCR 取得失敗 (%s): %s", resolver_url, e)
+        return None
 
 # SRU / Dublin Core 名前空間
 NS = {
@@ -104,7 +143,7 @@ def _parse_sru_response(
             language=SourceLanguage.NL,
             location=str(location)[:200],
             source_type="delpher",
-            raw_text=str(description)[:5000] if description else None,
+            raw_text=None,
             keywords_matched=matched,
         )
         documents.append(doc)
@@ -166,7 +205,25 @@ class DelpherSource(ArchiveSource):
         )
         response.raise_for_status()
 
-        return _parse_sru_response(response.text, keywords)
+        result = _parse_sru_response(response.text, keywords)
+        if result.error or not result.documents:
+            return result
+
+        # 全文テキストエンリッチメント（resolver URL + :ocr）
+        fulltext_targets: list[tuple[int, str]] = []
+        for idx, doc in enumerate(result.documents):
+            if doc.source_url and len(fulltext_targets) < _MAX_FULLTEXT_FETCHES:
+                fulltext_targets.append((idx, doc.source_url))
+
+        for idx, url in fulltext_targets:
+            self._rate_limit()
+            text = _fetch_ocr_text(self._session, url)
+            if text:
+                result.documents[idx].raw_text = text
+
+        # 全文取得成功したドキュメントのみ保持
+        filtered = [doc for doc in result.documents if doc.raw_text]
+        return ArchiveSearchResult(documents=filtered, total_hits=result.total_hits)
 
 
 # レジストリに自動登録

@@ -6,8 +6,10 @@ from mystery_agents.schemas.document import SourceLanguage
 from mystery_agents.tools.delpher import (
     BASE_URL,
     DelpherSource,
+    _fetch_ocr_text,
     _parse_sru_response,
 )
+from shared.http_retry import create_retry_session
 
 # モック SRU XML レスポンス
 MOCK_SRU_RESPONSE = """\
@@ -76,6 +78,19 @@ class TestDelpherSource:
             content_type="application/xml",
             status=200,
         )
+        # OCR 全文取得モック
+        responses.add(
+            responses.GET,
+            "http://resolver.kb.nl/resolve?urn=ddd:010097857:mpeg21:a0001:ocr",
+            body="OCR text van het spookhuis.",
+            status=200,
+        )
+        responses.add(
+            responses.GET,
+            "http://resolver.kb.nl/resolve?urn=ddd:010054321:mpeg21:a0002:ocr",
+            body="OCR text van de Vliegende Hollander.",
+            status=200,
+        )
 
         source = DelpherSource()
         result = source.search(keywords=["spookhuis", "Amsterdam"])
@@ -92,6 +107,7 @@ class TestDelpherSource:
         assert doc.date == "1842-01-01"
         assert doc.location == "De Tijd"
         assert doc.summary == "Een mysterieus verhaal over het spookhuis"
+        assert doc.raw_text == "OCR text van het spookhuis."
 
         # 2件目: publisher がない場合 source フィールドを location に使用
         doc2 = result.documents[1]
@@ -253,3 +269,105 @@ class TestDelpherDateFilter:
 
         request = responses.calls[0].request
         assert "dc.date" not in request.url
+
+
+class TestFetchOcrText:
+    """_fetch_ocr_text のテスト。"""
+
+    @responses.activate
+    def test_returns_text(self):
+        """OCR テキストが取得できる場合にテキストを返す。"""
+        resolver_url = "http://resolver.kb.nl/resolve?urn=ddd:010097857:mpeg21:a0001"
+        responses.add(
+            responses.GET,
+            f"{resolver_url}:ocr",
+            body="Dit is de OCR tekst.",
+            status=200,
+        )
+
+        session = create_retry_session()
+        result = _fetch_ocr_text(session, resolver_url)
+
+        assert result == "Dit is de OCR tekst."
+
+    @responses.activate
+    def test_returns_none_on_404(self):
+        """404 の場合は None を返す。"""
+        resolver_url = "http://resolver.kb.nl/resolve?urn=ddd:missing"
+        responses.add(
+            responses.GET,
+            f"{resolver_url}:ocr",
+            status=404,
+        )
+
+        session = create_retry_session()
+        result = _fetch_ocr_text(session, resolver_url)
+
+        assert result is None
+
+    @responses.activate
+    def test_truncates_long_text(self):
+        """5000文字を超えるテキストは切り詰める。"""
+        resolver_url = "http://resolver.kb.nl/resolve?urn=ddd:long"
+        responses.add(
+            responses.GET,
+            f"{resolver_url}:ocr",
+            body="X" * 6000,
+            status=200,
+        )
+
+        session = create_retry_session()
+        result = _fetch_ocr_text(session, resolver_url)
+
+        assert len(result) == 5000
+
+    @responses.activate
+    def test_returns_none_on_empty_text(self):
+        """空のレスポンスは None を返す。"""
+        resolver_url = "http://resolver.kb.nl/resolve?urn=ddd:empty"
+        responses.add(
+            responses.GET,
+            f"{resolver_url}:ocr",
+            body="   ",
+            status=200,
+        )
+
+        session = create_retry_session()
+        result = _fetch_ocr_text(session, resolver_url)
+
+        assert result is None
+
+
+class TestDelpherFulltextFilter:
+    """Delpher 全文フィルタリングテスト。"""
+
+    @responses.activate
+    def test_filters_docs_without_ocr(self):
+        """OCR 取得に失敗したドキュメントは除外される。"""
+        responses.add(
+            responses.GET,
+            BASE_URL,
+            body=MOCK_SRU_RESPONSE,
+            content_type="application/xml",
+            status=200,
+        )
+        # 1件目: OCR あり
+        responses.add(
+            responses.GET,
+            "http://resolver.kb.nl/resolve?urn=ddd:010097857:mpeg21:a0001:ocr",
+            body="OCR tekst beschikbaar.",
+            status=200,
+        )
+        # 2件目: OCR 404
+        responses.add(
+            responses.GET,
+            "http://resolver.kb.nl/resolve?urn=ddd:010054321:mpeg21:a0002:ocr",
+            status=404,
+        )
+
+        source = DelpherSource()
+        result = source.search(keywords=["spookhuis"])
+
+        assert len(result.documents) == 1
+        assert result.documents[0].title == "Het spookhuis te Amsterdam"
+        assert result.documents[0].raw_text == "OCR tekst beschikbaar."

@@ -1,15 +1,20 @@
 """Chronicling America API ソース。
 
 LOC の loc.gov JSON API を使用して Chronicling America 新聞コレクションを検索する。
+ページ単位の OCR 全文テキスト取得にも対応。
 """
 
+import logging
 import re
 
+import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
 from .search_utils import build_search_query
 from .source_registry import register_source
+
+logger = logging.getLogger(__name__)
 
 # 東海岸州リスト（新聞検索のデフォルトフィルタ）
 EAST_COAST_STATES = [
@@ -25,6 +30,86 @@ EAST_COAST_STATES = [
 ]
 
 BASE_URL = "https://www.loc.gov/search/"
+
+# 全文取得の上限設定
+_MAX_FULLTEXT_FETCHES = 5
+_FULLTEXT_TIMEOUT = 15
+_MAX_TEXT_LENGTH = 5000
+
+
+def _fetch_page_fulltext(
+    session: requests.Session, page_url: str
+) -> str | None:
+    """LOC ページ URL から OCR 全文テキストを取得する。
+
+    Args:
+        session: HTTP セッション
+        page_url: LOC ページ URL
+
+    Returns:
+        OCR テキスト（最大5000文字）。取得失敗時は None。
+    """
+    try:
+        sep = "&" if "?" in page_url else "?"
+        json_url = f"{page_url}{sep}fo=json"
+        resp = session.get(
+            json_url,
+            timeout=_FULLTEXT_TIMEOUT,
+            headers={"User-Agent": "GhostInTheArchive/1.0"},
+        )
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        text = data.get("full_text", "")
+        return text.strip()[:_MAX_TEXT_LENGTH] if text else None
+    except (requests.RequestException, ValueError, KeyError) as e:
+        logger.debug("LOC page fulltext 取得失敗: %s", e)
+        return None
+
+
+def _fetch_item_fulltext(
+    session: requests.Session, item_url: str
+) -> str | None:
+    """LOC アイテム URL から OCR 全文テキストを取得する（2段階）。
+
+    Step 1: item URL + ?fo=json → JSON レスポンスの full_text フィールド
+    Step 2: full_text がない場合、resources の最初のページ URL を試す
+
+    Args:
+        session: HTTP セッション
+        item_url: LOC アイテム URL
+
+    Returns:
+        OCR テキスト（最大5000文字）。取得失敗時は None。
+    """
+    try:
+        sep = "&" if "?" in item_url else "?"
+        json_url = f"{item_url}{sep}fo=json"
+        resp = session.get(
+            json_url,
+            timeout=_FULLTEXT_TIMEOUT,
+            headers={"User-Agent": "GhostInTheArchive/1.0"},
+        )
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+
+        # 直接 full_text がある場合
+        full_text = data.get("full_text", "")
+        if full_text:
+            return full_text.strip()[:_MAX_TEXT_LENGTH]
+
+        # resources → 最初のページから full_text を取得
+        resources = data.get("resources", [])
+        if resources:
+            first_url = resources[0].get("url", "")
+            if first_url:
+                return _fetch_page_fulltext(session, first_url)
+
+        return None
+    except (requests.RequestException, ValueError, KeyError) as e:
+        logger.debug("LOC fulltext 取得失敗 (%s): %s", item_url, e)
+        return None
 
 
 class ChroniclingAmericaSource(ArchiveSource):
@@ -78,6 +163,8 @@ class ChroniclingAmericaSource(ArchiveSource):
         data = response.json()
 
         documents = []
+        # 全文取得対象の (index, url) ペア
+        fulltext_targets: list[tuple[int, str]] = []
         results = data.get("results", [])
 
         for item in results:
@@ -130,6 +217,17 @@ class ChroniclingAmericaSource(ArchiveSource):
                 ),
             )
             documents.append(doc)
+
+            # 全文取得候補に追加（上位5件まで）
+            if url and len(fulltext_targets) < _MAX_FULLTEXT_FETCHES:
+                fulltext_targets.append((len(documents) - 1, url))
+
+        # 全文テキストエンリッチメント（ベストエフォート）
+        for idx, item_url in fulltext_targets:
+            self._rate_limit()
+            text = _fetch_item_fulltext(self._session, item_url)
+            if text:
+                documents[idx].raw_text = text
 
         pagination = data.get("pagination", {})
         total_hits = pagination.get("total", pagination.get("of", 0))

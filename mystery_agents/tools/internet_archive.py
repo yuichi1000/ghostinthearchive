@@ -2,16 +2,56 @@
 
 Internet Archive の膨大なコレクション（書籍、雑誌、ウェブページ、
 その他のデジタル化資料）を検索する。
+djvu.txt エンドポイントによる OCR 全文テキスト取得にも対応。
 """
 
+import logging
 
+import requests
 
 from ..schemas.document import ArchiveDocument
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
 from .search_utils import build_search_query
 from .source_registry import register_source
 
+logger = logging.getLogger(__name__)
+
 BASE_URL = "https://archive.org/advancedsearch.php"
+_DJVU_TEXT_URL = "https://archive.org/download/{identifier}/{identifier}_djvu.txt"
+
+# 全文取得の上限設定
+_MAX_FULLTEXT_FETCHES = 5
+_FULLTEXT_TIMEOUT = 15
+_MAX_TEXT_LENGTH = 5000
+
+
+def _fetch_djvu_text(
+    session: requests.Session, identifier: str
+) -> str | None:
+    """Internet Archive の djvu.txt から OCR テキストを取得する。
+
+    Args:
+        session: HTTP セッション
+        identifier: Internet Archive アイテム識別子
+
+    Returns:
+        OCR テキスト（最大5000文字）。取得失敗時は None。
+    """
+    try:
+        url = _DJVU_TEXT_URL.format(identifier=identifier)
+        resp = session.get(
+            url,
+            timeout=_FULLTEXT_TIMEOUT,
+            headers={"User-Agent": "GhostInTheArchive/1.0"},
+        )
+        if resp.status_code != 200:
+            logger.debug("IA djvu.txt %d for %s", resp.status_code, identifier)
+            return None
+        text = resp.text.strip()
+        return text[:_MAX_TEXT_LENGTH] if text else None
+    except (requests.RequestException, ValueError) as e:
+        logger.debug("IA djvu.txt 取得失敗 (%s): %s", identifier, e)
+        return None
 
 _LANG_CODE_MAP = {
     "en": ["eng", "english"],
@@ -90,6 +130,8 @@ class InternetArchiveSource(ArchiveSource):
 
         resp = data.get("response", {})
         documents = []
+        # 全文取得対象の (index, identifier) ペア
+        fulltext_targets: list[tuple[int, str]] = []
 
         for item in resp.get("docs", []):
             title = item.get("title", "Unknown Title")
@@ -130,11 +172,25 @@ class InternetArchiveSource(ArchiveSource):
                 language=lang,
                 location="Unknown",
                 source_type=self.source_type,
-                raw_text=str(description)[:5000] if description else None,
+                raw_text=None,
                 thumbnail_url=thumbnail_url,
                 keywords_matched=matched,
             )
             documents.append(doc)
+
+            # 全文取得候補に追加（上位5件まで）
+            if identifier and len(fulltext_targets) < _MAX_FULLTEXT_FETCHES:
+                fulltext_targets.append((len(documents) - 1, identifier))
+
+        # 全文テキストエンリッチメント
+        for idx, ident in fulltext_targets:
+            self._rate_limit()
+            text = _fetch_djvu_text(self._session, ident)
+            if text:
+                documents[idx].raw_text = text
+
+        # 全文取得成功したドキュメントのみ保持
+        documents = [doc for doc in documents if doc.raw_text]
 
         total_hits = resp.get("numFound", 0)
         return ArchiveSearchResult(documents=documents, total_hits=total_hits)
