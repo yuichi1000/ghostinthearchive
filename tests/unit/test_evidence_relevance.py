@@ -7,8 +7,6 @@
 import json
 import logging
 
-import pytest
-
 from tests.fakes import make_archive_doc, make_tool_context
 
 

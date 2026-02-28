@@ -5,8 +5,6 @@
 - フルデータ / 部分データ / 空データの3パターンで正しく動作する
 """
 
-import pytest
-
 from podcast_agents.cli import _format_evidence_summary
 
 
