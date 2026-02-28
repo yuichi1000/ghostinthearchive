@@ -123,6 +123,7 @@ def create_armchair_polymath() -> LlmAgent:
         tools=POLYMATH_TOOLS,
         output_key="mystery_report",  # 既存と同じキー → 下流互換性維持
         generate_content_config=types.GenerateContentConfig(
+            temperature=0.5,
             max_output_tokens=POLYMATH_MAX_OUTPUT_TOKENS,
         ),
         before_tool_callback=log_polymath_tool_call,

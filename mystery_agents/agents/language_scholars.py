@@ -15,6 +15,7 @@ mode="analysis" で分析モード、mode="debate" で討論モードのエー�
 """
 
 from google.adk.agents import LlmAgent
+from google.genai import types
 
 from shared.language_names import get_language_name
 from shared.model_config import create_pro_model
@@ -192,6 +193,7 @@ def create_scholar(
                 f"of {config['language_name']}-language sources."
             ),
             instruction=instruction,
+            generate_content_config=types.GenerateContentConfig(temperature=0.4),
             tools=[],  # save_structured_report は呼び出さない
             output_key=f"scholar_analysis_{lang_code}",
         )
@@ -218,6 +220,7 @@ def create_scholar(
                     f"using the shared debate whiteboard."
                 ),
                 instruction=instruction,
+                generate_content_config=types.GenerateContentConfig(temperature=0.7),
                 tools=[append_to_whiteboard],
                 # DynamicScholarBlock がゲートを担当するため callback 不要
             )
@@ -236,6 +239,7 @@ def create_scholar(
                     f"using the shared debate whiteboard."
                 ),
                 instruction=instruction,
+                generate_content_config=types.GenerateContentConfig(temperature=0.7),
                 tools=[append_to_whiteboard],
                 before_agent_callback=make_debate_gate(lang_code),
             )
@@ -288,6 +292,7 @@ def create_multilingual_scholar(
                 f"to discover patterns invisible to single-language analysis."
             ),
             instruction=instruction,
+            generate_content_config=types.GenerateContentConfig(temperature=0.4),
             tools=[],
             output_key="scholar_analysis_multilingual",
         )
@@ -311,6 +316,7 @@ def create_multilingual_scholar(
                 f"({language_list_short}). Challenges and enriches Named Scholar analyses."
             ),
             instruction=instruction,
+            generate_content_config=types.GenerateContentConfig(temperature=0.7),
             tools=[append_to_whiteboard],
         )
     else:

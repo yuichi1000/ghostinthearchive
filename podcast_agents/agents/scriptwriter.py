@@ -11,6 +11,7 @@ Output: podcast_script (テキスト), structured_script (JSON via finalize_scri
 """
 
 from google.adk.agents import LlmAgent
+from google.genai import types
 
 from shared.model_config import create_pro_model
 
@@ -382,6 +383,7 @@ def create_scriptwriter() -> LlmAgent:
             "for each segment and finalize_script to assemble the final structured script."
         ),
         instruction=SCRIPTWRITER_INSTRUCTION,
+        generate_content_config=types.GenerateContentConfig(temperature=0.8),
         tools=[save_segment, finalize_script],
         output_key="podcast_script",
     )

@@ -8,6 +8,7 @@ Output: podcast_script_ja (日本語訳テキスト)
 """
 
 from google.adk.agents import LlmAgent
+from google.genai import types
 
 from shared.model_config import create_flash_model
 
@@ -89,6 +90,7 @@ def create_podcast_translator() -> LlmAgent:
             "Preserves segment structure and SFX/BGM cues while translating narration."
         ),
         instruction=PODCAST_TRANSLATOR_INSTRUCTION,
+        generate_content_config=types.GenerateContentConfig(temperature=0.2),
         output_key="podcast_script_ja",
     )
 

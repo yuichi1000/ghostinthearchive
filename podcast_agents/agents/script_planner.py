@@ -11,6 +11,7 @@ Output: script_outline (テキスト), structured_outline (JSON via tool)
 """
 
 from google.adk.agents import LlmAgent
+from google.genai import types
 
 from shared.model_config import create_flash_model
 
@@ -278,6 +279,7 @@ def create_script_planner() -> LlmAgent:
             "the structural blueprint for the Scriptwriter's segment-by-segment generation."
         ),
         instruction=SCRIPT_PLANNER_INSTRUCTION,
+        generate_content_config=types.GenerateContentConfig(temperature=0.3),
         tools=[save_script_outline],
         output_key="script_outline",
     )

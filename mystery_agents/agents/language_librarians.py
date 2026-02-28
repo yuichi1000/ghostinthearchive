@@ -9,6 +9,7 @@ collected_documents_{lang} に結果を保存する。
 """
 
 from google.adk.agents import LlmAgent
+from google.genai import types
 
 from shared.model_config import create_flash_model
 
@@ -238,6 +239,7 @@ def create_librarian(lang_code: str) -> LlmAgent:
             f"Searches {sources_hint} for {config['language_name']} primary sources."
         ),
         instruction=instruction,
+        generate_content_config=types.GenerateContentConfig(temperature=0.3),
         tools=tools,
         output_key=f"collected_documents_{lang_code}",
     )

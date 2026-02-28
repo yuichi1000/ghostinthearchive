@@ -253,6 +253,7 @@ class DynamicPolymathBlock(BaseAgent):
             tools=POLYMATH_TOOLS,
             output_key="mystery_report",
             generate_content_config=types.GenerateContentConfig(
+                temperature=0.5,
                 max_output_tokens=POLYMATH_MAX_OUTPUT_TOKENS,
             ),
             before_tool_callback=log_polymath_tool_call,
