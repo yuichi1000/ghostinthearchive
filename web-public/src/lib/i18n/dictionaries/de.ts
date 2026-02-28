@@ -73,8 +73,6 @@ const dict: Dictionary = {
         "Das Unheimliche als legitimer Gegenstand wissenschaftlicher Forschung, nicht Sensationalismus",
       folklore:
         "Folklore ist keine Dekoration. Sie ist ergänzende Evidenz — die inoffizielle Aufzeichnung, die das Schweigen der offiziellen Dokumentation füllt.",
-      coda:
-        "Und ein ungeschriebenes Prinzip: Vergiss den Witz nicht. Die Archive sind schon Gräber genug.",
     },
     storytellers: {
       heading: "Unsere Erzähler",

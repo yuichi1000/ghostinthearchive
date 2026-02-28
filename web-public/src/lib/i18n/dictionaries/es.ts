@@ -73,8 +73,6 @@ const dict: Dictionary = {
         "Lo inexplicable como objeto legítimo de investigación académica, no sensacionalismo",
       folklore:
         "El folclore no es decoración. Es evidencia complementaria — el registro no oficial que llena los silencios dejados por la documentación oficial.",
-      coda:
-        "Y un principio no escrito: nunca olvides el chiste. Los archivos ya son bastante sepulcrales.",
     },
     storytellers: {
       heading: "Nuestros Narradores",
