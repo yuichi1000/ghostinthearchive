@@ -147,9 +147,9 @@ def _format_documents(lang: str, docs: list[dict]) -> str:
             kw_str = ", ".join(matched) if isinstance(matched, list) else str(matched)
             lines.append(f"- **Keywords matched**: {kw_str}")
         if doc.get("raw_text"):
-            # テキスト抜粋は500文字に制限
-            excerpt = str(doc["raw_text"])[:500]
-            if len(str(doc["raw_text"])) > 500:
+            # テキスト抜粋は3000文字に制限（全文取得対応で拡大）
+            excerpt = str(doc["raw_text"])[:3000]
+            if len(str(doc["raw_text"])) > 3000:
                 excerpt += "..."
             lines.append(f"- **Excerpt**: {excerpt}")
         lines.append("")  # ドキュメント間の空行
