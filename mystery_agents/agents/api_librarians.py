@@ -167,6 +167,40 @@ API_CONFIGS: dict[str, dict] = {
         ),
         "has_newspapers": False,
     },
+    "delpher": {
+        "api_display_name": "KB/Delpher (Koninklijke Bibliotheek)",
+        "api_capabilities": (
+            "You manage **KB/Delpher** from the Koninklijke Bibliotheek (Royal Library of the Netherlands):\n"
+            "- Dutch historical newspapers, books, and periodicals from 1618 onwards\n"
+            "- SRU search protocol with Dublin Core metadata\n"
+            "- OCR fulltext available for many items via resolver URL\n"
+            "- Materials primarily in Dutch (some Latin, French, German)\n"
+            "- Strong for: Dutch colonial history, VOC (Dutch East India Company),\n"
+            "  maritime trade, Reformation, Dutch Golden Age, Indonesian history"
+        ),
+        "relevance_guidance": (
+            "Delpher is focused on Dutch-language historical materials.\n\n"
+            "**Search** if the theme has ANY connection to:\n"
+            "- Dutch history, culture, or colonial legacy\n"
+            "- VOC, Dutch East Indies, Suriname, Dutch Antilles\n"
+            "- Maritime history in the Atlantic and Indian Ocean\n"
+            "- European Reformation and religious conflicts\n"
+            "- Dutch Golden Age art, science, and exploration\n"
+            "- Indonesian, South African, or Caribbean colonial records\n\n"
+            "**Skip** if the theme has no plausible Dutch connection."
+        ),
+        "search_strategy": (
+            "1. Extract proper nouns/places → `reference_keywords` in Dutch\n"
+            "   Generate creative terms → `keywords` in Dutch\n"
+            "   - Use Dutch terminology for historical topics\n"
+            '2. Call **search_archives** with:\n'
+            '   - `sources="delpher"`, `language="nl"`\n'
+            '   - `reference_keywords="Batavia, VOC, Oost-Indië"`\n'
+            '   - `keywords="spookverhaal, geest, mysterie, onverklaard"`\n'
+            "3. Date filtering is OPTIONAL"
+        ),
+        "has_newspapers": False,
+    },
     "trove": {
         "api_display_name": "Trove (National Library of Australia)",
         "api_capabilities": (

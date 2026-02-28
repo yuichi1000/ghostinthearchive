@@ -2,18 +2,121 @@
 
 Europeana の集約コレクション（6,000+ の欧州文化遺産機関）を検索する。
 wskey クエリパラメータ認証を使用。
+Fulltext API v3 による全文テキスト取得にも対応。
 """
 
+import logging
 import os
 from typing import Any
 
+import requests
 
 from ..schemas.document import ArchiveDocument
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
 from .search_utils import build_search_query
 from .source_registry import register_source
 
+logger = logging.getLogger(__name__)
+
 BASE_URL = "https://api.europeana.eu/record/v2/search.json"
+_FULLTEXT_URL = "https://api.europeana.eu/fulltext/v3/{dataset_id}/{local_id}"
+
+# 全文取得の上限設定
+_MAX_FULLTEXT_FETCHES = 5
+_FULLTEXT_TIMEOUT = 15
+_MAX_TEXT_LENGTH = 5000
+
+
+def _extract_record_ids(europeana_id: str) -> tuple[str | None, str | None]:
+    """Europeana item ID からデータセット ID とローカル ID を抽出する。
+
+    ID 形式: /{datasetId}/{localId}
+    例: /2020601/https___1702_uva_nl_object_dcp_id_...
+
+    Args:
+        europeana_id: Europeana アイテム ID
+
+    Returns:
+        (dataset_id, local_id) のタプル。パース失敗時は (None, None)。
+    """
+    if not europeana_id or not europeana_id.startswith("/"):
+        return None, None
+    parts = europeana_id.lstrip("/").split("/", 1)
+    if len(parts) != 2:
+        return None, None
+    return parts[0], parts[1]
+
+
+def _parse_annotation_text(data: dict) -> str | None:
+    """IIIF Annotation JSON からテキストを抽出する。
+
+    Europeana Fulltext API v3 は IIIF Annotation 形式で返す。
+    AnnotationPage 直接のアイテムとネストされた AnnotationPage の
+    両方に対応する。
+
+    Args:
+        data: IIIF Annotation JSON レスポンス
+
+    Returns:
+        抽出テキスト（最大5000文字）。テキストがない場合は None。
+    """
+    texts: list[str] = []
+    for item in data.get("items", []):
+        body = item.get("body", {})
+        if isinstance(body, dict):
+            value = body.get("value", "")
+            if value:
+                texts.append(value)
+        # ネストされた AnnotationPage
+        for nested in item.get("items", []):
+            body = nested.get("body", {})
+            if isinstance(body, dict):
+                value = body.get("value", "")
+                if value:
+                    texts.append(value)
+    if not texts:
+        return None
+    return "\n".join(texts)[:_MAX_TEXT_LENGTH]
+
+
+def _fetch_fulltext(
+    session: requests.Session,
+    dataset_id: str,
+    local_id: str,
+    api_key: str,
+) -> str | None:
+    """Europeana Fulltext API v3 から全文テキストを取得する。
+
+    Args:
+        session: HTTP セッション
+        dataset_id: Europeana データセット ID
+        local_id: Europeana ローカル ID
+        api_key: Europeana API キー
+
+    Returns:
+        全文テキスト（最大5000文字）。取得失敗時は None。
+    """
+    try:
+        url = _FULLTEXT_URL.format(dataset_id=dataset_id, local_id=local_id)
+        params: dict[str, str] = {}
+        if api_key:
+            params["wskey"] = api_key
+        resp = session.get(
+            url,
+            timeout=_FULLTEXT_TIMEOUT,
+            params=params,
+            headers={
+                "Accept": "application/ld+json",
+                "User-Agent": "GhostInTheArchive/1.0",
+            },
+        )
+        if resp.status_code != 200:
+            logger.debug("Europeana fulltext %d for %s/%s", resp.status_code, dataset_id, local_id)
+            return None
+        return _parse_annotation_text(resp.json())
+    except (requests.RequestException, ValueError, KeyError) as e:
+        logger.debug("Europeana fulltext 取得失敗 (%s/%s): %s", dataset_id, local_id, e)
+        return None
 
 # 言語コード → Europeana COUNTRY フィルタ値マッピング
 # LANGUAGE フィルタではなく COUNTRY フィルタを使用する理由:
@@ -91,6 +194,8 @@ class EuropeanaSource(ArchiveSource):
         data = response.json()
 
         documents = []
+        # 全文取得対象の (index, europeana_id) ペア
+        fulltext_targets: list[tuple[int, str]] = []
         items = data.get("items", [])
 
         for item in items:
@@ -150,12 +255,29 @@ class EuropeanaSource(ArchiveSource):
                 language=lang,
                 location=str(location)[:200],
                 source_type=self.source_type,
-                raw_text=str(description)[:5000] if description else None,
+                raw_text=None,
                 thumbnail_url=thumbnail,
                 image_url=full_image,
                 keywords_matched=matched,
             )
             documents.append(doc)
+
+            # 全文取得候補に追加（上位5件まで）
+            europeana_id = item.get("id", "")
+            if europeana_id and len(fulltext_targets) < _MAX_FULLTEXT_FETCHES:
+                fulltext_targets.append((len(documents) - 1, europeana_id))
+
+        # 全文テキストエンリッチメント
+        for idx, eid in fulltext_targets:
+            self._rate_limit()
+            ds_id, loc_id = _extract_record_ids(eid)
+            if ds_id and loc_id:
+                text = _fetch_fulltext(self._session, ds_id, loc_id, api_key)
+                if text:
+                    documents[idx].raw_text = text
+
+        # 全文取得成功したドキュメントのみ保持
+        documents = [doc for doc in documents if doc.raw_text]
 
         total_hits = data.get("totalResults", len(documents))
         return ArchiveSearchResult(documents=documents, total_hits=total_hits)

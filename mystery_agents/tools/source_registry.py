@@ -23,7 +23,7 @@ _registry: dict[str, ArchiveSource] = {}
 _all_loaded = False
 
 # 登録対象の API ツールモジュール（パッケージ内の相対パス）
-# Delpher は公開言語削減（PR #328）、DPLA は API 停止に伴い除外
+# DPLA は API 停止に伴い除外
 # LOC Digital / DDB / Wellcome はメタデータのみ API のため削除（#409 PR1）
 _SOURCE_MODULES = [
     "mystery_agents.tools.nypl_digital",
@@ -32,6 +32,7 @@ _SOURCE_MODULES = [
     "mystery_agents.tools.chronicling_america",
     "mystery_agents.tools.trove",
     "mystery_agents.tools.ndl_search",
+    "mystery_agents.tools.delpher",
 ]
 
 

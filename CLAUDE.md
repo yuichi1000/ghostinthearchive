@@ -292,12 +292,12 @@ pending (EN原文 + 翻訳あり) → (Approve) → published
 #### ブログ作成パイプライン（`mystery_agents/`）
 
 ```
-ParallelAPILibrarians(5 API groups) → Aggregator → DynamicScholarBlock(分析+討論)
+ParallelAPILibrarians(6 API groups) → Aggregator → DynamicScholarBlock(分析+討論)
   → [PolymathGate] → ArmchairPolymath → [StorytellerGate] → Storyteller(EN)
   → [PostStoryGate] → Parallel(Illustrator, ParallelTranslators(3言語)) → Publisher → Firestore
 ```
 
-- API ベース Librarian（US Archives, Europeana, Internet Archive, NDL, Trove）がテーマに応じて自律検索
+- API ベース Librarian（US Archives, Europeana, Internet Archive, Delpher, NDL, Trove）がテーマに応じて自律検索
 - AggregatorAgent（LLM 不使用）が raw_search_results を言語別に集約 → `collected_documents_{lang}` に書き込み
 - DynamicScholarBlock（BaseAgent）が `active_languages` に基づき Scholar を動的生成
   - Phase 1: ドキュメントがある言語の Scholar のみ並列分析

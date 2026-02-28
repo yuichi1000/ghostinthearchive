@@ -7,10 +7,15 @@ import responses
 from mystery_agents.tools.europeana import (
     BASE_URL,
     EuropeanaSource,
+    _FULLTEXT_URL,
     _detect_language,
     _extract_location,
+    _extract_record_ids,
+    _fetch_fulltext,
+    _parse_annotation_text,
 )
 from mystery_agents.tools.archive_source_base import ArchiveSource
+from shared.http_retry import create_retry_session
 
 
 class TestSearchEuropeana:
@@ -42,6 +47,7 @@ class TestSearchEuropeana:
                     "title": ["Medieval Manuscript from Paris"],
                     "year": ["1450"],
                     "guid": "https://www.europeana.eu/item/123/abc",
+                    "id": "/123/abc",
                     "dcDescription": ["A rare medieval manuscript found in Paris archives"],
                     "language": ["fr"],
                     "country": ["France"],
@@ -49,6 +55,13 @@ class TestSearchEuropeana:
             ],
         }
         responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
+        # 全文取得モック
+        responses.add(
+            responses.GET,
+            _FULLTEXT_URL.format(dataset_id="123", local_id="abc"),
+            json={"items": [{"body": {"value": "Full OCR text of the manuscript."}}]},
+            status=200,
+        )
 
         source = EuropeanaSource()
         with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
@@ -61,6 +74,7 @@ class TestSearchEuropeana:
         assert doc.language == "fr"
         assert doc.source_type == "europeana"
         assert "europeana.eu" in doc.source_url
+        assert doc.raw_text == "Full OCR text of the manuscript."
 
     @responses.activate
     def test_country_filter(self):
@@ -179,6 +193,7 @@ class TestSearchEuropeana:
             "items": [
                 {
                     "title": ["Test Document"],
+                    "id": "/456/test_doc",
                     "edmIsShownAt": ["https://example.europeana.eu/item/456"],
                     "language": ["en"],
                     "country": ["United Kingdom"],
@@ -186,6 +201,13 @@ class TestSearchEuropeana:
             ],
         }
         responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
+        # 全文取得モック
+        responses.add(
+            responses.GET,
+            _FULLTEXT_URL.format(dataset_id="456", local_id="test_doc"),
+            json={"items": [{"body": {"value": "Fulltext via edmIsShownAt."}}]},
+            status=200,
+        )
 
         source = EuropeanaSource()
         with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
@@ -278,3 +300,194 @@ class TestParseYear:
 
     def test_parse_full_date(self):
         assert ArchiveSource.parse_year("1850-03-15") == "1850-01-01"
+
+
+class TestExtractRecordIds:
+    """_extract_record_ids のテスト。"""
+
+    def test_valid_id(self):
+        """正常な Europeana ID を datasetId / localId に分解する。"""
+        ds, loc = _extract_record_ids("/2020601/abc_def")
+        assert ds == "2020601"
+        assert loc == "abc_def"
+
+    def test_empty_string(self):
+        """空文字列は (None, None) を返す。"""
+        assert _extract_record_ids("") == (None, None)
+
+    def test_no_leading_slash(self):
+        """先頭 / がない場合は (None, None) を返す。"""
+        assert _extract_record_ids("2020601/abc") == (None, None)
+
+    def test_single_segment(self):
+        """スラッシュが1つだけで localId がない場合は (None, None) を返す。"""
+        assert _extract_record_ids("/2020601") == (None, None)
+
+    def test_complex_local_id(self):
+        """localId にスラッシュを含む場合でも正しく分解する。"""
+        ds, loc = _extract_record_ids("/123/https___example.com_path")
+        assert ds == "123"
+        assert loc == "https___example.com_path"
+
+
+class TestParseAnnotationText:
+    """_parse_annotation_text のテスト。"""
+
+    def test_flat_items(self):
+        """フラットな items からテキストを抽出する。"""
+        data = {"items": [{"body": {"value": "First page text."}}]}
+        assert _parse_annotation_text(data) == "First page text."
+
+    def test_nested_items(self):
+        """ネストされた AnnotationPage からテキストを抽出する。"""
+        data = {
+            "items": [
+                {"items": [{"body": {"value": "Nested page text."}}]}
+            ]
+        }
+        assert _parse_annotation_text(data) == "Nested page text."
+
+    def test_multiple_items_joined(self):
+        """複数のテキストが改行で結合される。"""
+        data = {
+            "items": [
+                {"body": {"value": "Line one."}},
+                {"body": {"value": "Line two."}},
+            ]
+        }
+        result = _parse_annotation_text(data)
+        assert "Line one." in result
+        assert "Line two." in result
+        assert "\n" in result
+
+    def test_empty_items(self):
+        """items が空の場合は None を返す。"""
+        assert _parse_annotation_text({"items": []}) is None
+
+    def test_no_items_key(self):
+        """items キーがない場合は None を返す。"""
+        assert _parse_annotation_text({}) is None
+
+    def test_truncates_long_text(self):
+        """5000文字を超えるテキストは切り詰める。"""
+        data = {"items": [{"body": {"value": "A" * 6000}}]}
+        result = _parse_annotation_text(data)
+        assert len(result) == 5000
+
+
+class TestFetchFulltext:
+    """_fetch_fulltext のテスト。"""
+
+    @responses.activate
+    def test_returns_text(self):
+        """正常なレスポンスでテキストを返す。"""
+        responses.add(
+            responses.GET,
+            _FULLTEXT_URL.format(dataset_id="123", local_id="abc"),
+            json={"items": [{"body": {"value": "Annotation text."}}]},
+            status=200,
+        )
+
+        session = create_retry_session()
+        result = _fetch_fulltext(session, "123", "abc", "test_key")
+
+        assert result == "Annotation text."
+
+    @responses.activate
+    def test_returns_none_on_404(self):
+        """404 の場合は None を返す。"""
+        responses.add(
+            responses.GET,
+            _FULLTEXT_URL.format(dataset_id="123", local_id="missing"),
+            status=404,
+        )
+
+        session = create_retry_session()
+        result = _fetch_fulltext(session, "123", "missing", "test_key")
+
+        assert result is None
+
+    @responses.activate
+    def test_returns_none_on_empty_annotation(self):
+        """空の Annotation は None を返す。"""
+        responses.add(
+            responses.GET,
+            _FULLTEXT_URL.format(dataset_id="123", local_id="empty"),
+            json={"items": []},
+            status=200,
+        )
+
+        session = create_retry_session()
+        result = _fetch_fulltext(session, "123", "empty", "test_key")
+
+        assert result is None
+
+
+class TestEuropeanaFulltextFilter:
+    """Europeana 全文フィルタリングテスト。"""
+
+    @responses.activate
+    def test_filters_docs_without_fulltext(self):
+        """全文取得に失敗したドキュメントは除外される。"""
+        mock_response = {
+            "success": True,
+            "totalResults": 2,
+            "items": [
+                {
+                    "title": ["Has Fulltext"],
+                    "guid": "https://www.europeana.eu/item/has/text",
+                    "id": "/has/text",
+                    "language": ["en"],
+                },
+                {
+                    "title": ["No Fulltext"],
+                    "guid": "https://www.europeana.eu/item/no/text",
+                    "id": "/no/text",
+                    "language": ["en"],
+                },
+            ],
+        }
+        responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
+        # 1件目: 全文あり
+        responses.add(
+            responses.GET,
+            _FULLTEXT_URL.format(dataset_id="has", local_id="text"),
+            json={"items": [{"body": {"value": "Fulltext here."}}]},
+            status=200,
+        )
+        # 2件目: 404
+        responses.add(
+            responses.GET,
+            _FULLTEXT_URL.format(dataset_id="no", local_id="text"),
+            status=404,
+        )
+
+        source = EuropeanaSource()
+        with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
+            result = source.search(keywords=["test"])
+
+        assert len(result.documents) == 1
+        assert result.documents[0].title == "Has Fulltext"
+        assert result.documents[0].raw_text == "Fulltext here."
+
+    @responses.activate
+    def test_no_id_field_means_no_fulltext(self):
+        """id フィールドがないアイテムは全文取得対象外 → 除外される。"""
+        mock_response = {
+            "success": True,
+            "totalResults": 1,
+            "items": [
+                {
+                    "title": ["No ID"],
+                    "guid": "https://www.europeana.eu/item/test",
+                    "language": ["en"],
+                }
+            ],
+        }
+        responses.add(responses.GET, BASE_URL, json=mock_response, status=200)
+
+        source = EuropeanaSource()
+        with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
+            result = source.search(keywords=["test"])
+
+        assert len(result.documents) == 0
