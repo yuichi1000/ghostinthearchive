@@ -14,6 +14,7 @@ from google.adk.agents import LlmAgent
 from google.genai import types
 
 from shared.model_config import create_flash_model
+from shared.token_tracker import create_token_tracking_callback
 
 from ..tools.librarian_tools import search_archives, search_newspapers
 from .librarian_instructions import BASE_INSTRUCTION as _BASE_INSTRUCTION
@@ -300,6 +301,7 @@ def create_api_librarian(api_key: str) -> LlmAgent:
         tools=tools,
         output_key=f"collected_documents_{api_key}",
         generate_content_config=types.GenerateContentConfig(temperature=0.3),
+        after_model_callback=create_token_tracking_callback(f"librarian_{api_key}"),
     )
 
 

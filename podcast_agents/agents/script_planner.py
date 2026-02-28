@@ -13,6 +13,8 @@ Output: script_outline (テキスト), structured_outline (JSON via tool)
 from google.adk.agents import LlmAgent
 from google.genai import types
 
+from shared.token_tracker import create_token_tracking_callback
+
 from shared.model_config import create_flash_model
 
 from ..tools.script_tools import save_script_outline
@@ -282,6 +284,7 @@ def create_script_planner() -> LlmAgent:
         generate_content_config=types.GenerateContentConfig(temperature=0.3),
         tools=[save_script_outline],
         output_key="script_outline",
+        after_model_callback=create_token_tracking_callback("script_planner"),
     )
 
 

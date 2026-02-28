@@ -26,6 +26,7 @@ from shared.model_config import (
     create_storyteller_model,
 )
 from shared.state_keys import STORYTELLER_LLM_METADATA
+from shared.token_tracker import track_tokens
 
 from .storyteller_instructions import STORYTELLER_INSTRUCTION
 
@@ -122,6 +123,9 @@ def _storyteller_after_model(
     llm_response: LlmResponse,
 ) -> LlmResponse | None:
     """Storyteller の LLM 応答メタデータを記録する。"""
+    # トークン使用量を共通ログに追記
+    track_tokens("storyteller", callback_context, llm_response)
+
     has_text = (
         llm_response.content
         and llm_response.content.parts

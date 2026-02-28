@@ -27,6 +27,7 @@ from shared.state_keys import (
     WORD_COUNT_TIER,
     scholar_analysis_key,
 )
+from shared.token_tracker import create_token_tracking_callback
 
 from .armchair_polymath import (
     INSTRUCTION_BODY,
@@ -257,6 +258,7 @@ class DynamicPolymathBlock(BaseAgent):
                 max_output_tokens=POLYMATH_MAX_OUTPUT_TOKENS,
             ),
             before_tool_callback=log_polymath_tool_call,
+            after_model_callback=create_token_tracking_callback("armchair_polymath"),
         )
         async for event in polymath.run_async(ctx):
             yield event

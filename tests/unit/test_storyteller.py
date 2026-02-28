@@ -11,7 +11,7 @@ from mystery_agents.agents.storyteller import (
     _storyteller_after_model,
     _storyteller_before_model,
 )
-from shared.state_keys import STORYTELLER_LLM_METADATA
+from shared.state_keys import AGENT_TOKEN_LOG, STORYTELLER_LLM_METADATA
 
 
 def _make_llm_response(
@@ -164,6 +164,37 @@ class TestStorytellerAfterModel:
         metadata = ctx.state[STORYTELLER_LLM_METADATA]
         assert metadata["prompt_tokens"] is None
         assert metadata["output_tokens"] is None
+
+    def test_token_log_appended_on_normal_response(self):
+        """正常応答時に _agent_token_log にも追記される。"""
+        ctx = _make_callback_context()
+        response = _make_llm_response(
+            text="A compelling narrative...",
+            prompt_tokens=5000,
+            output_tokens=3000,
+        )
+
+        _storyteller_after_model(ctx, response)
+
+        log = ctx.state[AGENT_TOKEN_LOG]
+        assert len(log) == 1
+        assert log[0]["agent"] == "storyteller"
+        assert log[0]["prompt_tokens"] == 5000
+        assert log[0]["output_tokens"] == 3000
+
+    def test_token_log_appended_on_error_response(self):
+        """異常応答時にも _agent_token_log に追記される。"""
+        ctx = _make_callback_context()
+        response = _make_llm_response(
+            error_code="SAFETY_FILTER",
+            prompt_tokens=3000,
+        )
+
+        _storyteller_after_model(ctx, response)
+
+        log = ctx.state[AGENT_TOKEN_LOG]
+        assert len(log) == 1
+        assert log[0]["agent"] == "storyteller"
 
 
 class TestStorytellerInstruction:

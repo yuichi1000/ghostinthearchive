@@ -19,6 +19,7 @@ from google.genai import types
 
 from shared.language_names import get_language_name
 from shared.model_config import create_pro_model
+from shared.token_tracker import create_token_tracking_callback
 
 from ..tools.debate_tools import append_to_whiteboard
 from .language_gate import make_debate_gate
@@ -196,6 +197,7 @@ def create_scholar(
             generate_content_config=types.GenerateContentConfig(temperature=0.4),
             tools=[],  # save_structured_report は呼び出さない
             output_key=f"scholar_analysis_{lang_code}",
+            after_model_callback=create_token_tracking_callback(f"scholar_{lang_code}"),
         )
     elif mode == "debate":
         if active_langs:
@@ -223,6 +225,7 @@ def create_scholar(
                 generate_content_config=types.GenerateContentConfig(temperature=0.7),
                 tools=[append_to_whiteboard],
                 # DynamicScholarBlock がゲートを担当するため callback 不要
+                after_model_callback=create_token_tracking_callback(f"scholar_{lang_code}_debate"),
             )
         else:
             # 静的討論（後方互換: LoopAgent ベースのパイプライン用）
@@ -242,6 +245,7 @@ def create_scholar(
                 generate_content_config=types.GenerateContentConfig(temperature=0.7),
                 tools=[append_to_whiteboard],
                 before_agent_callback=make_debate_gate(lang_code),
+                after_model_callback=create_token_tracking_callback(f"scholar_{lang_code}_debate"),
             )
     else:
         raise ValueError(f"Unknown mode: {mode!r}. Use 'analysis' or 'debate'.")
@@ -295,6 +299,7 @@ def create_multilingual_scholar(
             generate_content_config=types.GenerateContentConfig(temperature=0.4),
             tools=[],
             output_key="scholar_analysis_multilingual",
+            after_model_callback=create_token_tracking_callback("scholar_multilingual"),
         )
     elif mode == "debate":
         # Named Scholar の分析参照を動的構築
@@ -318,6 +323,7 @@ def create_multilingual_scholar(
             instruction=instruction,
             generate_content_config=types.GenerateContentConfig(temperature=0.7),
             tools=[append_to_whiteboard],
+            after_model_callback=create_token_tracking_callback("scholar_multilingual_debate"),
         )
     else:
         raise ValueError(f"Unknown mode: {mode!r}. Use 'analysis' or 'debate'.")

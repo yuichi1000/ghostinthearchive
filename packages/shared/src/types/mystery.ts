@@ -532,6 +532,23 @@ export interface FirestoreDesign {
 /**
  * パイプライン実行ステータス
  */
+/**
+ * エージェント別トークン使用量
+ */
+export interface AgentTokenMetrics {
+  calls: number;
+  prompt_tokens: number;
+  output_tokens: number;
+}
+
+/**
+ * パイプライン全体のトークンメトリクス
+ */
+export interface PipelineTokenMetrics {
+  by_agent: Record<string, AgentTokenMetrics>;
+  totals: AgentTokenMetrics;
+}
+
 export type PipelineRunStatus = "running" | "completed" | "error";
 
 /**
@@ -555,6 +572,8 @@ export interface PipelineRun {
   updated_at: Date;
   completed_at: Date | null;
   error_message: string | null;
+  /** 全エージェント横断トークン使用量 */
+  token_metrics?: PipelineTokenMetrics;
 }
 
 /**

@@ -13,6 +13,7 @@ from google.adk.agents import LlmAgent
 from google.genai import types
 
 from shared.model_config import create_pro_model
+from shared.token_tracker import create_token_tracking_callback
 
 from ..tools.document_inventory import get_document_inventory
 from ..tools.openalex import search_academic_papers
@@ -127,6 +128,7 @@ def create_armchair_polymath() -> LlmAgent:
             max_output_tokens=POLYMATH_MAX_OUTPUT_TOKENS,
         ),
         before_tool_callback=log_polymath_tool_call,
+        after_model_callback=create_token_tracking_callback("armchair_polymath"),
     )
 
 
