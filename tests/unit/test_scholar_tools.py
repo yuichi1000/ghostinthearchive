@@ -691,3 +691,34 @@ class TestWordCountVerifiedCheck:
         result_data = json.loads(result)
 
         assert result_data["status"] == "success"
+
+    def test_error_message_uses_default_tier_when_unset(self):
+        """ティア未設定時はデフォルト（5000/10000）がエラーメッセージに含まれる。"""
+        mock_ctx = MagicMock()
+        mock_ctx.state = {"_inventory_consulted": True}
+
+        report_data = {"title": "Test"}
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "error"
+        assert "5000" in result_data["error"]
+        assert "10000" in result_data["error"]
+
+    def test_error_message_uses_reduced_tier(self):
+        """Reduced ティア設定時はエラーメッセージに 2500/5000 が含まれる。"""
+        mock_ctx = MagicMock()
+        mock_ctx.state = {
+            "_inventory_consulted": True,
+            "_word_count_tier": {"min_words": 2500, "max_words": 5000},
+        }
+
+        report_data = {"title": "Test"}
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "error"
+        assert "2500" in result_data["error"]
+        assert "5000" in result_data["error"]
+        # デフォルト値が残っていないことを確認
+        assert "10000" not in result_data["error"]
