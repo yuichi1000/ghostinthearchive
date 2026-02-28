@@ -76,3 +76,23 @@ class TestAPILibrarianFactory:
             agent = create_api_librarian(api_key)
             # MagicMock 環境では .name がモックされるため repr で検証
             assert f"librarian_{api_key}" in repr(agent)
+
+    def test_instruction_source_keys_exist_in_registry(self):
+        """instruction 内の sources= 値がソースレジストリに登録済みであること。"""
+        import re
+
+        from mystery_agents.tools.source_registry import get_all_sources
+
+        registry_keys = set(get_all_sources().keys())
+        pattern = re.compile(r'sources="([^"]+)"')
+
+        for api_key, config in API_CONFIGS.items():
+            strategy = config.get("search_strategy", "")
+            match = pattern.search(strategy)
+            if match:
+                source_refs = [s.strip() for s in match.group(1).split(",")]
+                for src in source_refs:
+                    assert src in registry_keys, (
+                        f"API '{api_key}' の instruction が参照する "
+                        f"sources=\"{src}\" はソースレジストリに未登録"
+                    )

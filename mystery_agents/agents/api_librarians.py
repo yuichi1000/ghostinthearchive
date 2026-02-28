@@ -196,7 +196,7 @@ API_CONFIGS: dict[str, dict] = {
             "   - Use appropriate kanji/hiragana for historical topics\n"
             "   - Include both modern and historical terminology\n"
             '2. Call **search_archives** with:\n'
-            '   - `sources="ndl_search"`, `language="ja"`\n'
+            '   - `sources="ndl"`, `language="ja"`\n'
             '   - `reference_keywords="番町, 皿屋敷, 江戸"`\n'
             '   - `keywords="怪談, 幽霊, 心霊現象, 民間伝承"`\n'
             "3. Date filtering is OPTIONAL"
@@ -265,7 +265,7 @@ API_CONFIGS: dict[str, dict] = {
             "   Generate medical/belief terms → `keywords`\n"
             "   - Include historical medical terms alongside modern equivalents\n"
             '2. Call **search_archives** with:\n'
-            '   - `sources="wellcome_collection"`, `language="en"`\n'
+            '   - `sources="wellcome"`, `language="en"`\n'
             '   - `reference_keywords="Salem, Pendle, 1692"`\n'
             '   - `keywords="witchcraft trial, possession, exorcism, folk remedy"`\n'
             "3. Date filtering is OPTIONAL"
