@@ -11,6 +11,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+import requests
+
 from google.adk.tools.tool_context import ToolContext
 from shared.keyword_translator import translate_keywords
 from shared.state_keys import (
@@ -35,11 +37,32 @@ from .source_registry import get_all_sources, resolve_newspaper_sources
 
 logger = logging.getLogger(__name__)
 
+# 画像バリデーション: この閾値未満はプレースホルダーとみなす
+MIN_IMAGE_BYTES = 5000
+
 # 並列実行の最大ワーカー数
 _MAX_WORKERS = 6
 
 # 全ソース合計のドキュメント上限
 _TOTAL_DOCS_CAP = 30
+
+
+def _validate_image_url(url: str, timeout: float = 5.0) -> bool:
+    """HEAD リクエストで画像 URL の有効性を検証する。
+
+    Europeana サムネイル API 等が返す白いプレースホルダー画像（1211バイト等）を
+    Content-Length ヘッダで検出し、除外する。
+    """
+    try:
+        resp = requests.head(url, timeout=timeout, allow_redirects=True)
+        if resp.status_code != 200:
+            return False
+        content_length = resp.headers.get("Content-Length")
+        if content_length is not None and int(content_length) < MIN_IMAGE_BYTES:
+            return False
+        return True
+    except (requests.RequestException, ValueError):
+        return False
 
 
 def _accumulate_archive_images(
@@ -59,9 +82,23 @@ def _accumulate_archive_images(
         if (d.get("thumbnail_url") or d.get("image_url"))
         and d.get("keywords_matched")
     ]
-    if images_with_urls:
+
+    # 画像 URL の有効性検証: プレースホルダー画像を除外する
+    validated = []
+    for img in images_with_urls:
+        thumb = img.get("thumbnail_url")
+        full = img.get("image_url")
+        if thumb and not _validate_image_url(thumb):
+            img["thumbnail_url"] = None
+        if full and not _validate_image_url(full):
+            img["image_url"] = None
+        # 両方 None なら蓄積しない
+        if img.get("thumbnail_url") or img.get("image_url"):
+            validated.append(img)
+
+    if validated:
         existing_images = tool_context.state.get(ARCHIVE_IMAGES, [])
-        existing_images.extend(images_with_urls)
+        existing_images.extend(validated)
         tool_context.state[ARCHIVE_IMAGES] = existing_images
 
 

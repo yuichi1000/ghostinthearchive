@@ -7,6 +7,8 @@
 import json
 import logging
 
+import responses
+
 from tests.fakes import make_archive_doc, make_tool_context
 
 
@@ -85,9 +87,16 @@ class TestRankDocumentsExcludesZeroMatch:
 class TestAccumulateImagesExcludesZeroMatch:
     """_accumulate_archive_images の0一致フィルタテスト。"""
 
+    @responses.activate
     def test_accumulate_images_excludes_zero_match(self):
         """keywords_matched が空のドキュメントの画像は蓄積されない。"""
         from mystery_agents.tools.librarian_tools import _accumulate_archive_images
+
+        # 画像バリデーションの HEAD リクエストをモック（正常画像）
+        responses.add(
+            responses.HEAD, "https://example.com/thumb1.jpg",
+            status=200, headers={"Content-Length": "40000"},
+        )
 
         ctx = make_tool_context()
         docs_dicts = [
@@ -110,6 +119,129 @@ class TestAccumulateImagesExcludesZeroMatch:
         images = ctx.state.get("archive_images", [])
         assert len(images) == 1
         assert images[0]["title"] == "Relevant"
+
+
+# ---------------------------------------------------------------------------
+# Layer 1.5: 画像 URL バリデーション（プレースホルダー除外）
+# ---------------------------------------------------------------------------
+
+
+class TestValidateImageUrl:
+    """_validate_image_url のテスト。"""
+
+    @responses.activate
+    def test_small_placeholder_rejected(self):
+        """Content-Length が閾値未満のプレースホルダー画像は無効と判定される。"""
+        from mystery_agents.tools.librarian_tools import _validate_image_url
+
+        url = "https://api.europeana.eu/thumbnail/v3/400/placeholder.jpg"
+        responses.add(
+            responses.HEAD, url,
+            status=200, headers={"Content-Length": "1211"},
+        )
+        assert _validate_image_url(url) is False
+
+    @responses.activate
+    def test_normal_image_accepted(self):
+        """正常なサイズの画像は有効と判定される。"""
+        from mystery_agents.tools.librarian_tools import _validate_image_url
+
+        url = "https://example.com/real-image.jpg"
+        responses.add(
+            responses.HEAD, url,
+            status=200, headers={"Content-Length": "40000"},
+        )
+        assert _validate_image_url(url) is True
+
+    @responses.activate
+    def test_no_content_length_accepted(self):
+        """Content-Length ヘッダなしは有効とみなす（判定不能のため許容）。"""
+        from mystery_agents.tools.librarian_tools import _validate_image_url
+
+        url = "https://example.com/streaming-image.jpg"
+        responses.add(responses.HEAD, url, status=200)
+        assert _validate_image_url(url) is True
+
+    @responses.activate
+    def test_http_error_rejected(self):
+        """HTTP 404 は無効と判定される。"""
+        from mystery_agents.tools.librarian_tools import _validate_image_url
+
+        url = "https://example.com/missing.jpg"
+        responses.add(responses.HEAD, url, status=404)
+        assert _validate_image_url(url) is False
+
+    @responses.activate
+    def test_network_error_rejected(self):
+        """ネットワークエラーは無効と判定される。"""
+        from mystery_agents.tools.librarian_tools import _validate_image_url
+        from requests.exceptions import ConnectionError
+
+        url = "https://unreachable.example.com/image.jpg"
+        responses.add(
+            responses.HEAD, url,
+            body=ConnectionError("Connection refused"),
+        )
+        assert _validate_image_url(url) is False
+
+
+class TestAccumulateImagesValidation:
+    """_accumulate_archive_images の画像バリデーション統合テスト。"""
+
+    @responses.activate
+    def test_placeholder_thumbnail_excluded(self):
+        """小さいプレースホルダー画像のみの場合、ドキュメントが除外される。"""
+        from mystery_agents.tools.librarian_tools import _accumulate_archive_images
+
+        responses.add(
+            responses.HEAD, "https://api.europeana.eu/thumbnail/placeholder.jpg",
+            status=200, headers={"Content-Length": "1211"},
+        )
+
+        ctx = make_tool_context()
+        docs_dicts = [
+            {
+                "title": "Gallica Document",
+                "source_url": "https://gallica.bnf.fr/doc1",
+                "source_type": "europeana",
+                "thumbnail_url": "https://api.europeana.eu/thumbnail/placeholder.jpg",
+                "keywords_matched": ["key1"],
+            },
+        ]
+        _accumulate_archive_images(ctx, docs_dicts)
+        images = ctx.state.get("archive_images", [])
+        assert len(images) == 0
+
+    @responses.activate
+    def test_invalid_thumbnail_valid_image_url_kept(self):
+        """thumbnail 無効 + image_url 有効 → image_url のみで蓄積される。"""
+        from mystery_agents.tools.librarian_tools import _accumulate_archive_images
+
+        responses.add(
+            responses.HEAD, "https://api.europeana.eu/thumbnail/placeholder.jpg",
+            status=200, headers={"Content-Length": "1211"},
+        )
+        responses.add(
+            responses.HEAD, "https://example.com/full-image.jpg",
+            status=200, headers={"Content-Length": "80000"},
+        )
+
+        ctx = make_tool_context()
+        docs_dicts = [
+            {
+                "title": "Mixed Validity",
+                "source_url": "https://example.com/doc",
+                "source_type": "europeana",
+                "thumbnail_url": "https://api.europeana.eu/thumbnail/placeholder.jpg",
+                "image_url": "https://example.com/full-image.jpg",
+                "keywords_matched": ["key1"],
+            },
+        ]
+        _accumulate_archive_images(ctx, docs_dicts)
+        images = ctx.state.get("archive_images", [])
+        assert len(images) == 1
+        assert images[0]["thumbnail_url"] is None
+        assert images[0]["image_url"] == "https://example.com/full-image.jpg"
 
 
 # ---------------------------------------------------------------------------
