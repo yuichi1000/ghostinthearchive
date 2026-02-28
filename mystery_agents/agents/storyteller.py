@@ -25,6 +25,7 @@ from shared.model_config import (
     STORYTELLER_MODELS,
     create_storyteller_model,
 )
+from shared.state_keys import STORYTELLER_LLM_METADATA
 
 from .storyteller_instructions import STORYTELLER_INSTRUCTION
 
@@ -159,7 +160,7 @@ def _storyteller_after_model(
             metadata["prompt_tokens"],
             metadata["output_tokens"],
         )
-        callback_context.state["storyteller_llm_metadata"] = metadata
+        callback_context.state[STORYTELLER_LLM_METADATA] = metadata
         return None
 
     # 異常応答: メタデータをログ + セッション状態に記録
@@ -189,7 +190,7 @@ def _storyteller_after_model(
         metadata["error_code"],
         extra=metadata,
     )
-    callback_context.state["storyteller_llm_metadata"] = metadata
+    callback_context.state[STORYTELLER_LLM_METADATA] = metadata
     return None
 
 

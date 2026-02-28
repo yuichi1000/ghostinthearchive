@@ -14,7 +14,7 @@ from shared.orchestrator import (
     _format_exception_group,
     run_pipeline,
 )
-from shared.state_keys import PUBLISHED_EPISODE, PUBLISHED_MYSTERY_ID
+from shared.state_keys import PUBLISHED_EPISODE, PUBLISHED_MYSTERY_ID, STORYTELLER_LLM_METADATA
 from tests.fakes import FakeInMemorySessionService
 
 
@@ -627,10 +627,10 @@ class TestDetectGateFailure:
         state = {
             "mystery_report": "A valid analysis...",
             "creative_content": "",
-            "storyteller_llm_metadata": llm_meta,
+            STORYTELLER_LLM_METADATA: llm_meta,
         }
         _, detail = _detect_gate_failure(state)
-        assert detail["storyteller_llm_metadata"] == llm_meta
+        assert detail[STORYTELLER_LLM_METADATA] == llm_meta
         assert detail["failed_stage"] == "storyteller"
 
     def test_no_storyteller_llm_metadata_when_absent(self):
@@ -640,7 +640,7 @@ class TestDetectGateFailure:
             "creative_content": "",
         }
         _, detail = _detect_gate_failure(state)
-        assert "storyteller_llm_metadata" not in detail
+        assert STORYTELLER_LLM_METADATA not in detail
 
 
 class TestGateFailureIntegration:

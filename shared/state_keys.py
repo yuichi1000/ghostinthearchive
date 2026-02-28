@@ -30,6 +30,7 @@ RAW_SEARCH_RESULTS = "raw_search_results"
 PUBLISHED_MYSTERY_ID = "published_mystery_id"
 INVESTIGATION_QUERY = "investigation_query"
 PIPELINE_RUN_ID = "pipeline_run_id"
+STORYTELLER_LLM_METADATA = "storyteller_llm_metadata"
 
 
 # ---------------------------------------------------------------------------

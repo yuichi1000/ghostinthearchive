@@ -11,6 +11,7 @@ from mystery_agents.agents.storyteller import (
     _storyteller_after_model,
     _storyteller_before_model,
 )
+from shared.state_keys import STORYTELLER_LLM_METADATA
 
 
 def _make_llm_response(
@@ -64,7 +65,7 @@ class TestStorytellerAfterModel:
         result = _storyteller_after_model(ctx, response)
 
         assert result is None
-        metadata = ctx.state["storyteller_llm_metadata"]
+        metadata = ctx.state[STORYTELLER_LLM_METADATA]
         assert "storyteller" in metadata
         assert "display_name" in metadata
 
@@ -76,7 +77,7 @@ class TestStorytellerAfterModel:
 
         _storyteller_after_model(ctx, response)
 
-        metadata = ctx.state["storyteller_llm_metadata"]
+        metadata = ctx.state[STORYTELLER_LLM_METADATA]
         assert metadata["actual_model"] == "claude-sonnet-4-5-20250929"
 
     def test_actual_model_none_when_not_available(self):
@@ -87,7 +88,7 @@ class TestStorytellerAfterModel:
 
         _storyteller_after_model(ctx, response)
 
-        metadata = ctx.state["storyteller_llm_metadata"]
+        metadata = ctx.state[STORYTELLER_LLM_METADATA]
         assert metadata["actual_model"] is None
 
     def test_actual_model_in_error_metadata(self):
@@ -101,7 +102,7 @@ class TestStorytellerAfterModel:
 
         _storyteller_after_model(ctx, response)
 
-        metadata = ctx.state["storyteller_llm_metadata"]
+        metadata = ctx.state[STORYTELLER_LLM_METADATA]
         assert metadata["actual_model"] == "deepseek/deepseek-r1"
 
     def test_empty_response_records_metadata(self, caplog):
@@ -117,7 +118,7 @@ class TestStorytellerAfterModel:
             result = _storyteller_after_model(ctx, response)
 
         assert result is None
-        metadata = ctx.state["storyteller_llm_metadata"]
+        metadata = ctx.state[STORYTELLER_LLM_METADATA]
         assert metadata["has_content"] is False
         assert metadata["prompt_tokens"] == 5000
         assert metadata["output_tokens"] == 0
@@ -146,7 +147,7 @@ class TestStorytellerAfterModel:
             result = _storyteller_after_model(ctx, response)
 
         assert result is None
-        metadata = ctx.state["storyteller_llm_metadata"]
+        metadata = ctx.state[STORYTELLER_LLM_METADATA]
         assert metadata["error_code"] == "SAFETY_FILTER"
         assert metadata["error_message"] == "Content blocked by safety filter"
         assert metadata["finish_reason"] == "SAFETY"
@@ -160,7 +161,7 @@ class TestStorytellerAfterModel:
         result = _storyteller_after_model(ctx, response)
 
         assert result is None
-        metadata = ctx.state["storyteller_llm_metadata"]
+        metadata = ctx.state[STORYTELLER_LLM_METADATA]
         assert metadata["prompt_tokens"] is None
         assert metadata["output_tokens"] is None
 
