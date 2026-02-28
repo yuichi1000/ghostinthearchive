@@ -8,6 +8,7 @@ import { Breadcrumb } from "@/components/breadcrumb"
 import { RelatedArticles } from "@/components/related-articles"
 import { ShareButtons } from "@/components/share-buttons"
 import { ArticleJsonLd } from "@/components/article-json-ld"
+import { MysteryPageTracker } from "@/components/trackers/mystery-page-tracker"
 import { getMysteryById, getPublishedMysteryIds, getAllPublishedMysteriesMap } from "@ghost/shared/src/lib/firestore/queries"
 import { Share2 } from "lucide-react"
 import { localizeMystery, getTranslatedExcerpt } from "@ghost/shared/src/lib/localize"
@@ -200,6 +201,13 @@ export default async function MysteryDetailPage({
             datePublished={mystery.publishedAt?.toISOString()}
             dateModified={mystery.updatedAt?.toISOString()}
             imageUrl={mystery.images?.hero}
+            lang={lang}
+          />
+
+          <MysteryPageTracker
+            mysteryId={mystery.mystery_id}
+            classification={mystery.mystery_id.slice(0, 3).toUpperCase()}
+            confidenceLevel={mystery.confidence_level}
             lang={lang}
           />
 
