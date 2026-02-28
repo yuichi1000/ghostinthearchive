@@ -1617,3 +1617,60 @@ class TestContentMetrics:
         # ユニーク: example.com, example.com/es, unique.com = 3
         assert saved["source_count"] == 3
 
+
+class TestTagsOverlay:
+    """structured_report の tags が Firestore に保存されるテスト。"""
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_tags_from_structured_report(self, mock_get_db, mock_get_bucket):
+        """structured_report の tags が Firestore に保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Test",
+                "summary": "Test summary",
+                "tags": ["shipwreck", "colonial america", "19th century"],
+            }
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["tags"] == ["shipwreck", "colonial america", "19th century"]
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_no_tags_when_absent(self, mock_get_db, mock_get_bucket):
+        """structured_report に tags がない場合はフィールドが設定されない。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Test",
+                "summary": "Test summary",
+            }
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "tags" not in saved
+

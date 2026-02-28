@@ -264,6 +264,26 @@ def save_structured_report(
         if ev and isinstance(ev, dict):
             ev.pop("_kw_match_count", None)
 
+    # タグバリデーション
+    tags = report_data.get("tags")
+    if tags is not None:
+        if not isinstance(tags, list):
+            warnings.append("tags: not a list, removed")
+            del report_data["tags"]
+        else:
+            # 小文字正規化、空文字フィルタ、重複排除（順序保持）
+            normalized: list[str] = []
+            seen: set[str] = set()
+            for tag in tags:
+                if not isinstance(tag, str):
+                    continue
+                t = tag.strip().lower()
+                if t and t not in seen:
+                    normalized.append(t)
+                    seen.add(t)
+            # 最大10個に制限
+            report_data["tags"] = normalized[:10]
+
     # Store structured report in session state
     tool_context.state[STRUCTURED_REPORT] = report_data
 

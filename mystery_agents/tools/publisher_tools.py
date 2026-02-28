@@ -119,6 +119,7 @@ def publish_mystery(
                     "historical_context", "research_questions", "story_hooks",
                     "title", "summary",
                     "source_coverage", "academic_coverage", "confidence_rationale",
+                    "tags",
                 ):
                     if key in structured_report:
                         data[key] = structured_report[key]

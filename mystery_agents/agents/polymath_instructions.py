@@ -139,6 +139,12 @@ Armchair Polymath の instruction を構成する3つのセクション
 # - within_range が false の場合：語数を満たすようレポートを修正し、再度 count_words を呼ぶ。
 # - within_range が true の場合：count_words を再度呼ばず、直ちに save_structured_report に進む。
 #
+# ## セマンティックタグ
+# 構造化レポートの `"tags"` 配列に5〜10個の小文字英語タグを含める。
+# カテゴリ: 主題（shipwreck 等）、地域（colonial america 等）、時代（19th century 等）、
+# 学問分野（folklore 等）、テーマ（ghost ship 等）。
+# classification コードと重複しないこと。
+#
 # ## ガード
 # - 全言語の分析が空 → INSUFFICIENT_DATA を出力
 # - 1言語のみ → その結果のみで Master Report 作成
@@ -437,7 +443,8 @@ After completing your analysis, you MUST call `save_structured_report` with a JS
     "coverage_assessment": "Approximately 15-20% of records from this period are digitized..."
   }},
   "confidence_rationale": "Rated MEDIUM because two independent sources contradict on the date of arrival, but DPLA and Europeana returned no results — the discrepancy might be resolved by undigitized port authority records.",
-  "languages_analyzed": ["en", "de"]
+  "languages_analyzed": ["en", "de"],
+  "tags": ["shipwreck", "colonial america", "19th century", "folklore", "maritime mystery"]
 }}
 ```
 
@@ -507,9 +514,25 @@ The full JSON structure for `save_structured_report`:
     "consensus_vs_primary": "Academic consensus treats the 1842 incident as a routine maritime loss, but primary sources from two languages suggest deliberate concealment."
   }},
   "confidence_rationale": "Rationale for the chosen confidence level",
-  "languages_analyzed": ["en", "de"]
+  "languages_analyzed": ["en", "de"],
+  "tags": ["shipwreck", "colonial america", "19th century", "folklore", "ghost ship"]
 }}
 ```
+
+### Semantic Tags
+Include a `"tags"` array of 5–10 lowercase English tags for article classification and related-article recommendation.
+Tag categories:
+- **Subject** (e.g., "shipwreck", "witch trial", "plague")
+- **Region** (e.g., "colonial america", "edo japan", "victorian england")
+- **Era** (e.g., "19th century", "medieval", "1920s")
+- **Discipline** (e.g., "folklore", "linguistics", "archival science")
+- **Theme** (e.g., "ghost ship", "disappearance", "identity fraud")
+
+Rules:
+- All lowercase, English only
+- Do NOT duplicate classification codes (HIS, FLK, etc.) as tags
+- 5–10 tags per article
+- Use compound phrases where needed (e.g., "oral tradition" not just "oral")
 
 This call is mandatory — do NOT skip it.
 
