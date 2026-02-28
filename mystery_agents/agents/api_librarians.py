@@ -11,6 +11,7 @@ collected_documents_{api_key} に結果を保存する。
 """
 
 from google.adk.agents import LlmAgent
+from google.genai import types
 
 from shared.model_config import create_flash_model
 
@@ -46,15 +47,15 @@ API_CONFIGS: dict[str, dict] = {
             "with no Western documentation)."
         ),
         "search_strategy": (
-            '1. Generate 3-5 focused search keywords in **English**\n'
-            '2. Call **search_archives** with:\n'
-            '   - `sources="loc, nypl"`\n'
-            '   - `language="en"`\n'
-            '   - Example: keywords="Bell Witch, Adams Tennessee, poltergeist"\n'
-            "3. Call **search_newspapers** for historical newspaper articles\n"
+            "1. Extract proper nouns, dates, and places from the theme → `reference_keywords`\n"
+            "2. Generate creative/associative terms → `keywords`\n"
+            '3. Call **search_archives** with:\n'
+            '   - `sources="loc, nypl"`, `language="en"`\n'
+            '   - `reference_keywords="Bell, Adams, Tennessee, 1820"`\n'
+            '   - `keywords="poltergeist, haunting, frontier spirit"`\n'
+            "4. Call **search_newspapers** with the same two-phase keywords\n"
             "   - The tool searches Chronicling America automatically\n"
-            "   - Use the same or similar keywords as the archive search\n"
-            "4. Date filtering is OPTIONAL. Only set `date_start` and `date_end` when\n"
+            "5. Date filtering is OPTIONAL. Only set `date_start` and `date_end` when\n"
             "   the theme clearly indicates a specific time period"
         ),
         "has_newspapers": True,
@@ -85,15 +86,16 @@ API_CONFIGS: dict[str, dict] = {
         "search_strategy": (
             "1. Analyze the theme and determine which European languages are relevant\n"
             "   (up to 3 languages)\n"
-            "2. For EACH relevant language, generate 3-5 keywords in that language\n"
+            "2. For EACH language, split keywords into reference (proper nouns/places)\n"
+            "   and exploratory (associative terms)\n"
             '3. Call **search_archives** once per language with:\n'
-            '   - `sources="europeana"`\n'
-            "   - `language` set to the relevant language code\n"
+            '   - `sources="europeana"`, `language` set to the relevant code\n'
             "   - Example for a German theme:\n"
-            '     Call 1: keywords="Geisterschiff, Nordsee, Schiffbruch", language="de"\n'
+            '     reference_keywords="Rhein, Loreley, 1801"\n'
+            '     keywords="Geisterschiff, Schiffbruch, Sage"\n'
             "   - Example for a Franco-German border theme:\n"
-            '     Call 1: keywords="Geisterschiff, Rhein, Grenze", language="de"\n'
-            '     Call 2: keywords="vaisseau fantôme, Rhin, frontière", language="fr"\n'
+            '     Call 1: reference_keywords="Rhein, Elsass", keywords="Grenze, Geist", language="de"\n'
+            '     Call 2: reference_keywords="Rhin, Alsace", keywords="frontière, fantôme", language="fr"\n'
             "4. Always search in the primary language of the theme's region.\n"
             "   Add additional languages when the theme spans borders or cultures.\n"
             "5. Date filtering is OPTIONAL — use only when the time period is clear"
@@ -120,11 +122,11 @@ API_CONFIGS: dict[str, dict] = {
             "and folklore collections that may not be in institutional archives."
         ),
         "search_strategy": (
-            "1. Generate 3-5 keywords in **English** (IA's search works best with English)\n"
+            "1. Extract proper nouns/places → `reference_keywords`, creative terms → `keywords`\n"
             '2. Call **search_archives** with:\n'
-            '   - `sources="internet_archive"`\n'
-            '   - `language="en"`\n'
-            "   - Example: keywords=\"vampire folklore, Eastern Europe, superstition\"\n"
+            '   - `sources="internet_archive"`, `language="en"`\n'
+            '   - `reference_keywords="Transylvania, Vlad, Wallachia"`\n'
+            '   - `keywords="vampire folklore, superstition, undead"`\n'
             "3. If the theme is strongly connected to a non-English culture,\n"
             "   consider keywords in that language as well\n"
             "4. Date filtering is OPTIONAL"
@@ -154,14 +156,13 @@ API_CONFIGS: dict[str, dict] = {
             "**Skip** if the theme has no plausible German-speaking world connection."
         ),
         "search_strategy": (
-            "1. Generate 3-5 keywords in **German**\n"
-            "   - Think about how this topic would be described in German academic\n"
-            "     and archival traditions\n"
+            "1. Extract proper nouns/places → `reference_keywords` in German\n"
+            "   Generate creative/folk terms → `keywords` in German\n"
             "   - Include both Hochdeutsch and historical/dialect terms if applicable\n"
             '2. Call **search_archives** with:\n'
-            '   - `sources="ddb"`\n'
-            '   - `language="de"`\n'
-            "   - Example: keywords=\"Spukhaus, Poltergeist, Volksglaube\"\n"
+            '   - `sources="ddb"`, `language="de"`\n'
+            '   - `reference_keywords="Burg Frankenstein, Odenwald"`\n'
+            '   - `keywords="Spukhaus, Poltergeist, Volksglaube"`\n'
             "3. Date filtering is OPTIONAL"
         ),
         "has_newspapers": False,
@@ -189,14 +190,14 @@ API_CONFIGS: dict[str, dict] = {
             "**Skip** if the theme has no plausible Japanese connection."
         ),
         "search_strategy": (
-            "1. Generate 3-5 keywords in **Japanese**\n"
+            "1. Extract proper nouns/places → `reference_keywords` in Japanese\n"
+            "   Generate associative terms → `keywords` in Japanese\n"
             "   - Use appropriate kanji/hiragana for historical topics\n"
             "   - Include both modern and historical terminology\n"
-            "   - Example: 怪談, 幽霊, 心霊現象, 民間伝承\n"
             '2. Call **search_archives** with:\n'
-            '   - `sources="ndl_search"`\n'
-            '   - `language="ja"`\n'
-            "   - Example: keywords=\"怪談, 番町皿屋敷, 幽霊, 江戸\"\n"
+            '   - `sources="ndl_search"`, `language="ja"`\n'
+            '   - `reference_keywords="番町, 皿屋敷, 江戸"`\n'
+            '   - `keywords="怪談, 幽霊, 心霊現象, 民間伝承"`\n'
             "3. Date filtering is OPTIONAL"
         ),
         "has_newspapers": False,
@@ -224,12 +225,13 @@ API_CONFIGS: dict[str, dict] = {
             "**Skip** if the theme has no plausible Oceanian or Pacific connection."
         ),
         "search_strategy": (
-            "1. Generate 3-5 keywords in **English**\n"
+            "1. Extract proper nouns/places → `reference_keywords`\n"
+            "   Generate creative terms → `keywords`\n"
             "   - Focus on Australian/Oceanian terminology and place names\n"
             '2. Call **search_archives** with:\n'
-            '   - `sources="trove"`\n'
-            '   - `language="en"`\n'
-            "   - Example: keywords=\"ghost ship, Bass Strait, shipwreck, colonial\"\n"
+            '   - `sources="trove"`, `language="en"`\n'
+            '   - `reference_keywords="Bass Strait, Melbourne, 1852"`\n'
+            '   - `keywords="ghost ship, shipwreck, colonial mystery"`\n'
             "3. Date filtering is OPTIONAL"
         ),
         "has_newspapers": False,
@@ -258,13 +260,13 @@ API_CONFIGS: dict[str, dict] = {
             "or the supernatural."
         ),
         "search_strategy": (
-            "1. Generate 3-5 keywords in **English**\n"
-            "   - Focus on medical and belief-related terminology\n"
+            "1. Extract proper nouns/places → `reference_keywords`\n"
+            "   Generate medical/belief terms → `keywords`\n"
             "   - Include historical medical terms alongside modern equivalents\n"
             '2. Call **search_archives** with:\n'
-            '   - `sources="wellcome_collection"`\n'
-            '   - `language="en"`\n'
-            "   - Example: keywords=\"witchcraft trial, possession, exorcism, folk remedy\"\n"
+            '   - `sources="wellcome_collection"`, `language="en"`\n'
+            '   - `reference_keywords="Salem, Pendle, 1692"`\n'
+            '   - `keywords="witchcraft trial, possession, exorcism, folk remedy"`\n'
             "3. Date filtering is OPTIONAL"
         ),
         "has_newspapers": False,
@@ -297,6 +299,7 @@ def create_api_librarian(api_key: str) -> LlmAgent:
         instruction=instruction,
         tools=tools,
         output_key=f"collected_documents_{api_key}",
+        generate_content_config=types.GenerateContentConfig(temperature=0.3),
     )
 
 

@@ -29,6 +29,7 @@ from shared.state_keys import (
     IMAGE_METADATA,
     MYSTERY_REPORT,
     PUBLISHED_MYSTERY_ID,
+    SEARCH_LOG,
     STORYTELLER_LLM_METADATA,
     STRUCTURED_REPORT,
     collected_documents_key,
@@ -327,6 +328,12 @@ def publish_mystery(
             storyteller_meta = tool_context.state.get(STORYTELLER_LLM_METADATA)
             if storyteller_meta and isinstance(storyteller_meta, dict):
                 data["storyteller_llm_metadata"] = storyteller_meta
+
+        # 検索活動ログ（再現性条件の担保: 第三者が同じ検索を追跡可能）
+        if tool_context is not None:
+            search_log = tool_context.state.get(SEARCH_LOG)
+            if search_log and isinstance(search_log, list):
+                data["search_log"] = search_log
 
         # スキーマバージョン（ドキュメント構造の世代管理）
         data["schema_version"] = SCHEMA_VERSION

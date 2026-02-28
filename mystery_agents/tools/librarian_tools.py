@@ -16,6 +16,7 @@ from shared.keyword_translator import translate_keywords
 from shared.state_keys import (
     ARCHIVE_IMAGES,
     RAW_SEARCH_RESULTS,
+    SEARCH_LOG,
     raw_search_results_key,
 )
 
@@ -64,8 +65,51 @@ def _accumulate_archive_images(
         tool_context.state[ARCHIVE_IMAGES] = existing_images
 
 
+def _build_search_log_entry(
+    *,
+    tool: str,
+    reference_keywords: list[str],
+    exploratory_keywords: list[str],
+    language: str | None,
+    sources_searched: dict,
+    total_documents: int,
+    date_start: str | None,
+    date_end: str | None,
+    link_validation: dict,
+    fallback_used: bool,
+) -> dict:
+    """search_log エントリを構築する。"""
+    entry: dict = {
+        "timestamp": datetime.now().isoformat(),
+        "tool": tool,
+        "reference_keywords": reference_keywords,
+        "exploratory_keywords": exploratory_keywords,
+        "language": language,
+        "sources_searched": sources_searched,
+        "total_documents": total_documents,
+        "link_validation": {
+            "total_checked": link_validation.get("total_checked", 0),
+            "reachable": link_validation.get("reachable", 0),
+            "unreachable": link_validation.get("unreachable", 0),
+            "removed_count": link_validation.get("removed_count", 0),
+        },
+        "fallback_used": fallback_used,
+    }
+    if date_start or date_end:
+        entry["date_range"] = {"start": date_start, "end": date_end}
+    return entry
+
+
+def _accumulate_search_log(tool_context: ToolContext, entry: dict) -> None:
+    """search_log エントリをセッション状態に蓄積する。"""
+    existing = tool_context.state.get(SEARCH_LOG, [])
+    existing.append(entry)
+    tool_context.state[SEARCH_LOG] = existing
+
+
 def search_newspapers(
     keywords: str,
+    reference_keywords: str = "",
     date_start: Optional[str] = None,
     date_end: Optional[str] = None,
     states: Optional[str] = None,
@@ -84,7 +128,9 @@ def search_newspapers(
     individual keyword search and geographic expansion.
 
     Args:
-        keywords: Comma-separated list of search keywords related to historical mysteries
+        keywords: Comma-separated exploratory search keywords (creative, associative terms)
+        reference_keywords: Comma-separated systematic keywords (proper nouns, dates, places).
+            These ensure reproducibility — a third party can re-run the same search.
         date_start: Optional start year for filtering (e.g., "1700"). Omit to search all dates.
         date_end: Optional end year for filtering (e.g., "1800"). Omit to search all dates.
         states: Comma-separated US states to search (default: East Coast states)
@@ -97,6 +143,10 @@ def search_newspapers(
     """
     # 言語のデフォルト
     lang = language or "en"
+
+    # 2段階キーワード解析: reference（系統的）+ exploratory（探索的）
+    reference_list = [kw.strip() for kw in reference_keywords.split(",") if kw.strip()]
+    exploratory_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
     # Registry から新聞ソースを解決
     newspaper_sources = resolve_newspaper_sources(lang)
@@ -126,8 +176,9 @@ def search_newspapers(
         return json.dumps(empty_result, ensure_ascii=False, indent=2)
 
     # --- Chronicling America フォールバックロジック ---
-    # キーワードパース
-    keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
+    # キーワード結合: reference + exploratory を1つのリストに
+    combined_keywords = reference_list + exploratory_list
+    keyword_list = combined_keywords if combined_keywords else [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
     # バイリンガル展開
     expanded = expand_keywords_bilingual(keyword_list)
@@ -227,22 +278,26 @@ def search_newspapers(
 
     docs = [doc.model_dump() for doc in all_docs]
 
+    link_validation_dict = {
+        "total_checked": validation.total_checked,
+        "reachable": validation.reachable,
+        "unreachable": validation.unreachable,
+        "removed_count": len(validation.removed_urls),
+        "removed_urls": validation.removed_urls,
+        "duration_ms": validation.duration_ms,
+    }
+
     result = {
         "source": "chronicling_america",
         "keywords_used": all_keywords_used,
+        "reference_keywords": reference_list,
+        "exploratory_keywords": exploratory_list,
         "total_hits": total_hits,
         "documents_returned": len(docs),
         "documents": docs,
         "error": error,
         "search_levels_used": levels_used,
-        "link_validation": {
-            "total_checked": validation.total_checked,
-            "reachable": validation.reachable,
-            "unreachable": validation.unreachable,
-            "removed_count": len(validation.removed_urls),
-            "removed_urls": validation.removed_urls,
-            "duration_ms": validation.duration_ms,
-        },
+        "link_validation": link_validation_dict,
     }
 
     # セッション状態に保存
@@ -251,6 +306,22 @@ def search_newspapers(
         existing.append(result)
         tool_context.state[RAW_SEARCH_RESULTS] = existing
         _accumulate_archive_images(tool_context, docs)
+        # search_log 蓄積
+        _accumulate_search_log(tool_context, _build_search_log_entry(
+            tool="search_newspapers",
+            reference_keywords=reference_list,
+            exploratory_keywords=exploratory_list,
+            language=lang,
+            sources_searched={"chronicling_america": {
+                "total_hits": total_hits,
+                "documents_returned": len(docs),
+            }},
+            total_documents=len(docs),
+            date_start=date_start,
+            date_end=date_end,
+            link_validation=link_validation_dict,
+            fallback_used=bool(len(levels_used) > 1),
+        ))
 
     return json.dumps(result, ensure_ascii=False, indent=2)
 
@@ -311,6 +382,7 @@ def save_search_results(
 
 def search_archives(
     keywords: str,
+    reference_keywords: str = "",
     date_start: Optional[str] = None,
     date_end: Optional[str] = None,
     sources: Optional[str] = None,
@@ -325,7 +397,9 @@ def search_archives(
     Results are ranked by keyword match count and capped at a total limit.
 
     Args:
-        keywords: Comma-separated search keywords
+        keywords: Comma-separated exploratory search keywords (creative, associative terms)
+        reference_keywords: Comma-separated systematic keywords (proper nouns, dates, places).
+            These ensure reproducibility — a third party can re-run the same search.
         date_start: Optional start year for filtering (e.g., "1700"). Omit to search all dates.
         date_end: Optional end year for filtering (e.g., "1800"). Omit to search all dates.
         sources: Comma-separated source names to search (default: all US sources).
@@ -337,7 +411,11 @@ def search_archives(
     Returns:
         JSON string with merged results from all sources.
     """
-    keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
+    # 2段階キーワード解析: reference（系統的）+ exploratory（探索的）
+    reference_list = [kw.strip() for kw in reference_keywords.split(",") if kw.strip()]
+    exploratory_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
+    combined_keywords = reference_list + exploratory_list
+    keyword_list = combined_keywords if combined_keywords else exploratory_list
 
     # キーワード言語診断ログ: 非英語 API に英語キーワードを渡していないか検出する
     if language and language != "en":
@@ -496,22 +574,26 @@ def search_archives(
             f"These sources were skipped. Set the required environment variables to enable them."
         )
 
+    link_validation_dict = {
+        "total_checked": validation.total_checked,
+        "reachable": validation.reachable,
+        "unreachable": validation.unreachable,
+        "removed_count": len(validation.removed_urls),
+        "removed_urls": validation.removed_urls,
+        "duration_ms": validation.duration_ms,
+    }
+
     result = {
         "warnings": warnings if warnings else None,
         "keywords_used": all_keywords_used,
+        "reference_keywords": reference_list,
+        "exploratory_keywords": exploratory_list,
         "sources_searched": source_results,
         "total_documents": len(all_docs_dicts),
         "documents": all_docs_dicts,
         "errors": errors if errors else None,
         "fallback_used": fallback_used,
-        "link_validation": {
-            "total_checked": validation.total_checked,
-            "reachable": validation.reachable,
-            "unreachable": validation.unreachable,
-            "removed_count": len(validation.removed_urls),
-            "removed_urls": validation.removed_urls,
-            "duration_ms": validation.duration_ms,
-        },
+        "link_validation": link_validation_dict,
     }
 
     # セッション状態に保存
@@ -521,6 +603,19 @@ def search_archives(
         existing.append(result)
         tool_context.state[state_key] = existing
         _accumulate_archive_images(tool_context, all_docs_dicts)
+        # search_log 蓄積
+        _accumulate_search_log(tool_context, _build_search_log_entry(
+            tool="search_archives",
+            reference_keywords=reference_list,
+            exploratory_keywords=exploratory_list,
+            language=language,
+            sources_searched=source_results,
+            total_documents=len(all_docs_dicts),
+            date_start=date_start,
+            date_end=date_end,
+            link_validation=link_validation_dict,
+            fallback_used=fallback_used,
+        ))
 
     return json.dumps(result, ensure_ascii=False, indent=2)
 

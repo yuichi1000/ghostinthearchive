@@ -1058,3 +1058,172 @@ class TestTranslateKeywordsForSource:
                 _translate_keywords_for_source(["ghost"], ndl_source)
 
         assert "キーワード言語不一致" in caplog.text or "自動翻訳" in caplog.text
+
+
+# === 2段階キーワード + search_log のテスト ===
+
+
+class TestReferenceKeywords:
+    """reference_keywords の結合・後方互換テスト"""
+
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    def test_reference_keywords_combined_with_exploratory(
+        self, mock_get_all, mock_validate
+    ):
+        """reference + exploratory キーワードが結合されて検索される。"""
+        call_log = []
+
+        class LogSource:
+            source_key = "loc"
+            source_name = "LOC"
+            supports_language_filter = False
+            supported_languages = {"en"}
+
+            def search(self, **kwargs):
+                call_log.append(kwargs["keywords"])
+                return ArchiveSearchResult(documents=[], total_hits=0)
+
+        mock_get_all.return_value = {"loc": LogSource()}
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 0, "reachable": 0, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 0, "verified_documents": [],
+        })()
+
+        result_json = search_archives(
+            keywords="poltergeist, haunting",
+            reference_keywords="Bell, Adams, Tennessee",
+            sources="loc",
+            language="en",
+        )
+        result = json.loads(result_json)
+
+        # reference + exploratory の両方が keywords_used に含まれる
+        assert "Bell" in result["keywords_used"]
+        assert "poltergeist" in result["keywords_used"]
+        # reference / exploratory が分離記録されている
+        assert result["reference_keywords"] == ["Bell", "Adams", "Tennessee"]
+        assert result["exploratory_keywords"] == ["poltergeist", "haunting"]
+        # 最初の検索呼び出しに両方のキーワードが含まれる
+        assert len(call_log) >= 1
+        assert "Bell" in call_log[0]
+        assert "poltergeist" in call_log[0]
+
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    def test_backward_compatible_without_reference_keywords(
+        self, mock_get_all, mock_validate
+    ):
+        """reference_keywords 未指定時は全キーワードが exploratory 扱い。"""
+        mock_get_all.return_value = {
+            "loc": _make_mock_source(source_key="loc", docs=[], total_hits=0),
+        }
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 0, "reachable": 0, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 0, "verified_documents": [],
+        })()
+
+        result_json = search_archives(
+            keywords="ghost, ship",
+            sources="loc",
+            language="en",
+        )
+        result = json.loads(result_json)
+
+        assert result["reference_keywords"] == []
+        assert result["exploratory_keywords"] == ["ghost", "ship"]
+        assert result["keywords_used"] == ["ghost", "ship"]
+
+
+class TestSearchLog:
+    """search_log のセッション状態蓄積テスト"""
+
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    def test_search_log_entry_structure(self, mock_get_all, mock_validate):
+        """search_log エントリに必須フィールドが存在する。"""
+        from tests.fakes import make_tool_context
+
+        mock_get_all.return_value = {
+            "loc": _make_mock_source(source_key="loc", docs=[], total_hits=0),
+        }
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 0, "reachable": 0, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 0, "verified_documents": [],
+        })()
+
+        ctx = make_tool_context({})
+        search_archives(
+            keywords="haunting",
+            reference_keywords="Bell, Tennessee",
+            sources="loc",
+            language="en",
+            tool_context=ctx,
+        )
+
+        log = ctx.state.get("search_log", [])
+        assert len(log) == 1
+        entry = log[0]
+        assert entry["tool"] == "search_archives"
+        assert entry["reference_keywords"] == ["Bell", "Tennessee"]
+        assert entry["exploratory_keywords"] == ["haunting"]
+        assert entry["language"] == "en"
+        assert "timestamp" in entry
+        assert "sources_searched" in entry
+        assert "total_documents" in entry
+        assert "link_validation" in entry
+        assert "fallback_used" in entry
+
+    @patch("mystery_agents.tools.librarian_tools.validate_documents")
+    @patch("mystery_agents.tools.librarian_tools.search_chronicling_america")
+    @patch("mystery_agents.tools.librarian_tools.resolve_newspaper_sources")
+    @patch("mystery_agents.tools.librarian_tools.get_all_sources")
+    def test_search_log_accumulates_across_calls(
+        self, mock_get_all, mock_resolve, mock_search_ca, mock_validate
+    ):
+        """search_archives + search_newspapers で search_log が蓄積される。"""
+        from tests.fakes import make_tool_context
+
+        # search_archives 用モック
+        mock_get_all.return_value = {
+            "loc": _make_mock_source(source_key="loc", docs=[], total_hits=0),
+        }
+        mock_validate.return_value = type("Summary", (), {
+            "total_checked": 0, "reachable": 0, "unreachable": 0,
+            "removed_urls": [], "duration_ms": 0, "verified_documents": [],
+        })()
+
+        # search_newspapers 用モック
+        mock_ca = type("CA", (), {
+            "source_key": "chronicling_america",
+            "is_newspaper_source": True,
+        })()
+        mock_resolve.return_value = [mock_ca]
+        mock_search_ca.return_value = {
+            "total_hits": 0,
+            "documents": [],
+            "error": None,
+        }
+
+        ctx = make_tool_context({})
+
+        # 1回目: search_archives
+        search_archives(
+            keywords="haunting",
+            reference_keywords="Bell",
+            sources="loc",
+            language="en",
+            tool_context=ctx,
+        )
+        # 2回目: search_newspapers
+        search_newspapers(
+            keywords="ghost",
+            reference_keywords="Adams",
+            language="en",
+            tool_context=ctx,
+        )
+
+        log = ctx.state.get("search_log", [])
+        assert len(log) == 2
+        assert log[0]["tool"] == "search_archives"
+        assert log[1]["tool"] == "search_newspapers"
