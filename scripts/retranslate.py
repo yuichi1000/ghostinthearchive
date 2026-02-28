@@ -51,7 +51,7 @@ async def _run_translator(lang: str, creative_content: str, mystery_report: str)
     )
 
     # セッション作成（Translator は creative_content と mystery_report をセッション状態から参照する）
-    session = await session_service.create_session(
+    await session_service.create_session(
         app_name=f"retranslate_{lang}",
         user_id="retranslate_script",
         session_id=f"retranslate_{lang}",
