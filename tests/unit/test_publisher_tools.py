@@ -1465,3 +1465,155 @@ class TestPublishMysterySearchLog:
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert "search_log" not in saved
 
+
+class TestContentMetrics:
+    """コンテンツ定量指標の自動計算テスト。"""
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_word_count_calculated(self, mock_get_db, mock_get_bucket):
+        """narrative_content から word_count が正しく算出される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        # 100語の narrative_content
+        words = " ".join(["word"] * 100)
+        mystery_json = _make_mystery_json(narrative_content=words)
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["word_count"] == 100
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_reading_time_200_words(self, mock_get_db, mock_get_bucket):
+        """200語 → reading_time_minutes = 1。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        words = " ".join(["word"] * 200)
+        mystery_json = _make_mystery_json(narrative_content=words)
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["reading_time_minutes"] == 1
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_reading_time_1000_words(self, mock_get_db, mock_get_bucket):
+        """1000語 → reading_time_minutes = 5。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        words = " ".join(["word"] * 1000)
+        mystery_json = _make_mystery_json(narrative_content=words)
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["reading_time_minutes"] == 5
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_reading_time_minimum_1(self, mock_get_db, mock_get_bucket):
+        """50語 → reading_time_minutes = 最小値1。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        words = " ".join(["word"] * 50)
+        mystery_json = _make_mystery_json(narrative_content=words)
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["reading_time_minutes"] == 1
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_word_count_skipped_for_empty_narrative(self, mock_get_db, mock_get_bucket):
+        """narrative_content が空の場合は word_count を設定しない。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        mystery_json = _make_mystery_json(narrative_content="")
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "word_count" not in saved
+        assert "reading_time_minutes" not in saved
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_evidence_count_all_present(self, mock_get_db, mock_get_bucket):
+        """evidence_a + evidence_b + additional_evidence の合計が正しい。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        mystery_json = _make_mystery_json(
+            additional_evidence=[
+                {"source_url": "https://c.com", "relevant_excerpt": "C"},
+                {"source_url": "https://d.com", "relevant_excerpt": "D"},
+            ]
+        )
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        # evidence_a(1) + evidence_b(1) + additional(2) = 4
+        assert saved["evidence_count"] == 4
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_evidence_count_no_additional(self, mock_get_db, mock_get_bucket):
+        """additional_evidence なしでも evidence_a + evidence_b = 2。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        mystery_json = _make_mystery_json(additional_evidence=[])
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["evidence_count"] == 2
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_source_count_deduplicates_urls(self, mock_get_db, mock_get_bucket):
+        """同じ source_url は重複排除される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        # evidence_a と additional_evidence[0] が同じ URL
+        mystery_json = _make_mystery_json(
+            additional_evidence=[
+                {"source_url": "https://example.com", "relevant_excerpt": "Dup"},
+                {"source_url": "https://unique.com", "relevant_excerpt": "Unique"},
+            ]
+        )
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        # evidence_a(example.com) + evidence_b(example.com/es) + additional(example.com重複, unique.com)
+        # ユニーク: example.com, example.com/es, unique.com = 3
+        assert saved["source_count"] == 3
+
