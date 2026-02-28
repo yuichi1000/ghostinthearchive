@@ -244,14 +244,15 @@ def save_structured_report(
     grounding_warnings = _validate_evidence_grounding(report_data, tool_context)
     warnings.extend(grounding_warnings)
 
-    # additional_evidence: キーワード無一致の項目を除外
-    additional = report_data.get("additional_evidence", [])
-    before_kw_filter = len(additional)
-    additional = [ev for ev in additional if ev.pop("_kw_match_count", 1) > 0]
-    kw_removed = before_kw_filter - len(additional)
-    if kw_removed:
-        warnings.append(f"additional_evidence: {kw_removed} 件除外 (キーワード無一致)")
-    report_data["additional_evidence"] = additional
+    # additional_evidence: キーワード無一致の項目を除外（フィールドが存在する場合のみ）
+    additional = report_data.get("additional_evidence")
+    if additional is not None:
+        before_kw_filter = len(additional)
+        additional = [ev for ev in additional if ev.pop("_kw_match_count", 1) > 0]
+        kw_removed = before_kw_filter - len(additional)
+        if kw_removed:
+            warnings.append(f"additional_evidence: {kw_removed} 件除外 (キーワード無一致)")
+        report_data["additional_evidence"] = additional
 
     # evidence_a / evidence_b の一時フィールドをクリーンアップ
     for key in ("evidence_a", "evidence_b"):
