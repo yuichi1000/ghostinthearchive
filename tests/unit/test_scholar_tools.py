@@ -582,6 +582,7 @@ class TestEvidenceGrounding:
                     "source_url": "https://example.com/base",
                     "date": "1800-01-01",
                     "source_type": "dpla",
+                    "keywords_matched": ["keyword"],
                 }],
             }],
             "raw_search_results_ja": [{
@@ -590,6 +591,7 @@ class TestEvidenceGrounding:
                     "source_url": "https://ndl.go.jp/ja/1",
                     "date": "1900-05-01",
                     "source_type": "ndl",
+                    "keywords_matched": ["キーワード"],
                 }],
             }],
         })
