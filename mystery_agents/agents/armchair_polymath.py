@@ -73,6 +73,9 @@ def log_polymath_tool_call(tool, args, tool_context):
                 cw_count,
                 _MAX_COUNT_WORDS_CALLS,
             )
+            # save_structured_report が _word_count_verified を要求するため、
+            # short-circuit 時にもフラグを設定して無限ループを防止する
+            tool_context.state["_word_count_verified"] = True
             return {
                 "word_count": "(skipped)",
                 "within_range": True,
