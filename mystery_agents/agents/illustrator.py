@@ -19,6 +19,7 @@ from google.adk.agents import LlmAgent
 from google.genai import types
 
 from shared.model_config import create_pro_model
+from shared.token_tracker import create_token_tracking_callback
 from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.tool_context import ToolContext
 
@@ -294,6 +295,7 @@ def create_illustrator() -> LlmAgent:
         output_key="visual_assets",
         include_contents="none",
         before_tool_callback=_limit_tool_calls,
+        after_model_callback=create_token_tracking_callback("illustrator"),
     )
 
 

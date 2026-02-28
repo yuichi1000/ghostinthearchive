@@ -19,6 +19,7 @@ from google.adk.agents import LlmAgent
 from google.genai import types
 
 from shared.model_config import create_flash_model
+from shared.token_tracker import create_token_tracking_callback
 
 from .translator_instructions import BASE_TRANSLATOR_INSTRUCTION as _BASE_TRANSLATOR_INSTRUCTION
 
@@ -132,6 +133,7 @@ def create_translator(target_lang: str) -> LlmAgent:
         generate_content_config=types.GenerateContentConfig(temperature=0.2),
         output_key=f"translation_result_{target_lang}",
         include_contents="none",
+        after_model_callback=create_token_tracking_callback(f"translator_{target_lang}"),
     )
 
 

@@ -11,6 +11,7 @@ from google.adk.agents import LlmAgent
 from google.genai import types
 
 from shared.model_config import create_flash_model
+from shared.token_tracker import create_token_tracking_callback
 
 # === 日本語訳 ===
 # あなたは「Ghost in the Archive」プロジェクトのポッドキャスト脚本翻訳者です。
@@ -92,6 +93,7 @@ def create_podcast_translator() -> LlmAgent:
         instruction=PODCAST_TRANSLATOR_INSTRUCTION,
         generate_content_config=types.GenerateContentConfig(temperature=0.2),
         output_key="podcast_script_ja",
+        after_model_callback=create_token_tracking_callback("podcast_translator_ja"),
     )
 
 

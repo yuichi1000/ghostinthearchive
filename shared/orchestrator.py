@@ -35,6 +35,7 @@ from shared.state_keys import (
     STRUCTURED_REPORT,
 )
 from shared.search_metrics import extract_search_metrics, save_search_metrics
+from shared.token_tracker import extract_token_metrics, save_token_metrics
 from shared.pipeline_run import (
     create_pipeline_run,
     update_agent_started,
@@ -460,6 +461,11 @@ async def run_pipeline(
             if run_type == "blog":
                 search_metrics = extract_search_metrics(session_state)
                 save_search_metrics(run_id, search_metrics)
+
+            # トークンメトリクスの保存（全エージェント横断）
+            # blog / podcast 両方で実行
+            token_metrics = extract_token_metrics(session_state)
+            save_token_metrics(run_id, token_metrics)
 
             # mystery_id 抽出（blog パイプラインのみ）
             mystery_id = None

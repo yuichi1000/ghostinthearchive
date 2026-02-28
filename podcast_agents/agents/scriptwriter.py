@@ -14,6 +14,7 @@ from google.adk.agents import LlmAgent
 from google.genai import types
 
 from shared.model_config import create_pro_model
+from shared.token_tracker import create_token_tracking_callback
 
 from ..tools.script_tools import save_segment, finalize_script
 
@@ -386,6 +387,7 @@ def create_scriptwriter() -> LlmAgent:
         generate_content_config=types.GenerateContentConfig(temperature=0.8),
         tools=[save_segment, finalize_script],
         output_key="podcast_script",
+        after_model_callback=create_token_tracking_callback("scriptwriter"),
     )
 
 
