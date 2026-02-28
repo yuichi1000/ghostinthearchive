@@ -18,13 +18,10 @@ const TECH_STACK = [
 const PRIMARY_SOURCES = [
   // 米国
   { label: "Library of Congress", href: "https://www.loc.gov/" },
-  { label: "Digital Public Library of America", href: "https://dp.la/" },
   { label: "NYPL Digital Collections", href: "https://digitalcollections.nypl.org/" },
   // 欧州
   { label: "Europeana", href: "https://www.europeana.eu/" },
-  { label: "Deutsche Digitale Bibliothek", href: "https://www.deutsche-digitale-bibliothek.de/" },
   { label: "Delpher (KB)", href: "https://www.delpher.nl/" },
-  { label: "Wellcome Collection", href: "https://wellcomecollection.org/" },
   // アジア太平洋
   { label: "NDL Search", href: "https://ndlsearch.ndl.go.jp/" },
   { label: "Trove", href: "https://trove.nla.gov.au/", pending: true },
