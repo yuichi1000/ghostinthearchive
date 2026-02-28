@@ -8,6 +8,7 @@ Flash モデルを使用し、コストを最小限に抑える。
 """
 
 from google.adk.agents import LlmAgent
+from google.genai import types
 
 from shared.model_config import create_flash_model
 
@@ -36,6 +37,7 @@ def create_convergence_checker() -> LlmAgent:
             "debate loop if no significant new arguments are being introduced."
         ),
         instruction=_CONVERGENCE_CHECKER_INSTRUCTION,
+        generate_content_config=types.GenerateContentConfig(temperature=0.1),
         tools=[check_debate_convergence],
     )
 

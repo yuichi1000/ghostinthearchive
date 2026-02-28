@@ -16,6 +16,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
+from google.genai import types
 
 from shared.model_config import create_flash_model
 
@@ -128,6 +129,7 @@ def create_translator(target_lang: str) -> LlmAgent:
             f"Maintains historical terminology accuracy and Fact × Folklore nuance."
         ),
         instruction=instruction,
+        generate_content_config=types.GenerateContentConfig(temperature=0.2),
         output_key=f"translation_result_{target_lang}",
         include_contents="none",
     )

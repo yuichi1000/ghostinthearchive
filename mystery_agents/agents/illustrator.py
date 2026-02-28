@@ -16,6 +16,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
+from google.genai import types
 
 from shared.model_config import create_pro_model
 from google.adk.tools.base_tool import BaseTool
@@ -288,6 +289,7 @@ def create_illustrator() -> LlmAgent:
             "Validates generated images against article content for consistency."
         ),
         instruction=ILLUSTRATOR_INSTRUCTION,
+        generate_content_config=types.GenerateContentConfig(temperature=0.6),
         tools=[generate_image, validate_image],
         output_key="visual_assets",
         include_contents="none",

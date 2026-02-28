@@ -11,6 +11,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
+from google.genai import types
 
 from shared.model_config import create_pro_model
 
@@ -246,6 +247,7 @@ def create_alchemist() -> LlmAgent:
             "themes, regional character, and uncanny elements into visual designs."
         ),
         instruction=ALCHEMIST_INSTRUCTION,
+        generate_content_config=types.GenerateContentConfig(temperature=0.8),
         tools=[save_design_proposal],
         output_key="design_proposals",
         include_contents="none",

@@ -11,6 +11,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
+from google.genai import types
 
 from shared.model_config import create_pro_model
 
@@ -98,6 +99,7 @@ def create_alchemist_renderer() -> LlmAgent:
             "for each product type."
         ),
         instruction=ALCHEMIST_RENDERER_INSTRUCTION,
+        generate_content_config=types.GenerateContentConfig(temperature=0.6),
         tools=[generate_design_asset],
         output_key="render_summary",
         include_contents="none",

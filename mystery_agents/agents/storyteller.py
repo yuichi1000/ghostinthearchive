@@ -212,6 +212,7 @@ def create_storyteller(storyteller: str = DEFAULT_STORYTELLER) -> LlmAgent:
             "an English blog article that interweaves fact and legend."
         ),
         instruction=STORYTELLER_INSTRUCTION,
+        generate_content_config=types.GenerateContentConfig(temperature=0.9),
         tools=[],
         output_key="creative_content",
         include_contents="none",
