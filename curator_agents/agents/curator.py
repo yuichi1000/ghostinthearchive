@@ -33,23 +33,24 @@ _CATEGORY_SECTION = build_category_prompt_section()
 #
 # 過小表現のカテゴリを優先してください。
 #
-# ## 利用可能なアーカイブ API（全11件）
+# ## 利用可能なアーカイブ API（全7件）
 # Librarian エージェントが実際に検索できる API は以下の通りです。
 # テーマ提案時は、これらの API で一次資料がヒットするテーマのみ提案してください。
 #
-# | API | 言語 | カバレッジ |
-# |-----|------|-----------|
-# | Library of Congress Digital Collections | en | 米国・英語圏全般（書籍・写真・地図・手稿） |
-# | Chronicling America (LOC Newspapers) | en | 米国の歴史的新聞（1789-1963） |
-# | NYPL Digital Collections | en | ニューヨーク公共図書館120万点（手稿・地図・写真・稀覯本） |
-# | Internet Archive | en, de, es, fr, nl, pt, ja | グローバル7,000万点超（書籍・雑誌・音声・映像・ウェブ） |
-# | Deutsche Digitale Bibliothek (DDB) | de | ドイツ語圏1,200万点超（ドイツ・オーストリア・スイスの文化遺産機関） |
-# | Europeana | de, es, fr, nl, pt | 欧州50カ国・6,000機関から6,000万点超 |
-# | KB/Delpher (オランダ国立図書館) | nl | オランダ5億点超（新聞1618年〜、書籍、雑誌） |
-# | Trove (オーストラリア国立図書館) | en | オーストラリア2,000万点超（新聞1803年〜、書籍、画像） |
-# | NDL Search (国立国会図書館) | ja | 日本2,000万点超（書籍・雑誌・手稿・地図、江戸〜昭和期） |
-# | Wellcome Collection | en | 英国600万点超（医療史・民俗・迷信・手稿に特化） |
-# | DigitalNZ | en | ニュージーランド3,000万点超（新聞・書籍・画像・手稿） |
+# | API | 言語 | カバレッジ | 全文取得が得意な年代 |
+# |-----|------|-----------|---------------------|
+# | Chronicling America (LOC Newspapers) | en | 米国の歴史的新聞（1770-1963） | 1770〜1963年 OCR |
+# | NYPL Digital Collections | en | ニューヨーク公共図書館120万点（手稿・地図・写真・稀覯本） | 年代により異なる |
+# | Internet Archive | en, de, es, fr, nl, pt, ja | グローバル7,000万点超（書籍・雑誌・音声・映像・ウェブ） | 全年代、書籍・雑誌 OCR |
+# | Europeana | de, es, fr, nl, pt | 欧州50カ国・6,000機関から6,000万点超 | 新聞のみ全文取得可 |
+# | KB/Delpher (オランダ国立図書館) | nl | オランダ（新聞1618年〜、書籍、雑誌） | 1600年代〜1990年代 OCR |
+# | Trove (オーストラリア国立図書館) | en | オーストラリア（新聞1803年〜、書籍、画像） | 1800年代〜1950年代 新聞 OCR |
+# | NDL Search (国立国会図書館) | ja | 日本（書籍・雑誌・手稿、江戸〜昭和期） | 明治〜昭和期 デジタル化資料 |
+#
+# ## 全文取得ガイダンス
+# **全文 OCR が利用可能な年代・地域のテーマを優先すること。**
+# メタデータのみのヒットでは Ghost 品質のアノマリーを発見しにくい。
+# 上記テーブルの「全文取得が得意な年代」列を参考に、全文テキストが取得できるテーマを選ぶこと。
 #
 # ## 利用不可のアーカイブ（テーマ禁止）
 # 以下のアーカイブ API は未実装です。これらでしか資料が見つからないテーマは提案しないでください：
@@ -63,8 +64,8 @@ _CATEGORY_SECTION = build_category_prompt_section()
 #
 # ## 地理的多様性（API カバレッジベース）
 # 以下の言語圏から幅広くテーマを選択すること。各言語圏の後のカッコ内は利用可能な API：
-# - **英語圏**（米国・英国・オーストラリア・NZ）— LOC, NYPL, Chronicling America, Trove, Wellcome, DigitalNZ
-# - **ドイツ語圏**（ドイツ・オーストリア・スイス）— DDB, Europeana
+# - **英語圏**（米国・オーストラリア）— NYPL, Chronicling America, Trove
+# - **ドイツ語圏**（ドイツ・オーストリア・スイス）— Europeana（新聞のみ）, Internet Archive
 # - **スペイン語圏**（スペイン・中南米）— Europeana, Internet Archive
 # - **フランス語圏**（フランス・ベルギー・旧植民地）— Europeana, Internet Archive
 # - **オランダ語圏**（オランダ・フランドル・旧植民地）— Delpher, Europeana
@@ -74,7 +75,8 @@ _CATEGORY_SECTION = build_category_prompt_section()
 #
 # ## テーマの条件
 # - 世界中のあらゆる時代が対象（ただし上記 API で一次資料が見つかることが必須条件）
-# - 上記12の API のいずれかで具体的に資料がヒットしそうなテーマのみ提案すること
+# - 上記7件の API のいずれかで具体的に資料がヒットしそうなテーマのみ提案すること
+# - 全文 OCR が利用可能な年代・地域のテーマを優先すること
 # - 複数の学術領域から分析可能な、記録の隙間に潜む謎
 # - 具体的な年代、地名、キーワードを含む調査クエリとして使えるもの
 #
@@ -133,23 +135,24 @@ Current category distribution:
 
 Prioritize underrepresented categories.
 
-## Available Archive APIs (11 total)
-The Librarian agent can ONLY search the following 11 APIs. Suggest themes for which primary sources \
+## Available Archive APIs (7 total)
+The Librarian agent can ONLY search the following 7 APIs. Suggest themes for which primary sources \
 are likely to be found in at least one of these APIs:
 
-| API | Languages | Coverage |
-|-----|-----------|----------|
-| Library of Congress Digital Collections | en | US & English-language materials (books, photos, maps, manuscripts) |
-| Chronicling America (LOC Newspapers) | en | US historical newspapers (1789-1963) |
-| NYPL Digital Collections | en | 1.2M items (manuscripts, maps, photos, rare books) |
-| Internet Archive | en, de, es, fr, nl, pt, ja | 70M+ items globally (books, periodicals, audio, video, web) |
-| Deutsche Digitale Bibliothek (DDB) | de | 12M+ items from German-speaking cultural heritage institutions |
-| Europeana | de, es, fr, nl, pt | 60M+ items from 6,000+ institutions across 50+ European countries |
-| KB/Delpher (Dutch National Library) | nl | 500M+ digitized items (newspapers from 1618, books, periodicals) |
-| Trove (National Library of Australia) | en | 20M+ items (newspapers from 1803, books, images) |
-| NDL Search (National Diet Library, Japan) | ja | 20M+ items (books, periodicals, manuscripts, maps; Edo-Showa eras) |
-| Wellcome Collection | en | 6M+ items specializing in medical history, folklore, superstition |
-| DigitalNZ (Digital New Zealand) | en | 30M+ items (newspapers, books, images, manuscripts) |
+| API | Languages | Coverage | Full-text era |
+|-----|-----------|----------|---------------|
+| Chronicling America (LOC Newspapers) | en | US newspapers (1770-1963) | 1770–1963 OCR |
+| NYPL Digital Collections | en | 1.2M items (manuscripts, maps, photos, rare books) | varies |
+| Internet Archive | en, de, es, fr, nl, pt, ja | 70M+ items globally (books, periodicals, audio, video, web) | all eras, books/periodicals OCR |
+| Europeana | de, es, fr, nl, pt | 60M+ items from 50+ European countries | newspapers only full-text |
+| KB/Delpher (Dutch National Library) | nl | Netherlands (newspapers from 1618, books, periodicals) | 1600s–1990s OCR |
+| Trove (National Library of Australia) | en | Australia (newspapers from 1803, books, images) | 1800s–1950s newspaper OCR |
+| NDL Search (National Diet Library, Japan) | ja | Japan (books, periodicals, manuscripts; Edo-Showa eras) | Meiji–Showa digitized |
+
+## Full-text Retrieval Guidance
+**Prefer themes from eras and regions where full-text OCR is available.** \
+Themes requiring only metadata hits are less likely to yield Ghost-quality anomalies. \
+Refer to the "Full-text era" column above when selecting themes.
 
 ## Archives NOT Available (Do NOT Suggest Themes Requiring These)
 The following archives are NOT implemented. Do NOT suggest themes that can only be researched through these:
@@ -163,8 +166,8 @@ The following archives are NOT implemented. Do NOT suggest themes that can only 
 
 ## Geographic Diversity (API Coverage-Based)
 Select themes from a broad range of language spheres. APIs available for each sphere are shown in parentheses:
-- **English sphere** (US, UK, Australia, NZ) — LOC, NYPL, Chronicling America, Trove, Wellcome, DigitalNZ
-- **German sphere** (Germany, Austria, Switzerland) — DDB, Europeana
+- **English sphere** (US, Australia) — NYPL, Chronicling America, Trove
+- **German sphere** (Germany, Austria, Switzerland) — Europeana (newspapers only), Internet Archive
 - **Spanish sphere** (Spain, Latin America) — Europeana, Internet Archive
 - **French sphere** (France, Belgium, former colonies) — Europeana, Internet Archive
 - **Dutch sphere** (Netherlands, Flanders, former colonies) — Delpher, Europeana
@@ -173,8 +176,9 @@ Select themes from a broad range of language spheres. APIs available for each sp
 Do NOT concentrate all 5 themes on a single language sphere. Cover at least 3 distinct language spheres.
 
 ## Theme Requirements
-- Any era worldwide is fair game (the constraint: primary sources must be findable via the 11 APIs above)
-- ONLY suggest themes for which at least one of the 11 APIs above is likely to return relevant primary sources
+- Any era worldwide is fair game (the constraint: primary sources must be findable via the 7 APIs above)
+- ONLY suggest themes for which at least one of the 7 APIs above is likely to return relevant primary sources
+- Prefer themes from eras where full-text OCR is available (see Full-text era column)
 - Amenable to interdisciplinary analysis (history, folklore, anthropology, linguistics, archival science)
 - Include specific dates, place names, and keywords usable as research queries
 
