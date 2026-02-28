@@ -51,9 +51,9 @@ def make_tool_context(state: dict | None = None, **kwargs) -> MagicMock:
 
 
 def make_archive_doc(
-    url: str = "https://www.loc.gov/item/test/",
+    url: str = "https://digitalcollections.nypl.org/items/test",
     title: str = "Test Doc",
-    source_type: str = "loc_digital",
+    source_type: str = "nypl",
     keywords_matched: list[str] | None = None,
 ) -> ArchiveDocument:
     """テスト用 ArchiveDocument を作成する。

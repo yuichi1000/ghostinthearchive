@@ -88,17 +88,6 @@ resource "google_secret_manager_secret" "openalex_api_key" {
   depends_on = [google_project_service.apis]
 }
 
-# DDB API key (Deutsche Digitale Bibliothek OAuth)
-resource "google_secret_manager_secret" "ddb_api_key" {
-  secret_id = "ddb-api-key"
-
-  replication {
-    auto {}
-  }
-
-  depends_on = [google_project_service.apis]
-}
-
 # Output instructions for setting secret values
 output "secret_setup_instructions" {
   description = "Instructions for setting up secrets"
@@ -113,6 +102,5 @@ output "secret_setup_instructions" {
     echo -n "YOUR_VALUE" | gcloud secrets versions add openrouter-api-key --data-file=-
     echo -n "YOUR_VALUE" | gcloud secrets versions add europeana-api-key --data-file=-
     echo -n "YOUR_VALUE" | gcloud secrets versions add openalex-api-key --data-file=-
-    echo -n "YOUR_VALUE" | gcloud secrets versions add ddb-api-key --data-file=-
   EOT
 }

@@ -85,7 +85,7 @@ class TestGetSearchMetadataArchives:
                 {
                     "sources_searched": {
                         "loc": {"name": "Library of Congress", "total_hits": 15, "documents_returned": 5},
-                        "dpla": {"name": "DPLA", "total_hits": 0, "documents_returned": 0},
+                        "internet_archive": {"name": "DPLA", "total_hits": 0, "documents_returned": 0},
                         "europeana": {"name": "Europeana", "total_hits": 3, "documents_returned": 2},
                     },
                     "total_documents": 7,
@@ -95,9 +95,9 @@ class TestGetSearchMetadataArchives:
         }
         result = json.loads(get_search_metadata(ctx))
         assert result["status"] == "ok"
-        assert sorted(result["apis_searched"]) == ["dpla", "europeana", "loc"]
+        assert sorted(result["apis_searched"]) == ["europeana", "internet_archive", "loc"]
         assert sorted(result["apis_with_results"]) == ["europeana", "loc"]
-        assert result["apis_without_results"] == ["dpla"]
+        assert result["apis_without_results"] == ["internet_archive"]
 
     def test_errors_propagated(self):
         """search_archives の errors dict が伝搬される。"""
@@ -108,13 +108,13 @@ class TestGetSearchMetadataArchives:
                     "sources_searched": {
                         "loc": {"name": "LOC", "total_hits": 5, "documents_returned": 3},
                     },
-                    "errors": {"dpla": "Connection timeout"},
+                    "errors": {"internet_archive": "Connection timeout"},
                     "documents": [],
                 }
             ]
         }
         result = json.loads(get_search_metadata(ctx))
-        assert result["errors"]["dpla"] == "Connection timeout"
+        assert result["errors"]["internet_archive"] == "Connection timeout"
 
     def test_fallback_used_propagated(self):
         """fallback_used フラグが伝搬される。"""
@@ -144,7 +144,7 @@ class TestGetSearchMetadataLanguageKeys:
             "raw_search_results_de": [
                 {
                     "sources_searched": {
-                        "ddb": {"name": "Deutsche Digitale Bibliothek", "total_hits": 8, "documents_returned": 3},
+                        "trove": {"name": "Deutsche Digitale Bibliothek", "total_hits": 8, "documents_returned": 3},
                     },
                     "documents": [],
                 }
@@ -163,7 +163,7 @@ class TestGetSearchMetadataLanguageKeys:
         result = json.loads(get_search_metadata(ctx))
         assert result["status"] == "ok"
         assert sorted(result["languages_searched"]) == ["de", "ja"]
-        assert "ddb" in result["apis_searched"]
+        assert "trove" in result["apis_searched"]
         assert "ndl" in result["apis_searched"]
 
     def test_aggregates_same_api_across_languages(self):
@@ -211,13 +211,13 @@ class TestGetSearchMetadataMixed:
                 {
                     "sources_searched": {
                         "loc": {"name": "LOC", "total_hits": 5, "documents_returned": 2},
-                        "dpla": {"name": "DPLA", "total_hits": 0, "documents_returned": 0},
+                        "internet_archive": {"name": "DPLA", "total_hits": 0, "documents_returned": 0},
                     },
                     "documents": [],
                 },
             ]
         }
         result = json.loads(get_search_metadata(ctx))
-        assert sorted(result["apis_searched"]) == ["chronicling_america", "dpla", "loc"]
+        assert sorted(result["apis_searched"]) == ["chronicling_america", "internet_archive", "loc"]
         assert sorted(result["apis_with_results"]) == ["chronicling_america", "loc"]
-        assert result["apis_without_results"] == ["dpla"]
+        assert result["apis_without_results"] == ["internet_archive"]

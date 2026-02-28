@@ -28,8 +28,6 @@ API_CONFIGS: dict[str, dict] = {
         "api_display_name": "US Digital Archives",
         "api_capabilities": (
             "You manage two major US digital archives plus historical newspapers:\n"
-            "- **Library of Congress Digital Collections** (LOC): The world's largest library.\n"
-            "  US government records, manuscripts, maps, photographs, newspapers, sound recordings.\n"
             "- **NYPL Digital Collections**: 1M+ items from New York Public Library.\n"
             "  Strong in New York City history, performing arts, and rare manuscripts.\n"
             "- **Chronicling America** (via search_newspapers): Historical US newspapers (1690-1963).\n"
@@ -51,7 +49,7 @@ API_CONFIGS: dict[str, dict] = {
             "1. Extract proper nouns, dates, and places from the theme → `reference_keywords`\n"
             "2. Generate creative/associative terms → `keywords`\n"
             '3. Call **search_archives** with:\n'
-            '   - `sources="loc, nypl"`, `language="en"`\n'
+            '   - `sources="nypl"`, `language="en"`\n'
             '   - `reference_keywords="Bell, Adams, Tennessee, 1820"`\n'
             '   - `keywords="poltergeist, haunting, frontier spirit"`\n'
             "4. Call **search_newspapers** with the same two-phase keywords\n"
@@ -134,40 +132,6 @@ API_CONFIGS: dict[str, dict] = {
         ),
         "has_newspapers": False,
     },
-    "ddb": {
-        "api_display_name": "Deutsche Digitale Bibliothek",
-        "api_capabilities": (
-            "You manage the **Deutsche Digitale Bibliothek** (DDB):\n"
-            "- Germany's central portal for digital cultural heritage\n"
-            "- 40M+ objects from 600+ German cultural and academic institutions\n"
-            "- Materials primarily in German\n"
-            "- Strong for: German history, Reformation, church records,\n"
-            "  university archives, Germanic folklore, Prussian state records\n"
-            "- Also covers Austrian and Swiss German-language materials via linked institutions"
-        ),
-        "relevance_guidance": (
-            "DDB is focused on the German-speaking world.\n\n"
-            "**Search** if the theme has ANY connection to:\n"
-            "- German, Austrian, or Swiss history and culture\n"
-            "- Central European events (Holy Roman Empire, Prussian era, WWI/WWII)\n"
-            "- Germanic folklore, mythology, or folk traditions (Grimm, Unheimliche)\n"
-            "- Reformation, church records, Protestant/Catholic conflicts\n"
-            "- German colonial history (Africa, Pacific)\n"
-            "- German emigration or diaspora communities\n\n"
-            "**Skip** if the theme has no plausible German-speaking world connection."
-        ),
-        "search_strategy": (
-            "1. Extract proper nouns/places → `reference_keywords` in German\n"
-            "   Generate creative/folk terms → `keywords` in German\n"
-            "   - Include both Hochdeutsch and historical/dialect terms if applicable\n"
-            '2. Call **search_archives** with:\n'
-            '   - `sources="ddb"`, `language="de"`\n'
-            '   - `reference_keywords="Burg Frankenstein, Odenwald"`\n'
-            '   - `keywords="Spukhaus, Poltergeist, Volksglaube"`\n'
-            "3. Date filtering is OPTIONAL"
-        ),
-        "has_newspapers": False,
-    },
     "ndl": {
         "api_display_name": "National Diet Library (NDL Search)",
         "api_capabilities": (
@@ -233,41 +197,6 @@ API_CONFIGS: dict[str, dict] = {
             '   - `sources="trove"`, `language="en"`\n'
             '   - `reference_keywords="Bass Strait, Melbourne, 1852"`\n'
             '   - `keywords="ghost ship, shipwreck, colonial mystery"`\n'
-            "3. Date filtering is OPTIONAL"
-        ),
-        "has_newspapers": False,
-    },
-    "wellcome": {
-        "api_display_name": "Wellcome Collection",
-        "api_capabilities": (
-            "You manage the **Wellcome Collection**:\n"
-            "- A world-renowned collection at the intersection of medicine, life, and art\n"
-            "- Rare manuscripts, medical texts, visual materials, and archives\n"
-            "- Materials primarily in English, with significant Latin and European language holdings\n"
-            "- Strong for: medical history, plague and epidemic records, anatomy,\n"
-            "  witchcraft and superstition, mental health history, herbalism,\n"
-            "  alchemy, folk medicine, and the history of belief in the supernatural"
-        ),
-        "relevance_guidance": (
-            "Wellcome Collection specializes in medicine, health, and belief systems.\n\n"
-            "**Search** if the theme has ANY connection to:\n"
-            "- Medical history, epidemics, plague, quarantine\n"
-            "- Witchcraft, superstition, folk medicine, herbalism\n"
-            "- Mental health, asylums, hysteria, possession\n"
-            "- Alchemy, occultism, spiritual healing\n"
-            "- Death practices, burial customs, funeral rites\n"
-            "- The supernatural as understood through medical/scientific lens\n\n"
-            "**Skip** if the theme has no connection to medicine, health, belief,\n"
-            "or the supernatural."
-        ),
-        "search_strategy": (
-            "1. Extract proper nouns/places → `reference_keywords`\n"
-            "   Generate medical/belief terms → `keywords`\n"
-            "   - Include historical medical terms alongside modern equivalents\n"
-            '2. Call **search_archives** with:\n'
-            '   - `sources="wellcome"`, `language="en"`\n'
-            '   - `reference_keywords="Salem, Pendle, 1692"`\n'
-            '   - `keywords="witchcraft trial, possession, exorcism, folk remedy"`\n'
             "3. Date filtering is OPTIONAL"
         ),
         "has_newspapers": False,

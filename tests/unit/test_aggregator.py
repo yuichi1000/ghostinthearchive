@@ -25,14 +25,14 @@ class TestFormatDocuments:
                 "summary": "A test summary",
                 "language": "en",
                 "location": "Boston, MA",
-                "source_type": "loc_digital",
+                "source_type": "nypl",
                 "keywords_matched": ["ghost", "mystery"],
             }
         ]
         result = _format_documents("en", docs)
         assert "Test Document" in result
         assert "1842-03-15" in result
-        assert "loc_digital" in result
+        assert "nypl" in result
         assert "Boston, MA" in result
         assert "ghost, mystery" in result
         assert "1 documents" in result
@@ -45,14 +45,14 @@ class TestFormatDocuments:
                 "source_url": "https://example.com/same",
                 "summary": "First",
                 "language": "en",
-                "source_type": "loc_digital",
+                "source_type": "nypl",
             },
             {
                 "title": "Doc B",
                 "source_url": "https://example.com/same",
                 "summary": "Duplicate",
                 "language": "en",
-                "source_type": "loc_digital",
+                "source_type": "nypl",
             },
         ]
         result = _format_documents("en", docs)
@@ -85,7 +85,7 @@ class TestFormatDocuments:
                 "source_url": "https://example.com/de",
                 "summary": "Ein Test",
                 "language": "de",
-                "source_type": "ddb",
+                "source_type": "europeana",
             }
         ]
         result = _format_documents("de", docs)

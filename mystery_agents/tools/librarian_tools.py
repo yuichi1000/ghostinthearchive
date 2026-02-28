@@ -440,7 +440,7 @@ def search_archives(
         date_start: Optional start year for filtering (e.g., "1700"). Omit to search all dates.
         date_end: Optional end year for filtering (e.g., "1800"). Omit to search all dates.
         sources: Comma-separated source names to search (default: all US sources).
-                 Options: loc, nypl, internet_archive, ddb, europeana
+                 Options: nypl, internet_archive, europeana
         max_results: Max results per source (default: 10)
         language: Optional ISO 639-1 language code (en, de, fr, es, nl, pt).
                   When specified, applies language filter to supported APIs.

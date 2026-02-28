@@ -1236,7 +1236,7 @@ class TestSourceCoverageProgrammaticOverwrite:
             # raw_search_results から正確なメタデータが生成される
             "raw_search_results_en": [
                 {"source": "chronicling_america", "total_hits": 50, "documents_returned": 10},
-                {"source": "loc_digital", "total_hits": 0, "documents_returned": 0},
+                {"source": "nypl", "total_hits": 0, "documents_returned": 0},
             ],
         }
         tool_context = MagicMock()
@@ -1249,10 +1249,10 @@ class TestSourceCoverageProgrammaticOverwrite:
         sc = saved["source_coverage"]
         # API フィールドは raw_search_results から上書きされている
         assert "chronicling_america" in sc["apis_searched"]
-        assert "loc_digital" in sc["apis_searched"]
+        assert "nypl" in sc["apis_searched"]
         assert "llm_hallucinated_api" not in sc["apis_searched"]
         assert sc["apis_with_results"] == ["chronicling_america"]
-        assert sc["apis_without_results"] == ["loc_digital"]
+        assert sc["apis_without_results"] == ["nypl"]
         # LLM が生成した人間的判断フィールドは保持される
         assert sc["known_undigitized_sources"] == ["Parish registers"]
         assert sc["coverage_assessment"] == "Limited coverage"
@@ -1384,7 +1384,7 @@ class TestSourceCoverageProgrammaticOverwrite:
             },
             "raw_search_results_en": [
                 {"source": "europeana", "total_hits": 20, "documents_returned": 5},
-                {"source": "loc_digital", "total_hits": 0, "documents_returned": 0},
+                {"source": "nypl", "total_hits": 0, "documents_returned": 0},
             ],
         }
         tool_context = MagicMock()

@@ -17,7 +17,7 @@ class TestArchiveDocumentImageFields:
             summary="Test summary",
             language=SourceLanguage.EN,
             location="Boston",
-            source_type="loc_digital",
+            source_type="nypl",
             thumbnail_url="https://example.com/thumb.jpg",
             image_url="https://example.com/full.jpg",
         )
@@ -32,7 +32,7 @@ class TestArchiveDocumentImageFields:
             summary="Test summary",
             language=SourceLanguage.EN,
             location="Boston",
-            source_type="loc_digital",
+            source_type="nypl",
         )
         assert doc.thumbnail_url is None
         assert doc.image_url is None

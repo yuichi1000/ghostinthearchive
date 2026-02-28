@@ -20,10 +20,10 @@ class TestVerifyLink:
     @responses.activate
     def test_reachable_url(self):
         """200 OK → is_reachable=True。"""
-        url = "https://www.loc.gov/item/test123/"
+        url = "https://digitalcollections.nypl.org/item/test123/"
         responses.add(responses.HEAD, url, status=200, content_type="text/html")
 
-        result = verify_link(url, "loc_digital")
+        result = verify_link(url, "nypl")
 
         assert result.is_reachable is True
         assert result.status_code == 200
@@ -33,10 +33,10 @@ class TestVerifyLink:
     @responses.activate
     def test_404_not_found(self):
         """404 → is_reachable=False。"""
-        url = "https://www.loc.gov/item/missing/"
+        url = "https://digitalcollections.nypl.org/item/missing/"
         responses.add(responses.HEAD, url, status=404)
 
-        result = verify_link(url, "loc_digital")
+        result = verify_link(url, "nypl")
 
         assert result.is_reachable is False
         assert result.status_code == 404
@@ -44,10 +44,10 @@ class TestVerifyLink:
     @responses.activate
     def test_403_forbidden(self):
         """403 → is_reachable=False。"""
-        url = "https://www.loc.gov/item/forbidden/"
+        url = "https://digitalcollections.nypl.org/item/forbidden/"
         responses.add(responses.HEAD, url, status=403)
 
-        result = verify_link(url, "loc_digital")
+        result = verify_link(url, "nypl")
 
         assert result.is_reachable is False
         assert result.status_code == 403
@@ -55,11 +55,11 @@ class TestVerifyLink:
     @responses.activate
     def test_head_405_fallback_to_get(self):
         """HEAD→405、GET→200 にフォールバック。"""
-        url = "https://www.loc.gov/item/no-head/"
+        url = "https://digitalcollections.nypl.org/item/no-head/"
         responses.add(responses.HEAD, url, status=405)
         responses.add(responses.GET, url, status=200, body=b"OK")
 
-        result = verify_link(url, "loc_digital")
+        result = verify_link(url, "nypl")
 
         assert result.is_reachable is True
         assert result.status_code == 200
@@ -67,10 +67,10 @@ class TestVerifyLink:
     @responses.activate
     def test_timeout_handling(self):
         """Timeout 例外 → is_reachable=False + error 記録。"""
-        url = "https://www.loc.gov/item/slow/"
+        url = "https://digitalcollections.nypl.org/item/slow/"
         responses.add(responses.HEAD, url, body=Timeout("Connection timed out"))
 
-        result = verify_link(url, "loc_digital")
+        result = verify_link(url, "nypl")
 
         assert result.is_reachable is False
         assert result.status_code is None
@@ -80,10 +80,10 @@ class TestVerifyLink:
     @responses.activate
     def test_connection_error(self):
         """ConnectionError 例外 → is_reachable=False + error 記録。"""
-        url = "https://www.loc.gov/item/down/"
+        url = "https://digitalcollections.nypl.org/item/down/"
         responses.add(responses.HEAD, url, body=ConnectionError("DNS resolution failed"))
 
-        result = verify_link(url, "loc_digital")
+        result = verify_link(url, "nypl")
 
         assert result.is_reachable is False
         assert result.status_code is None
@@ -92,8 +92,8 @@ class TestVerifyLink:
     @responses.activate
     def test_redirect_domain_consistent(self):
         """同一ドメインへの 301 → is_domain_consistent=True。"""
-        url = "https://www.loc.gov/item/old/"
-        final_url = "https://www.loc.gov/item/new/"
+        url = "https://digitalcollections.nypl.org/item/old/"
+        final_url = "https://digitalcollections.nypl.org/item/new/"
         responses.add(
             responses.HEAD,
             url,
@@ -102,7 +102,7 @@ class TestVerifyLink:
         )
         responses.add(responses.HEAD, final_url, status=200)
 
-        result = verify_link(url, "loc_digital")
+        result = verify_link(url, "nypl")
 
         assert result.is_reachable is True
         assert result.is_domain_consistent is True
@@ -111,7 +111,7 @@ class TestVerifyLink:
     @responses.activate
     def test_redirect_domain_mismatch(self):
         """別ドメインへの 301 → is_domain_consistent=False。"""
-        url = "https://www.loc.gov/item/moved/"
+        url = "https://digitalcollections.nypl.org/item/moved/"
         final_url = "https://error.example.com/not-found"
         responses.add(
             responses.HEAD,
@@ -121,7 +121,7 @@ class TestVerifyLink:
         )
         responses.add(responses.HEAD, final_url, status=200)
 
-        result = verify_link(url, "loc_digital")
+        result = verify_link(url, "nypl")
 
         assert result.is_reachable is True
         assert result.is_domain_consistent is False
@@ -141,10 +141,10 @@ class TestVerifyLink:
     @responses.activate
     def test_too_many_redirects_handling(self):
         """TooManyRedirects 例外 → is_reachable=False + error 記録。"""
-        url = "https://www.loc.gov/item/loop/"
+        url = "https://digitalcollections.nypl.org/item/loop/"
         responses.add(responses.HEAD, url, body=TooManyRedirects("Exceeded redirects"))
 
-        result = verify_link(url, "loc_digital")
+        result = verify_link(url, "nypl")
 
         assert result.is_reachable is False
         assert result.status_code is None
@@ -153,10 +153,10 @@ class TestVerifyLink:
     @responses.activate
     def test_invalid_url_handling(self):
         """InvalidURL 例外 → is_reachable=False + error 記録。"""
-        url = "https://www.loc.gov/item/bad\x00url/"
+        url = "https://digitalcollections.nypl.org/item/bad\x00url/"
         responses.add(responses.HEAD, url, body=InvalidURL("Invalid URL"))
 
-        result = verify_link(url, "loc_digital")
+        result = verify_link(url, "nypl")
 
         assert result.is_reachable is False
         assert result.status_code is None
@@ -169,8 +169,8 @@ class TestValidateDocuments:
     @responses.activate
     def test_removes_404_documents(self):
         """404 ドキュメントは除外される。"""
-        good_url = "https://www.loc.gov/item/good/"
-        bad_url = "https://www.loc.gov/item/missing/"
+        good_url = "https://digitalcollections.nypl.org/item/good/"
+        bad_url = "https://digitalcollections.nypl.org/item/missing/"
         responses.add(responses.HEAD, good_url, status=200)
         responses.add(responses.HEAD, bad_url, status=404)
 
@@ -184,7 +184,7 @@ class TestValidateDocuments:
     @responses.activate
     def test_removes_410_documents(self):
         """410 Gone ドキュメントは除外される。"""
-        url = "https://www.loc.gov/item/gone/"
+        url = "https://digitalcollections.nypl.org/item/gone/"
         responses.add(responses.HEAD, url, status=410)
 
         docs = [_make_doc(url=url)]
@@ -196,7 +196,7 @@ class TestValidateDocuments:
     @responses.activate
     def test_removes_domain_mismatch(self):
         """ドメイン不一致ドキュメントは除外される。"""
-        url = "https://www.loc.gov/item/redirected/"
+        url = "https://digitalcollections.nypl.org/item/redirected/"
         final_url = "https://error.example.com/oops"
         responses.add(
             responses.HEAD,
@@ -215,7 +215,7 @@ class TestValidateDocuments:
     @responses.activate
     def test_keeps_403_documents(self):
         """403 は保持（サーバー側の問題の可能性）。"""
-        url = "https://www.loc.gov/item/forbidden/"
+        url = "https://digitalcollections.nypl.org/item/forbidden/"
         responses.add(responses.HEAD, url, status=403)
 
         docs = [_make_doc(url=url)]
@@ -226,7 +226,7 @@ class TestValidateDocuments:
     @responses.activate
     def test_keeps_500_documents(self):
         """500 は保持（サーバー側の一時的問題）。"""
-        url = "https://www.loc.gov/item/error/"
+        url = "https://digitalcollections.nypl.org/item/error/"
         responses.add(responses.HEAD, url, status=500)
 
         docs = [_make_doc(url=url)]
@@ -237,7 +237,7 @@ class TestValidateDocuments:
     @responses.activate
     def test_keeps_timeout_documents(self):
         """タイムアウトは保持（インフラ問題、リンク切れとは断定できない）。"""
-        url = "https://www.loc.gov/item/slow/"
+        url = "https://digitalcollections.nypl.org/item/slow/"
         responses.add(responses.HEAD, url, body=Timeout("timed out"))
 
         docs = [_make_doc(url=url)]
@@ -259,7 +259,7 @@ class TestValidateDocuments:
     @responses.activate
     def test_validation_disabled(self):
         """ENABLE_LINK_VALIDATION=false で全通過。"""
-        url = "https://www.loc.gov/item/unchecked/"
+        url = "https://digitalcollections.nypl.org/item/unchecked/"
 
         docs = [_make_doc(url=url)]
         with patch.dict("os.environ", {"ENABLE_LINK_VALIDATION": "false"}):
@@ -271,9 +271,9 @@ class TestValidateDocuments:
     @responses.activate
     def test_summary_counts_correct(self):
         """カウント値の正確性。"""
-        ok_url = "https://www.loc.gov/item/ok/"
-        gone_url = "https://www.loc.gov/item/gone/"
-        err_url = "https://www.loc.gov/item/err/"
+        ok_url = "https://digitalcollections.nypl.org/item/ok/"
+        gone_url = "https://digitalcollections.nypl.org/item/gone/"
+        err_url = "https://digitalcollections.nypl.org/item/err/"
         responses.add(responses.HEAD, ok_url, status=200)
         responses.add(responses.HEAD, gone_url, status=404)
         responses.add(responses.HEAD, err_url, status=500)
