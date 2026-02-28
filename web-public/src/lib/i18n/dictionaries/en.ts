@@ -72,8 +72,6 @@ const dict: Dictionary = {
         "The uncanny as a legitimate subject of scholarly inquiry, not sensationalism",
       folklore:
         "Folklore is not decoration. It is complementary evidence — the unofficial record that fills the silences left by official documentation.",
-      coda:
-        "And one unwritten principle: never forget the joke. The archives are grave enough as they are.",
     },
     storytellers: {
       heading: "Our Storytellers",

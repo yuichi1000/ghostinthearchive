@@ -117,10 +117,6 @@ export default async function AboutPage({
               <p className="text-base text-muted-foreground leading-relaxed italic border-l-2 border-gold/30 pl-4 mb-6">
                 {dict.about.concept.folklore}
               </p>
-
-              <p className="text-sm text-muted-foreground/70 leading-relaxed">
-                {dict.about.concept.coda}
-              </p>
             </div>
           </div>
         </section>

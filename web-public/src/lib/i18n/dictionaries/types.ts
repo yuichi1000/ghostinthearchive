@@ -58,7 +58,6 @@ export interface Dictionary {
       intellectualAwe: string;
       intellectualAweDesc: string;
       folklore: string;
-      coda: string;
     };
     storytellers: {
       heading: string;
