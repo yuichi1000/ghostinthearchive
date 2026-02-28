@@ -98,9 +98,9 @@ Armchair Polymath の instruction を構成する3つのセクション
 #    文書のタイトルが調査対象と関連しない場合、解釈的つながりがどれほど巧みでも選択しない。
 #
 # ## 文字数
-# **5,000〜10,000 words（英語）** — このレポートは Storyteller への唯一の入力である。
+# **{__WORD_COUNT_MIN__}〜{__WORD_COUNT_MAX__} words（英語）** — このレポートは Storyteller への唯一の入力である。
 # 2,000〜3,500 語の記事を書くのに十分な詳細・証拠・分析を含めること。
-# Storyteller が詳細を創作せざるを得ない薄いレポートより、引用と分析が豊富な 7,000 語のレポートの方がはるかに価値がある。
+# Storyteller が詳細を創作せざるを得ない薄いレポートより、引用と分析が豊富なレポートの方がはるかに価値がある。
 #
 # ## confidence_level チェックリスト
 # HIGH（Confirmed Ghost）: 3+独立資料の矛盾 + API限界で説明不可 + 2+代替仮説を検討・棄却 + 再現可能
@@ -135,7 +135,7 @@ Armchair Polymath の instruction を構成する3つのセクション
 # - Storyteller が blockquote で直接使える形式で提供
 #
 # ## 語数検証（必須）
-# レポート完成後、`count_words` ツールに全文テキストと min_words=5000, max_words=10000 を渡して呼び出す。
+# レポート完成後、`count_words` ツールに全文テキストと min_words={__WORD_COUNT_MIN__}, max_words={__WORD_COUNT_MAX__} を渡して呼び出す。
 # - within_range が false の場合：語数を満たすようレポートを修正し、再度 count_words を呼ぶ。
 # - within_range が true の場合：count_words を再度呼ばず、直ちに save_structured_report に進む。
 #
@@ -270,10 +270,10 @@ Assess what existing scholarship may already cover this topic:
 - **Access bias**: Are the key primary sources held in institutions with restricted access, creating a skew in who has published on this topic?
 
 ## Word Count
-**5,000–10,000 words (English).** This report is the sole input for the Storyteller —
+**{__WORD_COUNT_MIN__}–{__WORD_COUNT_MAX__} words (English).** This report is the sole input for the Storyteller —
 it must contain enough detail, evidence, and analysis for a compelling 2,000–3,500 word article.
-Err on the side of thoroughness: a 7,000-word report with rich citations and nuanced analysis
-is far more valuable than a 3,000-word summary that forces the Storyteller to invent details.
+Err on the side of thoroughness: a report with rich citations and nuanced analysis
+is far more valuable than a thin summary that forces the Storyteller to invent details.
 
 ## Output Format
 Structure your integrated analysis as a "Mystery Report":
@@ -516,7 +516,7 @@ This call is mandatory — do NOT skip it.
 ## Word Count Verification (MANDATORY)
 
 After completing your report text, call `count_words` with your full report text
-and `min_words=5000`, `max_words=10000`.
+and `min_words={__WORD_COUNT_MIN__}`, `max_words={__WORD_COUNT_MAX__}`.
 - If `within_range` is **false**: revise your report to meet the word count, then call `count_words` again.
 - If `within_range` is **true**: do NOT call `count_words` again. Proceed immediately to `save_structured_report`.
 
@@ -526,6 +526,11 @@ NEVER leave `relevant_excerpt` as an empty string — items with empty excerpts 
 """
 
 # 後方互換: 全7言語の静的 instruction（シングルトン + テスト用）
+# プレースホルダーを Normal ティアのデフォルト値で置換
 ARMCHAIR_POLYMATH_INSTRUCTION = (
-    INSTRUCTION_PREAMBLE + STATIC_ANALYSES_SECTION + INSTRUCTION_BODY
+    INSTRUCTION_PREAMBLE
+    + STATIC_ANALYSES_SECTION
+    + INSTRUCTION_BODY.replace("{__WORD_COUNT_MIN__}", "5000").replace(
+        "{__WORD_COUNT_MAX__}", "10000"
+    )
 )

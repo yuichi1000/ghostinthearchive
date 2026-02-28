@@ -10,7 +10,7 @@ from typing import Any
 
 from google.adk.tools.tool_context import ToolContext
 
-from shared.state_keys import RAW_SEARCH_RESULTS, STRUCTURED_REPORT
+from shared.state_keys import RAW_SEARCH_RESULTS, STRUCTURED_REPORT, WORD_COUNT_TIER
 
 logger = logging.getLogger(__name__)
 
@@ -193,10 +193,14 @@ def save_structured_report(
 
     # 語数検証チェック
     if not tool_context.state.get("_word_count_verified"):
+        tier = tool_context.state.get(
+            WORD_COUNT_TIER, {"min_words": 5000, "max_words": 10000}
+        )
         return json.dumps(
             {
                 "status": "error",
-                "error": "count_words must be called with min_words=5000, max_words=10000 "
+                "error": f"count_words must be called with min_words={tier['min_words']}, "
+                f"max_words={tier['max_words']} "
                 "and the report must be within range before saving. "
                 "Call count_words first, then revise if needed.",
             },
