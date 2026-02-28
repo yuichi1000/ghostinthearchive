@@ -141,6 +141,37 @@ class TestSaveScriptOutline:
         assert result_data["status"] == "success"
         assert any("key_points" in w for w in result_data["warnings"])
 
+    def test_warns_on_missing_episode_title(self):
+        """episode_title が未設定の場合に warning を返す。"""
+        ctx = make_tool_context()
+        outline = {
+            "segments": [
+                {"type": "intro", "label": "Intro", "key_points": ["Hook"], "word_target": 300},
+            ],
+        }
+
+        result = save_script_outline(json.dumps(outline), ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert any("episode_title" in w for w in result_data["warnings"])
+
+    def test_warns_on_empty_episode_title(self):
+        """episode_title が空文字の場合に warning を返す。"""
+        ctx = make_tool_context()
+        outline = {
+            "episode_title": "  ",
+            "segments": [
+                {"type": "intro", "label": "Intro", "key_points": ["Hook"], "word_target": 300},
+            ],
+        }
+
+        result = save_script_outline(json.dumps(outline), ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert any("episode_title" in w for w in result_data["warnings"])
+
 
 class TestSaveSegment:
     """save_segment() のテスト。"""
@@ -399,3 +430,38 @@ class TestFinalizeScript:
         # デフォルト値が使われる
         script = ctx.state["structured_script"]
         assert "episode_title" in script
+
+    def test_falls_back_to_mystery_title_when_outline_has_no_episode_title(self):
+        """outline に episode_title がない場合、mystery_title にフォールバックする。"""
+        ctx = self._make_ctx(
+            segments=self._make_segments(),
+            outline={"estimated_duration_minutes": 20},
+        )
+        ctx.state["mystery_title"] = "The Haunting of Salem Archives"
+
+        finalize_script(ctx)
+
+        assert ctx.state["structured_script"]["episode_title"] == "The Haunting of Salem Archives"
+
+    def test_falls_back_to_mystery_title_when_episode_title_is_empty(self):
+        """episode_title が空文字の場合、mystery_title にフォールバックする。"""
+        ctx = self._make_ctx(
+            segments=self._make_segments(),
+            outline={"episode_title": "  ", "estimated_duration_minutes": 20},
+        )
+        ctx.state["mystery_title"] = "The Haunting of Salem Archives"
+
+        finalize_script(ctx)
+
+        assert ctx.state["structured_script"]["episode_title"] == "The Haunting of Salem Archives"
+
+    def test_falls_back_to_untitled_when_no_title_sources(self):
+        """outline にも mystery_title にもない場合、"Untitled Episode" にフォールバックする。"""
+        ctx = self._make_ctx(
+            segments=self._make_segments(),
+            outline={"estimated_duration_minutes": 20},
+        )
+
+        finalize_script(ctx)
+
+        assert ctx.state["structured_script"]["episode_title"] == "Untitled Episode"

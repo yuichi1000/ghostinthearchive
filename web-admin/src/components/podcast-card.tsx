@@ -26,7 +26,7 @@ export function PodcastCard({ podcast }: PodcastCardProps) {
         <div className="mb-3">
           <div className="flex items-center gap-2 text-sm text-foreground/80 mb-1">
             <FileText className="w-3.5 h-3.5 text-gold" />
-            <span>{podcast.script.episode_title}</span>
+            <span>{podcast.script.episode_title && podcast.script.episode_title !== "Untitled Episode" ? podcast.script.episode_title : podcast.mystery_title}</span>
           </div>
           {podcast.script.estimated_duration_minutes > 0 && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

@@ -48,6 +48,10 @@ def save_script_outline(
     # バリデーション
     warnings: list[str] = []
 
+    episode_title = data.get("episode_title", "").strip()
+    if not episode_title:
+        warnings.append("episode_title is missing or empty")
+
     segments = data.get("segments")
     if not segments or not isinstance(segments, list):
         return json.dumps(
@@ -196,7 +200,10 @@ def finalize_script(
 
     # structured_outline からメタデータ取得
     outline = tool_context.state.get("structured_outline", {})
-    episode_title = outline.get("episode_title", "Untitled Episode")
+    episode_title = outline.get("episode_title", "").strip()
+    if not episode_title:
+        # mystery_title（cli.py が initial_state にセット）をフォールバック
+        episode_title = tool_context.state.get("mystery_title", "Untitled Episode")
     estimated_duration = outline.get("estimated_duration_minutes", 20)
 
     # 最終スクリプト組み立て
