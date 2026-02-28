@@ -285,6 +285,35 @@ export interface StorytellerLlmMetadata {
   has_content?: boolean;
 }
 
+/** 検索活動ログエントリ（再現性条件の担保） */
+export interface SearchLogEntry {
+  /** 記録タイムスタンプ（ISO 8601） */
+  timestamp: string;
+  /** 使用ツール */
+  tool: "search_archives" | "search_newspapers";
+  /** 系統的キーワード（固有名詞・日付・場所） */
+  reference_keywords: string[];
+  /** 探索的キーワード（創造的関連語・類義語） */
+  exploratory_keywords: string[];
+  /** 検索言語（ISO 639-1） */
+  language: string | null;
+  /** API 別統計 */
+  sources_searched: Record<string, { total_hits: number; documents_returned: number }>;
+  /** 返却ドキュメント総数 */
+  total_documents: number;
+  /** 検索日付範囲 */
+  date_range?: { start: string | null; end: string | null };
+  /** リンク検証結果 */
+  link_validation: {
+    total_checked: number;
+    reachable: number;
+    unreachable: number;
+    removed_count: number;
+  };
+  /** フォールバック検索が使用されたか */
+  fallback_used: boolean;
+}
+
 export interface FirestoreMystery extends MysteryReport {
   /** スキーマバージョン: 1 = legacy (*_ja/*_en), 2 = translations map */
   schema_version?: number;
@@ -292,6 +321,8 @@ export interface FirestoreMystery extends MysteryReport {
   storyteller?: string;
   /** ストーリーテラー LLM メタデータ（モデル情報 + トークン使用量） */
   storyteller_llm_metadata?: StorytellerLlmMetadata;
+  /** 検索活動ログ（再現性条件の担保） */
+  search_log?: SearchLogEntry[];
   /** ステータス: pending, translating, published, archived */
   status: MysteryStatus;
   /** 作成日時（Firestoreタイムスタンプ） */

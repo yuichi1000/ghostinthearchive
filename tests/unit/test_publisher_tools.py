@@ -1397,3 +1397,71 @@ class TestSourceCoverageProgrammaticOverwrite:
         sc = saved["source_coverage"]
         assert "api_errors" not in sc
 
+
+class TestPublishMysterySearchLog:
+    """search_log の Firestore 永続化テスト。"""
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_search_log_persisted_to_firestore(self, mock_get_db, mock_get_bucket):
+        """state の search_log が Firestore ドキュメントに含まれる。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        search_log = [
+            {
+                "timestamp": "2026-02-28T12:00:00",
+                "tool": "search_archives",
+                "reference_keywords": ["Bell", "Tennessee"],
+                "exploratory_keywords": ["poltergeist", "haunting"],
+                "language": "en",
+                "sources_searched": {"loc": {"total_hits": 15, "documents_returned": 8}},
+                "total_documents": 8,
+                "link_validation": {"total_checked": 8, "reachable": 7, "unreachable": 1, "removed_count": 1},
+                "fallback_used": False,
+            },
+            {
+                "timestamp": "2026-02-28T12:00:05",
+                "tool": "search_newspapers",
+                "reference_keywords": ["Bell"],
+                "exploratory_keywords": ["ghost"],
+                "language": "en",
+                "sources_searched": {"chronicling_america": {"total_hits": 3, "documents_returned": 3}},
+                "total_documents": 3,
+                "link_validation": {"total_checked": 3, "reachable": 3, "unreachable": 0, "removed_count": 0},
+                "fallback_used": False,
+            },
+        ]
+        state = {"search_log": search_log}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "search_log" in saved
+        assert len(saved["search_log"]) == 2
+        assert saved["search_log"][0]["tool"] == "search_archives"
+        assert saved["search_log"][0]["reference_keywords"] == ["Bell", "Tennessee"]
+        assert saved["search_log"][1]["tool"] == "search_newspapers"
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_no_search_log_when_absent(self, mock_get_db, mock_get_bucket):
+        """search_log がない場合はフィールドが設定されない。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "search_log" not in saved
+

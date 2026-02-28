@@ -205,6 +205,12 @@ STATE_KEYS: list[StateKey] = [
         written_by=("pipeline_init",),
         read_by=("script_planner", "scriptwriter", "alchemist"),
     ),
+    StateKey(
+        name="search_log",
+        description="Librarian 検索活動ログ（API 別統計・キーワード分類を蓄積、Publisher が Firestore 永続化）",
+        written_by=("librarian_tools",),
+        read_by=("publisher_tools",),
+    ),
 ]
 
 

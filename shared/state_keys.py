@@ -32,6 +32,7 @@ INVESTIGATION_QUERY = "investigation_query"
 PIPELINE_RUN_ID = "pipeline_run_id"
 STORYTELLER_LLM_METADATA = "storyteller_llm_metadata"
 WORD_COUNT_TIER = "_word_count_tier"
+SEARCH_LOG = "search_log"
 
 
 # ---------------------------------------------------------------------------
