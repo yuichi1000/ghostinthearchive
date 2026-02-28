@@ -243,7 +243,7 @@ pending (EN原文 + 翻訳あり) → (Approve) → published
 
 **Librarian（司書）**
 
-- 検索対象: 世界の公開デジタルアーカイブ（LOC, DPLA, Europeana, Internet Archive 等）＋ **Folklore, Legends, Myths, Local Beliefs**
+- 検索対象: 世界の公開デジタルアーカイブ（LOC, Europeana, Internet Archive, Delpher, NDL, Trove 等）＋ **Folklore, Legends, Myths, Local Beliefs**
 - 歴史的記録と民俗資料の両方を収集し、Fact と Folklore の素材を揃える
 
 **Scholar（学者）** — 分析モード + 討論モード（5学術領域: 歴史学・民俗学・文化人類学・言語学・文書館学）
