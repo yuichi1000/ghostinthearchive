@@ -1141,6 +1141,72 @@ class TestPublishMysteryStructuredDataExtension:
         assert "confidence_rationale" not in saved
 
 
+class TestPublishMysteryStorytellerMetadata:
+    """storyteller_llm_metadata の Firestore 保存テスト。"""
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_saves_storyteller_llm_metadata(self, mock_get_db, mock_get_bucket):
+        """state の storyteller_llm_metadata が Firestore に保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        llm_meta = {
+            "storyteller": "claude",
+            "display_name": "Claude Sonnet 4.5",
+            "model_id": "claude-sonnet-4-5-20250929",
+            "actual_model": "claude-sonnet-4-5-20250929",
+            "prompt_tokens": 8000,
+            "output_tokens": 3000,
+        }
+        state = {"storyteller_llm_metadata": llm_meta}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["storyteller_llm_metadata"] == llm_meta
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_no_metadata_when_absent(self, mock_get_db, mock_get_bucket):
+        """storyteller_llm_metadata がない場合はフィールドが設定されない。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "storyteller_llm_metadata" not in saved
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_ignores_non_dict_metadata(self, mock_get_db, mock_get_bucket):
+        """storyteller_llm_metadata が dict でない場合は無視される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {"storyteller_llm_metadata": "not a dict"}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "storyteller_llm_metadata" not in saved
+
+
 class TestSourceCoverageProgrammaticOverwrite:
     """source_coverage の API フィールドが raw_search_results から programmatic に上書きされるテスト。"""
 

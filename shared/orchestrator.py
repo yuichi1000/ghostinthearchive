@@ -31,6 +31,7 @@ from shared.state_keys import (
     PIPELINE_RUN_ID,
     PUBLISHED_EPISODE,
     PUBLISHED_MYSTERY_ID,
+    STORYTELLER_LLM_METADATA,
     STRUCTURED_REPORT,
 )
 from shared.search_metrics import extract_search_metrics, save_search_metrics
@@ -137,7 +138,7 @@ def _detect_gate_failure(session_state: dict) -> tuple[str, dict]:
     detail = _build_state_summary(session_state)
 
     # LLM メタデータがあれば追加（安全フィルタ等の原因特定用）
-    llm_meta = session_state.get("storyteller_llm_metadata")
+    llm_meta = session_state.get(STORYTELLER_LLM_METADATA)
     if llm_meta:
         detail["storyteller_llm_metadata"] = llm_meta
 

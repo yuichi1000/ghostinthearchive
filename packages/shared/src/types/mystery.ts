@@ -271,11 +271,27 @@ export interface FirestorePodcast {
   error_message?: string | null;
 }
 
+/** ストーリーテラー LLM メタデータ（使用モデル・トークン数・エラー情報） */
+export interface StorytellerLlmMetadata {
+  storyteller: string;
+  display_name: string;
+  model_id: string;
+  actual_model?: string | null;
+  prompt_tokens?: number | null;
+  output_tokens?: number | null;
+  finish_reason?: string | null;
+  error_code?: string | null;
+  error_message?: string | null;
+  has_content?: boolean;
+}
+
 export interface FirestoreMystery extends MysteryReport {
   /** スキーマバージョン: 1 = legacy (*_ja/*_en), 2 = translations map */
   schema_version?: number;
   /** 記事を執筆したストーリーテラー（LLM）の識別子 */
   storyteller?: string;
+  /** ストーリーテラー LLM メタデータ（モデル情報 + トークン使用量） */
+  storyteller_llm_metadata?: StorytellerLlmMetadata;
   /** ステータス: pending, translating, published, archived */
   status: MysteryStatus;
   /** 作成日時（Firestoreタイムスタンプ） */

@@ -29,6 +29,7 @@ from shared.state_keys import (
     IMAGE_METADATA,
     MYSTERY_REPORT,
     PUBLISHED_MYSTERY_ID,
+    STORYTELLER_LLM_METADATA,
     STRUCTURED_REPORT,
     collected_documents_key,
     scholar_analysis_key,
@@ -320,6 +321,12 @@ def publish_mystery(
             data["storyteller"] = tool_context.state.get("storyteller", "claude")
         else:
             data.setdefault("storyteller", "claude")
+
+        # ストーリーテラー LLM メタデータ（モデル情報 + トークン使用量）
+        if tool_context is not None:
+            storyteller_meta = tool_context.state.get(STORYTELLER_LLM_METADATA)
+            if storyteller_meta and isinstance(storyteller_meta, dict):
+                data["storyteller_llm_metadata"] = storyteller_meta
 
         # スキーマバージョン（ドキュメント構造の世代管理）
         data["schema_version"] = SCHEMA_VERSION
