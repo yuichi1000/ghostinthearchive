@@ -1,7 +1,5 @@
 """Unit tests for mystery_agents/tools/internet_archive.py fulltext retrieval."""
 
-from unittest.mock import patch
-
 import responses
 
 from mystery_agents.tools.internet_archive import (
