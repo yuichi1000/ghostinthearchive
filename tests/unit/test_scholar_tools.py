@@ -722,3 +722,94 @@ class TestWordCountVerifiedCheck:
         assert "5000" in result_data["error"]
         # デフォルト値が残っていないことを確認
         assert "10000" not in result_data["error"]
+
+
+class TestTagsValidation:
+    """タグバリデーションのテスト。"""
+
+    def test_tags_saved_in_structured_report(self):
+        """tags が structured_report に保存される。"""
+        report_data = {
+            "title": "Test",
+            "tags": ["shipwreck", "colonial america", "19th century"],
+        }
+        mock_ctx = _make_ctx()
+
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved = mock_ctx.state["structured_report"]
+        assert saved["tags"] == ["shipwreck", "colonial america", "19th century"]
+
+    def test_tags_normalized_to_lowercase_and_deduplicated(self):
+        """大文字→小文字正規化 + 重複排除。"""
+        report_data = {
+            "title": "Test",
+            "tags": ["Shipwreck", "FOLKLORE", "shipwreck", "Colonial America"],
+        }
+        mock_ctx = _make_ctx()
+
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved = mock_ctx.state["structured_report"]
+        assert saved["tags"] == ["shipwreck", "folklore", "colonial america"]
+
+    def test_tags_limited_to_10(self):
+        """最大10個に制限される。"""
+        report_data = {
+            "title": "Test",
+            "tags": [f"tag{i}" for i in range(15)],
+        }
+        mock_ctx = _make_ctx()
+
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved = mock_ctx.state["structured_report"]
+        assert len(saved["tags"]) == 10
+
+    def test_non_list_tags_removed(self):
+        """tags が list でない場合は削除される。"""
+        report_data = {
+            "title": "Test",
+            "tags": "not a list",
+        }
+        mock_ctx = _make_ctx()
+
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved = mock_ctx.state["structured_report"]
+        assert "tags" not in saved
+        assert any("not a list" in w for w in result_data["warnings"])
+
+    def test_empty_string_tags_filtered(self):
+        """空文字タグはフィルタリングされる。"""
+        report_data = {
+            "title": "Test",
+            "tags": ["valid", "", "  ", "another"],
+        }
+        mock_ctx = _make_ctx()
+
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved = mock_ctx.state["structured_report"]
+        assert saved["tags"] == ["valid", "another"]
+
+    def test_no_tags_field_is_ok(self):
+        """tags フィールドがない場合はエラーにならない。"""
+        report_data = {"title": "Test"}
+        mock_ctx = _make_ctx()
+
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert "tags" not in mock_ctx.state["structured_report"]

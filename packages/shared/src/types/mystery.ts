@@ -189,6 +189,9 @@ export interface MysteryReport {
   /** Storyteller Agent向けのナラティブフック */
   story_hooks: string[];
 
+  /** セマンティックタグ（記事分類・関連記事推薦用） */
+  tags?: string[];
+
   /** Storyteller が生成した物語的ブログ原稿（マークダウン形式） */
   narrative_content?: string;
 
