@@ -32,13 +32,13 @@ class TestExtractFromSingleResult:
         result = {
             "sources_searched": {
                 "loc": {"total_hits": 150, "documents_returned": 5},
-                "dpla": {"total_hits": 30, "documents_returned": 3},
+                "internet_archive": {"total_hits": 30, "documents_returned": 3},
             },
         }
         extracted = _extract_from_single_result(result)
 
         assert extracted["per_api"]["loc"] == {"total_hits": 150, "documents_returned": 5}
-        assert extracted["per_api"]["dpla"] == {"total_hits": 30, "documents_returned": 3}
+        assert extracted["per_api"]["internet_archive"] == {"total_hits": 30, "documents_returned": 3}
 
     def test_error_extraction(self):
         """エラー情報を正しく抽出する。"""
@@ -58,11 +58,11 @@ class TestExtractFromSingleResult:
             "sources_searched": {
                 "loc": {"total_hits": 10, "documents_returned": 2},
             },
-            "errors": {"dpla": "API key not set"},
+            "errors": {"internet_archive": "API key not set"},
         }
         extracted = _extract_from_single_result(result)
 
-        assert extracted["errors"] == {"dpla": "API key not set"}
+        assert extracted["errors"] == {"internet_archive": "API key not set"}
 
     def test_fallback_used(self):
         """fallback_used フラグを検出する。"""
@@ -111,7 +111,7 @@ class TestExtractSearchMetrics:
                 {
                     "sources_searched": {
                         "loc": {"total_hits": 150, "documents_returned": 5},
-                        "dpla": {"total_hits": 30, "documents_returned": 3},
+                        "internet_archive": {"total_hits": 30, "documents_returned": 3},
                     },
                 },
             ],
@@ -123,7 +123,7 @@ class TestExtractSearchMetrics:
         assert metrics["total_documents"] == 8
         assert metrics["by_language"]["en"]["loc"] == {"total_hits": 150, "documents_returned": 5}
         assert metrics["by_api"]["loc"] == {"total_hits": 150, "documents_returned": 5}
-        assert metrics["by_api"]["dpla"] == {"total_hits": 30, "documents_returned": 3}
+        assert metrics["by_api"]["internet_archive"] == {"total_hits": 30, "documents_returned": 3}
 
     def test_multiple_languages(self):
         """複数言語の検索結果を by_language と by_api に正しく集約する。"""
@@ -138,7 +138,7 @@ class TestExtractSearchMetrics:
             "raw_search_results_de": [
                 {
                     "sources_searched": {
-                        "ddb": {"total_hits": 12, "documents_returned": 7},
+                        "trove": {"total_hits": 12, "documents_returned": 7},
                         "europeana": {"total_hits": 8, "documents_returned": 5},
                     },
                 },
@@ -154,11 +154,11 @@ class TestExtractSearchMetrics:
         assert "en" in metrics["by_language"]
         assert "de" in metrics["by_language"]
         assert metrics["by_language"]["en"]["loc"]["documents_returned"] == 5
-        assert metrics["by_language"]["de"]["ddb"]["documents_returned"] == 7
+        assert metrics["by_language"]["de"]["trove"]["documents_returned"] == 7
 
         # by_api（全言語横断集約）
         assert metrics["by_api"]["loc"]["total_hits"] == 100
-        assert metrics["by_api"]["ddb"]["total_hits"] == 12
+        assert metrics["by_api"]["trove"]["total_hits"] == 12
         assert metrics["by_api"]["europeana"]["total_hits"] == 8
 
     def test_base_key_as_newspapers(self):
@@ -214,13 +214,13 @@ class TestExtractSearchMetrics:
                     "sources_searched": {
                         "loc": {"total_hits": 10, "documents_returned": 2},
                     },
-                    "errors": {"dpla": "API key not set"},
+                    "errors": {"internet_archive": "API key not set"},
                 },
             ],
         }
         metrics = extract_search_metrics(state)
 
-        assert metrics["errors"] == {"dpla": "API key not set"}
+        assert metrics["errors"] == {"internet_archive": "API key not set"}
 
     def test_fallback_used_flag(self):
         """fallback_used フラグがメトリクスに含まれる。"""

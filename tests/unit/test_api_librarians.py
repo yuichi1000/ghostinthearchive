@@ -46,7 +46,7 @@ class TestAPILibrarianFactory:
         """US 以外の Librarian は search_newspapers を持たない。"""
         from mystery_agents.tools.librarian_tools import search_newspapers
 
-        for api_key in ["europeana", "internet_archive", "ddb", "ndl", "trove", "wellcome"]:
+        for api_key in ["europeana", "internet_archive", "ndl", "trove"]:
             agent = create_api_librarian(api_key)
             assert search_newspapers not in agent.tools
 

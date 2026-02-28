@@ -209,10 +209,6 @@ from mystery_agents.tools.internet_archive import (
     BASE_URL as IA_BASE_URL,
     InternetArchiveSource,
 )
-from mystery_agents.tools.loc_digital import (
-    BASE_URL as LOC_BASE_URL,
-    LOCDigitalSource,
-)
 from mystery_agents.tools.nypl_digital import (
     BASE_URL as NYPL_BASE_URL,
     NYPLSource,
@@ -226,14 +222,6 @@ class TestEmptyDatesPerSource:
     @pytest.mark.parametrize(
         "source_cls,base_url,mock_response,env_vars,date_check,keywords",
         [
-            (
-                LOCDigitalSource,
-                LOC_BASE_URL,
-                {"results": [], "pagination": {"total": 0}},
-                {},
-                lambda url: "dates=" not in url,
-                ["test"],
-            ),
             (
                 InternetArchiveSource,
                 IA_BASE_URL,
@@ -251,7 +239,7 @@ class TestEmptyDatesPerSource:
                 ["ghost"],
             ),
         ],
-        ids=["loc_digital", "internet_archive", "nypl_digital"],
+        ids=["internet_archive", "nypl_digital"],
     )
     def test_empty_dates_omits_date_filter(
         self, source_cls, base_url, mock_response, env_vars, date_check, keywords

@@ -454,7 +454,7 @@ class TestEvidenceGrounding:
                     "title": "Correct Title From API",
                     "source_url": "https://loc.gov/item/123",
                     "date": "1893-01-15",
-                    "source_type": "loc_digital",
+                    "source_type": "nypl",
                 }],
             }],
         })
@@ -476,7 +476,7 @@ class TestEvidenceGrounding:
         # raw データで上書きされている
         assert saved_ev["source_title"] == "Correct Title From API"
         assert saved_ev["source_date"] == "1893-01-15"
-        assert saved_ev["archive_source"] == "loc_digital"
+        assert saved_ev["archive_source"] == "nypl"
 
     def test_non_matching_url_warns(self):
         """URL が raw_search_results に不在 → 警告。"""
@@ -485,7 +485,7 @@ class TestEvidenceGrounding:
                 "documents": [{
                     "title": "Real Doc",
                     "source_url": "https://loc.gov/item/real",
-                    "source_type": "loc_digital",
+                    "source_type": "nypl",
                 }],
             }],
         })
@@ -518,7 +518,7 @@ class TestEvidenceGrounding:
                         "title": "Doc B",
                         "source_url": "https://loc.gov/item/b",
                         "date": "1901-06-15",
-                        "source_type": "loc_digital",
+                        "source_type": "nypl",
                     },
                 ],
             }],
@@ -550,7 +550,7 @@ class TestEvidenceGrounding:
         assert saved["evidence_a"]["source_title"] == "Doc A"
         assert saved["evidence_a"]["archive_source"] == "internet_archive"
         assert saved["evidence_b"]["source_title"] == "Doc B"
-        assert saved["evidence_b"]["archive_source"] == "loc_digital"
+        assert saved["evidence_b"]["archive_source"] == "nypl"
         # additional_evidence[0] は URL 不在で警告
         assert any("additional_evidence[0]" in w for w in result_data["warnings"])
 
@@ -626,7 +626,7 @@ class TestValidateEvidenceGroundingDirect:
                 "documents": [{
                     "title": "Doc",
                     "source_url": "https://example.com",
-                    "source_type": "loc_digital",
+                    "source_type": "nypl",
                 }],
             }],
         })
@@ -642,7 +642,7 @@ class TestValidateEvidenceGroundingDirect:
                 "documents": [{
                     "title": "Doc",
                     "source_url": "https://example.com",
-                    "source_type": "loc_digital",
+                    "source_type": "nypl",
                 }],
             }],
         })

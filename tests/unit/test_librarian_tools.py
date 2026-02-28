@@ -375,7 +375,7 @@ class TestRankDocuments:
         loc_docs = [
             _make_doc(
                 url=f"https://loc.gov/{i}",
-                source_type="loc_digital",
+                source_type="nypl",
                 keywords_matched=["ghost", "ship"][:2 - i % 2],
             )
             for i in range(3)
@@ -385,13 +385,13 @@ class TestRankDocuments:
 
         # 最初の4件には IA と LOC の両方が含まれる
         source_types_top4 = [d.source_type for d in ranked[:4]]
-        assert "loc_digital" in source_types_top4
+        assert "nypl" in source_types_top4
         assert "internet_archive" in source_types_top4
 
     def test_interleave_round_robin_order(self):
         """2ソースから交互に取り出される。"""
-        doc_a1 = _make_doc(url="https://a.com/1", source_type="loc_digital", keywords_matched=["ghost", "ship"])
-        doc_a2 = _make_doc(url="https://a.com/2", source_type="loc_digital", keywords_matched=["ghost"])
+        doc_a1 = _make_doc(url="https://a.com/1", source_type="nypl", keywords_matched=["ghost", "ship"])
+        doc_a2 = _make_doc(url="https://a.com/2", source_type="nypl", keywords_matched=["ghost"])
         doc_b1 = _make_doc(url="https://b.com/1", source_type="internet_archive", keywords_matched=["ghost", "ship", "harbor"])
         doc_b2 = _make_doc(url="https://b.com/2", source_type="internet_archive", keywords_matched=["ghost"])
 
@@ -406,17 +406,17 @@ class TestRankDocuments:
         """各ソース内では keywords_matched 数でソートされる。"""
         doc_3kw = _make_doc(
             url="https://a.com/3",
-            source_type="loc_digital",
+            source_type="nypl",
             keywords_matched=["ghost", "ship", "harbor"],
         )
         doc_1kw = _make_doc(
             url="https://a.com/1",
-            source_type="loc_digital",
+            source_type="nypl",
             keywords_matched=["ghost"],
         )
         doc_2kw = _make_doc(
             url="https://a.com/2",
-            source_type="loc_digital",
+            source_type="nypl",
             keywords_matched=["ghost", "ship"],
         )
 
@@ -433,8 +433,8 @@ class TestRankDocuments:
 
     def test_ranking_single_source(self):
         """単一ソースのみの場合は通常のキーワード順。"""
-        doc_a = _make_doc(url="https://a.com/a", source_type="loc_digital", keywords_matched=["ghost"])
-        doc_b = _make_doc(url="https://a.com/b", source_type="loc_digital", keywords_matched=["ghost", "ship"])
+        doc_a = _make_doc(url="https://a.com/a", source_type="nypl", keywords_matched=["ghost"])
+        doc_b = _make_doc(url="https://a.com/b", source_type="nypl", keywords_matched=["ghost", "ship"])
 
         ranked = _rank_documents([doc_a, doc_b])
 
@@ -444,7 +444,7 @@ class TestRankDocuments:
     def test_three_sources_interleave(self):
         """3ソースが正しくインターリーブされる。"""
         docs = [
-            _make_doc(url="https://loc.gov/1", source_type="loc_digital", keywords_matched=["a"]),
+            _make_doc(url="https://loc.gov/1", source_type="nypl", keywords_matched=["a"]),
             _make_doc(url="https://ia.org/1", source_type="internet_archive", keywords_matched=["a"]),
             _make_doc(url="https://ia.org/2", source_type="internet_archive", keywords_matched=["a", "b"]),
             _make_doc(url="https://euro.eu/1", source_type="europeana", keywords_matched=["a"]),
@@ -877,21 +877,21 @@ class TestMultilingualKeywordExpansion:
             total_hits=1,
             supported_languages={"en", "de", "es", "fr", "nl", "pt"},
         )
-        # 単一言語ソース（DDB: ドイツ語のみ）
+        # 単一言語ソース（NDL: 日本語のみ）
         single_source = _make_mock_source(
-            source_key="ddb",
-            source_name="DDB",
-            docs=[_make_doc(url="https://ddb.de/1")],
+            source_key="ndl",
+            source_name="NDL",
+            docs=[_make_doc(url="https://ndl.go.jp/1")],
             total_hits=1,
-            supported_languages={"de"},
+            supported_languages={"ja"},
         )
-        mock_get_all.return_value = {"europeana": multi_source, "ddb": single_source}
+        mock_get_all.return_value = {"europeana": multi_source, "ndl": single_source}
         mock_validate.return_value = type("Summary", (), {
             "total_checked": 2, "reachable": 2, "unreachable": 0,
             "removed_urls": [], "duration_ms": 50,
             "verified_documents": [
                 _make_doc(url="https://europeana.eu/1"),
-                _make_doc(url="https://ddb.de/1"),
+                _make_doc(url="https://ndl.go.jp/1"),
             ],
         })()
         mock_translate.return_value = {"en": ["ghost", "haunting"]}
@@ -899,7 +899,7 @@ class TestMultilingualKeywordExpansion:
         ctx = make_tool_context({"selected_languages": ["en", "de"]})
         search_archives(
             keywords="Geist, Spuk",
-            sources="europeana,ddb",
+            sources="europeana,ndl",
             language="de",
             tool_context=ctx,
         )
@@ -968,14 +968,14 @@ class TestMultilingualKeywordExpansion:
 class TestTranslateKeywordsForSource:
     """_translate_keywords_for_source のテスト。"""
 
-    def test_ddb_latin_script_skips_translation(self):
-        """DDB（de: ラテン文字言語）に ASCII キーワード → 翻訳スキップ（None）。"""
+    def test_trove_latin_script_skips_translation(self):
+        """Trove（en: ラテン文字言語）に ASCII キーワード → 翻訳スキップ（None）。"""
         from mystery_agents.tools.search_orchestration import _translate_keywords_for_source
 
-        ddb_source = _make_mock_source(
-            source_key="ddb", supported_languages={"de"},
+        trove_source = _make_mock_source(
+            source_key="trove", supported_languages={"en"},
         )
-        result = _translate_keywords_for_source(["ghost", "haunting"], ddb_source)
+        result = _translate_keywords_for_source(["ghost", "haunting"], trove_source)
         assert result is None
 
     def test_ndl_english_keywords_triggers_translation(self):
@@ -1019,11 +1019,11 @@ class TestTranslateKeywordsForSource:
         """非 ASCII キーワードが含まれる場合 → None（既にネイティブ言語あり）。"""
         from mystery_agents.tools.search_orchestration import _translate_keywords_for_source
 
-        ddb_source = _make_mock_source(
-            source_key="ddb", supported_languages={"de"},
+        trove_source = _make_mock_source(
+            source_key="trove", supported_languages={"de"},
         )
         # ドイツ語キーワードが混在
-        result = _translate_keywords_for_source(["ghost", "Alpträume"], ddb_source)
+        result = _translate_keywords_for_source(["ghost", "Alpträume"], trove_source)
         assert result is None
 
     def test_translation_failure_returns_none(self):

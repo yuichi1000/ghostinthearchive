@@ -103,7 +103,7 @@ class TestAccumulateImagesExcludesZeroMatch:
             {
                 "title": "Relevant",
                 "source_url": "https://example.com/1",
-                "source_type": "loc_digital",
+                "source_type": "nypl",
                 "thumbnail_url": "https://example.com/thumb1.jpg",
                 "keywords_matched": ["key1"],
             },
@@ -403,7 +403,7 @@ class TestInventoryIncludesKeywordsMatched:
                         {
                             "source_url": "https://example.com/doc1",
                             "title": "Doc 1",
-                            "source_type": "loc_digital",
+                            "source_type": "nypl",
                             "language": "en",
                             "keywords_matched": ["key1", "key2"],
                         },

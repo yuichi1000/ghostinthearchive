@@ -23,17 +23,13 @@ class SourceType(str, Enum):
     """Type of archive source."""
 
     NEWSPAPER = "newspaper"
-    LOC_DIGITAL = "loc_digital"
-    DPLA = "dpla"
     NYPL = "nypl"
-    PARES = "pares"
     INTERNET_ARCHIVE = "internet_archive"
-    DDB = "ddb"
     EUROPEANA = "europeana"
     TROVE = "trove"
     DELPHER = "delpher"
     NDL = "ndl"
-    WELLCOME = "wellcome"
+    CHRONICLING_AMERICA = "chronicling_america"
 
 
 class ArchiveDocument(BaseModel):

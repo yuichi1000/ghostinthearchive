@@ -187,7 +187,7 @@ def sample_search_results_data(sample_archive_document_data: Dict[str, Any]) -> 
         "theme": "Boston maritime mysteries 1840s",
         "documents": [sample_archive_document_data],
         "total_found": 1,
-        "sources_searched": ["chronicling_america", "loc_digital"],
+        "sources_searched": ["chronicling_america", "nypl"],
     }
 
 

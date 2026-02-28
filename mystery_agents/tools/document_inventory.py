@@ -23,16 +23,12 @@ logger = logging.getLogger(__name__)
 
 # アーカイブ名マッピング（source_type → 表示名）
 _ARCHIVE_NAMES: dict[str, str] = {
-    "loc_digital": "LOC Digital Collections",
-    "dpla": "DPLA",
     "nypl": "NYPL Digital Collections",
     "internet_archive": "Internet Archive",
-    "ddb": "Deutsche Digitale Bibliothek",
     "europeana": "Europeana",
     "trove": "Trove (Australia)",
     "delpher": "Delpher (Netherlands)",
     "ndl": "NDL (National Diet Library, Japan)",
-    "wellcome": "Wellcome Collection",
     "newspaper": "Historical Newspapers",
     "chronicling_america": "Chronicling America",
 }

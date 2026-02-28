@@ -255,16 +255,6 @@ resource "google_cloud_run_v2_service" "pipeline" {
       }
 
       env {
-        name = "DDB_API_KEY"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.ddb_api_key.secret_id
-            version = "latest"
-          }
-        }
-      }
-
-      env {
         name  = "CLOUD_BUILD_TRIGGER_ID"
         value = google_cloudbuild_trigger.web_public.name
       }

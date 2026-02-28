@@ -164,27 +164,17 @@ class TestEnsureAllLoaded:
         """実際のモジュールがロードされ、ソースが登録される。"""
         all_sources = get_all_sources()
 
-        # 全 API ツールが登録されていること（Delpher は除外済み）
+        # 全 API ツールが登録されていること（DDB, LOC Digital, Wellcome, Delpher は除外済み）
         expected_keys = {
-            "loc", "nypl", "internet_archive",
-            "ddb", "europeana", "chronicling_america", "trove",
-            "ndl", "wellcome",
+            "nypl", "internet_archive",
+            "europeana", "chronicling_america", "trove",
+            "ndl",
         }
         assert expected_keys.issubset(set(all_sources.keys()))
 
     def test_source_metadata_correct(self):
         """各ソースのメタデータが正しく設定されている。"""
         all_sources = get_all_sources()
-
-        loc = all_sources["loc"]
-        assert loc.source_type == "loc_digital"
-        assert loc.supported_languages == {"en"}
-        assert loc.env_var_key is None
-
-        ddb = all_sources["ddb"]
-        assert ddb.source_type == "ddb"
-        assert ddb.supported_languages == {"de"}
-        assert ddb.env_var_key == "DDB_API_KEY"
 
         ca = all_sources["chronicling_america"]
         assert ca.is_newspaper_source is True

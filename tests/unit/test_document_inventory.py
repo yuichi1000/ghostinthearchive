@@ -32,7 +32,7 @@ class TestGetDocumentInventory:
                     {
                         "title": "LOC Doc 1",
                         "source_url": "https://loc.gov/item/1",
-                        "source_type": "loc_digital",
+                        "source_type": "nypl",
                         "date": "1893-01-01",
                         "language": "en",
                         "summary": "should be excluded",
@@ -48,7 +48,7 @@ class TestGetDocumentInventory:
                     {
                         "title": "LOC Doc 2",
                         "source_url": "https://loc.gov/item/2",
-                        "source_type": "loc_digital",
+                        "source_type": "nypl",
                         "date": "1894-03-20",
                         "language": "en",
                         "summary": "should be excluded",
@@ -61,9 +61,9 @@ class TestGetDocumentInventory:
 
         assert result["status"] == "ok"
         assert result["total_documents"] == 3
-        assert "LOC Digital Collections" in result["by_archive"]
+        assert "NYPL Digital Collections" in result["by_archive"]
         assert "Internet Archive" in result["by_archive"]
-        assert len(result["by_archive"]["LOC Digital Collections"]) == 2
+        assert len(result["by_archive"]["NYPL Digital Collections"]) == 2
         assert len(result["by_archive"]["Internet Archive"]) == 1
 
     def test_excludes_summary_and_raw_text(self):
@@ -73,7 +73,7 @@ class TestGetDocumentInventory:
                 "documents": [{
                     "title": "Test Doc",
                     "source_url": "https://loc.gov/item/1",
-                    "source_type": "loc_digital",
+                    "source_type": "nypl",
                     "date": "1893-01-01",
                     "language": "en",
                     "summary": "This should NOT appear",
@@ -84,7 +84,7 @@ class TestGetDocumentInventory:
 
         result = json.loads(get_document_inventory(ctx))
 
-        doc = result["by_archive"]["LOC Digital Collections"][0]
+        doc = result["by_archive"]["NYPL Digital Collections"][0]
         assert "summary" not in doc
         assert "raw_text" not in doc
         assert doc["title"] == "Test Doc"
@@ -100,7 +100,7 @@ class TestGetDocumentInventory:
                     {
                         "title": "Doc A",
                         "source_url": "https://loc.gov/item/same",
-                        "source_type": "loc_digital",
+                        "source_type": "nypl",
                         "language": "en",
                     },
                 ],
@@ -110,7 +110,7 @@ class TestGetDocumentInventory:
                     {
                         "title": "Doc A (ja)",
                         "source_url": "https://loc.gov/item/same",
-                        "source_type": "loc_digital",
+                        "source_type": "nypl",
                         "language": "ja",
                     },
                 ],
@@ -128,7 +128,7 @@ class TestGetDocumentInventory:
                 "documents": [{
                     "title": "EN Doc",
                     "source_url": "https://loc.gov/en/1",
-                    "source_type": "loc_digital",
+                    "source_type": "nypl",
                     "language": "en",
                 }],
             }],
@@ -145,7 +145,7 @@ class TestGetDocumentInventory:
         result = json.loads(get_document_inventory(ctx))
 
         assert result["total_documents"] == 2
-        assert "LOC Digital Collections" in result["by_archive"]
+        assert "NYPL Digital Collections" in result["by_archive"]
         assert "NDL (National Diet Library, Japan)" in result["by_archive"]
 
     def test_archive_summary_format(self):
@@ -156,7 +156,7 @@ class TestGetDocumentInventory:
                     {"title": "IA 1", "source_url": "https://ia.org/1", "source_type": "internet_archive", "language": "en"},
                     {"title": "IA 2", "source_url": "https://ia.org/2", "source_type": "internet_archive", "language": "en"},
                     {"title": "IA 3", "source_url": "https://ia.org/3", "source_type": "internet_archive", "language": "en"},
-                    {"title": "LOC 1", "source_url": "https://loc.gov/1", "source_type": "loc_digital", "language": "en"},
+                    {"title": "LOC 1", "source_url": "https://loc.gov/1", "source_type": "nypl", "language": "en"},
                 ],
             }],
         })
@@ -165,7 +165,7 @@ class TestGetDocumentInventory:
 
         # IA 3件 > LOC 1件 の順
         assert result["archive_summary"].startswith("Internet Archive: 3 docs")
-        assert "LOC Digital Collections: 1 docs" in result["archive_summary"]
+        assert "NYPL Digital Collections: 1 docs" in result["archive_summary"]
 
     def test_base_key_raw_search_results(self):
         """ベースキー raw_search_results からも文書を取得する。"""
@@ -174,7 +174,7 @@ class TestGetDocumentInventory:
                 "documents": [{
                     "title": "Base Doc",
                     "source_url": "https://example.com/base/1",
-                    "source_type": "dpla",
+                    "source_type": "europeana",
                     "language": "en",
                 }],
             }],
@@ -183,7 +183,7 @@ class TestGetDocumentInventory:
         result = json.loads(get_document_inventory(ctx))
 
         assert result["total_documents"] == 1
-        assert "DPLA" in result["by_archive"]
+        assert "Europeana" in result["by_archive"]
 
     def test_unknown_source_type_uses_key_as_name(self):
         """未知の source_type はキーをそのまま表示名にする。"""
@@ -207,8 +207,8 @@ class TestGetDocumentInventory:
         ctx = make_tool_context(state={
             "raw_search_results_en": [{
                 "documents": [
-                    {"title": "No URL", "source_url": "", "source_type": "loc_digital", "language": "en"},
-                    {"title": "Good", "source_url": "https://loc.gov/1", "source_type": "loc_digital", "language": "en"},
+                    {"title": "No URL", "source_url": "", "source_type": "nypl", "language": "en"},
+                    {"title": "Good", "source_url": "https://loc.gov/1", "source_type": "nypl", "language": "en"},
                 ],
             }],
         })
@@ -224,7 +224,7 @@ class TestGetDocumentInventory:
                 "documents": [{
                     "title": "Doc",
                     "source_url": "https://loc.gov/1",
-                    "source_type": "loc_digital",
+                    "source_type": "nypl",
                     "language": "en",
                 }],
             }],
