@@ -190,7 +190,26 @@ def publish_mystery(
             translations: dict[str, dict] = {}
             rejected_languages: list[str] = []
             for lang in TRANSLATION_LANGUAGES:
-                translation_result = tool_context.state.get(translation_result_key(lang))
+                state_key = translation_result_key(lang)
+                translation_result = tool_context.state.get(state_key)
+
+                # 診断ログ: 各言語の翻訳セッション状態を記録
+                if translation_result is None:
+                    logger.debug(
+                        "translation_diag[%s]: キーが未設定または None", lang,
+                    )
+                elif isinstance(translation_result, str) and not translation_result:
+                    logger.debug(
+                        "translation_diag[%s]: 空文字列", lang,
+                    )
+                else:
+                    preview = str(translation_result)[:100]
+                    logger.debug(
+                        "translation_diag[%s]: type=%s, len=%d, preview=%s",
+                        lang, type(translation_result).__name__,
+                        len(str(translation_result)), preview,
+                    )
+
                 if not translation_result:
                     continue
                 # output_key の値は LLM テキスト出力（JSON 文字列の場合がある）
@@ -212,8 +231,10 @@ def publish_mystery(
                         translations[lang] = parsed
                     else:
                         logger.warning(
-                            "Failed to parse translation_result_%s as JSON (first 200 chars: %s)",
-                            lang, translation_result[:200],
+                            "Failed to parse translation_result_%s as JSON "
+                            "(len=%d, first 200 chars: %s)",
+                            lang, len(translation_result),
+                            translation_result[:200],
                         )
                 elif isinstance(translation_result, dict):
                     # 言語バリデーション: 翻訳が正しい言語で書かれているか検証

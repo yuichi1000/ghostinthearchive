@@ -290,6 +290,89 @@ class TestPublisherCodeblockTranslation:
         assert any("['ja']" in msg for msg in caplog.messages)
 
 
+class TestPublisherTranslationDiagnostics:
+    """翻訳収集の DEBUG 診断ログテスト。"""
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_logs_none_state_as_diagnostic(
+        self, mock_get_db, mock_get_bucket, caplog
+    ):
+        """translation_result が None の場合に診断ログが出力されること。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        # es のみセット、ja と de は未設定（None）
+        state = {
+            "translation_result_es": json.dumps({
+                "title": "Título",
+                "summary": "Resumen de prueba",
+            }),
+        }
+
+        tool_context = make_tool_context(state)
+        with caplog.at_level(logging.DEBUG, logger="mystery_agents.tools.publisher_tools"):
+            publish_mystery(_make_mystery_json(), "", tool_context)
+
+        # None のキーに対する診断ログ
+        diag_msgs = [m for m in caplog.messages if "translation_diag" in m]
+        assert any("ja" in m and "未設定または None" in m for m in diag_msgs)
+        assert any("de" in m and "未設定または None" in m for m in diag_msgs)
+        # 値がある es に対する診断ログ
+        assert any("es" in m and "type=str" in m for m in diag_msgs)
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_logs_empty_string_as_diagnostic(
+        self, mock_get_db, mock_get_bucket, caplog
+    ):
+        """translation_result が空文字列の場合に診断ログが出力されること。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "translation_result_ja": "",
+            "translation_result_es": json.dumps({
+                "title": "Título",
+                "summary": "Resumen de prueba",
+            }),
+        }
+
+        tool_context = make_tool_context(state)
+        with caplog.at_level(logging.DEBUG, logger="mystery_agents.tools.publisher_tools"):
+            publish_mystery(_make_mystery_json(), "", tool_context)
+
+        diag_msgs = [m for m in caplog.messages if "translation_diag" in m]
+        assert any("ja" in m and "空文字列" in m for m in diag_msgs)
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_logs_json_parse_failure_with_length(
+        self, mock_get_db, mock_get_bucket, caplog
+    ):
+        """JSON パース失敗時に文字列長がログに含まれること。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        broken_json = "this is { not valid json at all" * 10
+        state = {
+            "translation_result_es": broken_json,
+        }
+
+        tool_context = make_tool_context(state)
+        with caplog.at_level(logging.WARNING, logger="mystery_agents.tools.publisher_tools"):
+            publish_mystery(_make_mystery_json(), "", tool_context)
+
+        assert any(
+            f"len={len(broken_json)}" in m
+            for m in caplog.messages
+            if "Failed to parse" in m
+        )
+
+
 class TestPublisherLanguageValidation:
     """翻訳言語バリデーションによる拒否テスト。"""
 
