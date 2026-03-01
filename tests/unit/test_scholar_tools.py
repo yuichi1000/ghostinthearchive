@@ -448,7 +448,7 @@ class TestEvidenceGrounding:
     """証拠グラウンディング検証のテスト。"""
 
     def test_matching_url_overwrites_metadata(self):
-        """URL が raw_search_results と一致 → title/date/excerpt を上書き。"""
+        """URL が raw_search_results と一致 → title/date を上書き、excerpt は維持。"""
         mock_ctx = _make_ctx({
             "raw_search_results_en": [{
                 "documents": [{
@@ -475,21 +475,21 @@ class TestEvidenceGrounding:
 
         assert result_data["status"] == "success"
         saved_ev = mock_ctx.state["structured_report"]["evidence_a"]
-        # raw データで上書きされている
+        # メタデータは raw データで上書きされている
         assert saved_ev["source_title"] == "Correct Title From API"
         assert saved_ev["source_date"] == "1893-01-15"
         assert saved_ev["archive_source"] == "nypl"
-        # relevant_excerpt が raw_text で上書きされている
-        assert saved_ev["relevant_excerpt"] == "Original text from the API document."
+        # relevant_excerpt は LLM の出力が維持される（OCR 品質問題を回避）
+        assert saved_ev["relevant_excerpt"] == "LLM generated summary"
 
-    def test_matching_url_overwrites_relevant_excerpt(self):
-        """URL 一致時に raw_text → relevant_excerpt 上書き。"""
+    def test_matching_url_preserves_llm_excerpt(self):
+        """URL 一致時でも relevant_excerpt は LLM 出力を維持する。"""
         mock_ctx = _make_ctx({
             "raw_search_results_en": [{
                 "documents": [{
                     "title": "API Doc",
                     "source_url": "https://loc.gov/item/456",
-                    "raw_text": "Authentic archive text from LOC.",
+                    "raw_text": "Garbled OCR t3xt fr0m 19th c. newspaper",
                     "keywords_matched": ["key"],
                 }],
             }],
@@ -499,7 +499,7 @@ class TestEvidenceGrounding:
             "title": "Test",
             "evidence_a": {
                 "source_url": "https://loc.gov/item/456",
-                "relevant_excerpt": "LLM fabricated text",
+                "relevant_excerpt": "Polymath meaningful excerpt",
             },
         }
         result = save_structured_report(json.dumps(report_data), mock_ctx)
@@ -507,35 +507,8 @@ class TestEvidenceGrounding:
 
         assert result_data["status"] == "success"
         saved_ev = mock_ctx.state["structured_report"]["evidence_a"]
-        assert saved_ev["relevant_excerpt"] == "Authentic archive text from LOC."
-
-    def test_matching_url_empty_raw_text_keeps_llm_excerpt(self):
-        """raw_text が空の場合 LLM テキストを維持し警告。"""
-        mock_ctx = _make_ctx({
-            "raw_search_results_en": [{
-                "documents": [{
-                    "title": "API Doc",
-                    "source_url": "https://loc.gov/item/789",
-                    "raw_text": "",
-                    "keywords_matched": ["key"],
-                }],
-            }],
-        })
-
-        report_data = {
-            "title": "Test",
-            "evidence_a": {
-                "source_url": "https://loc.gov/item/789",
-                "relevant_excerpt": "LLM generated text kept as fallback",
-            },
-        }
-        result = save_structured_report(json.dumps(report_data), mock_ctx)
-        result_data = json.loads(result)
-
-        assert result_data["status"] == "success"
-        saved_ev = mock_ctx.state["structured_report"]["evidence_a"]
-        assert saved_ev["relevant_excerpt"] == "LLM generated text kept as fallback"
-        assert any("raw_text が空" in w for w in result_data["warnings"])
+        # raw_text ではなく LLM excerpt が維持される
+        assert saved_ev["relevant_excerpt"] == "Polymath meaningful excerpt"
 
     def test_ungrounded_additional_evidence_removed(self):
         """URL 不一致の additional_evidence が除外される。"""
