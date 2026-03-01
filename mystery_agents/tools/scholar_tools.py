@@ -10,7 +10,13 @@ from typing import Any
 
 from google.adk.tools.tool_context import ToolContext
 
-from shared.state_keys import RAW_SEARCH_RESULTS, STRUCTURED_REPORT, WORD_COUNT_TIER
+from shared.state_keys import (
+    APPROVED_ARCHIVE_IMAGES,
+    ARCHIVE_IMAGES,
+    RAW_SEARCH_RESULTS,
+    STRUCTURED_REPORT,
+    WORD_COUNT_TIER,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -283,6 +289,25 @@ def save_structured_report(
                     seen.add(t)
             # 最大10個に制限
             report_data["tags"] = normalized[:10]
+
+    # approved_image_urls → archive_images と照合してフィルタリング
+    approved_urls = report_data.pop("approved_image_urls", None)
+    if approved_urls is not None:
+        archive_images = tool_context.state.get(ARCHIVE_IMAGES, [])
+        approved_set = set(approved_urls)
+        approved_images = [
+            img for img in archive_images
+            if img.get("source_url") in approved_set
+        ]
+        tool_context.state[APPROVED_ARCHIVE_IMAGES] = approved_images
+    else:
+        # 後方互換: フィールド未指定時は全画像を承認
+        tool_context.state[APPROVED_ARCHIVE_IMAGES] = tool_context.state.get(
+            ARCHIVE_IMAGES, []
+        )
+        warnings.append(
+            "approved_image_urls not provided — all archive_images approved by default"
+        )
 
     # Store structured report in session state
     tool_context.state[STRUCTURED_REPORT] = report_data

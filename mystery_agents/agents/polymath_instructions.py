@@ -97,6 +97,17 @@ Armchair Polymath の instruction を構成する3つのセクション
 #    語呂合わせ、比喩、同音異義語、テーマ的類推でのみ繋がるソースは有効な証拠ではない。
 #    文書のタイトルが調査対象と関連しない場合、解釈的つながりがどれほど巧みでも選択しない。
 #
+# ## アーカイブ画像の審査（必須）
+# 文書インベントリは `archive_images` も返す — デジタルアーカイブからの視覚資料で、
+# Storyteller が記事内に埋め込む可能性がある。各画像のタイトルとソースを確認し、
+# 調査との主題的関連性を審査する。
+#
+# `save_structured_report` の JSON に `approved_image_urls` を含める:
+# - 承認する各画像の `source_url` をリストする
+# - 調査の主題・時代・地域に直接関連する画像のみを承認する
+# - 曖昧なテーマ的関連だけで繋がる画像は拒否する
+# - 関連する画像がない場合は空リストを渡す
+#
 # ## 文字数
 # **{__WORD_COUNT_MIN__}〜{__WORD_COUNT_MAX__} words（英語）** — このレポートは Storyteller への唯一の入力である。
 # 2,000〜3,500 語の記事を書くのに十分な詳細・証拠・分析を含めること。
@@ -390,6 +401,18 @@ to see all documents collected by the Librarian, organized by archive.
    analogy is NOT valid evidence. If a document's title does not relate to the investigation
    subject, do not select it — regardless of how clever the interpretive connection may seem.
 
+## Archive Image Review (MANDATORY)
+
+The document inventory also returns `archive_images` — visual materials from digital archives
+that the Storyteller may embed in the article. Review each image's title and source for
+topical relevance to the investigation.
+
+Include `approved_image_urls` in your `save_structured_report` JSON:
+- List the `source_url` of each image you approve
+- Approve ONLY images directly relevant to the mystery's subject, period, or geography
+- Reject images connected only through vague thematic association
+- If no images are relevant, pass an empty list
+
 ## Save Structured Report (MANDATORY)
 
 After completing your analysis, you MUST call `save_structured_report` with a JSON containing:
@@ -444,7 +467,8 @@ After completing your analysis, you MUST call `save_structured_report` with a JS
   }},
   "confidence_rationale": "Rated MEDIUM because two independent sources contradict on the date of arrival, but DPLA and Europeana returned no results — the discrepancy might be resolved by undigitized port authority records.",
   "languages_analyzed": ["en", "de"],
-  "tags": ["shipwreck", "colonial america", "19th century", "folklore", "maritime mystery"]
+  "tags": ["shipwreck", "colonial america", "19th century", "folklore", "maritime mystery"],
+  "approved_image_urls": ["https://example.com/image1.jpg", "https://example.com/image2.jpg"]
 }}
 ```
 
@@ -515,7 +539,8 @@ The full JSON structure for `save_structured_report`:
   }},
   "confidence_rationale": "Rationale for the chosen confidence level",
   "languages_analyzed": ["en", "de"],
-  "tags": ["shipwreck", "colonial america", "19th century", "folklore", "ghost ship"]
+  "tags": ["shipwreck", "colonial america", "19th century", "folklore", "ghost ship"],
+  "approved_image_urls": ["https://example.com/image1.jpg"]
 }}
 ```
 

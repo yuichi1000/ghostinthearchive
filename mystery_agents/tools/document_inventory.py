@@ -17,7 +17,7 @@ from typing import Any, Optional
 
 from google.adk.tools.tool_context import ToolContext
 
-from shared.state_keys import RAW_SEARCH_RESULTS
+from shared.state_keys import ARCHIVE_IMAGES, RAW_SEARCH_RESULTS
 
 logger = logging.getLogger(__name__)
 
@@ -135,11 +135,26 @@ def get_document_inventory(tool_context: Optional[ToolContext] = None) -> str:
     # inventory 参照済みフラグをセット（save_structured_report が確認する）
     tool_context.state["_inventory_consulted"] = True
 
+    # archive_images セクション（Polymath が画像を審査するためのメタデータ）
+    raw_images = state.get(ARCHIVE_IMAGES, [])
+    archive_images_summary: list[dict[str, str]] = []
+    if isinstance(raw_images, list):
+        for idx, img in enumerate(raw_images):
+            if not isinstance(img, dict):
+                continue
+            archive_images_summary.append({
+                "index": idx,
+                "title": img.get("title", ""),
+                "source_url": img.get("source_url", ""),
+                "source_type": img.get("source_type", ""),
+            })
+
     response = {
         "status": "ok",
         "total_documents": total,
         "by_archive": dict(by_archive),
         "archive_summary": archive_summary,
+        "archive_images": archive_images_summary,
     }
 
     return json.dumps(response, ensure_ascii=False)

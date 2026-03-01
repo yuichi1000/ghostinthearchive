@@ -321,8 +321,8 @@ class TestSaveStructuredReportEvidenceValidation:
         assert result_data["status"] == "success"
         assert mock_ctx.state["structured_report"]["additional_evidence"] == []
 
-    def test_valid_report_has_no_warnings(self):
-        """全 evidence が正常 → warnings 空リスト。"""
+    def test_valid_report_with_approved_urls_has_no_warnings(self):
+        """全 evidence が正常 + approved_image_urls 指定 → warnings 空リスト。"""
         report_data = {
             "title": "Test",
             "evidence_a": {
@@ -339,6 +339,7 @@ class TestSaveStructuredReportEvidenceValidation:
                     "relevant_excerpt": "Excerpt C",
                 },
             ],
+            "approved_image_urls": [],
         }
         mock_ctx = _make_ctx()
 
@@ -613,7 +614,12 @@ class TestEvidenceGrounding:
         saved = mock_ctx.state["structured_report"]
         assert saved["evidence_a"]["archive_source"] == "dpla"
         assert saved["evidence_b"]["archive_source"] == "ndl"
-        assert result_data["warnings"] == []
+        # グラウンディング警告なし（approved_image_urls の後方互換警告のみ）
+        grounding_warnings = [
+            w for w in result_data["warnings"]
+            if "approved_image_urls" not in w
+        ]
+        assert grounding_warnings == []
 
 
 class TestValidateEvidenceGroundingDirect:
@@ -813,3 +819,84 @@ class TestTagsValidation:
 
         assert result_data["status"] == "success"
         assert "tags" not in mock_ctx.state["structured_report"]
+
+
+class TestApprovedImageUrls:
+    """approved_image_urls による画像フィルタリングのテスト。"""
+
+    def test_filters_archive_images_by_approved_urls(self):
+        """approved_image_urls で指定した画像のみが approved_archive_images に入る。"""
+        mock_ctx = _make_ctx({
+            "archive_images": [
+                {"title": "Img A", "source_url": "https://loc.gov/img/a"},
+                {"title": "Img B", "source_url": "https://europeana.eu/img/b"},
+                {"title": "Img C", "source_url": "https://ia.org/img/c"},
+            ],
+        })
+        report_data = {
+            "title": "Test",
+            "approved_image_urls": [
+                "https://loc.gov/img/a",
+                "https://ia.org/img/c",
+            ],
+        }
+
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        approved = mock_ctx.state["approved_archive_images"]
+        assert len(approved) == 2
+        assert approved[0]["source_url"] == "https://loc.gov/img/a"
+        assert approved[1]["source_url"] == "https://ia.org/img/c"
+        # approved_image_urls は structured_report に保存されない
+        assert "approved_image_urls" not in mock_ctx.state["structured_report"]
+
+    def test_empty_approved_urls_results_in_empty_list(self):
+        """approved_image_urls が空リスト → approved_archive_images は空リスト。"""
+        mock_ctx = _make_ctx({
+            "archive_images": [
+                {"title": "Img A", "source_url": "https://loc.gov/img/a"},
+            ],
+        })
+        report_data = {
+            "title": "Test",
+            "approved_image_urls": [],
+        }
+
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert mock_ctx.state["approved_archive_images"] == []
+        assert result_data["warnings"] == []
+
+    def test_missing_approved_urls_approves_all(self):
+        """approved_image_urls 未指定 → 全画像を承認（後方互換）。"""
+        images = [
+            {"title": "Img A", "source_url": "https://loc.gov/img/a"},
+            {"title": "Img B", "source_url": "https://europeana.eu/img/b"},
+        ]
+        mock_ctx = _make_ctx({"archive_images": images})
+        report_data = {"title": "Test"}
+
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert mock_ctx.state["approved_archive_images"] == images
+        assert any("approved by default" in w for w in result_data["warnings"])
+
+    def test_no_archive_images_with_approved_urls(self):
+        """archive_images がない状態で approved_image_urls 指定 → 空リスト。"""
+        mock_ctx = _make_ctx()  # archive_images なし
+        report_data = {
+            "title": "Test",
+            "approved_image_urls": ["https://loc.gov/img/a"],
+        }
+
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert mock_ctx.state["approved_archive_images"] == []
