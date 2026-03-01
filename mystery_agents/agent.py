@@ -42,7 +42,12 @@ from .agents.publisher import create_publisher
 from .agents.storyteller import create_storyteller
 from .agents.translator import create_all_translators
 from shared.model_config import DEFAULT_STORYTELLER
-from shared.state_keys import DEBATE_WHITEBOARD, SELECTED_LANGUAGES, STRUCTURED_REPORT
+from shared.state_keys import (
+    APPROVED_ARCHIVE_IMAGES,
+    DEBATE_WHITEBOARD,
+    SELECTED_LANGUAGES,
+    STRUCTURED_REPORT,
+)
 
 if TYPE_CHECKING:
     from google.adk.agents.callback_context import CallbackContext
@@ -101,6 +106,8 @@ def _initialize_pipeline_state(
     callback_context.state[SELECTED_LANGUAGES] = []
     callback_context.state[DEBATE_WHITEBOARD] = ""
     callback_context.state[STRUCTURED_REPORT] = {}
+    # Polymath が save_structured_report を呼ばなかった場合のフォールバック
+    callback_context.state[APPROVED_ARCHIVE_IMAGES] = []
     # scholar_analysis_* は DynamicPolymathBlock が動的に参照するため初期化不要
     # active_analyses_summary は DynamicScholarBlock が設定するため初期化不要
     return None  # 実行続行
