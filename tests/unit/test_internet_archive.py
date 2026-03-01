@@ -67,8 +67,8 @@ class TestInternetArchiveFulltextFilter:
     """Internet Archive 検索の全文フィルタリングテスト。"""
 
     @responses.activate
-    def test_filters_docs_without_fulltext(self):
-        """djvu.txt 取得に失敗したドキュメントは除外される。"""
+    def test_preserves_docs_without_fulltext(self):
+        """djvu.txt 取得に失敗したドキュメントもメタデータとして保持される。"""
         # 検索 API モック（2件返す）
         responses.add(
             responses.GET,
@@ -110,9 +110,11 @@ class TestInternetArchiveFulltextFilter:
         source = InternetArchiveSource()
         result = source.search(keywords=["test"], date_start="1800", date_end="1899")
 
-        assert len(result.documents) == 1
+        assert len(result.documents) == 2
         assert result.documents[0].title == "Book With Text"
         assert result.documents[0].raw_text == "OCR text content"
+        assert result.documents[1].title == "Book Without Text"
+        assert result.documents[1].raw_text is None
 
     @responses.activate
     def test_keeps_all_docs_with_fulltext(self):

@@ -312,9 +312,9 @@ class TestDynamicMaxResults:
             language="en",
         )
 
-        # per_source_limit = min(10, max(3, 30//6)) = 5
+        # per_source_limit = min(10, max(3, 50//6)) = 8
         for key, max_r in call_log:
-            assert max_r == 5
+            assert max_r == 8
 
 
 class TestTotalDocsCap:
@@ -323,7 +323,7 @@ class TestTotalDocsCap:
     @patch("mystery_agents.tools.librarian_tools.validate_documents")
     @patch("mystery_agents.tools.librarian_tools.get_all_sources")
     def test_total_docs_capped(self, mock_get_all, mock_validate):
-        """全ソースから合計 40 件 → 上限 30 件にカットされる。"""
+        """全ソースから合計 40 件 → 上限 50 件にカットされる。"""
         docs_per_source = 20
         all_docs = []
         sources = {}
@@ -1071,7 +1071,7 @@ class TestReferenceKeywords:
     def test_reference_keywords_combined_with_exploratory(
         self, mock_get_all, mock_validate
     ):
-        """reference + exploratory キーワードが結合されて検索される。"""
+        """reference は AND 結合で別途渡され、exploratory は OR 結合で検索される。"""
         call_log = []
 
         class LogSource:
@@ -1081,7 +1081,10 @@ class TestReferenceKeywords:
             supported_languages = {"en"}
 
             def search(self, **kwargs):
-                call_log.append(kwargs["keywords"])
+                call_log.append({
+                    "keywords": kwargs["keywords"],
+                    "reference_keywords": kwargs.get("reference_keywords"),
+                })
                 return ArchiveSearchResult(documents=[], total_hits=0)
 
         mock_get_all.return_value = {"loc": LogSource()}
@@ -1098,16 +1101,13 @@ class TestReferenceKeywords:
         )
         result = json.loads(result_json)
 
-        # reference + exploratory の両方が keywords_used に含まれる
-        assert "Bell" in result["keywords_used"]
-        assert "poltergeist" in result["keywords_used"]
         # reference / exploratory が分離記録されている
         assert result["reference_keywords"] == ["Bell", "Adams", "Tennessee"]
         assert result["exploratory_keywords"] == ["poltergeist", "haunting"]
-        # 最初の検索呼び出しに両方のキーワードが含まれる
+        # 検索呼び出しで exploratory が keywords に、reference が reference_keywords に渡される
         assert len(call_log) >= 1
-        assert "Bell" in call_log[0]
-        assert "poltergeist" in call_log[0]
+        assert "poltergeist" in call_log[0]["keywords"]
+        assert call_log[0]["reference_keywords"] == ["Bell", "Adams", "Tennessee"]
 
     @patch("mystery_agents.tools.librarian_tools.validate_documents")
     @patch("mystery_agents.tools.librarian_tools.get_all_sources")

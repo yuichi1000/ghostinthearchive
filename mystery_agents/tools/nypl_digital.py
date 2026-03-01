@@ -89,6 +89,7 @@ class NYPLSource(ArchiveSource):
         date_end: str | None,
         max_results: int,
         language: str | None,
+        reference_keywords: list[str] | None = None,
     ) -> ArchiveSearchResult:
         search_text = build_search_query(keywords)
         if not search_text:

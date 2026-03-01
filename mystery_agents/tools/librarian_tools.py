@@ -48,7 +48,7 @@ _IA_DEFAULT_ICON_SIZES: frozenset[int] = frozenset({2212})
 _MAX_WORKERS = 6
 
 # 全ソース合計のドキュメント上限
-_TOTAL_DOCS_CAP = 30
+_TOTAL_DOCS_CAP = 50
 
 
 def _is_ia_default_icon(resp: requests.Response, url: str) -> bool:
@@ -477,14 +477,15 @@ def search_archives(
     # 2段階キーワード解析: reference（系統的）+ exploratory（探索的）
     reference_list = [kw.strip() for kw in reference_keywords.split(",") if kw.strip()]
     exploratory_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
-    combined_keywords = reference_list + exploratory_list
-    keyword_list = combined_keywords if combined_keywords else exploratory_list
+    # keyword_list は keywords_matched 用（全キーワード結合）
+    keyword_list = reference_list + exploratory_list if (reference_list or exploratory_list) else exploratory_list
 
     # キーワード言語診断ログ: 非英語 API に英語キーワードを渡していないか検出する
     if language and language != "en":
         _log_keyword_language_mismatch(keyword_list, language)
 
-    keyword_groups = [keyword_list]
+    # keyword_groups は検索クエリ用（exploratory のみ OR 結合、reference は別途 AND 結合で渡す）
+    keyword_groups = [exploratory_list] if exploratory_list else [reference_list]
 
     # 多言語キーワード展開: Translation API で他言語キーワードを追加
     if language and tool_context is not None:
@@ -560,6 +561,7 @@ def search_archives(
                 date_end=date_end,
                 per_source_limit=per_source_limit,
                 language=language,
+                reference_keywords=reference_list or None,
             )] = key
         for future in concurrent.futures.as_completed(futures):
             key = futures[future]

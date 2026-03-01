@@ -115,6 +115,7 @@ class NDLSearchSource(ArchiveSource):
         date_end: str | None,
         max_results: int,
         language: str | None,
+        reference_keywords: list[str] | None = None,
     ) -> ArchiveSearchResult:
         # キーワードをスペース区切りで結合（NDL 側でトークナイズされるため OR/quote ロジック不要）
         search_text = " ".join(kw.strip() for kw in keywords if kw.strip())

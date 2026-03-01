@@ -26,6 +26,7 @@ def _search_single_source(
     date_end: str | None,
     per_source_limit: int,
     language: str | None,
+    reference_keywords: list[str] | None = None,
 ) -> tuple[str, list[ArchiveDocument], int, str | None, bool]:
     """単一ソースを検索して結果を返す（並列実行用）。
 
@@ -54,6 +55,7 @@ def _search_single_source(
                 date_end=date_end,
                 max_results=per_source_limit,
                 language=lang_arg,
+                reference_keywords=reference_keywords,
             )
             return result.documents, result.total_hits, result.error
         except Exception as e:

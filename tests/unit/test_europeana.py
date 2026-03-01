@@ -427,8 +427,8 @@ class TestEuropeanaFulltextFilter:
     """Europeana 全文フィルタリングテスト。"""
 
     @responses.activate
-    def test_filters_docs_without_fulltext(self):
-        """全文取得に失敗したドキュメントは除外される。"""
+    def test_preserves_docs_without_fulltext(self):
+        """全文取得に失敗したドキュメントもメタデータとして保持される。"""
         mock_response = {
             "success": True,
             "totalResults": 2,
@@ -466,13 +466,15 @@ class TestEuropeanaFulltextFilter:
         with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
             result = source.search(keywords=["test"])
 
-        assert len(result.documents) == 1
+        assert len(result.documents) == 2
         assert result.documents[0].title == "Has Fulltext"
         assert result.documents[0].raw_text == "Fulltext here."
+        assert result.documents[1].title == "No Fulltext"
+        assert result.documents[1].raw_text is None
 
     @responses.activate
-    def test_no_id_field_means_no_fulltext(self):
-        """id フィールドがないアイテムは全文取得対象外 → 除外される。"""
+    def test_no_id_field_preserves_doc(self):
+        """id フィールドがないアイテムもメタデータとして保持される。"""
         mock_response = {
             "success": True,
             "totalResults": 1,
@@ -490,4 +492,6 @@ class TestEuropeanaFulltextFilter:
         with patch.dict("os.environ", {"EUROPEANA_API_KEY": "test_key"}):
             result = source.search(keywords=["test"])
 
-        assert len(result.documents) == 0
+        assert len(result.documents) == 1
+        assert result.documents[0].title == "No ID"
+        assert result.documents[0].raw_text is None

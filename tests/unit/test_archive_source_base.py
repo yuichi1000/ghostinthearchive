@@ -20,7 +20,7 @@ class ConcreteSource(ArchiveSource):
     supported_languages = {"en", "de"}
     env_var_key = None
 
-    def _search_impl(self, keywords, date_start, date_end, max_results, language):
+    def _search_impl(self, keywords, date_start, date_end, max_results, language, reference_keywords=None):
         doc = ArchiveDocument(
             title="Test Doc",
             source_url="https://example.com/1",
@@ -41,7 +41,7 @@ class FailingSource(ArchiveSource):
     min_request_delay = 0.0
     env_var_key = None
 
-    def _search_impl(self, keywords, date_start, date_end, max_results, language):
+    def _search_impl(self, keywords, date_start, date_end, max_results, language, reference_keywords=None):
         raise ConnectionError("API unreachable")
 
 
@@ -54,7 +54,7 @@ class ApiKeySource(ArchiveSource):
     min_request_delay = 0.0
     env_var_key = "TEST_API_KEY"
 
-    def _search_impl(self, keywords, date_start, date_end, max_results, language):
+    def _search_impl(self, keywords, date_start, date_end, max_results, language, reference_keywords=None):
         return ArchiveSearchResult(documents=[], total_hits=0)
 
 
