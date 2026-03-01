@@ -14,9 +14,9 @@ import { buildOgpMetadata, buildAlternates } from "@/lib/seo"
 const METHODOLOGY_STEPS: {
   key: "search" | "fulltext" | "excerpt" | "analysis" | "debate" | "certification";
   icon: LucideIcon;
-  type: "program" | "llm";
+  type: "program" | "llm" | "hybrid";
 }[] = [
-  { key: "search", icon: Database, type: "program" },
+  { key: "search", icon: Database, type: "hybrid" },
   { key: "fulltext", icon: FileText, type: "program" },
   { key: "excerpt", icon: Scissors, type: "program" },
   { key: "analysis", icon: GraduationCap, type: "llm" },
@@ -153,6 +153,9 @@ export default async function AboutPage({
 
               {/* 凡例バッジ */}
               <div className="flex items-center gap-4 mb-6">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">
+                  {dict.about.methodology.hybridLabel}
+                </span>
                 <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">
                   {dict.about.methodology.programLabel}
                 </span>
@@ -164,16 +167,17 @@ export default async function AboutPage({
               {/* ステップカード */}
               <div className="space-y-4">
                 {METHODOLOGY_STEPS.map((step, index) => {
-                  const isProgram = step.type === "program"
-                  const color = isProgram ? "text-emerald-400" : "text-purple-400"
-                  const badgeColor = isProgram
-                    ? "text-emerald-400 bg-emerald-400/10"
+                  const color = step.type === "hybrid" ? "text-amber-400"
+                    : step.type === "program" ? "text-emerald-400" : "text-purple-400"
+                  const badgeColor = step.type === "hybrid" ? "text-amber-400 bg-amber-400/10"
+                    : step.type === "program" ? "text-emerald-400 bg-emerald-400/10"
                     : "text-purple-400 bg-purple-400/10"
-                  const borderColor = isProgram ? "border-emerald-900/30" : "border-purple-900/30"
+                  const borderColor = step.type === "hybrid" ? "border-amber-900/30"
+                    : step.type === "program" ? "border-emerald-900/30" : "border-purple-900/30"
                   const Icon = step.icon
                   const stepDict = dict.about.methodology.steps[step.key]
-                  const label = isProgram
-                    ? dict.about.methodology.programLabel
+                  const label = step.type === "hybrid" ? dict.about.methodology.hybridLabel
+                    : step.type === "program" ? dict.about.methodology.programLabel
                     : dict.about.methodology.llmLabel
 
                   return (

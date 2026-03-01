@@ -76,13 +76,14 @@ const dict: Dictionary = {
     methodology: {
       heading: "調査プロセス",
       intro:
-        "各調査は6段階のパイプラインに従います。ステップ1〜3は決定論的なプログラム処理であり、AIの解釈は一切介在しません。ステップ4〜6は大規模言語モデル（LLM）を用いた分析・統合・記事生成を行います。",
+        "各調査は6段階のパイプラインに従います。ステップ1ではAIエージェントが調査テーマに基づいて検索キーワードを生成し、そのキーワードでアーカイブ API にプログラムでクエリを送信します。ステップ2〜3は決定論的なプログラム処理であり、AIの解釈は介在しません。ステップ4〜6は大規模言語モデル（LLM）を用いた分析・統合・記事生成を行います。",
       programLabel: "プログラム",
       llmLabel: "LLM",
+      hybridLabel: "LLM + プログラム",
       steps: {
         search: {
           title: "API 検索",
-          description: "公開デジタルアーカイブの API — Trove、NDL Search、NYPL Digital Collections、Chronicling America、Internet Archive、Delpher — にプログラムでクエリを送信します。調査テーマに合致するメタデータとカタログレコードを取得します。",
+          description: "AIエージェントが調査テーマを分析し、検索キーワードを生成します。再現性を保証する体系的キーワードと、発見の幅を広げる探索的キーワードの2種類です。生成されたキーワードは公開デジタルアーカイブの API — Trove、NDL Search、NYPL Digital Collections、Chronicling America、Internet Archive、Delpher — にプログラムで送信され、メタデータとカタログレコードを取得します。",
         },
         fulltext: {
           title: "全文取得",

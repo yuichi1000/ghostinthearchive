@@ -64,6 +64,7 @@ export interface Dictionary {
       intro: string;
       programLabel: string;
       llmLabel: string;
+      hybridLabel: string;
       steps: {
         search: { title: string; description: string };
         fulltext: { title: string; description: string };

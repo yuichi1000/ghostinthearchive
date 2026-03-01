@@ -77,13 +77,14 @@ const dict: Dictionary = {
     methodology: {
       heading: "Cómo investigamos",
       intro:
-        "Cada investigación sigue un proceso de seis pasos. Los pasos 1–3 son operaciones programáticas deterministas — no interviene ninguna interpretación de IA. Los pasos 4–6 utilizan modelos de lenguaje grandes (LLMs) para el análisis, la síntesis y la generación narrativa.",
+        "Cada investigación sigue un proceso de seis pasos. El paso 1 utiliza un agente de IA para generar palabras clave de búsqueda, que luego se envían a las API de los archivos de forma programática. Los pasos 2–3 son operaciones programáticas deterministas — no interviene ninguna interpretación de IA. Los pasos 4–6 utilizan modelos de lenguaje grandes (LLMs) para el análisis, la síntesis y la generación narrativa.",
       programLabel: "PROGRAMA",
       llmLabel: "LLM",
+      hybridLabel: "LLM + PROGRAMA",
       steps: {
         search: {
           title: "Búsqueda API",
-          description: "Se envían consultas programáticas a las API de archivos digitales públicos — Trove, NDL Search, NYPL Digital Collections, Chronicling America, Internet Archive y Delpher. El sistema recupera metadatos y registros de catálogo que coinciden con el tema de investigación.",
+          description: "Un agente de IA analiza el tema de investigación y genera palabras clave de búsqueda — tanto términos sistemáticos para la reproducibilidad como términos exploratorios para un descubrimiento más amplio. Estas palabras clave se envían de forma programática a las API de archivos digitales públicos — Trove, NDL Search, NYPL Digital Collections, Chronicling America, Internet Archive y Delpher — para recuperar metadatos y registros de catálogo.",
         },
         fulltext: {
           title: "Recuperación de texto completo",
