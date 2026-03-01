@@ -10,6 +10,7 @@ import json
 import logging
 
 from .agents.curator import curator_agent
+from .probe import probe_all_themes
 from .queries import (
     get_existing_titles,
     get_category_distribution,
@@ -95,5 +96,8 @@ async def suggest_themes(
         raise ValueError(
             f"All suggestions failed schema validation. Raw: {result_text[:500]}"
         )
+
+    # API プローブ: 実際のヒット件数に基づいて coverage_score を算出・上書き
+    suggestions = await asyncio.to_thread(probe_all_themes, suggestions)
 
     return suggestions

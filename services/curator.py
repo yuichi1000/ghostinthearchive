@@ -97,13 +97,16 @@ async def translate_suggestions(suggestions: list[dict]) -> list[dict]:
         )
         return suggestions
 
-    # Merge English and Japanese
+    # Merge English and Japanese（カバレッジフィールドを保持）
     ja_suggestions = translation.get("suggestions", [])
     bilingual = []
     for i, en_suggestion in enumerate(suggestions):
         entry = {
             "theme": en_suggestion.get("theme", ""),
             "description": en_suggestion.get("description", ""),
+            "coverage_score": en_suggestion.get("coverage_score"),
+            "primary_apis": en_suggestion.get("primary_apis", []),
+            "probe_hits": en_suggestion.get("probe_hits", {}),
         }
         if i < len(ja_suggestions):
             entry["theme_ja"] = ja_suggestions[i].get("theme", "")

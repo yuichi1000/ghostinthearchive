@@ -14,11 +14,31 @@ const STORYTELLER_OPTIONS = [
   { value: "mistral", label: "Mistral Large" },
 ] as const
 
+// API キー → 表示名マッピング
+const API_DISPLAY_NAMES: Record<string, string> = {
+  us_archives: "US Archives",
+  europeana: "Europeana",
+  internet_archive: "Internet Archive",
+  ndl: "NDL",
+  delpher: "Delpher",
+  trove: "Trove",
+}
+
+// カバレッジスコアの色分け
+const COVERAGE_BADGE_STYLES: Record<string, string> = {
+  HIGH: "bg-emerald-900/40 text-emerald-400 border-emerald-700/50",
+  MEDIUM: "bg-amber-900/40 text-amber-400 border-amber-700/50",
+  LOW: "bg-red-900/40 text-red-400 border-red-700/50",
+}
+
 interface ThemeSuggestion {
   theme: string
   description: string
   theme_ja?: string
   description_ja?: string
+  coverage_score?: "HIGH" | "MEDIUM" | "LOW"
+  primary_apis?: string[]
+  probe_hits?: Record<string, number>
 }
 
 interface InvestigationFormProps {
@@ -107,11 +127,31 @@ export function InvestigationForm({
               onClick={() => onSelectSuggestion(s.theme)}
               className="text-left p-3 border border-border/50 rounded-sm hover:border-gold/30 hover:bg-gold/5 transition-colors"
             >
-              <p className="text-sm font-medium text-parchment mb-1">{s.theme}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-sm font-medium text-parchment flex-1">{s.theme}</p>
+                {s.coverage_score && (
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${COVERAGE_BADGE_STYLES[s.coverage_score]}`}>
+                    {s.coverage_score}
+                  </span>
+                )}
+              </div>
               {s.theme_ja && (
                 <p className="text-xs text-muted-foreground mb-1">{s.theme_ja}</p>
               )}
-              <p className="text-xs text-muted-foreground">{s.description_ja || s.description}</p>
+              <p className="text-xs text-muted-foreground mb-1.5">{s.description_ja || s.description}</p>
+              {s.primary_apis && s.primary_apis.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {s.primary_apis.map((api) => (
+                    <span
+                      key={api}
+                      className="text-[10px] font-mono px-1.5 py-0.5 bg-border/30 text-muted-foreground rounded"
+                    >
+                      {API_DISPLAY_NAMES[api] || api}
+                      {s.probe_hits?.[api] != null && ` (${s.probe_hits[api]})`}
+                    </span>
+                  ))}
+                </div>
+              )}
             </button>
           ))}
         </div>

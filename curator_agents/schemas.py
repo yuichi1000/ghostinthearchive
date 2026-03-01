@@ -9,12 +9,13 @@ from __future__ import annotations
 import logging
 from typing import Literal
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, field_validator
 
 from mystery_agents.schemas.mystery_id import (
     CLASSIFICATION_DESCRIPTIONS_EN,
     ClassificationCode,
 )
+from shared.api_coverage import VALID_API_KEYS
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ ALL_CATEGORIES: list[str] = [code.value for code in ClassificationCode]
 
 # Literal 型（Pydantic 検証用）
 CategoryCode = Literal["HIS", "FLK", "ANT", "OCC", "URB", "CRM", "REL", "LOC"]
+CoverageScore = Literal["HIGH", "MEDIUM", "LOW"]
 
 
 class ThemeSuggestion(BaseModel):
@@ -31,6 +33,19 @@ class ThemeSuggestion(BaseModel):
     theme: str
     description: str
     category: CategoryCode
+    # プローブ後に上書きされるため optional
+    coverage_score: CoverageScore | None = None
+    primary_apis: list[str] = []
+    # LLM が出力、プローブで使用（未出力時はテーマ文をフォールバック分割）
+    probe_keywords: list[str] = []
+    # プローブ結果（API グループ → ヒット件数）
+    probe_hits: dict[str, int] = {}
+
+    @field_validator("primary_apis")
+    @classmethod
+    def filter_invalid_api_keys(cls, v: list[str]) -> list[str]:
+        """VALID_API_KEYS に含まれないキーを除外する（拒否はしない）。"""
+        return [k for k in v if k in VALID_API_KEYS]
 
 
 def validate_suggestions(raw: list) -> list[dict]:

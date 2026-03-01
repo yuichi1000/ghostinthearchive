@@ -289,10 +289,14 @@ class TestTranslateSuggestionsMerge:
     @pytest.mark.asyncio
     async def test_merges_translator_output_with_correct_keys(self):
         """Translator が返す {suggestions: [{theme, description}]} 形式を正しくマージする。"""
-        # Curator の出力には category が含まれる（実フロー準拠）
+        # Curator の出力には category + カバレッジフィールドが含まれる（実フロー準拠）
         en_suggestions = [
-            {"theme": "Ghost Ships", "description": "Maritime mysteries", "category": "OCC"},
-            {"theme": "Voodoo Queen", "description": "New Orleans legends", "category": "FLK"},
+            {"theme": "Ghost Ships", "description": "Maritime mysteries", "category": "OCC",
+             "coverage_score": "HIGH", "primary_apis": ["us_archives", "trove"],
+             "probe_hits": {"us_archives": 5, "trove": 2}},
+            {"theme": "Voodoo Queen", "description": "New Orleans legends", "category": "FLK",
+             "coverage_score": "MEDIUM", "primary_apis": ["us_archives"],
+             "probe_hits": {"us_archives": 3}},
         ]
         # Translator エージェントの出力形式: サフィックスなしの素のフィールド名
         translator_output = json.dumps({
@@ -325,6 +329,11 @@ class TestTranslateSuggestionsMerge:
         assert result[0]["description_ja"] == "海の怪異"
         assert result[1]["theme_ja"] == "ヴードゥーの女王"
         assert result[1]["description_ja"] == "ニューオーリンズの伝説"
+        # カバレッジフィールドが保持されていること
+        assert result[0]["coverage_score"] == "HIGH"
+        assert result[0]["primary_apis"] == ["us_archives", "trove"]
+        assert result[0]["probe_hits"] == {"us_archives": 5, "trove": 2}
+        assert result[1]["coverage_score"] == "MEDIUM"
 
     @pytest.mark.asyncio
     async def test_returns_english_only_when_json_parse_fails(self, caplog):
