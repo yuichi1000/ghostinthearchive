@@ -76,13 +76,14 @@ const dict: Dictionary = {
     methodology: {
       heading: "How We Investigate",
       intro:
-        "Each investigation follows a six-step pipeline. Steps 1–3 are deterministic program operations — no AI interpretation is involved. Steps 4–6 use large language models (LLMs) for analysis, synthesis, and narrative generation.",
+        "Each investigation follows a six-step pipeline. Step 1 uses an AI agent to generate search keywords, which are then sent to archive APIs programmatically. Steps 2–3 are deterministic program operations — no AI interpretation is involved. Steps 4–6 use large language models (LLMs) for analysis, synthesis, and narrative generation.",
       programLabel: "PROGRAM",
       llmLabel: "LLM",
+      hybridLabel: "LLM + PROGRAM",
       steps: {
         search: {
           title: "API Search",
-          description: "Programmatic queries are sent to public digital archive APIs — Trove, NDL Search, NYPL Digital Collections, Chronicling America, Internet Archive, and Delpher. The system retrieves metadata and catalog records matching the investigation theme.",
+          description: "An AI agent analyzes the investigation theme and generates search keywords — both systematic terms for reproducibility and exploratory terms for broader discovery. These keywords are then sent programmatically to public digital archive APIs — Trove, NDL Search, NYPL Digital Collections, Chronicling America, Internet Archive, and Delpher — to retrieve metadata and catalog records.",
         },
         fulltext: {
           title: "Full-text Retrieval",

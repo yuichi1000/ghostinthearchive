@@ -77,13 +77,14 @@ const dict: Dictionary = {
     methodology: {
       heading: "Wie wir ermitteln",
       intro:
-        "Jede Ermittlung folgt einem sechsstufigen Prozess. Die Schritte 1–3 sind deterministische Programmoperationen — keine KI-Interpretation ist beteiligt. Die Schritte 4–6 verwenden große Sprachmodelle (LLMs) für Analyse, Synthese und Textgenerierung.",
+        "Jede Ermittlung folgt einem sechsstufigen Prozess. Schritt 1 verwendet einen KI-Agenten zur Generierung von Suchbegriffen, die dann programmatisch an die Archiv-APIs gesendet werden. Die Schritte 2–3 sind deterministische Programmoperationen — keine KI-Interpretation ist beteiligt. Die Schritte 4–6 verwenden große Sprachmodelle (LLMs) für Analyse, Synthese und Textgenerierung.",
       programLabel: "PROGRAMM",
       llmLabel: "LLM",
+      hybridLabel: "LLM + PROGRAMM",
       steps: {
         search: {
           title: "API-Suche",
-          description: "Programmatische Anfragen werden an die APIs öffentlicher digitaler Archive gesendet — Trove, NDL Search, NYPL Digital Collections, Chronicling America, Internet Archive und Delpher. Das System ruft Metadaten und Katalogeinträge ab, die zum Ermittlungsthema passen.",
+          description: "Ein KI-Agent analysiert das Ermittlungsthema und generiert Suchbegriffe — sowohl systematische Begriffe für die Reproduzierbarkeit als auch explorative Begriffe für breitere Entdeckungen. Diese Suchbegriffe werden dann programmatisch an die APIs öffentlicher digitaler Archive gesendet — Trove, NDL Search, NYPL Digital Collections, Chronicling America, Internet Archive und Delpher — um Metadaten und Katalogeinträge abzurufen.",
         },
         fulltext: {
           title: "Volltextabruf",
