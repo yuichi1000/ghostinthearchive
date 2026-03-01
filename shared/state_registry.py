@@ -129,6 +129,12 @@ STATE_KEYS: list[StateKey] = [
         name="archive_images",
         description="Librarian が収集したアーカイブ資料画像リスト（title, source_url, thumbnail_url, image_url 等）",
         written_by=("librarian_tools",),
+        read_by=("document_inventory", "scholar_tools"),
+    ),
+    StateKey(
+        name="approved_archive_images",
+        description="Polymath が審査・承認したアーカイブ資料画像リスト",
+        written_by=("scholar_tools",),
         read_by=("storyteller",),
     ),
     StateKey(

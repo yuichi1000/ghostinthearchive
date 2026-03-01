@@ -241,3 +241,87 @@ class TestGetDocumentInventory:
         get_document_inventory(ctx)
 
         assert "_inventory_consulted" not in ctx.state
+
+
+class TestArchiveImagesInInventory:
+    """archive_images セクションのテスト。"""
+
+    def test_returns_archive_images_metadata(self):
+        """archive_images のメタデータ（title, source_url, source_type）が返される。"""
+        ctx = make_tool_context(state={
+            "raw_search_results_en": [{
+                "documents": [{
+                    "title": "Doc",
+                    "source_url": "https://loc.gov/1",
+                    "source_type": "nypl",
+                    "language": "en",
+                }],
+            }],
+            "archive_images": [
+                {
+                    "title": "Historical Photo",
+                    "source_url": "https://loc.gov/img/1",
+                    "thumbnail_url": "https://loc.gov/img/1/thumb",
+                    "image_url": "https://loc.gov/img/1/full",
+                    "source_type": "nypl",
+                    "date": "1893-01-01",
+                },
+                {
+                    "title": "Map of Boston",
+                    "source_url": "https://europeana.eu/img/2",
+                    "thumbnail_url": "https://europeana.eu/img/2/thumb",
+                    "image_url": "https://europeana.eu/img/2/full",
+                    "source_type": "europeana",
+                    "date": "1850-06-15",
+                },
+            ],
+        })
+
+        result = json.loads(get_document_inventory(ctx))
+
+        assert result["status"] == "ok"
+        assert len(result["archive_images"]) == 2
+        img0 = result["archive_images"][0]
+        assert img0["index"] == 0
+        assert img0["title"] == "Historical Photo"
+        assert img0["source_url"] == "https://loc.gov/img/1"
+        assert img0["source_type"] == "nypl"
+        # thumbnail_url, image_url, date は含まれない（審査に不要）
+        assert "thumbnail_url" not in img0
+        assert "image_url" not in img0
+        assert "date" not in img0
+
+    def test_empty_archive_images_returns_empty_list(self):
+        """archive_images が空リストの場合は空リストを返す。"""
+        ctx = make_tool_context(state={
+            "raw_search_results_en": [{
+                "documents": [{
+                    "title": "Doc",
+                    "source_url": "https://loc.gov/1",
+                    "source_type": "nypl",
+                    "language": "en",
+                }],
+            }],
+            "archive_images": [],
+        })
+
+        result = json.loads(get_document_inventory(ctx))
+
+        assert result["archive_images"] == []
+
+    def test_no_archive_images_key_returns_empty_list(self):
+        """archive_images キーがない場合は空リストを返す。"""
+        ctx = make_tool_context(state={
+            "raw_search_results_en": [{
+                "documents": [{
+                    "title": "Doc",
+                    "source_url": "https://loc.gov/1",
+                    "source_type": "nypl",
+                    "language": "en",
+                }],
+            }],
+        })
+
+        result = json.loads(get_document_inventory(ctx))
+
+        assert result["archive_images"] == []

@@ -104,7 +104,7 @@ instruction テンプレートを定義する。
 # - 生の統計を列挙せず、不在または存在のレトリックを強化する素材として使用する
 #
 # ## アーカイブ画像
-# 実際のデジタルアーカイブからの資料画像が {archive_images} に格納されている。
+# 実際のデジタルアーカイブからの資料画像が {approved_archive_images} に格納されている。
 # 各エントリには title, source_url, thumbnail_url, image_url, source_type, date が含まれる。
 #
 # ### ルール
@@ -113,8 +113,8 @@ instruction テンプレートを定義する。
 # 3. Markdown 画像構文を使用: ![説明的なキャプション — Source: アーカイブ名](url)
 # 4. thumbnail_url があればそれを使い、なければ image_url を使う。どちらもないエントリはスキップ。
 # 5. 同じURLの画像を複数回使用しない。ユニークな画像が不足する場合は無理に配置しない。
-# 6. {archive_images} が空または使える画像がない場合、画像なしで通常通り記事を書く。
-# 7. URL を捏造しない。{archive_images} のURLのみを使用する。
+# 6. {approved_archive_images} が空または使える画像がない場合、画像なしで通常通り記事を書く。
+# 7. URL を捏造しない。{approved_archive_images} のURLのみを使用する。
 # 8. 視覚的多様性のため、異なるアーカイブの画像を優先する。
 #
 # ## ペーシングルール
@@ -299,7 +299,7 @@ Output the narrative text in Markdown format.
 
 ## Archival Images
 
-Real archival images from the digital archives are available in {archive_images}.
+Real archival images from the digital archives are available in {approved_archive_images}.
 Each entry contains: title, source_url, thumbnail_url, image_url, source_type, date.
 
 ### Rules
@@ -308,8 +308,8 @@ Each entry contains: title, source_url, thumbnail_url, image_url, source_type, d
 3. Use Markdown image syntax: ![descriptive caption — Source: Archive Name](url)
 4. Use thumbnail_url if available; otherwise image_url. Skip entries with neither.
 5. Do NOT use the same image URL more than once. If fewer unique images are available than sections, leave some sections without images.
-6. If {archive_images} is empty or has no usable images, write normally without images.
-7. NEVER fabricate URLs. Only use URLs from {archive_images}.
+6. If {approved_archive_images} is empty or has no usable images, write normally without images.
+7. NEVER fabricate URLs. Only use URLs from {approved_archive_images}.
 8. Prefer images from different archives for visual variety.
 
 ## Academic Context (if available)
