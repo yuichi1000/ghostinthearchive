@@ -15,7 +15,7 @@ const dict: Dictionary = {
     paragraph1:
       "Die Ermittlungseinheit hinter diesem Archiv ist nicht menschlich. Es handelt sich um ein autonomes KI-Agentensystem, das auf dem Google Agent Development Kit (ADK) aufgebaut ist und unter dem Codenamen GHOST IN THE ARCHIVE operiert. Es führt interdisziplinäre Analysen in fünf akademischen Bereichen durch: Geschichtswissenschaft, Volkskunde, Kulturanthropologie, Linguistik und Archivwissenschaft.",
     paragraph2:
-      "Alle Quellmaterialien stammen ausschließlich aus öffentlichen digitalen Archiven weltweit — der Library of Congress, Europeana, dem Internet Archive und ähnlichen Institutionen in zahlreichen Ländern und Sprachen. Bei keiner Ermittlung werden Verschlusssachen verwendet. (Wir besitzen keine Sicherheitsfreigabe. Wir haben auch keine beantragt.)",
+      "Alle Quellmaterialien stammen ausschließlich aus öffentlichen digitalen Archiven weltweit — Nationalbibliotheken, Kulturerbe-Portale und historische Zeitungssammlungen in zahlreichen Ländern und Sprachen. Bei keiner Ermittlung werden Verschlusssachen verwendet. (Wir besitzen keine Sicherheitsfreigabe. Wir haben auch keine beantragt.)",
     paragraph3:
       "Bitte beachten Sie: KI-Agenten sind in der Lage, fehlerhafte Schlussfolgerungen mit bemerkenswerter Überzeugungskraft zu präsentieren. Leser werden ermutigt, alle Behauptungen unabhängig zu überprüfen. Das Archiv gibt keinerlei Garantie, weder ausdrücklich noch stillschweigend, hinsichtlich der Richtigkeit paranormaler, folkloristischer oder historischer Behauptungen.",
     footer: {
@@ -73,6 +73,39 @@ const dict: Dictionary = {
         "Das Unheimliche als legitimer Gegenstand wissenschaftlicher Forschung, nicht Sensationalismus",
       folklore:
         "Folklore ist keine Dekoration. Sie ist ergänzende Evidenz — die inoffizielle Aufzeichnung, die das Schweigen der offiziellen Dokumentation füllt.",
+    },
+    methodology: {
+      heading: "Wie wir ermitteln",
+      intro:
+        "Jede Ermittlung folgt einem sechsstufigen Prozess. Die Schritte 1–3 sind deterministische Programmoperationen — keine KI-Interpretation ist beteiligt. Die Schritte 4–6 verwenden große Sprachmodelle (LLMs) für Analyse, Synthese und Textgenerierung.",
+      programLabel: "PROGRAMM",
+      llmLabel: "LLM",
+      steps: {
+        search: {
+          title: "API-Suche",
+          description: "Programmatische Anfragen werden an die APIs öffentlicher digitaler Archive gesendet — Trove, NDL Search, NYPL Digital Collections, Chronicling America, Internet Archive und Delpher. Das System ruft Metadaten und Katalogeinträge ab, die zum Ermittlungsthema passen.",
+        },
+        fulltext: {
+          title: "Volltextabruf",
+          description: "Für jeden zurückgegebenen Datensatz folgt das System den Quell-URLs, um den Volltext der Primärdokumente abzurufen. Dies ist ein mechanischer Abruf — keine Zusammenfassung oder Interpretation findet statt.",
+        },
+        excerpt: {
+          title: "Auszugsextraktion",
+          description: "Relevante Passagen werden aus den abgerufenen Dokumenten mittels Schlüsselwortabgleich und positionellen Heuristiken extrahiert. Die Rohauszüge werden wörtlich für die nachgelagerte Analyse aufbewahrt.",
+        },
+        analysis: {
+          title: "Interdisziplinäre Analyse",
+          description: "Sprachspezifische Scholar-Agenten analysieren die gesammelten Dokumente durch fünf akademische Perspektiven: Geschichtswissenschaft, Volkskunde, Kulturanthropologie, Linguistik und Archivwissenschaft. Jeder identifiziert Widersprüche, Anomalien und Muster innerhalb seiner zugewiesenen Sprachgruppe.",
+        },
+        debate: {
+          title: "Sprachübergreifende Debatte",
+          description: "Scholars aus verschiedenen Sprachgruppen führen eine strukturierte Debatte, hinterfragen gegenseitig ihre Ergebnisse und identifizieren sprachübergreifende Diskrepanzen, die keine einsprachige Analyse aufdecken könnte.",
+        },
+        certification: {
+          title: "Ghost-Zertifizierung",
+          description: "Der Armchair Polymath synthetisiert alle Analysen und Debatten und wendet die drei Ghost-Zertifizierungskriterien an: mehrere unabhängige Quellen, Ausschluss von API-Limitierungen und Reproduzierbarkeit. Das Ergebnis wird als Bestätigter Geist, Verdächtiger Geist oder Archivisches Echo klassifiziert.",
+        },
+      },
     },
     storytellers: {
       heading: "Unsere Erzähler",

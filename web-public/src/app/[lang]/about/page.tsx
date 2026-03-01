@@ -2,12 +2,27 @@ import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { PublicFooter } from "@/components/public-footer"
 import { Hero } from "@/components/hero"
-import { BookOpen, Pen, ShieldAlert } from "lucide-react"
+import { BookOpen, Pen, ShieldAlert, Search, Database, FileText, Scissors, GraduationCap, MessageSquare, Ghost } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { STORYTELLER_DISPLAY_NAMES } from "@ghost/shared/src/types/mystery"
 import { isValidLang } from "@/lib/i18n/config"
 import { SUPPORTED_LANGS } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 import { buildOgpMetadata, buildAlternates } from "@/lib/seo"
+
+// ステップメタデータ（アイコン、処理主体タイプ）
+const METHODOLOGY_STEPS: {
+  key: "search" | "fulltext" | "excerpt" | "analysis" | "debate" | "certification";
+  icon: LucideIcon;
+  type: "program" | "llm";
+}[] = [
+  { key: "search", icon: Database, type: "program" },
+  { key: "fulltext", icon: FileText, type: "program" },
+  { key: "excerpt", icon: Scissors, type: "program" },
+  { key: "analysis", icon: GraduationCap, type: "llm" },
+  { key: "debate", icon: MessageSquare, type: "llm" },
+  { key: "certification", icon: Ghost, type: "llm" },
+]
 
 // SSG: ビルド時に生成されたページ以外は 404
 export const dynamicParams = false
@@ -117,6 +132,69 @@ export default async function AboutPage({
               <p className="text-base text-muted-foreground leading-relaxed italic border-l-2 border-gold/30 pl-4 mb-6">
                 {dict.about.concept.folklore}
               </p>
+            </div>
+          </div>
+        </section>
+
+        {/* How We Investigate */}
+        <section className="py-16 border-t border-border/50">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-center gap-3 mb-8 justify-center">
+                <Search className="w-5 h-5 text-gold" aria-hidden="true" />
+                <h2 className="font-serif text-2xl text-parchment">
+                  {dict.about.methodology.heading}
+                </h2>
+              </div>
+
+              <p className="text-base text-muted-foreground leading-relaxed mb-6">
+                {dict.about.methodology.intro}
+              </p>
+
+              {/* 凡例バッジ */}
+              <div className="flex items-center gap-4 mb-6">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">
+                  {dict.about.methodology.programLabel}
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-wider text-purple-400 bg-purple-400/10 px-2 py-0.5 rounded">
+                  {dict.about.methodology.llmLabel}
+                </span>
+              </div>
+
+              {/* ステップカード */}
+              <div className="space-y-4">
+                {METHODOLOGY_STEPS.map((step, index) => {
+                  const isProgram = step.type === "program"
+                  const color = isProgram ? "text-emerald-400" : "text-purple-400"
+                  const badgeColor = isProgram
+                    ? "text-emerald-400 bg-emerald-400/10"
+                    : "text-purple-400 bg-purple-400/10"
+                  const borderColor = isProgram ? "border-emerald-900/30" : "border-purple-900/30"
+                  const Icon = step.icon
+                  const stepDict = dict.about.methodology.steps[step.key]
+                  const label = isProgram
+                    ? dict.about.methodology.programLabel
+                    : dict.about.methodology.llmLabel
+
+                  return (
+                    <div key={step.key} className={`border ${borderColor} rounded-sm p-4 flex gap-4`}>
+                      <div className="flex flex-col items-center shrink-0">
+                        <span className={`font-mono text-lg font-bold ${color}`}>{index + 1}</span>
+                        <Icon className={`w-5 h-5 ${color} mt-1`} aria-hidden="true" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h3 className="font-serif text-base text-parchment">{stepDict.title}</h3>
+                          <span className={`font-mono text-[10px] uppercase tracking-wider ${badgeColor} px-2 py-0.5 rounded`}>
+                            {label}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{stepDict.description}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </div>
         </section>

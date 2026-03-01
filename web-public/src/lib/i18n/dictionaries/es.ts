@@ -15,7 +15,7 @@ const dict: Dictionary = {
     paragraph1:
       "La unidad de investigación detrás de este archivo no es humana. Es un sistema autónomo de agentes de IA construido sobre Google Agent Development Kit (ADK), operando bajo el nombre en clave GHOST IN THE ARCHIVE. Realiza análisis interdisciplinario en cinco campos académicos: Historia, Estudios del Folclore, Antropología Cultural, Lingüística y Ciencia Archivística.",
     paragraph2:
-      "Todos los materiales de origen se obtienen exclusivamente de archivos digitales públicos de todo el mundo: la Biblioteca del Congreso, Europeana, Internet Archive e instituciones similares en múltiples países e idiomas. No se utiliza información clasificada en ninguna investigación. (No tenemos autorización de seguridad. No la hemos solicitado.)",
+      "Todos los materiales de origen se obtienen exclusivamente de archivos digitales públicos de todo el mundo: bibliotecas nacionales, portales de patrimonio cultural y colecciones de periódicos históricos en múltiples países e idiomas. No se utiliza información clasificada en ninguna investigación. (No tenemos autorización de seguridad. No la hemos solicitado.)",
     paragraph3:
       "Advertencia: los agentes de IA son capaces de presentar conclusiones erróneas con notable confianza. Se recomienda a los lectores verificar todas las afirmaciones de forma independiente. El archivo no ofrece garantía alguna, expresa ni implícita, sobre la precisión de cualquier afirmación paranormal, folclórica o histórica contenida en el mismo.",
     footer: {
@@ -73,6 +73,39 @@ const dict: Dictionary = {
         "Lo inexplicable como objeto legítimo de investigación académica, no sensacionalismo",
       folklore:
         "El folclore no es decoración. Es evidencia complementaria — el registro no oficial que llena los silencios dejados por la documentación oficial.",
+    },
+    methodology: {
+      heading: "Cómo investigamos",
+      intro:
+        "Cada investigación sigue un proceso de seis pasos. Los pasos 1–3 son operaciones programáticas deterministas — no interviene ninguna interpretación de IA. Los pasos 4–6 utilizan modelos de lenguaje grandes (LLMs) para el análisis, la síntesis y la generación narrativa.",
+      programLabel: "PROGRAMA",
+      llmLabel: "LLM",
+      steps: {
+        search: {
+          title: "Búsqueda API",
+          description: "Se envían consultas programáticas a las API de archivos digitales públicos — Trove, NDL Search, NYPL Digital Collections, Chronicling America, Internet Archive y Delpher. El sistema recupera metadatos y registros de catálogo que coinciden con el tema de investigación.",
+        },
+        fulltext: {
+          title: "Recuperación de texto completo",
+          description: "Para cada registro devuelto, el sistema sigue las URL de origen para recuperar el texto completo de los documentos primarios. Se trata de una recuperación mecánica — no se realiza ningún resumen ni interpretación.",
+        },
+        excerpt: {
+          title: "Extracción de fragmentos",
+          description: "Se extraen pasajes relevantes de los documentos recuperados mediante coincidencia de palabras clave y heurísticas posicionales. Los fragmentos sin procesar se conservan textualmente para el análisis posterior.",
+        },
+        analysis: {
+          title: "Análisis interdisciplinario",
+          description: "Agentes Scholar específicos de cada idioma analizan los documentos recopilados a través de cinco perspectivas académicas: Historia, Estudios del Folclore, Antropología Cultural, Lingüística y Ciencia Archivística. Cada uno identifica contradicciones, anomalías y patrones dentro de su grupo lingüístico asignado.",
+        },
+        debate: {
+          title: "Debate interlingüístico",
+          description: "Los Scholars de diferentes grupos lingüísticos participan en un debate estructurado, cuestionando los hallazgos de los demás e identificando discrepancias entre idiomas que ningún análisis monolingüe podría revelar.",
+        },
+        certification: {
+          title: "Certificación Ghost",
+          description: "El Armchair Polymath sintetiza todos los análisis y debates, aplicando los tres criterios de certificación Ghost: múltiples fuentes independientes, exclusión de limitaciones de API y reproducibilidad. El resultado se clasifica como Fantasma confirmado, Fantasma sospechado o Eco de archivo.",
+        },
+      },
     },
     storytellers: {
       heading: "Nuestros Narradores",
