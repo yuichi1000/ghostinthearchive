@@ -13,14 +13,30 @@
       "Read(.ruff_cache/**)",
       "Read(ghostinthearchive.egg-info/**)",
       "Read(.DS_Store)",
-      "Read(*.tsbuildinfo)"
+      "Read(*.tsbuildinfo)",
+      "Read(.env*)",
+      "Read(terraform/*.tfvars)",
+      "Read(terraform/*.tfvars.json)",
+      "Read(.firebase/**)",
+      "Read(.mypy_cache/**)",
+      "Read(dist/**)",
+      "Read(build/**)",
+      "Read(.idea/**)",
+      "Read(.vscode/**)"
     ],
     "ask": [
       "Read(logs/**)",
       "Read(.adk/**)",
       "Read(uv.lock)",
       "Read(package-lock.json)",
-      "Read(firebase-debug.log)"
+      "Read(firebase-debug.log)",
+      "Read(firestore-debug.log)",
+      "Read(ui-debug.log)",
+      "Read(storage-debug.log)",
+      "Read(.firebase-emulator-data/**)",
+      "Read(htmlcov/**)",
+      "Read(.coverage)",
+      "Read(data/**)"
     ]
   }
 }
