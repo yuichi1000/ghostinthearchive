@@ -80,6 +80,13 @@ SKIP_AUTHORS = {
     "parallel_api_librarians_batch_1",
     "parallel_api_librarians_batch_2",
     "aggregator",
+    # Librarian SequentialAgent ブロック（Round 1 + Round 2 のラッパー）
+    "librarian_us_archives_block",
+    "librarian_europeana_block",
+    "librarian_internet_archive_block",
+    "librarian_ndl_block",
+    "librarian_delpher_block",
+    "librarian_trove_block",
     # DynamicScholarBlock / DynamicPolymathBlock 内部のオーケストレーターエージェント
     "dynamic_scholar_block",
     "dynamic_analysis",
@@ -132,7 +139,7 @@ def build_pipeline(storyteller: str = DEFAULT_STORYTELLER) -> SequentialAgent:
     agg = create_aggregator()
 
     # ファクトリエージェント（既に毎回新規生成）
-    api_libs = create_all_api_librarians()  # 5 Librarian のフラットリスト
+    api_libs = create_all_api_librarians()  # 6 SequentialAgent（各 R1+R2）
     translators = create_all_translators()
 
     # DynamicScholarBlock: 分析 + 討論を一貫制御
