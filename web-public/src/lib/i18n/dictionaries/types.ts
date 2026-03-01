@@ -19,6 +19,7 @@ export interface Dictionary {
   };
   nav: {
     about: string;
+    archive: string;
   };
   home: {
     latestDiscoveries: string;
@@ -26,10 +27,57 @@ export interface Dictionary {
     noMysteries: string;
     noMysteriesDesc: string;
     classifiedRedacted: string;
+    viewAllArticles: string;
+  };
+  archive: {
+    title: string;
+    heading: string;
+    description: string;
+    noArticles: string;
+    filterActive: string;
+    clearFilter: string;
+    page: string;
+    previous: string;
+    next: string;
   };
   about: {
     title: string;
     heading: string;
+    concept: {
+      heading: string;
+      intro: string;
+      principlesHeading: string;
+      autonomousAgents: string;
+      autonomousAgentsDesc: string;
+      transparency: string;
+      transparencyDesc: string;
+      crossDiscovery: string;
+      crossDiscoveryDesc: string;
+      interdisciplinary: string;
+      interdisciplinaryDesc: string;
+      intellectualAwe: string;
+      intellectualAweDesc: string;
+      folklore: string;
+    };
+    methodology: {
+      heading: string;
+      intro: string;
+      programLabel: string;
+      llmLabel: string;
+      hybridLabel: string;
+      steps: {
+        search: { title: string; description: string };
+        fulltext: { title: string; description: string };
+        excerpt: { title: string; description: string };
+        analysis: { title: string; description: string };
+        debate: { title: string; description: string };
+        certification: { title: string; description: string };
+      };
+    };
+    storytellers: {
+      heading: string;
+      intro: string;
+    };
   };
   detail: {
     returnToArchive: string;
@@ -47,16 +95,78 @@ export interface Dictionary {
     keyFigures: string;
     storyAngles: string;
     classificationNotice: string;
+    breadcrumbHome: string;
+    tableOfContents: string;
+    tocNarrative: string;
+    tocDiscrepancy: string;
+    tocEvidence: string;
+    tocHypothesis: string;
+    tocHistoricalContext: string;
+    relatedArticles: string;
+    storytoldBy: string;
   };
   evidence: {
     source: string;
     view: string;
     originalText: string;
   };
+  classification: {
+    HIS: string;
+    FLK: string;
+    ANT: string;
+    OCC: string;
+    URB: string;
+    CRM: string;
+    REL: string;
+    LOC: string;
+    moreLocations: string;
+  };
+  siteIntro: {
+    tagline: string;
+    description: string;
+  };
+  classificationGuide: {
+    heading: string;
+    descriptions: {
+      HIS: string;
+      FLK: string;
+      ANT: string;
+      OCC: string;
+      URB: string;
+      CRM: string;
+      REL: string;
+      LOC: string;
+    };
+  };
+  share: {
+    shareOnX: string;
+    shareOnFacebook: string;
+    shareOnReddit: string;
+    copyLink: string;
+    linkCopied: string;
+    shareThisArticle: string;
+  };
+  confidence: {
+    confirmedGhost: string;
+    suspectedGhost: string;
+    archivalEcho: string;
+  };
+  sourceCoverage: {
+    heading: string;
+  };
+  seo: {
+    homeDescription: string;
+    archiveDescription: string;
+    aboutDescription: string;
+  };
   footer: {
     description: string;
     primarySources: string;
     technical: string;
     classification: string;
+    pendingApplication: string;
+    home: string;
+    archive: string;
+    about: string;
   };
 }

@@ -6,18 +6,18 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 
-from mystery_agents.tools.publisher_tools import (
+from mystery_agents.tools.image_upload import (
     _cleanup_temp_images,
     _upload_images_internal,
-    publish_mystery,
     upload_images,
 )
+from mystery_agents.tools.publisher_tools import publish_mystery
 
 
 class TestUploadImagesContentType:
     """Tests for upload_images content_type detection."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_webp_content_type(self, mock_get_bucket, tmp_path):
         """Should set content_type to image/webp for .webp files."""
         mock_bucket = MagicMock()
@@ -39,7 +39,7 @@ class TestUploadImagesContentType:
             renamed_path, content_type="image/webp"
         )
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_png_content_type(self, mock_get_bucket, tmp_path):
         """Should set content_type to image/png for .png files."""
         mock_bucket = MagicMock()
@@ -65,7 +65,7 @@ class TestUploadImagesContentType:
 class TestUploadImagesRenaming:
     """Tests for upload_images mystery_id-based renaming."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_renames_to_mystery_id(self, mock_get_bucket, tmp_path):
         """Should rename original image to {mystery_id}.png on upload."""
         mock_bucket = MagicMock()
@@ -77,7 +77,7 @@ class TestUploadImagesRenaming:
         png_file = tmp_path / "header_20260208_120530.png"
         png_file.write_bytes(b"fake png data")
 
-        mystery_id = "OCC-MA-617-20260208143025"
+        mystery_id = "OCC-US-BOS-20260208143025"
         result = upload_images(mystery_id, json.dumps([str(png_file)]))
         result_data = json.loads(result)
 
@@ -85,7 +85,7 @@ class TestUploadImagesRenaming:
         expected_blob = f"images/{mystery_id}/{mystery_id}.png"
         mock_bucket.blob.assert_called_once_with(expected_blob)
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_renames_variant_to_mystery_id(self, mock_get_bucket, tmp_path):
         """Should rename variant image to {mystery_id}_sm.webp on upload."""
         mock_bucket = MagicMock()
@@ -97,7 +97,7 @@ class TestUploadImagesRenaming:
         webp_file = tmp_path / "header_20260208_120530_sm.webp"
         webp_file.write_bytes(b"fake webp data")
 
-        mystery_id = "OCC-MA-617-20260208143025"
+        mystery_id = "OCC-US-BOS-20260208143025"
         result = upload_images(mystery_id, json.dumps([str(webp_file)]))
         result_data = json.loads(result)
 
@@ -105,7 +105,7 @@ class TestUploadImagesRenaming:
         expected_blob = f"images/{mystery_id}/{mystery_id}_sm.webp"
         mock_bucket.blob.assert_called_once_with(expected_blob)
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_preserves_extension(self, mock_get_bucket, tmp_path):
         """Should preserve original file extension when renaming."""
         mock_bucket = MagicMock()
@@ -117,7 +117,7 @@ class TestUploadImagesRenaming:
         jpg_file = tmp_path / "photo_20260208.jpg"
         jpg_file.write_bytes(b"fake jpg data")
 
-        mystery_id = "HIS-NY-212-20260208143025"
+        mystery_id = "HIS-US-JFK-20260208143025"
         result = upload_images(mystery_id, json.dumps([str(jpg_file)]))
         result_data = json.loads(result)
 
@@ -129,7 +129,7 @@ class TestUploadImagesRenaming:
 class TestUploadImagesLabel:
     """Tests for upload_images label field."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_returns_label_for_original(self, mock_get_bucket, tmp_path):
         """Should return label 'original' for the original image."""
         mock_bucket = MagicMock()
@@ -147,7 +147,7 @@ class TestUploadImagesLabel:
         assert result_data["status"] == "success"
         assert result_data["uploaded"][0]["label"] == "original"
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_returns_label_for_variant(self, mock_get_bucket, tmp_path):
         """Should return label 'sm' for a _sm variant image."""
         mock_bucket = MagicMock()
@@ -169,7 +169,7 @@ class TestUploadImagesLabel:
 class TestUploadImagesStructured:
     """Tests for upload_images structured images object."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_returns_structured_images(self, mock_get_bucket, tmp_path):
         """Should return structured images object with hero and variants."""
         mock_bucket = MagicMock()
@@ -189,7 +189,7 @@ class TestUploadImagesStructured:
         for f in files:
             f.write_bytes(b"fake data")
 
-        mystery_id = "OCC-MA-617-20260208143025"
+        mystery_id = "OCC-US-BOS-20260208143025"
         result = upload_images(mystery_id, json.dumps([str(f) for f in files]))
         result_data = json.loads(result)
 
@@ -202,7 +202,7 @@ class TestUploadImagesStructured:
         assert "lg" in images["variants"]
         assert "xl" in images["variants"]
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_images_hero_prefers_lg(self, mock_get_bucket, tmp_path):
         """Should use lg variant URL as hero when lg variant exists."""
         mock_bucket = MagicMock()
@@ -217,7 +217,7 @@ class TestUploadImagesStructured:
         lg_variant = tmp_path / "header_lg.webp"
         lg_variant.write_bytes(b"fake lg webp")
 
-        mystery_id = "OCC-MA-617-20260208143025"
+        mystery_id = "OCC-US-BOS-20260208143025"
         result = upload_images(mystery_id, json.dumps([str(original), str(lg_variant)]))
         result_data = json.loads(result)
 
@@ -238,8 +238,8 @@ def _make_mystery_json(**overrides):
     """Build a minimal valid mystery JSON string for testing."""
     data = {
         "classification": "OCC",
-        "state_code": "MA",
-        "area_code": "617",
+        "country_code": "US",
+        "region_code": "BOS",
         "title": "Test Mystery",
         "summary": "A test mystery summary.",
         "discrepancy_detected": "Test discrepancy",
@@ -294,7 +294,7 @@ def _make_visual_assets_json(tmp_path):
 class TestPublishMysteryImageUpload:
     """Tests for publish_mystery with visual_assets_json integration."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_images_hero_set_to_lg_variant(
         self, mock_get_db, mock_get_bucket, tmp_path
@@ -324,7 +324,7 @@ class TestPublishMysteryImageUpload:
         # hero should contain the mystery_id and _lg.webp
         assert "_lg.webp" in saved_data["images"]["hero"]
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_images_variants_contain_all_sizes(
         self, mock_get_db, mock_get_bucket, tmp_path
@@ -354,7 +354,7 @@ class TestPublishMysteryImageUpload:
         assert "lg" in variants
         assert "xl" in variants
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_skip_image_processing_when_empty(
         self, mock_get_db, mock_get_bucket
@@ -379,7 +379,7 @@ class TestPublishMysteryImageUpload:
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert "images" not in saved_data
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_mystery_id_matches_between_images_and_firestore(
         self, mock_get_db, mock_get_bucket, tmp_path
@@ -415,7 +415,7 @@ class TestPublishMysteryImageUpload:
 class TestLocalFileCleanup:
     """Tests for local file cleanup after upload."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_local_file_deleted_after_upload(self, mock_get_bucket, tmp_path):
         """Should delete local file after successful upload."""
         mock_bucket = MagicMock()
@@ -427,7 +427,7 @@ class TestLocalFileCleanup:
         png_file = tmp_path / "header_20260208_145745.png"
         png_file.write_bytes(b"fake png data")
 
-        mystery_id = "OCC-MA-617-20260208143025"
+        mystery_id = "OCC-US-BOS-20260208143025"
         upload_images(mystery_id, json.dumps([str(png_file)]))
 
         # Both original and renamed file should no longer exist
@@ -435,7 +435,7 @@ class TestLocalFileCleanup:
         renamed_file = tmp_path / f"{mystery_id}.png"
         assert not renamed_file.exists()
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_local_variant_deleted_after_upload(self, mock_get_bucket, tmp_path):
         """Should delete local variant file after successful upload."""
         mock_bucket = MagicMock()
@@ -447,7 +447,7 @@ class TestLocalFileCleanup:
         webp_file = tmp_path / "header_20260208_145745_sm.webp"
         webp_file.write_bytes(b"fake webp data")
 
-        mystery_id = "OCC-MA-617-20260208143025"
+        mystery_id = "OCC-US-BOS-20260208143025"
         upload_images(mystery_id, json.dumps([str(webp_file)]))
 
         # Both original and renamed file should no longer exist
@@ -455,7 +455,7 @@ class TestLocalFileCleanup:
         renamed_file = tmp_path / f"{mystery_id}_sm.webp"
         assert not renamed_file.exists()
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_local_files_cleaned_up_via_publish_mystery(
         self, mock_get_db, mock_get_bucket, tmp_path
@@ -492,7 +492,7 @@ class TestLocalFileCleanup:
 class TestUploadErrorHandling:
     """Tests for _upload_images_internal error handling and logging."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_publish_mystery_saves_to_firestore_when_image_upload_fails(
         self, mock_get_db, mock_get_bucket, tmp_path
@@ -521,7 +521,7 @@ class TestUploadErrorHandling:
         saved_data = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert "images" not in saved_data
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_upload_images_internal_logs_on_failure(self, mock_get_bucket, tmp_path, caplog):
         """Should log an error when upload_from_filename fails."""
 
@@ -540,7 +540,7 @@ class TestUploadErrorHandling:
 
         assert any("Network error" in record.message for record in caplog.records)
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     def test_partial_upload_failure_does_not_block_others(self, mock_get_bucket, tmp_path):
         """When one file fails to upload, other files should still succeed."""
 
@@ -639,7 +639,7 @@ class TestCleanupTempImages:
 class TestPublishMysterySchemaVersion:
     """Tests for schema_version field in publish_mystery()."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_schema_version_set_to_2(self, mock_get_db, mock_get_bucket):
         """publish_mystery() は schema_version: 2 を設定する。"""
@@ -662,7 +662,7 @@ class TestPublishMysterySchemaVersion:
 class TestPublishMysteryEvidenceFiltering:
     """Tests for evidence excerpt validation in publish_mystery()."""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_empty_excerpt_additional_evidence_filtered(
         self, mock_get_db, mock_get_bucket
@@ -689,7 +689,7 @@ class TestPublishMysteryEvidenceFiltering:
         assert len(saved["additional_evidence"]) == 2
         assert all(ev["relevant_excerpt"] for ev in saved["additional_evidence"])
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_valid_additional_evidence_preserved(
         self, mock_get_db, mock_get_bucket
@@ -714,12 +714,12 @@ class TestPublishMysteryEvidenceFiltering:
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert len(saved["additional_evidence"]) == 2
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
-    def test_empty_excerpt_evidence_a_warns_but_saves(
+    def test_empty_excerpt_evidence_a_gets_fallback(
         self, mock_get_db, mock_get_bucket, caplog
     ):
-        """evidence_a の excerpt が空でも警告のみで保存される。"""
+        """evidence_a の excerpt が空 → フォールバック文が挿入されて保存される。"""
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
         mock_bucket = MagicMock()
@@ -744,16 +744,16 @@ class TestPublishMysteryEvidenceFiltering:
         assert result_data["status"] == "success"
 
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
-        # evidence_a は除外されない
-        assert "evidence_a" in saved
+        # フォールバック文が挿入されている
+        assert saved["evidence_a"]["relevant_excerpt"] == "[See original source: Test]"
         # 警告ログが出力されている
-        assert any("evidence_a" in r.message and "relevant_excerpt" in r.message for r in caplog.records)
+        assert any("replaced with fallback" in r.message for r in caplog.records)
 
 
 class TestPublishMysteryStateWriteback:
     """publish_mystery が tool_context.state に published_mystery_id を書き込むテスト"""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_sets_published_mystery_id_in_state(self, mock_get_db, mock_get_bucket):
         """成功時に tool_context.state["published_mystery_id"] が設定される。"""
@@ -771,9 +771,9 @@ class TestPublishMysteryStateWriteback:
         assert "published_mystery_id" in state
         assert state["published_mystery_id"] == result_data["mystery_id"]
         # mystery_id 形式チェック
-        assert state["published_mystery_id"].startswith("OCC-MA-617-")
+        assert state["published_mystery_id"].startswith("OCC-US-BOS-")
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_no_state_write_without_tool_context(self, mock_get_db, mock_get_bucket):
         """tool_context が None の場合でもエラーにならない。"""
@@ -789,7 +789,7 @@ class TestPublishMysteryStateWriteback:
 class TestPublishMysteryStateDirectRead:
     """publish_mystery が creative_content / collected_documents_en を state から直接読み取るテスト"""
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_narrative_content_from_state(self, mock_get_db, mock_get_bucket):
         """state の creative_content が narrative_content として保存される。"""
@@ -807,7 +807,7 @@ class TestPublishMysteryStateDirectRead:
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert saved["narrative_content"] == "# The Haunting of Salem\n\nA long blog article..."
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_raw_data_from_state(self, mock_get_db, mock_get_bucket):
         """state の collected_documents_en が raw_data として保存される。"""
@@ -825,7 +825,7 @@ class TestPublishMysteryStateDirectRead:
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert saved["raw_data"] == "Search results from LOC and DPLA..."
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_state_overrides_llm_json(self, mock_get_db, mock_get_bucket):
         """state 値が mystery_json の値より優先される。"""
@@ -852,7 +852,7 @@ class TestPublishMysteryStateDirectRead:
         assert saved["narrative_content"] == "Full article from state"
         assert saved["raw_data"] == "Full raw data from state"
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_skips_failure_marker(self, mock_get_db, mock_get_bucket):
         """NO_CONTENT の creative_content は state から注入しない。"""
@@ -872,7 +872,7 @@ class TestPublishMysteryStateDirectRead:
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert saved["narrative_content"] == "LLM fallback content"
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_empty_json_with_full_state(self, mock_get_db, mock_get_bucket):
         """空 JSON + structured_report + state で全フィールドが揃う。"""
@@ -883,8 +883,8 @@ class TestPublishMysteryStateDirectRead:
         state = {
             "structured_report": {
                 "classification": "FLK",
-                "state_code": "LA",
-                "area_code": "504",
+                "country_code": "US",
+                "region_code": "MSY",
                 "title": "Voodoo Queen",
                 "summary": "A mystery about voodoo.",
                 "discrepancy_detected": "Date mismatch",
@@ -913,14 +913,14 @@ class TestPublishMysteryStateDirectRead:
         tool_context = MagicMock()
         tool_context.state = state
 
-        # 最小限の JSON（classification/state_code/area_code のみ）
+        # 最小限の JSON（classification/country_code/region_code のみ）
         minimal_json = json.dumps({
-            "classification": "FLK", "state_code": "LA", "area_code": "504",
+            "classification": "FLK", "country_code": "US", "region_code": "MSY",
         })
         result = publish_mystery(minimal_json, "", tool_context)
         result_data = json.loads(result)
         assert result_data["status"] == "success"
-        assert result_data["mystery_id"].startswith("FLK-LA-504-")
+        assert result_data["mystery_id"].startswith("FLK-US-MSY-")
 
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert saved["title"] == "Voodoo Queen"
@@ -928,7 +928,7 @@ class TestPublishMysteryStateDirectRead:
         assert saved["raw_data"] == "LOC search results..."
         assert saved["hypothesis"] == "Test hypothesis"
 
-    @patch("mystery_agents.tools.publisher_tools.get_storage_bucket")
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
     @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
     def test_no_tool_context_fallback(self, mock_get_db, mock_get_bucket):
         """tool_context=None では LLM の mystery_json がそのまま使われる。"""
@@ -946,4 +946,731 @@ class TestPublishMysteryStateDirectRead:
         saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
         assert saved["narrative_content"] == "LLM provided content"
         assert saved["raw_data"] == "LLM provided raw data"
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_mystery_report_saved_to_firestore(self, mock_get_db, mock_get_bucket):
+        """state の mystery_report が Firestore に保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        report_text = "# Integrated Analysis Report\n\nA very long Polymath report..."
+        state = {"mystery_report": report_text}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["mystery_report"] == report_text
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_mystery_report_skips_insufficient_data(self, mock_get_db, mock_get_bucket):
+        """INSUFFICIENT_DATA の mystery_report は保存しない。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {"mystery_report": "INSUFFICIENT_DATA: No scholars produced analysis"}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "mystery_report" not in saved
+
+
+class TestThumbnailUpload:
+    """サムネイルアップロードのテスト。"""
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    def test_thumb_suffix_stored_as_thumbnail(self, mock_get_bucket, tmp_path):
+        """_thumb サフィックスが images["thumbnail"] に格納される。"""
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        thumb_file = tmp_path / "header_thumb.webp"
+        thumb_file.write_bytes(b"fake thumb data")
+
+        result = upload_images("TEST-001", json.dumps([str(thumb_file)]))
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert "thumbnail" in result_data["images"]
+        assert result_data["images"]["thumbnail"].endswith("alt=media")
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    def test_thumb_and_variants_together(self, mock_get_bucket, tmp_path):
+        """サムネイルとバリアントが同時にアップロードされる。"""
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        # メイン画像 + サムネイル + sm バリアント
+        for name in ("header.png", "header_thumb.webp", "header_sm.webp"):
+            f = tmp_path / name
+            f.write_bytes(b"fake data")
+
+        paths = [str(tmp_path / n) for n in ("header.png", "header_thumb.webp", "header_sm.webp")]
+        result = upload_images("TEST-001", json.dumps(paths))
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert "thumbnail" in result_data["images"]
+        assert "hero" in result_data["images"]
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    def test_internal_upload_thumb_suffix(self, mock_get_bucket, tmp_path):
+        """_upload_images_internal が _thumb を images["thumbnail"] に格納する。"""
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
+        mock_bucket.name = "test-bucket"
+        mock_get_bucket.return_value = mock_bucket
+
+        thumb_file = tmp_path / "header_thumb.webp"
+        thumb_file.write_bytes(b"fake thumb data")
+
+        images = _upload_images_internal("TEST-001", [str(thumb_file)])
+
+        assert "thumbnail" in images
+        assert "hero" not in images  # サムネイルだけなら hero は設定されない
+
+
+class TestPublishMysteryStructuredDataExtension:
+    """source_coverage / confidence_rationale の Firestore 保存テスト。"""
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_source_coverage_from_structured_report(self, mock_get_db, mock_get_bucket):
+        """structured_report の source_coverage が Firestore に保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Test",
+                "summary": "Test summary",
+                "source_coverage": {
+                    "apis_searched": ["chronicling_america", "loc"],
+                    "apis_with_results": ["chronicling_america"],
+                    "apis_without_results": ["loc"],
+                    "known_undigitized_sources": ["Parish registers"],
+                    "coverage_assessment": "Limited coverage",
+                },
+            }
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "source_coverage" in saved
+        assert saved["source_coverage"]["apis_searched"] == ["chronicling_america", "loc"]
+        assert saved["source_coverage"]["coverage_assessment"] == "Limited coverage"
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_confidence_rationale_from_structured_report(self, mock_get_db, mock_get_bucket):
+        """structured_report の confidence_rationale が Firestore に保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "HIS",
+                "country_code": "GB",
+                "region_code": "LHR",
+                "title": "Test",
+                "summary": "Test summary",
+                "confidence_rationale": "Rated MEDIUM because two sources conflict but DPLA was unavailable.",
+            }
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["confidence_rationale"] == "Rated MEDIUM because two sources conflict but DPLA was unavailable."
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_missing_new_fields_does_not_break(self, mock_get_db, mock_get_bucket):
+        """source_coverage / confidence_rationale がなくても後方互換で動作する。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Legacy Report",
+                "summary": "No new fields",
+            }
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        # source_coverage は raw_search_results もないため設定されない
+        assert "source_coverage" not in saved
+        assert "confidence_rationale" not in saved
+
+
+class TestPublishMysteryStorytellerMetadata:
+    """storyteller_llm_metadata の Firestore 保存テスト。"""
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_saves_storyteller_llm_metadata(self, mock_get_db, mock_get_bucket):
+        """state の storyteller_llm_metadata が Firestore に保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        llm_meta = {
+            "storyteller": "claude",
+            "display_name": "Claude Sonnet 4.5",
+            "model_id": "claude-sonnet-4-5-20250929",
+            "actual_model": "claude-sonnet-4-5-20250929",
+            "prompt_tokens": 8000,
+            "output_tokens": 3000,
+        }
+        state = {"storyteller_llm_metadata": llm_meta}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["storyteller_llm_metadata"] == llm_meta
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_no_metadata_when_absent(self, mock_get_db, mock_get_bucket):
+        """storyteller_llm_metadata がない場合はフィールドが設定されない。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "storyteller_llm_metadata" not in saved
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_ignores_non_dict_metadata(self, mock_get_db, mock_get_bucket):
+        """storyteller_llm_metadata が dict でない場合は無視される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {"storyteller_llm_metadata": "not a dict"}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "storyteller_llm_metadata" not in saved
+
+
+class TestSourceCoverageProgrammaticOverwrite:
+    """source_coverage の API フィールドが raw_search_results から programmatic に上書きされるテスト。"""
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_overwrites_apis_from_raw_search_results(self, mock_get_db, mock_get_bucket):
+        """raw_search_results がある場合、source_coverage の API フィールドが上書きされる。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Test",
+                "summary": "Test summary",
+                "source_coverage": {
+                    "apis_searched": ["llm_hallucinated_api"],
+                    "apis_with_results": ["llm_hallucinated_api"],
+                    "apis_without_results": [],
+                    "known_undigitized_sources": ["Parish registers"],
+                    "coverage_assessment": "Limited coverage",
+                },
+            },
+            # raw_search_results から正確なメタデータが生成される
+            "raw_search_results_en": [
+                {"source": "chronicling_america", "total_hits": 50, "documents_returned": 10},
+                {"source": "nypl", "total_hits": 0, "documents_returned": 0},
+            ],
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        sc = saved["source_coverage"]
+        # API フィールドは raw_search_results から上書きされている
+        assert "chronicling_america" in sc["apis_searched"]
+        assert "nypl" in sc["apis_searched"]
+        assert "llm_hallucinated_api" not in sc["apis_searched"]
+        assert sc["apis_with_results"] == ["chronicling_america"]
+        assert sc["apis_without_results"] == ["nypl"]
+        # LLM が生成した人間的判断フィールドは保持される
+        assert sc["known_undigitized_sources"] == ["Parish registers"]
+        assert sc["coverage_assessment"] == "Limited coverage"
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_creates_source_coverage_when_missing(self, mock_get_db, mock_get_bucket):
+        """structured_report に source_coverage がなくても raw_search_results から生成される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "HIS",
+                "country_code": "GB",
+                "region_code": "LHR",
+                "title": "Test",
+                "summary": "Test summary",
+                # source_coverage なし
+            },
+            "raw_search_results_en": [
+                {"source": "europeana", "total_hits": 20, "documents_returned": 5},
+            ],
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        sc = saved["source_coverage"]
+        assert sc["apis_searched"] == ["europeana"]
+        assert sc["apis_with_results"] == ["europeana"]
+        assert sc["apis_without_results"] == []
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_no_overwrite_without_raw_search_results(self, mock_get_db, mock_get_bucket):
+        """raw_search_results がない場合、LLM 生成の source_coverage がそのまま使われる。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Test",
+                "summary": "Test summary",
+                "source_coverage": {
+                    "apis_searched": ["chronicling_america"],
+                    "apis_with_results": ["chronicling_america"],
+                    "apis_without_results": [],
+                },
+            },
+            # raw_search_results なし
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        sc = saved["source_coverage"]
+        # LLM 生成値がそのまま残る
+        assert sc["apis_searched"] == ["chronicling_america"]
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_api_errors_saved_to_source_coverage(self, mock_get_db, mock_get_bucket):
+        """API エラーがある場合、source_coverage.api_errors に保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Test",
+                "summary": "Test summary",
+                "source_coverage": {
+                    "apis_searched": ["llm_value"],
+                    "apis_with_results": [],
+                    "apis_without_results": ["llm_value"],
+                    "coverage_assessment": "Limited coverage",
+                },
+            },
+            "raw_search_results_en": [
+                {"source": "chronicling_america", "total_hits": 0, "documents_returned": 0,
+                 "error": "Chronicling America API error: 503 Server Error"},
+                {"source": "europeana", "total_hits": 10, "documents_returned": 5},
+            ],
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        sc = saved["source_coverage"]
+        assert "api_errors" in sc
+        assert "chronicling_america" in sc["api_errors"]
+        assert "503" in sc["api_errors"]["chronicling_america"]
+        # エラーのない europeana は api_errors に含まれない
+        assert "europeana" not in sc["api_errors"]
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_no_api_errors_field_when_no_errors(self, mock_get_db, mock_get_bucket):
+        """API エラーがない場合、api_errors フィールドは存在しない。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Test",
+                "summary": "Test summary",
+            },
+            "raw_search_results_en": [
+                {"source": "europeana", "total_hits": 20, "documents_returned": 5},
+                {"source": "nypl", "total_hits": 0, "documents_returned": 0},
+            ],
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        sc = saved["source_coverage"]
+        assert "api_errors" not in sc
+
+
+class TestPublishMysterySearchLog:
+    """search_log の Firestore 永続化テスト。"""
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_search_log_persisted_to_firestore(self, mock_get_db, mock_get_bucket):
+        """state の search_log が Firestore ドキュメントに含まれる。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        search_log = [
+            {
+                "timestamp": "2026-02-28T12:00:00",
+                "tool": "search_archives",
+                "reference_keywords": ["Bell", "Tennessee"],
+                "exploratory_keywords": ["poltergeist", "haunting"],
+                "language": "en",
+                "sources_searched": {"loc": {"total_hits": 15, "documents_returned": 8}},
+                "total_documents": 8,
+                "link_validation": {"total_checked": 8, "reachable": 7, "unreachable": 1, "removed_count": 1},
+                "fallback_used": False,
+            },
+            {
+                "timestamp": "2026-02-28T12:00:05",
+                "tool": "search_newspapers",
+                "reference_keywords": ["Bell"],
+                "exploratory_keywords": ["ghost"],
+                "language": "en",
+                "sources_searched": {"chronicling_america": {"total_hits": 3, "documents_returned": 3}},
+                "total_documents": 3,
+                "link_validation": {"total_checked": 3, "reachable": 3, "unreachable": 0, "removed_count": 0},
+                "fallback_used": False,
+            },
+        ]
+        state = {"search_log": search_log}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "search_log" in saved
+        assert len(saved["search_log"]) == 2
+        assert saved["search_log"][0]["tool"] == "search_archives"
+        assert saved["search_log"][0]["reference_keywords"] == ["Bell", "Tennessee"]
+        assert saved["search_log"][1]["tool"] == "search_newspapers"
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_no_search_log_when_absent(self, mock_get_db, mock_get_bucket):
+        """search_log がない場合はフィールドが設定されない。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {}
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "search_log" not in saved
+
+
+class TestContentMetrics:
+    """コンテンツ定量指標の自動計算テスト。"""
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_word_count_calculated(self, mock_get_db, mock_get_bucket):
+        """narrative_content から word_count が正しく算出される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        # 100語の narrative_content
+        words = " ".join(["word"] * 100)
+        mystery_json = _make_mystery_json(narrative_content=words)
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["word_count"] == 100
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_reading_time_200_words(self, mock_get_db, mock_get_bucket):
+        """200語 → reading_time_minutes = 1。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        words = " ".join(["word"] * 200)
+        mystery_json = _make_mystery_json(narrative_content=words)
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["reading_time_minutes"] == 1
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_reading_time_1000_words(self, mock_get_db, mock_get_bucket):
+        """1000語 → reading_time_minutes = 5。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        words = " ".join(["word"] * 1000)
+        mystery_json = _make_mystery_json(narrative_content=words)
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["reading_time_minutes"] == 5
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_reading_time_minimum_1(self, mock_get_db, mock_get_bucket):
+        """50語 → reading_time_minutes = 最小値1。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        words = " ".join(["word"] * 50)
+        mystery_json = _make_mystery_json(narrative_content=words)
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["reading_time_minutes"] == 1
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_word_count_skipped_for_empty_narrative(self, mock_get_db, mock_get_bucket):
+        """narrative_content が空の場合は word_count を設定しない。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        mystery_json = _make_mystery_json(narrative_content="")
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "word_count" not in saved
+        assert "reading_time_minutes" not in saved
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_evidence_count_all_present(self, mock_get_db, mock_get_bucket):
+        """evidence_a + evidence_b + additional_evidence の合計が正しい。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        mystery_json = _make_mystery_json(
+            additional_evidence=[
+                {"source_url": "https://c.com", "relevant_excerpt": "C"},
+                {"source_url": "https://d.com", "relevant_excerpt": "D"},
+            ]
+        )
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        # evidence_a(1) + evidence_b(1) + additional(2) = 4
+        assert saved["evidence_count"] == 4
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_evidence_count_no_additional(self, mock_get_db, mock_get_bucket):
+        """additional_evidence なしでも evidence_a + evidence_b = 2。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        mystery_json = _make_mystery_json(additional_evidence=[])
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["evidence_count"] == 2
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_source_count_deduplicates_urls(self, mock_get_db, mock_get_bucket):
+        """同じ source_url は重複排除される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        # evidence_a と additional_evidence[0] が同じ URL
+        mystery_json = _make_mystery_json(
+            additional_evidence=[
+                {"source_url": "https://example.com", "relevant_excerpt": "Dup"},
+                {"source_url": "https://unique.com", "relevant_excerpt": "Unique"},
+            ]
+        )
+
+        result = publish_mystery(mystery_json, "")
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        # evidence_a(example.com) + evidence_b(example.com/es) + additional(example.com重複, unique.com)
+        # ユニーク: example.com, example.com/es, unique.com = 3
+        assert saved["source_count"] == 3
+
+
+class TestTagsOverlay:
+    """structured_report の tags が Firestore に保存されるテスト。"""
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_tags_from_structured_report(self, mock_get_db, mock_get_bucket):
+        """structured_report の tags が Firestore に保存される。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Test",
+                "summary": "Test summary",
+                "tags": ["shipwreck", "colonial america", "19th century"],
+            }
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert saved["tags"] == ["shipwreck", "colonial america", "19th century"]
+
+    @patch("mystery_agents.tools.image_upload.get_storage_bucket")
+    @patch("mystery_agents.tools.publisher_tools.get_firestore_client")
+    def test_no_tags_when_absent(self, mock_get_db, mock_get_bucket):
+        """structured_report に tags がない場合はフィールドが設定されない。"""
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        mock_get_bucket.return_value = MagicMock()
+
+        state = {
+            "structured_report": {
+                "classification": "OCC",
+                "country_code": "US",
+                "region_code": "BOS",
+                "title": "Test",
+                "summary": "Test summary",
+            }
+        }
+        tool_context = MagicMock()
+        tool_context.state = state
+
+        result = publish_mystery(_make_mystery_json(), "", tool_context)
+        assert json.loads(result)["status"] == "success"
+
+        saved = mock_db.collection.return_value.document.return_value.set.call_args[0][0]
+        assert "tags" not in saved
 

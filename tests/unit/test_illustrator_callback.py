@@ -96,10 +96,6 @@ class TestLimitToolCalls:
         assert result is not None
         assert result["status"] == "error"
 
-    def test_generate_image_limit_unchanged(self):
-        """MAX_GENERATE_IMAGE_CALLS should be 3."""
-        assert MAX_GENERATE_IMAGE_CALLS == 3
-
 
 class TestLimitValidateImageCalls:
     """Tests for _limit_tool_calls callback (validate_image)."""
@@ -125,23 +121,16 @@ class TestLimitValidateImageCalls:
         assert result["status"] == "skipped"
         assert str(MAX_VALIDATE_IMAGE_CALLS) in result["reason"]
 
-    def test_validate_image_limit_is_2(self):
-        """MAX_VALIDATE_IMAGE_CALLS should be 2."""
-        assert MAX_VALIDATE_IMAGE_CALLS == 2
-
     def test_validate_and_generate_independent_counters(
         self, mock_generate_image_tool, mock_validate_image_tool, mock_tool_context,
     ):
         """generate_image と validate_image のカウンターは独立。"""
-        # generate_image を3回呼ぶ
         for _ in range(MAX_GENERATE_IMAGE_CALLS):
             _limit_tool_calls(mock_generate_image_tool, {}, mock_tool_context)
 
-        # validate_image はまだ使える
         result = _limit_tool_calls(mock_validate_image_tool, {}, mock_tool_context)
         assert result is None
 
-        # generate_image は制限に達している
         result = _limit_tool_calls(mock_generate_image_tool, {}, mock_tool_context)
         assert result is not None
         assert result["status"] == "error"

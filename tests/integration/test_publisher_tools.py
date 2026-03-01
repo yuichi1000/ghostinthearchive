@@ -107,8 +107,8 @@ class TestUploadImages:
             temp_path = f.name
 
         try:
-            with patch("mystery_agents.tools.publisher_tools.get_storage_bucket", return_value=mock_storage_bucket):
-                from mystery_agents.tools.publisher_tools import upload_images
+            with patch("mystery_agents.tools.image_upload.get_storage_bucket", return_value=mock_storage_bucket):
+                from mystery_agents.tools.image_upload import upload_images
 
                 result = json.loads(upload_images(
                     "MYSTERY-1842-BOSTON-001",
@@ -125,8 +125,8 @@ class TestUploadImages:
 
     def test_upload_images_file_not_found(self, mock_storage_bucket):
         """upload_images should handle missing files gracefully."""
-        with patch("mystery_agents.tools.publisher_tools.get_storage_bucket", return_value=mock_storage_bucket):
-            from mystery_agents.tools.publisher_tools import upload_images
+        with patch("mystery_agents.tools.image_upload.get_storage_bucket", return_value=mock_storage_bucket):
+            from mystery_agents.tools.image_upload import upload_images
 
             result = json.loads(upload_images(
                 "MYSTERY-TEST",
@@ -147,7 +147,7 @@ class TestUploadImages:
         try:
             mock_storage_bucket.name = "test-bucket"
 
-            with patch("mystery_agents.tools.publisher_tools.get_storage_bucket", return_value=mock_storage_bucket):
+            with patch("mystery_agents.tools.image_upload.get_storage_bucket", return_value=mock_storage_bucket):
                 with patch.dict(os.environ, {"STORAGE_EMULATOR_HOST": "http://localhost:9199"}):
 
                     # Need to reimport to pick up the patched environment
@@ -173,8 +173,8 @@ class TestUploadImages:
             temp_path = f.name
 
         try:
-            with patch("mystery_agents.tools.publisher_tools.get_storage_bucket", return_value=mock_storage_bucket):
-                from mystery_agents.tools.publisher_tools import upload_images
+            with patch("mystery_agents.tools.image_upload.get_storage_bucket", return_value=mock_storage_bucket):
+                from mystery_agents.tools.image_upload import upload_images
 
                 # Pass string instead of array
                 result = json.loads(upload_images(
@@ -237,7 +237,7 @@ class TestStorageEmulatorUpload:
 
     def test_upload_single_image_to_emulator(self, tmp_path):
         """Should upload a single image to Storage Emulator successfully."""
-        from mystery_agents.tools.publisher_tools import _upload_images_internal
+        from mystery_agents.tools.image_upload import _upload_images_internal
 
         png_file = tmp_path / "header.png"
         png_file.write_bytes(b"fake png data for emulator test")
@@ -250,7 +250,7 @@ class TestStorageEmulatorUpload:
 
     def test_upload_with_variants_to_emulator(self, tmp_path):
         """Should upload original + 4 variants to Storage Emulator."""
-        from mystery_agents.tools.publisher_tools import _upload_images_internal
+        from mystery_agents.tools.image_upload import _upload_images_internal
 
         # Create original + all 4 variants
         original = tmp_path / "header.png"

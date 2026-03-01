@@ -1,32 +1,22 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react"
-import Link from "next/link"
-import { StatusBadge } from "@/components/status-badge"
 import { cn } from "@ghost/shared/src/lib/utils"
-import { Button } from "@ghost/shared/src/components/ui/button"
-import { getAllMysteries, approveMystery, archiveMystery } from "@/lib/firestore/mysteries"
-import type { FirestoreMystery, MysteryStatus, PipelineRun } from "@ghost/shared/src/types/mystery"
-import { localizeMystery } from "@ghost/shared/src/lib/localize"
+import { getAllMysteries } from "@/lib/firestore/mysteries"
+import type { FirestoreMystery, PipelineRun } from "@ghost/shared/src/types/mystery"
+import { AdminMysteryCard } from "@/components/admin-mystery-card"
+import { ActionToast } from "@/components/action-toast"
+import { InvestigationForm } from "@/components/investigation-form"
 import { ActivePipelinePanel } from "@/components/active-pipeline-panel"
 import { usePipelineRuns } from "@/hooks/use-pipeline-runs"
 import { usePipelineRun } from "@/hooks/use-pipeline-run"
+import { useMysteryActions } from "@/hooks/use-mystery-actions"
+import { useInvestigation } from "@/hooks/use-investigation"
 import { useLanguage } from "@/contexts/language-context"
-import type { PreviewLang } from "@/components/language-selector"
 import {
   Shield,
-  FileText,
-  CheckCircle,
-  XCircle,
-  Eye,
-  Clock,
-  MapPin,
   Filter,
-  RefreshCw,
   Inbox,
-  Loader2,
-  Search,
-  Sparkles,
 } from "lucide-react"
 
 type FilterStatus = "all" | "pending" | "published" | "archived"
@@ -36,12 +26,6 @@ export default function AdminPage() {
   const [filter, setFilter] = useState<FilterStatus>("all")
   const [mysteries, setMysteries] = useState<FirestoreMystery[]>([])
   const [loading, setLoading] = useState(true)
-  const [actionFeedback, setActionFeedback] = useState<string | null>(null)
-  const [actionFeedbackIsError, setActionFeedbackIsError] = useState(false)
-  const [themeInput, setThemeInput] = useState("")
-  const [suggestions, setSuggestions] = useState<{ theme: string; description: string; theme_ja?: string; description_ja?: string }[]>([])
-  const [suggestLoading, setSuggestLoading] = useState(false)
-  const [pipelineLoading, setPipelineLoading] = useState(false)
   const [currentRunId, setCurrentRunId] = useState<string | null>(null)
   const [dismissedRunIds, setDismissedRunIds] = useState<Set<string>>(new Set())
 
@@ -99,6 +83,15 @@ export default function AdminPage() {
     }
   }, [dismissRunning, currentRunId])
 
+  // 記事アクション（Approve / Archive / Unpublish）
+  const { actions, feedback: actionFeedback } = useMysteryActions({ onSuccess: fetchMysteries })
+
+  // 新規調査（パイプライン開始 / テーマ提案）
+  const investigation = useInvestigation({ onPipelineStarted: setCurrentRunId })
+
+  // 直近のアクティブなフィードバックを表示
+  const activeFeedback = investigation.feedback.message ? investigation.feedback : actionFeedback
+
   const filteredMysteries = filter === "all"
     ? mysteries
     : mysteries.filter((m) => m.status === filter)
@@ -108,107 +101,6 @@ export default function AdminPage() {
     pending: mysteries.filter((m) => m.status === "pending").length,
     published: mysteries.filter((m) => m.status === "published").length,
     archived: mysteries.filter((m) => m.status === "archived").length,
-  }
-
-  // リビルド失敗は approve/archive の成否に影響しない（fire-and-forget）
-  const triggerRebuild = async () => {
-    try {
-      await fetch("/api/deployments/rebuild", { method: "POST" })
-    } catch (error) {
-      console.error("Failed to trigger rebuild:", error)
-    }
-  }
-
-  const handleApprove = async (id: string) => {
-    try {
-      await approveMystery(id)
-      setActionFeedback(`Case ${id} approved and published`)
-      setActionFeedbackIsError(false)
-      fetchMysteries()
-      triggerRebuild()
-      setTimeout(() => setActionFeedback(null), 3000)
-    } catch (error) {
-      console.error("Failed to approve:", error)
-      const message = error instanceof Error ? error.message : "不明なエラー"
-      setActionFeedback(`承認に失敗しました: ${message}`)
-      setActionFeedbackIsError(true)
-      setTimeout(() => setActionFeedback(null), 5000)
-    }
-  }
-
-  const handleArchive = async (id: string) => {
-    try {
-      await archiveMystery(id)
-      setActionFeedback(`Case ${id} archived`)
-      setActionFeedbackIsError(false)
-      fetchMysteries()
-      triggerRebuild()
-      setTimeout(() => setActionFeedback(null), 3000)
-    } catch (error) {
-      console.error("Failed to archive:", error)
-      const message = error instanceof Error ? error.message : "不明なエラー"
-      setActionFeedback(`アーカイブに失敗しました: ${message}`)
-      setActionFeedbackIsError(true)
-      setTimeout(() => setActionFeedback(null), 5000)
-    }
-  }
-
-  const handleStartPipeline = async () => {
-    if (!themeInput.trim()) return
-    setPipelineLoading(true)
-    try {
-      const res = await fetch("/api/mysteries/investigate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: themeInput.trim() }),
-      })
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}))
-        throw new Error(errorData.detail || errorData.error || `API error (${res.status})`)
-      }
-      const data = await res.json()
-      if (data.run_id) {
-        setCurrentRunId(data.run_id)
-      }
-      setActionFeedback("調査パイプラインを開始しました")
-      setActionFeedbackIsError(false)
-      setThemeInput("")
-      setSuggestions([])
-      setTimeout(() => setActionFeedback(null), 3000)
-    } catch (error) {
-      console.error("Failed to start pipeline:", error)
-      const message = error instanceof Error ? error.message : "不明なエラー"
-      setActionFeedback(`パイプラインの開始に失敗しました: ${message}`)
-      setActionFeedbackIsError(true)
-      setTimeout(() => setActionFeedback(null), 5000)
-    } finally {
-      setPipelineLoading(false)
-    }
-  }
-
-  const handleSuggestThemes = async () => {
-    setSuggestLoading(true)
-    setSuggestions([])
-    try {
-      const res = await fetch("/api/themes/suggest", { method: "POST" })
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}))
-        if (errorData.error_type === "auth_error") {
-          throw new Error("Google Cloud の認証が切れています。サーバーで再認証を実行してください。")
-        }
-        throw new Error(errorData.detail || errorData.error || `API error (${res.status})`)
-      }
-      const data = await res.json()
-      setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : [])
-    } catch (error) {
-      console.error("Failed to get suggestions:", error)
-      const message = error instanceof Error ? error.message : "不明なエラー"
-      setActionFeedback(`テーマ提案の取得に失敗しました: ${message}`)
-      setActionFeedbackIsError(true)
-      setTimeout(() => setActionFeedback(null), 5000)
-    } finally {
-      setSuggestLoading(false)
-    }
   }
 
   return (
@@ -235,82 +127,23 @@ export default function AdminPage() {
         </div>
 
         {/* New Investigation section */}
-        <div className="aged-card letterpress-border rounded-sm p-5 mb-8">
-          <h2 className="font-serif text-xl text-parchment mb-4">
-            新規調査
-          </h2>
-          <div className="flex gap-3 mb-3">
-            <input
-              type="text"
-              value={themeInput}
-              onChange={(e) => setThemeInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleStartPipeline() }}
-              placeholder="調査テーマを入力（例: 1840年代のボストンにおけるスペイン関連の歴史的矛盾を調査せよ）"
-              className="flex-1 px-3 py-2 bg-background border border-border rounded-sm text-sm text-parchment placeholder:text-muted-foreground focus:outline-none focus:border-gold/50"
-            />
-            <Button
-              size="sm"
-              onClick={handleStartPipeline}
-              disabled={!themeInput.trim() || pipelineLoading}
-              className="bg-teal/20 border border-teal/30 text-[#5fb3a1] hover:bg-teal/30"
-            >
-              {pipelineLoading ? (
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              ) : (
-                <Search className="w-4 h-4 mr-1" />
-              )}
-              調査開始
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSuggestThemes}
-              disabled={suggestLoading}
-              className="border-gold/30 text-gold hover:bg-gold/20 hover:text-gold bg-transparent"
-            >
-              {suggestLoading ? (
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              ) : (
-                <Sparkles className="w-4 h-4 mr-1" />
-              )}
-              テーマ提案
-            </Button>
-          </div>
-          {suggestions.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-4">
-              {suggestions.map((s, i) => (
-                <button
-                  key={i}
-                  onClick={() => { setThemeInput(s.theme); setSuggestions([]) }}
-                  className="text-left p-3 border border-border/50 rounded-sm hover:border-gold/30 hover:bg-gold/5 transition-colors"
-                >
-                  <p className="text-sm font-medium text-parchment mb-1">{s.theme}</p>
-                  {s.theme_ja && (
-                    <p className="text-xs text-muted-foreground mb-1">{s.theme_ja}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">{s.description_ja || s.description}</p>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <InvestigationForm
+          themeInput={investigation.themeInput}
+          onThemeInputChange={investigation.setThemeInput}
+          storyteller={investigation.storyteller}
+          onStorytellerChange={investigation.setStoryteller}
+          suggestions={investigation.suggestions}
+          onSelectSuggestion={(theme) => {
+            investigation.setThemeInput(theme)
+            investigation.clearSuggestions()
+          }}
+          suggestLoading={investigation.suggestLoading}
+          pipelineLoading={investigation.pipelineLoading}
+          onStartPipeline={investigation.handleStartPipeline}
+          onSuggestThemes={investigation.handleSuggestThemes}
+        />
 
-        {/* Action feedback toast */}
-        {actionFeedback && (
-          <div className={cn(
-            "fixed top-20 right-4 z-50 px-4 py-3 rounded-sm animate-in fade-in slide-in-from-right-5",
-            actionFeedbackIsError
-              ? "bg-blood-red/10 border border-blood-red/30"
-              : "bg-teal/20 border border-teal/30"
-          )}>
-            <p className={cn(
-              "text-sm font-mono",
-              actionFeedbackIsError ? "text-[#ff6b6b]" : "text-[#5fb3a1]"
-            )}>
-              {actionFeedback}
-            </p>
-          </div>
-        )}
+        <ActionToast message={activeFeedback.message} isError={activeFeedback.isError} />
 
         {/* 実行中のパイプライン */}
         {mergedRuns.length > 0 && (
@@ -411,130 +244,14 @@ export default function AdminPage() {
                 key={mystery.mystery_id}
                 mystery={mystery}
                 lang={lang}
-                onApprove={() => handleApprove(mystery.mystery_id)}
-                onArchive={() => handleArchive(mystery.mystery_id)}
+                onApprove={() => actions.handleApprove(mystery.mystery_id)}
+                onArchive={() => actions.handleArchive(mystery.mystery_id)}
+                onUnpublish={() => actions.handleUnpublish(mystery.mystery_id)}
               />
             ))}
           </div>
         )}
       </div>
     </div>
-  )
-}
-
-interface AdminMysteryCardProps {
-  mystery: FirestoreMystery
-  lang: PreviewLang
-  onApprove: () => void
-  onArchive: () => void
-}
-
-function AdminMysteryCard({ mystery, lang, onApprove, onArchive }: AdminMysteryCardProps) {
-  const isPending = mystery.status === "pending"
-  const location = mystery.historical_context?.geographic_scope?.[0] || ""
-  const timePeriod = mystery.historical_context?.time_period || ""
-  const { title, summary } = localizeMystery(mystery, lang)
-
-  return (
-    <article className="aged-card letterpress-border rounded-sm p-5">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-          <FileText className="w-3.5 h-3.5 text-gold" />
-          <span>{mystery.mystery_id}</span>
-        </div>
-        <StatusBadge status={mystery.status} />
-      </div>
-
-      {/* タイトル（グローバル言語設定に連動） */}
-      <h3 className="font-serif text-lg text-parchment mb-1 leading-tight">
-        {title}
-      </h3>
-
-      {/* サマリー（グローバル言語設定に連動） */}
-      <p className="text-sm text-foreground/80 leading-relaxed mb-4 line-clamp-2">
-        {summary}
-      </p>
-
-      {/* Metadata */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4 pb-4 border-b border-border/50">
-        {location && (
-          <span className="flex items-center gap-1">
-            <MapPin className="w-3 h-3" />
-            {location}
-          </span>
-        )}
-        {timePeriod && (
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {timePeriod}
-          </span>
-        )}
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center justify-between gap-4">
-        {mystery.status === "published" ? (
-          <div className="flex items-center gap-3">
-            <a
-              href={`${process.env.NEXT_PUBLIC_SITE_URL || ""}/en/mystery/${mystery.mystery_id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-gold hover:text-parchment transition-colors no-underline"
-            >
-              <Eye className="w-4 h-4" />
-              View Published
-            </a>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            <Link
-              href={`/preview/${mystery.mystery_id}`}
-              className="inline-flex items-center gap-2 text-sm text-gold hover:text-parchment transition-colors no-underline"
-            >
-              <Eye className="w-4 h-4" />
-              Preview
-            </Link>
-            <span className="text-xs text-muted-foreground">
-              Created: {mystery.createdAt.toLocaleDateString()}
-            </span>
-          </div>
-        )}
-
-        {isPending && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onArchive}
-              className="border-blood-red/30 text-[#ff6b6b] hover:bg-blood-red/20 hover:text-[#ff6b6b] bg-transparent"
-            >
-              <XCircle className="w-4 h-4 mr-1" />
-              Archive
-            </Button>
-            <Button
-              size="sm"
-              onClick={onApprove}
-              className="bg-teal/20 border border-teal/30 text-[#5fb3a1] hover:bg-teal/30"
-            >
-              <CheckCircle className="w-4 h-4 mr-1" />
-              Approve
-            </Button>
-          </div>
-        )}
-
-        {mystery.status === "archived" && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-parchment"
-          >
-            <RefreshCw className="w-4 h-4 mr-1" />
-            Reconsider
-          </Button>
-        )}
-
-      </div>
-    </article>
   )
 }

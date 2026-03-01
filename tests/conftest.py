@@ -28,6 +28,11 @@ mock_adk.utils = MagicMock()
 mock_adk.utils.context_utils = MagicMock()
 mock_adk.models = MagicMock()
 mock_adk.models.google_llm = MagicMock()
+mock_adk.models.llm_response = MagicMock()
+mock_adk.models.anthropic_llm = MagicMock()
+mock_adk.models.registry = MagicMock()
+# LiteLLM アダプタ（OpenRouter 経由のモデル用）
+mock_adk.models.lite_llm = MagicMock()
 mock_adk.runners = MagicMock()
 mock_adk.sessions = MagicMock()
 sys.modules["google.adk"] = mock_adk
@@ -43,6 +48,10 @@ sys.modules["google.adk.runners"] = mock_adk.runners
 sys.modules["google.adk.sessions"] = mock_adk.sessions
 sys.modules["google.adk.models"] = mock_adk.models
 sys.modules["google.adk.models.google_llm"] = mock_adk.models.google_llm
+sys.modules["google.adk.models.llm_response"] = mock_adk.models.llm_response
+sys.modules["google.adk.models.anthropic_llm"] = mock_adk.models.anthropic_llm
+sys.modules["google.adk.models.registry"] = mock_adk.models.registry
+sys.modules["google.adk.models.lite_llm"] = mock_adk.models.lite_llm
 sys.modules["google.adk.tools"] = mock_adk.tools
 sys.modules["google.adk.tools.base_tool"] = mock_adk.tools.base_tool
 sys.modules["google.adk.tools.tool_context"] = mock_adk.tools.tool_context
@@ -178,7 +187,7 @@ def sample_search_results_data(sample_archive_document_data: Dict[str, Any]) -> 
         "theme": "Boston maritime mysteries 1840s",
         "documents": [sample_archive_document_data],
         "total_found": 1,
-        "sources_searched": ["chronicling_america", "loc_digital"],
+        "sources_searched": ["chronicling_america", "nypl"],
     }
 
 

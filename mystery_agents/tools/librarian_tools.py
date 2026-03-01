@@ -1,65 +1,254 @@
-"""LLM-facing tool functions for the Librarian Agent.
+"""Librarian エージェント向け LLM ツール関数。
 
-These functions wrap the low-level API tools and provide a simple
-string-based interface for the LLM to use.
+低レベル API ツールをラップし、LLM が使用する文字列ベースの
+インターフェースを提供する。
 """
 
+import concurrent.futures
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from google.adk.tools.tool_context import ToolContext
+import requests
 
-from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
+from google.adk.tools.tool_context import ToolContext
+from shared.keyword_translator import translate_keywords
+from shared.state_keys import (
+    ARCHIVE_IMAGES,
+    RAW_SEARCH_RESULTS,
+    SEARCH_LOG,
+    raw_search_results_key,
+)
+
+from ..schemas.document import ArchiveDocument
+from .bilingual_search import expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
-from .ddb import search_ddb
-from .dpla import search_dpla
-from .internet_archive import search_internet_archive
 from .link_validator import ValidationSummary, validate_documents
-from .loc_digital import search_loc_digital
-from .nypl_digital import search_nypl
+from .search_orchestration import (
+    _get_expansion_languages,
+    _log_keyword_language_mismatch,
+    _rank_documents,
+    _search_single_source,
+    _translate_keywords_for_source,
+)
+from .source_registry import get_all_sources, resolve_newspaper_sources
+
+logger = logging.getLogger(__name__)
+
+# 画像バリデーション: この閾値未満はプレースホルダーとみなす
+MIN_IMAGE_BYTES = 5000
+
+# IA デフォルトサムネイル（notfound.png）の既知サイズ（バイト）
+# サムネイルのないアイテムは /images/notfound.png にリダイレクトされる
+_IA_DEFAULT_ICON_SIZES: frozenset[int] = frozenset({2212})
+
+# 並列実行の最大ワーカー数
+_MAX_WORKERS = 6
+
+# 全ソース合計のドキュメント上限
+_TOTAL_DOCS_CAP = 50
+
+
+def _is_ia_default_icon(resp: requests.Response, url: str) -> bool:
+    """IA デフォルトサムネイル（notfound.png）を検出する。
+
+    archive.org/services/img/ が返す notfound.png を2段階で検出:
+    1. リダイレクト先 URL が /images/notfound.png で終わる
+    2. Content-Length が既知のデフォルトアイコンサイズに一致
+    """
+    # リダイレクト先 URL で検出（最も堅牢）
+    if resp.url.endswith("/images/notfound.png"):
+        return True
+    # Content-Length + URL パターンで検出（リダイレクトなしで配信される場合の備え）
+    if "archive.org/services/img" in url:
+        content_length = resp.headers.get("Content-Length")
+        if content_length is not None and int(content_length) in _IA_DEFAULT_ICON_SIZES:
+            return True
+    return False
+
+
+def _validate_image_url(url: str, timeout: float = 5.0) -> bool:
+    """HEAD リクエストで画像 URL の有効性を検証する。
+
+    Europeana サムネイル API 等が返す白いプレースホルダー画像（1211バイト等）を
+    Content-Length ヘッダで検出し、除外する。
+    Internet Archive のデフォルトサムネイル（notfound.png）も検出・除外する。
+    """
+    try:
+        resp = requests.head(url, timeout=timeout, allow_redirects=True)
+        if resp.status_code != 200:
+            return False
+        # IA デフォルトサムネイル検出
+        if _is_ia_default_icon(resp, url):
+            return False
+        content_length = resp.headers.get("Content-Length")
+        if content_length is not None and int(content_length) < MIN_IMAGE_BYTES:
+            return False
+        return True
+    except (requests.RequestException, ValueError):
+        return False
+
+
+def _accumulate_archive_images(
+    tool_context: ToolContext, docs_dicts: list[dict]
+) -> None:
+    """画像付きドキュメントを archive_images セッション状態に蓄積する。"""
+    images_with_urls = [
+        {
+            "title": d["title"],
+            "date": d.get("date"),
+            "source_url": d["source_url"],
+            "source_type": d["source_type"],
+            "image_url": d.get("image_url"),
+            "thumbnail_url": d.get("thumbnail_url"),
+        }
+        for d in docs_dicts
+        if (d.get("thumbnail_url") or d.get("image_url"))
+        and d.get("keywords_matched")
+    ]
+
+    # 画像 URL の有効性検証: プレースホルダー画像を除外する
+    validated = []
+    for img in images_with_urls:
+        thumb = img.get("thumbnail_url")
+        full = img.get("image_url")
+        if thumb and not _validate_image_url(thumb):
+            img["thumbnail_url"] = None
+        if full and not _validate_image_url(full):
+            img["image_url"] = None
+        # 両方 None なら蓄積しない
+        if img.get("thumbnail_url") or img.get("image_url"):
+            validated.append(img)
+
+    if validated:
+        existing_images = tool_context.state.get(ARCHIVE_IMAGES, [])
+        existing_images.extend(validated)
+        tool_context.state[ARCHIVE_IMAGES] = existing_images
+
+
+def _build_search_log_entry(
+    *,
+    tool: str,
+    reference_keywords: list[str],
+    exploratory_keywords: list[str],
+    language: str | None,
+    sources_searched: dict,
+    total_documents: int,
+    date_start: str | None,
+    date_end: str | None,
+    link_validation: dict,
+    fallback_used: bool,
+) -> dict:
+    """search_log エントリを構築する。"""
+    entry: dict = {
+        "timestamp": datetime.now().isoformat(),
+        "tool": tool,
+        "reference_keywords": reference_keywords,
+        "exploratory_keywords": exploratory_keywords,
+        "language": language,
+        "sources_searched": sources_searched,
+        "total_documents": total_documents,
+        "link_validation": {
+            "total_checked": link_validation.get("total_checked", 0),
+            "reachable": link_validation.get("reachable", 0),
+            "unreachable": link_validation.get("unreachable", 0),
+            "removed_count": link_validation.get("removed_count", 0),
+        },
+        "fallback_used": fallback_used,
+    }
+    if date_start or date_end:
+        entry["date_range"] = {"start": date_start, "end": date_end}
+    return entry
+
+
+def _accumulate_search_log(tool_context: ToolContext, entry: dict) -> None:
+    """search_log エントリをセッション状態に蓄積する。"""
+    existing = tool_context.state.get(SEARCH_LOG, [])
+    existing.append(entry)
+    tool_context.state[SEARCH_LOG] = existing
 
 
 def search_newspapers(
     keywords: str,
-    date_start: str = "1800",
-    date_end: str = "1899",
+    reference_keywords: str = "",
+    date_start: Optional[str] = None,
+    date_end: Optional[str] = None,
     states: Optional[str] = None,
     max_results: int = 20,
     min_results: int = 3,
+    language: Optional[str] = None,
     tool_context: Optional[ToolContext] = None,
 ) -> str:
-    """Search historical newspapers in Chronicling America with automatic fallback.
+    """Search historical newspapers with automatic routing to available sources.
 
-    Searches the Library of Congress Chronicling America database for
-    18th-19th century newspaper articles. Automatically expands keywords
-    to include both English and Spanish variants.
+    Routes to newspaper sources registered in the Source Registry based on
+    language. Currently supports Chronicling America (English). For unsupported
+    languages, returns an empty result (not an error).
 
-    If fewer than min_results documents are found, automatically applies
-    progressive fallback strategies: individual keyword search, geographic
-    expansion (all US states), and date range expansion (±10 years).
+    When a newspaper source is found, applies progressive fallback strategies:
+    individual keyword search and geographic expansion.
 
     Args:
-        keywords: Comma-separated list of search keywords related to historical mysteries
-        date_start: Start year (default: 1800)
-        date_end: End year (default: 1899)
+        keywords: Comma-separated exploratory search keywords (creative, associative terms)
+        reference_keywords: Comma-separated systematic keywords (proper nouns, dates, places).
+            These ensure reproducibility — a third party can re-run the same search.
+        date_start: Optional start year for filtering (e.g., "1700"). Omit to search all dates.
+        date_end: Optional end year for filtering (e.g., "1800"). Omit to search all dates.
         states: Comma-separated US states to search (default: East Coast states)
         max_results: Maximum number of results to return (default: 20)
         min_results: Minimum documents before stopping fallback (default: 3)
+        language: ISO 639-1 language code (default: "en")
 
     Returns:
         JSON string containing search results with documents matching the query
     """
-    # Parse keywords
-    keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
+    # 言語のデフォルト
+    lang = language or "en"
 
-    # Expand keywords to bilingual
+    # 2段階キーワード解析: reference（系統的）+ exploratory（探索的）
+    reference_list = [kw.strip() for kw in reference_keywords.split(",") if kw.strip()]
+    exploratory_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
+
+    # Registry から新聞ソースを解決
+    newspaper_sources = resolve_newspaper_sources(lang)
+    if not newspaper_sources:
+        # 該当言語の新聞ソースなし → 空結果を返す（エラーではない）
+        empty_result = {
+            "source": "none",
+            "keywords_used": [kw.strip() for kw in keywords.split(",") if kw.strip()],
+            "total_hits": 0,
+            "documents_returned": 0,
+            "documents": [],
+            "error": None,
+            "search_levels_used": [],
+            "link_validation": {
+                "total_checked": 0,
+                "reachable": 0,
+                "unreachable": 0,
+                "removed_count": 0,
+                "removed_urls": [],
+                "duration_ms": 0,
+            },
+        }
+        if tool_context is not None:
+            existing = tool_context.state.get(RAW_SEARCH_RESULTS, [])
+            existing.append(empty_result)
+            tool_context.state[RAW_SEARCH_RESULTS] = existing
+        return json.dumps(empty_result, ensure_ascii=False, indent=2)
+
+    # --- Chronicling America フォールバックロジック ---
+    # キーワード結合: reference + exploratory を1つのリストに
+    combined_keywords = reference_list + exploratory_list
+    keyword_list = combined_keywords if combined_keywords else [kw.strip() for kw in keywords.split(",") if kw.strip()]
+
+    # バイリンガル展開
     expanded = expand_keywords_bilingual(keyword_list)
     en_keywords = expanded["en"]
     es_keywords = expanded["es"]
 
-    # Parse states if provided
+    # 州パース
     state_list = None
     if states:
         state_list = [s.strip() for s in states.split(",") if s.strip()]
@@ -93,13 +282,18 @@ def search_newspapers(
         except Exception as e:
             error = str(e)
 
-    # Level 1: All keywords together (bilingual)
+    # Level 1: バイリンガルキーワード一括検索
     levels_used.append("L1_bilingual_combined")
     for kw_list in [en_keywords, es_keywords]:
         _search_and_collect(kw_list)
 
-    # Level 2: Individual keywords (if not enough results)
+    # Level 2: 個別キーワード検索（結果不足時）
     if len(all_docs) < min_results and len(en_keywords) > 1:
+        logger.info(
+            "Chronicling America フォールバック L2 発動: L1結果=%d件 < min=%d",
+            len(all_docs), min_results,
+            extra={"search_level": "L2", "l1_count": len(all_docs)},
+        )
         levels_used.append("L2_individual_keywords")
         for kw in en_keywords:
             _search_and_collect([kw])
@@ -111,24 +305,18 @@ def search_newspapers(
                 if len(all_docs) >= min_results:
                     break
 
-    # Level 3: Remove geographic restriction (search all states)
+    # Level 3: 地理制限解除（全州検索）
     if len(all_docs) < min_results and state_list is not None:
+        logger.info(
+            "Chronicling America フォールバック L3 発動: 結果=%d件, 地理制限解除",
+            len(all_docs),
+            extra={"search_level": "L3", "current_count": len(all_docs)},
+        )
         levels_used.append("L3_all_states")
         for kw_list in [en_keywords, es_keywords]:
             _search_and_collect(kw_list, search_states=None)
             if len(all_docs) >= min_results:
                 break
-
-    # Level 4: Expand date range ±10 years
-    if len(all_docs) < min_results:
-        expanded_start = str(max(1700, int(date_start) - 10))
-        expanded_end = str(min(1920, int(date_end) + 10))
-        if expanded_start != date_start or expanded_end != date_end:
-            levels_used.append(f"L4_date_expanded_{expanded_start}_{expanded_end}")
-            for kw_list in [en_keywords, es_keywords]:
-                _search_and_collect(kw_list, search_states=None, start=expanded_start, end=expanded_end)
-                if len(all_docs) >= min_results:
-                    break
 
     # リンク品質検証（失敗時は検証スキップで全ドキュメント保持）
     try:
@@ -140,31 +328,63 @@ def search_newspapers(
             domain_mismatch=0, removed_urls=[], duration_ms=0,
             verified_documents=list(all_docs),
         )
+    logger.info(
+        "Chronicling America 検索完了: %d 件 (検証後), levels=%s, リンク検証=%d/%d",
+        len(all_docs), levels_used, validation.reachable, validation.total_checked,
+        extra={
+            "api_name": "chronicling_america", "result_count": len(all_docs),
+            "search_levels": levels_used,
+            "links_verified": validation.reachable,
+            "links_checked": validation.total_checked,
+        },
+    )
+
     docs = [doc.model_dump() for doc in all_docs]
+
+    link_validation_dict = {
+        "total_checked": validation.total_checked,
+        "reachable": validation.reachable,
+        "unreachable": validation.unreachable,
+        "removed_count": len(validation.removed_urls),
+        "removed_urls": validation.removed_urls,
+        "duration_ms": validation.duration_ms,
+    }
 
     result = {
         "source": "chronicling_america",
         "keywords_used": all_keywords_used,
+        "reference_keywords": reference_list,
+        "exploratory_keywords": exploratory_list,
         "total_hits": total_hits,
         "documents_returned": len(docs),
         "documents": docs,
         "error": error,
         "search_levels_used": levels_used,
-        "link_validation": {
-            "total_checked": validation.total_checked,
-            "reachable": validation.reachable,
-            "unreachable": validation.unreachable,
-            "removed_count": len(validation.removed_urls),
-            "removed_urls": validation.removed_urls,
-            "duration_ms": validation.duration_ms,
-        },
+        "link_validation": link_validation_dict,
     }
 
-    # Save raw search results to session state for downstream agents
+    # セッション状態に保存
     if tool_context is not None:
-        existing = tool_context.state.get("raw_search_results", [])
+        existing = tool_context.state.get(RAW_SEARCH_RESULTS, [])
         existing.append(result)
-        tool_context.state["raw_search_results"] = existing
+        tool_context.state[RAW_SEARCH_RESULTS] = existing
+        _accumulate_archive_images(tool_context, docs)
+        # search_log 蓄積
+        _accumulate_search_log(tool_context, _build_search_log_entry(
+            tool="search_newspapers",
+            reference_keywords=reference_list,
+            exploratory_keywords=exploratory_list,
+            language=lang,
+            sources_searched={"chronicling_america": {
+                "total_hits": total_hits,
+                "documents_returned": len(docs),
+            }},
+            total_documents=len(docs),
+            date_start=date_start,
+            date_end=date_end,
+            link_validation=link_validation_dict,
+            fallback_used=bool(len(levels_used) > 1),
+        ))
 
     return json.dumps(result, ensure_ascii=False, indent=2)
 
@@ -187,20 +407,17 @@ def save_search_results(
     Returns:
         Path to the saved file
     """
-    # Find project root (where data/ directory should be)
     data_dir = Path(__file__).parent.parent / "data"
     data_dir.mkdir(exist_ok=True)
 
     if filename is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        # Create safe filename from theme
         safe_theme = "".join(c if c.isalnum() or c in " _-" else "_" for c in theme[:30])
         safe_theme = safe_theme.replace(" ", "_")
         filename = f"search_{safe_theme}_{timestamp}.json"
 
     filepath = data_dir / filename
 
-    # Parse and re-structure the results
     try:
         results_data = json.loads(results_json)
     except json.JSONDecodeError:
@@ -226,148 +443,168 @@ def save_search_results(
     )
 
 
-# 言語フィルタをサポートするソース
-_LANGUAGE_FILTER_SOURCES = {"dpla", "internet_archive"}
-
-_ARCHIVE_SOURCES = {
-    "loc": ("LOC Digital Collections", search_loc_digital),
-    "dpla": ("DPLA", search_dpla),
-    "nypl": ("NYPL Digital Collections", search_nypl),
-    "internet_archive": ("Internet Archive", search_internet_archive),
-    "ddb": ("Deutsche Digitale Bibliothek", search_ddb),
-}
-
-
 def search_archives(
     keywords: str,
-    date_start: str = "1800",
-    date_end: str = "1899",
+    reference_keywords: str = "",
+    date_start: Optional[str] = None,
+    date_end: Optional[str] = None,
     sources: Optional[str] = None,
     max_results: int = 10,
     language: Optional[str] = None,
     tool_context: Optional[ToolContext] = None,
 ) -> str:
-    """Search multiple public archive APIs simultaneously.
+    """Search multiple public archive APIs in parallel.
 
-    Searches across LOC Digital Collections, DPLA, NYPL, Internet Archive,
-    and Deutsche Digitale Bibliothek.
-    Results are merged and returned as a unified JSON response.
-
-    When no language filter is specified, automatically expands keywords to
-    include both English and Spanish variants. When a language is specified,
-    keywords are passed as-is and the language filter is applied to APIs that
-    support it.
+    Searches across LOC Digital Collections, NYPL, Internet Archive,
+    Deutsche Digitale Bibliothek, and Europeana using ThreadPoolExecutor.
+    Results are ranked by keyword match count and capped at a total limit.
 
     Args:
-        keywords: Comma-separated search keywords
-        date_start: Start year (default: 1800)
-        date_end: End year (default: 1899)
+        keywords: Comma-separated exploratory search keywords (creative, associative terms)
+        reference_keywords: Comma-separated systematic keywords (proper nouns, dates, places).
+            These ensure reproducibility — a third party can re-run the same search.
+        date_start: Optional start year for filtering (e.g., "1700"). Omit to search all dates.
+        date_end: Optional end year for filtering (e.g., "1800"). Omit to search all dates.
         sources: Comma-separated source names to search (default: all US sources).
-                 Options: loc, dpla, nypl, internet_archive, ddb
+                 Options: nypl, internet_archive, europeana
         max_results: Max results per source (default: 10)
         language: Optional ISO 639-1 language code (en, de, fr, es, nl, pt).
-                  When specified, applies language filter to supported APIs
-                  and skips bilingual expansion.
+                  When specified, applies language filter to supported APIs.
 
     Returns:
         JSON string with merged results from all sources.
     """
-    keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
+    # 2段階キーワード解析: reference（系統的）+ exploratory（探索的）
+    reference_list = [kw.strip() for kw in reference_keywords.split(",") if kw.strip()]
+    exploratory_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
+    # keyword_list は keywords_matched 用（全キーワード結合）
+    keyword_list = reference_list + exploratory_list if (reference_list or exploratory_list) else exploratory_list
 
-    # 言語指定がある場合はバイリンガル展開をスキップ
-    if language:
-        keyword_groups = [keyword_list]
-    else:
-        expanded = expand_keywords_bilingual(keyword_list)
-        keyword_groups = [expanded["en"], expanded["es"]]
+    # キーワード言語診断ログ: 非英語 API に英語キーワードを渡していないか検出する
+    if language and language != "en":
+        _log_keyword_language_mismatch(keyword_list, language)
+
+    # keyword_groups は検索クエリ用（exploratory のみ OR 結合、reference は別途 AND 結合で渡す）
+    keyword_groups = [exploratory_list] if exploratory_list else [reference_list]
+
+    # 多言語キーワード展開: Translation API で他言語キーワードを追加
+    if language and tool_context is not None:
+        expansion_langs = _get_expansion_languages(tool_context, language)
+        if expansion_langs:
+            translated = translate_keywords(keyword_list, language, expansion_langs)
+            for lang_kws in translated.values():
+                if lang_kws:
+                    keyword_groups.append(lang_kws)
+            if translated:
+                logger.info(
+                    "多言語キーワード展開: %s → %d 言語に翻訳",
+                    language, len(translated),
+                    extra={
+                        "source_lang": language,
+                        "expansion_langs": list(translated.keys()),
+                        "original_keywords": keyword_list,
+                    },
+                )
+
+    all_sources_map = get_all_sources()
 
     if sources:
         source_keys = [s.strip().lower() for s in sources.split(",") if s.strip()]
     else:
-        # デフォルトは既存の US ソースのみ（後方互換性維持）
-        source_keys = ["loc", "dpla", "nypl", "internet_archive"]
+        # デフォルトは US ソース
+        source_keys = ["loc", "nypl", "internet_archive"]
 
-    all_docs = []
-    source_results = {}
-    errors = {}
-    seen_urls = set()
+    # 動的 per-source 制限: ソース数で均等割（最低3件/ソース）
+    valid_source_count = sum(1 for k in source_keys if k in all_sources_map)
+    if valid_source_count > 0:
+        per_source_limit = min(max_results, max(3, _TOTAL_DOCS_CAP // valid_source_count))
+    else:
+        per_source_limit = max_results
+
+    all_docs: list[ArchiveDocument] = []
+    source_results: dict = {}
+    errors: dict = {}
+    seen_urls: set[str] = set()
     fallback_used = False
 
-    def _search_source(search_fn, kw_list, source_key):
-        """Search a single source with given keywords, collecting results."""
-        docs = []
-        hits = 0
-        err = None
-        if not kw_list:
-            return docs, hits, err
-        try:
-            kwargs = {
-                "keywords": kw_list,
-                "date_start": date_start,
-                "date_end": date_end,
-                "max_results": max_results,
-            }
-            # 言語フィルタをサポートする API にのみ language を渡す
-            if language and source_key in _LANGUAGE_FILTER_SOURCES:
-                kwargs["language"] = language
-            result = search_fn(**kwargs)
-            hits = result.get("total_hits", 0)
-            err = result.get("error")
-            for doc in result.get("documents", []):
-                url = doc.source_url
-                if url not in seen_urls:
-                    seen_urls.add(url)
-                    docs.append(doc)
-        except Exception as e:
-            err = str(e)
-        return docs, hits, err
-
+    # 不明ソースを先にエラー登録
+    valid_sources = []
     for key in source_keys:
-        if key not in _ARCHIVE_SOURCES:
+        source_obj = all_sources_map.get(key)
+        if source_obj is None:
             errors[key] = f"Unknown source: {key}"
-            continue
+        else:
+            valid_sources.append((key, source_obj))
 
-        name, search_fn = _ARCHIVE_SOURCES[key]
-        source_hits = 0
-        source_docs = []
+    # 並列実行
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=min(_MAX_WORKERS, len(valid_sources) or 1)
+    ) as executor:
+        futures = {}
+        for key, source_obj in valid_sources:
+            # 多言語ソース（supported_languages > 1）のみ展開キーワードを渡す
+            if len(source_obj.supported_languages) > 1 and len(keyword_groups) > 1:
+                groups_for_source = keyword_groups
+            else:
+                groups_for_source = [keyword_groups[0]]
 
-        # 各キーワードグループで検索してマージ
-        for kw_list in keyword_groups:
-            docs, hits, err = _search_source(search_fn, kw_list, key)
-            source_docs.extend(docs)
-            source_hits += hits
-            if err:
-                errors[key] = err
+            # 単一言語非英語ソースへの英語キーワード不一致を自動翻訳で補正
+            native_kws = _translate_keywords_for_source(keyword_list, source_obj)
+            if native_kws:
+                groups_for_source = [native_kws] + groups_for_source
 
-        # フォールバック: 結果なし & 複数キーワードの場合、個別に検索
-        # 結果が見つかり次第、早期終了する
-        first_group = keyword_groups[0] if keyword_groups else []
-        if not source_docs and len(first_group) > 1:
-            fallback_used = True
-            for kw_group in keyword_groups:
-                for kw in kw_group:
-                    docs, hits, err = _search_source(search_fn, [kw], key)
-                    source_docs.extend(docs)
-                    source_hits += hits
-                    if err:
-                        errors[key] = err
-                    if source_docs:
-                        break
-                if source_docs:
-                    break
+            futures[executor.submit(
+                _search_single_source,
+                source_obj,
+                groups_for_source,
+                date_start=date_start,
+                date_end=date_end,
+                per_source_limit=per_source_limit,
+                language=language,
+                reference_keywords=reference_list or None,
+            )] = key
+        for future in concurrent.futures.as_completed(futures):
+            key = futures[future]
+            source_obj = all_sources_map[key]
+            try:
+                src_key, src_docs, src_hits, src_err, src_fallback = future.result()
+            except Exception as e:
+                errors[key] = str(e)
+                source_results[key] = {
+                    "name": source_obj.source_name,
+                    "total_hits": 0,
+                    "documents_returned": 0,
+                }
+                continue
 
-        all_docs.extend(source_docs)
-        source_results[key] = {
-            "name": name,
-            "total_hits": source_hits,
-            "documents_returned": len(source_docs),
-        }
+            if src_err:
+                errors[key] = src_err
+            if src_fallback:
+                fallback_used = True
+
+            # メインスレッドで URL 重複除去
+            deduped_docs = []
+            for doc in src_docs:
+                if doc.source_url not in seen_urls:
+                    seen_urls.add(doc.source_url)
+                    deduped_docs.append(doc)
+
+            all_docs.extend(deduped_docs)
+            source_results[key] = {
+                "name": source_obj.source_name,
+                "total_hits": src_hits,
+                "documents_returned": len(deduped_docs),
+            }
 
     all_keywords_used = []
     for kw_group in keyword_groups:
         all_keywords_used.extend(kw_group)
 
-    # リンク品質検証（失敗時は検証スキップで全ドキュメント保持）
+    # ランキング（keywords_matched 数でスコアリング）→ 上限適用
+    all_docs = _rank_documents(all_docs)
+    all_docs = all_docs[:_TOTAL_DOCS_CAP]
+
+    # リンク品質検証（ランキング後の上位ドキュメントのみ）
     try:
         validation = validate_documents(all_docs)
         all_docs = validation.verified_documents
@@ -377,62 +614,72 @@ def search_archives(
             domain_mismatch=0, removed_urls=[], duration_ms=0,
             verified_documents=list(all_docs),
         )
+    logger.info(
+        "アーカイブ検索完了: %d 件 (検証後), sources=%s, リンク検証=%d/%d",
+        len(all_docs), list(source_results.keys()),
+        validation.reachable, validation.total_checked,
+        extra={
+            "api_name": "archives_combined", "result_count": len(all_docs),
+            "sources_searched": list(source_results.keys()),
+            "fallback_used": fallback_used,
+            "links_verified": validation.reachable,
+            "links_checked": validation.total_checked,
+        },
+    )
+
     all_docs_dicts = [doc.model_dump() for doc in all_docs]
 
-    # Build warnings for missing API keys
+    # API キー未設定の警告
     warnings = []
     api_key_errors = {k: v for k, v in errors.items() if "not set" in str(v)}
     if api_key_errors:
         skipped = ", ".join(api_key_errors.keys())
         warnings.append(
-            f"⚠ API keys not configured for: {skipped}. "
+            f"API keys not configured for: {skipped}. "
             f"These sources were skipped. Set the required environment variables to enable them."
         )
+
+    link_validation_dict = {
+        "total_checked": validation.total_checked,
+        "reachable": validation.reachable,
+        "unreachable": validation.unreachable,
+        "removed_count": len(validation.removed_urls),
+        "removed_urls": validation.removed_urls,
+        "duration_ms": validation.duration_ms,
+    }
 
     result = {
         "warnings": warnings if warnings else None,
         "keywords_used": all_keywords_used,
+        "reference_keywords": reference_list,
+        "exploratory_keywords": exploratory_list,
         "sources_searched": source_results,
         "total_documents": len(all_docs_dicts),
         "documents": all_docs_dicts,
         "errors": errors if errors else None,
         "fallback_used": fallback_used,
-        "link_validation": {
-            "total_checked": validation.total_checked,
-            "reachable": validation.reachable,
-            "unreachable": validation.unreachable,
-            "removed_count": len(validation.removed_urls),
-            "removed_urls": validation.removed_urls,
-            "duration_ms": validation.duration_ms,
-        },
+        "link_validation": link_validation_dict,
     }
 
-    # Save raw search results to session state for downstream agents
+    # セッション状態に保存
     if tool_context is not None:
-        # 言語指定がある場合は言語別キーに保存
-        state_key = f"raw_search_results_{language}" if language else "raw_search_results"
+        state_key = raw_search_results_key(language) if language else RAW_SEARCH_RESULTS
         existing = tool_context.state.get(state_key, [])
         existing.append(result)
         tool_context.state[state_key] = existing
+        _accumulate_archive_images(tool_context, all_docs_dicts)
+        # search_log 蓄積
+        _accumulate_search_log(tool_context, _build_search_log_entry(
+            tool="search_archives",
+            reference_keywords=reference_list,
+            exploratory_keywords=exploratory_list,
+            language=language,
+            sources_searched=source_results,
+            total_documents=len(all_docs_dicts),
+            date_start=date_start,
+            date_end=date_end,
+            link_validation=link_validation_dict,
+            fallback_used=fallback_used,
+        ))
 
     return json.dumps(result, ensure_ascii=False, indent=2)
-
-
-def get_available_keywords() -> str:
-    """Get the list of available bilingual keyword pairs.
-
-    Returns the predefined English-Spanish keyword pairs that can be
-    used for searching historical mysteries.
-
-    Returns:
-        JSON string containing keyword pairs
-    """
-    return json.dumps(
-        {
-            "description": "Available bilingual keyword pairs for historical mystery searches",
-            "keyword_pairs": KEYWORD_PAIRS,
-            "usage": "Use these keywords to search both English and Spanish sources",
-        },
-        ensure_ascii=False,
-        indent=2,
-    )

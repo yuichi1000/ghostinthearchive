@@ -163,11 +163,6 @@
   border-radius: 1px;
 }
 
-/* Corner fold effect for evidence blocks */
-.corner-fold {
-  background: linear-gradient(135deg, transparent 50%, #1A1A1A 50%);
-}
-
 /* Typography */
 .font-jp {
   font-family: var(--font-jp);

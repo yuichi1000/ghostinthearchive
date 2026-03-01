@@ -9,6 +9,8 @@ from podcast_agents.tools.tts import (
     _split_by_sentences,
     synthesize_segment,
     generate_podcast_audio,
+    AI_DISCLOSURE_TEXT,
+    WEBSITE_PROMOTION_TEXT,
 )
 
 
@@ -229,8 +231,8 @@ class TestGeneratePodcastAudio:
             result = generate_podcast_audio(segments, "test-id")
 
         assert result["segment_count"] == 1
-        # 1 ナレーションセグメント + 1 AI 開示 = 2
-        assert mock_synth.call_count == 2
+        # 1 ナレーションセグメント + 1 Web 誘導 + 1 AI 開示 = 3
+        assert mock_synth.call_count == 3
 
     def test_raises_when_no_synthesizable_segments(self):
         """全セグメントが空の場合は RuntimeError を送出する。"""
@@ -353,8 +355,8 @@ class TestGeneratePodcastAudioWithMusic:
 
             generate_podcast_audio(segments, "test-id")
 
-        # synthesize_segment が AI 開示テキストでも呼ばれた（セグメント + 開示 = 2回）
-        assert mock_synth.call_count == 2
+        # synthesize_segment: セグメント + Web 誘導 + AI 開示 = 3回
+        assert mock_synth.call_count == 3
         # overlay が OUTRO クロスフェードで呼ばれた
         mock_audio.overlay.assert_called_once()
         # overlay の position 引数が末尾5秒前（60000 - 5000 = 55000）
@@ -391,9 +393,48 @@ class TestGeneratePodcastAudioWithMusic:
 
             result = generate_podcast_audio(segments, "test-id")
 
-        # 1 ナレーションセグメント + 1 AI 開示 = 2
-        assert mock_synth.call_count == 2
+        # 1 ナレーションセグメント + 1 Web 誘導 + 1 AI 開示 = 3
+        assert mock_synth.call_count == 3
         assert result["segment_count"] == 1
+
+
+class TestWebsitePromotion:
+    """Tests for website promotion TTS insertion."""
+
+    @patch("podcast_agents.tools.tts.ACT_AUDIO_PATHS", {})
+    @patch("podcast_agents.tools.tts.OUTRO_MUSIC_PATH")
+    @patch("podcast_agents.tools.tts.INTRO_MUSIC_PATH")
+    @patch("podcast_agents.tools.tts.get_storage_bucket")
+    @patch("podcast_agents.tools.tts.synthesize_segment")
+    def test_website_promotion_inserted_before_disclosure(self, mock_synth, mock_bucket, mock_intro_path, mock_outro_path):
+        """WEBSITE_PROMOTION_TEXT が AI_DISCLOSURE_TEXT の直前に呼ばれること。"""
+        mock_intro_path.exists.return_value = False
+        mock_outro_path.exists.return_value = False
+
+        mock_audio = MagicMock()
+        mock_audio.__len__ = MagicMock(return_value=30000)
+        mock_audio.__add__ = MagicMock(return_value=mock_audio)
+        mock_audio.export = MagicMock()
+        mock_synth.return_value = mock_audio
+
+        mock_bucket_obj = MagicMock()
+        mock_bucket_obj.name = "test.appspot.com"
+        mock_bucket_obj.blob.return_value = MagicMock()
+        mock_bucket.return_value = mock_bucket_obj
+
+        segments = [{"type": "overview", "label": "Overview", "text": "Hello"}]
+
+        with patch("podcast_agents.tools.tts.AudioSegment") as mock_as:
+            mock_as.silent.return_value = MagicMock()
+            mock_as.empty.return_value = mock_audio
+
+            generate_podcast_audio(segments, "test-id")
+
+        # synthesize_segment の呼び出し順序を検証
+        call_texts = [call.args[0] for call in mock_synth.call_args_list]
+        # 最後の2つが Web 誘導 → AI 開示の順であること
+        assert call_texts[-2] == WEBSITE_PROMOTION_TEXT
+        assert call_texts[-1] == AI_DISCLOSURE_TEXT
 
 
 class TestActTransitionAudio:

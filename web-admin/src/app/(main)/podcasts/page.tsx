@@ -1,36 +1,35 @@
 "use client"
 
 import { useEffect, useState, useCallback, useMemo } from "react"
-import { useRouter } from "next/navigation"
 import { cn } from "@ghost/shared/src/lib/utils"
-import { Button } from "@ghost/shared/src/components/ui/button"
-import { getAllPodcasts } from "@/lib/firestore/podcasts"
+import { getPodcastsByMysteryIdMap } from "@/lib/firestore/podcasts"
 import { getAllMysteries } from "@/lib/firestore/mysteries"
-import { PodcastCard } from "@/components/podcast-card"
+import { MysteryPodcastCard } from "@/components/mystery-podcast-card"
+import { ActionToast } from "@/components/action-toast"
 import { ActivePipelinePanel } from "@/components/active-pipeline-panel"
 import { usePipelineRuns } from "@/hooks/use-pipeline-runs"
-import type { FirestorePodcast, PodcastStatus, FirestoreMystery } from "@ghost/shared/src/types/mystery"
+import { useActionFeedback } from "@/hooks/use-action-feedback"
+import type { FirestorePodcast, FirestoreMystery } from "@ghost/shared/src/types/mystery"
 import {
   Mic,
   Filter,
   Inbox,
-  Loader2,
-  FileText,
 } from "lucide-react"
 
-type FilterStatus = "all" | PodcastStatus
+type FilterTab = "all" | "no_podcast" | "has_podcast"
+
+const FILTER_LABELS: Record<FilterTab, string> = {
+  all: "すべて",
+  no_podcast: "未制作",
+  has_podcast: "制作済み",
+}
 
 export default function PodcastsPage() {
-  const router = useRouter()
-  const [filter, setFilter] = useState<FilterStatus>("all")
-  const [podcasts, setPodcasts] = useState<FirestorePodcast[]>([])
+  const [filter, setFilter] = useState<FilterTab>("all")
+  const [podcastMap, setPodcastMap] = useState<Map<string, FirestorePodcast>>(new Map())
   const [mysteries, setMysteries] = useState<FirestoreMystery[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedMysteryId, setSelectedMysteryId] = useState("")
-  const [customInstructions, setCustomInstructions] = useState("")
-  const [generating, setGenerating] = useState(false)
-  const [feedback, setFeedback] = useState<string | null>(null)
-  const [feedbackIsError, setFeedbackIsError] = useState(false)
+  const feedback = useActionFeedback()
 
   // Podcast タイプのパイプラインのみ表示
   const { runs: runningPipelines, dismiss: dismissRunning } = usePipelineRuns()
@@ -42,10 +41,10 @@ export default function PodcastsPage() {
   const fetchData = useCallback(async () => {
     try {
       const [podcastData, mysteryData] = await Promise.all([
-        getAllPodcasts(50),
+        getPodcastsByMysteryIdMap(),
         getAllMysteries(100),
       ])
-      setPodcasts(podcastData)
+      setPodcastMap(podcastData)
       setMysteries(mysteryData)
     } catch (error) {
       console.error("Failed to fetch data:", error)
@@ -58,61 +57,30 @@ export default function PodcastsPage() {
     fetchData()
   }, [fetchData])
 
-  // 公開済み記事のみフィルタ
+  // 公開済み記事のみ
   const publishedMysteries = useMemo(
     () => mysteries.filter((m) => m.status === "published"),
     [mysteries]
   )
 
-  const filteredPodcasts = filter === "all"
-    ? podcasts
-    : podcasts.filter((p) => p.status === filter)
-
-  const counts = {
-    all: podcasts.length,
-    script_generating: podcasts.filter((p) => p.status === "script_generating").length,
-    script_ready: podcasts.filter((p) => p.status === "script_ready").length,
-    audio_generating: podcasts.filter((p) => p.status === "audio_generating").length,
-    audio_ready: podcasts.filter((p) => p.status === "audio_ready").length,
-    error: podcasts.filter((p) => p.status === "error").length,
-  }
-
-  const handleGenerateScript = async () => {
-    if (!selectedMysteryId) return
-    setGenerating(true)
-    try {
-      const res = await fetch("/api/podcast/generate-script", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mystery_id: selectedMysteryId,
-          custom_instructions: customInstructions.trim(),
-        }),
-      })
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}))
-        throw new Error(errorData.detail || errorData.error || `API error (${res.status})`)
-      }
-      const data = await res.json()
-
-      if (data.podcast_id) {
-        router.push(`/podcasts/${data.podcast_id}`)
-      } else {
-        setFeedback("脚本生成を開始しました")
-        setFeedbackIsError(false)
-        fetchData()
-        setTimeout(() => setFeedback(null), 3000)
-      }
-    } catch (error) {
-      console.error("Failed to generate script:", error)
-      const message = error instanceof Error ? error.message : "不明なエラー"
-      setFeedback(`脚本生成の開始に失敗しました: ${message}`)
-      setFeedbackIsError(true)
-      setTimeout(() => setFeedback(null), 5000)
-    } finally {
-      setGenerating(false)
+  // フィルタ適用
+  const filteredMysteries = useMemo(() => {
+    switch (filter) {
+      case "no_podcast":
+        return publishedMysteries.filter((m) => !podcastMap.has(m.mystery_id))
+      case "has_podcast":
+        return publishedMysteries.filter((m) => podcastMap.has(m.mystery_id))
+      default:
+        return publishedMysteries
     }
-  }
+  }, [filter, publishedMysteries, podcastMap])
+
+  // カウント
+  const counts: Record<FilterTab, number> = useMemo(() => ({
+    all: publishedMysteries.length,
+    no_podcast: publishedMysteries.filter((m) => !podcastMap.has(m.mystery_id)).length,
+    has_podcast: publishedMysteries.filter((m) => podcastMap.has(m.mystery_id)).length,
+  }), [publishedMysteries, podcastMap])
 
   return (
     <div className="py-8 md:py-12">
@@ -133,80 +101,11 @@ export default function PodcastsPage() {
             Podcast Production
           </h1>
           <p className="text-muted-foreground">
-            公開済み記事からポッドキャストエピソードを制作する。
+            公開済み記事からポッドキャストエピソードを制作する。記事をクリックして開始。
           </p>
         </div>
 
-        {/* 新規 Podcast 作成セクション */}
-        <div className="aged-card letterpress-border rounded-sm p-5 mb-8">
-          <h2 className="font-serif text-xl text-parchment mb-4">
-            新規エピソード作成
-          </h2>
-
-          <div className="space-y-3">
-            {/* 記事セレクタ */}
-            <div>
-              <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1 block">
-                対象記事
-              </label>
-              <select
-                value={selectedMysteryId}
-                onChange={(e) => setSelectedMysteryId(e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-parchment focus:outline-none focus:border-gold/50"
-              >
-                <option value="">記事を選択...</option>
-                {publishedMysteries.map((m) => (
-                  <option key={m.mystery_id} value={m.mystery_id}>
-                    {m.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* カスタム指示 */}
-            <div>
-              <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1 block">
-                カスタム指示（任意）
-              </label>
-              <textarea
-                value={customInstructions}
-                onChange={(e) => setCustomInstructions(e.target.value)}
-                placeholder="例: 冒頭で地元の伝説を詳しく紹介してほしい"
-                rows={2}
-                className="w-full px-3 py-2 bg-background border border-border rounded-sm text-sm text-parchment placeholder:text-muted-foreground resize-none focus:outline-none focus:border-gold/50"
-              />
-            </div>
-
-            <Button
-              size="sm"
-              onClick={handleGenerateScript}
-              disabled={!selectedMysteryId || generating}
-              className="bg-teal/20 border border-teal/30 text-[#5fb3a1] hover:bg-teal/30"
-            >
-              {generating ? (
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              ) : (
-                <FileText className="w-4 h-4 mr-1" />
-              )}
-              脚本生成
-            </Button>
-          </div>
-        </div>
-
-        {/* フィードバック */}
-        {feedback && (
-          <div className={cn(
-            "fixed top-20 right-4 z-50 px-4 py-3 rounded-sm animate-in fade-in slide-in-from-right-5",
-            feedbackIsError
-              ? "bg-blood-red/10 border border-blood-red/30"
-              : "bg-teal/20 border border-teal/30"
-          )}>
-            <p className={cn(
-              "text-sm font-mono",
-              feedbackIsError ? "text-[#ff6b6b]" : "text-[#5fb3a1]"
-            )}>{feedback}</p>
-          </div>
-        )}
+        <ActionToast message={feedback.message} isError={feedback.isError} />
 
         {/* 実行中のパイプライン */}
         {podcastRuns.length > 0 && (
@@ -224,28 +123,28 @@ export default function PodcastsPage() {
         {/* フィルタタブ */}
         <div className="flex flex-wrap items-center gap-2 mb-8 pb-4 border-b border-border">
           <Filter className="w-4 h-4 text-muted-foreground mr-2" />
-          {(["all", "script_generating", "script_ready", "audio_generating", "audio_ready", "error"] as FilterStatus[]).map(
-            (status) => (
+          {(["all", "no_podcast", "has_podcast"] as FilterTab[]).map(
+            (tab) => (
               <button
-                key={status}
-                onClick={() => setFilter(status)}
+                key={tab}
+                onClick={() => setFilter(tab)}
                 className={cn(
                   "px-3 py-1.5 text-xs font-mono uppercase tracking-wider rounded-sm border transition-colors",
-                  filter === status
+                  filter === tab
                     ? "bg-gold/20 text-gold border-gold/30"
                     : "bg-transparent text-muted-foreground border-border hover:border-parchment/30 hover:text-parchment"
                 )}
               >
-                {status === "all" ? "All" : status.replace("_", " ")}
+                {FILTER_LABELS[tab]}
                 <span className="ml-2 text-muted-foreground">
-                  ({counts[status]})
+                  ({counts[tab]})
                 </span>
               </button>
             )
           )}
         </div>
 
-        {/* Podcast カードグリッド */}
+        {/* 記事×Podcast カードグリッド */}
         {loading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {[...Array(4)].map((_, i) => (
@@ -257,19 +156,25 @@ export default function PodcastsPage() {
               </div>
             ))}
           </div>
-        ) : filteredPodcasts.length === 0 ? (
+        ) : filteredMysteries.length === 0 ? (
           <div className="text-center py-16">
             <Inbox className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">
               {filter === "all"
-                ? "まだ Podcast がありません。上のフォームから作成してください。"
-                : "該当する Podcast がありません。"}
+                ? "公開済みの記事がありません。"
+                : filter === "no_podcast"
+                  ? "Podcast 未制作の記事はありません。"
+                  : "Podcast 制作済みの記事はありません。"}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredPodcasts.map((podcast) => (
-              <PodcastCard key={podcast.podcast_id} podcast={podcast} />
+            {filteredMysteries.map((mystery) => (
+              <MysteryPodcastCard
+                key={mystery.mystery_id}
+                mystery={mystery}
+                podcast={podcastMap.get(mystery.mystery_id)}
+              />
             ))}
           </div>
         )}

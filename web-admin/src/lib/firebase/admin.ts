@@ -70,4 +70,5 @@ export function getAdminFirestore(): Firestore {
 /** Admin用 Firestore コレクション名 */
 export const ADMIN_COLLECTIONS = {
   MYSTERIES: "mysteries",
+  PODCASTS: "podcasts",
 } as const;

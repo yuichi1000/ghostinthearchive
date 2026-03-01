@@ -1,10 +1,10 @@
 """Translator Agent Factory - Multilingual translation
 
-Creates translator agents for 6 target languages (ja, es, de, fr, nl, pt).
+Creates translator agents for 3 target languages (ja, es, de).
 Each translator maintains language-specific tone and cultural nuance.
 
 Used in two contexts:
-- Blog pipeline: ParallelAgent runs all 6 translators concurrently
+- Blog pipeline: ParallelAgent runs all 3 translators concurrently
   (reads creative_content / mystery_report / structured_report from session state)
 - Curator pipeline: Japanese translator for theme suggestions
   (reads JSON from user message)
@@ -16,8 +16,12 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
+from google.genai import types
 
 from shared.model_config import create_flash_model
+from shared.token_tracker import create_token_tracking_callback
+
+from .translator_instructions import BASE_TRANSLATOR_INSTRUCTION as _BASE_TRANSLATOR_INSTRUCTION
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
@@ -27,9 +31,6 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # ja: 学術的信頼性 + 怪異情緒、「歴史探偵 + 怪異蒐集家」
 # es: 学術的荘厳さ + lo misterioso、スペイン文学ジャーナリズム
 # de: 学術的精密さ + Unheimlichkeit（不気味なもの）
-# fr: 知的厳格さ + le mystérieux、フランス・ルポルタージュ伝統
-# nl: 直接的学術文体 + het onverklaarbare
-# pt: ブラジルポルトガル語、文学的豊かさ + o misterioso
 # === End 日本語訳 ===
 
 TRANSLATOR_CONFIGS: dict[str, dict[str, str]] = {
@@ -91,246 +92,15 @@ TRANSLATOR_CONFIGS: dict[str, dict[str, str]] = {
             "- Person names: Keep original with German-style reference"
         ),
     },
-    "fr": {
-        "language_name": "French",
-        "tone": (
-            "Intellectual rigor infused with 'le mystérieux' — the mysterious. "
-            "Follow the tradition of French reportage (grand reportage) and literary investigation. "
-            "Evoke the spirit of Gérard de Nerval's mystical explorations or Emmanuel Carrère's documentary narratives."
-        ),
-        "speculation": (
-            "- 'It is said that...' → 'On raconte que...'\n"
-            "- 'Perhaps...' → 'Peut-être...' / 'Il se pourrait que...'\n"
-            "- 'According to legend...' → 'Selon la légende...'"
-        ),
-        "terminology": (
-            "- Historical terms: Use standard academic French\n"
-            "- Folklore terms: folklore → folklore, legend → légende, myth → mythe\n"
-            "- Place names: Use French forms where they exist\n"
-            "- Person names: Keep original with French-style reference"
-        ),
-    },
-    "nl": {
-        "language_name": "Dutch",
-        "tone": (
-            "Direct, scholarly prose combined with 'het onverklaarbare' (the inexplicable). "
-            "Dutch academic writing tends toward clarity and directness — honor that tradition "
-            "while weaving in atmospheric mystery. Think of it as a Rijksmuseum audio guide "
-            "that occasionally ventures into the uncanny."
-        ),
-        "speculation": (
-            "- 'It is said that...' → 'Er wordt gezegd dat...'\n"
-            "- 'Perhaps...' → 'Misschien...' / 'Wellicht...'\n"
-            "- 'According to legend...' → 'Volgens de legende...'"
-        ),
-        "terminology": (
-            "- Historical terms: Use standard academic Dutch\n"
-            "- Folklore terms: folklore → volkskunde, legend → legende/sage, myth → mythe\n"
-            "- Place names: Use Dutch forms where they exist\n"
-            "- Person names: Keep original with Dutch-style reference"
-        ),
-    },
-    "pt": {
-        "language_name": "Brazilian Portuguese",
-        "tone": (
-            "Literary richness infused with 'o misterioso' — the mysterious. "
-            "Use Brazilian Portuguese (português brasileiro) as the base. "
-            "Follow the tradition of Brazilian literary journalism (jornalismo literário). "
-            "Evoke the spirit of Euclides da Cunha's documentary narrative or Eliane Brum's investigative prose."
-        ),
-        "speculation": (
-            "- 'It is said that...' → 'Dizem que...' / 'Conta-se que...'\n"
-            "- 'Perhaps...' → 'Talvez...' / 'Quem sabe...'\n"
-            "- 'According to legend...' → 'Segundo a lenda...'"
-        ),
-        "terminology": (
-            "- Historical terms: Use standard academic Brazilian Portuguese\n"
-            "- Folklore terms: folklore → folclore, legend → lenda, myth → mito\n"
-            "- Place names: Use Portuguese forms where they exist\n"
-            "- Person names: Keep original with Portuguese-style reference"
-        ),
-    },
 }
 
-# === 日本語訳 ===
-# あなたは「Ghost in the Archive」プロジェクトの{language_name}翻訳者です。
-# 英語で書かれたミステリー記事やテーマ提案を{language_name}に翻訳する専門家です。
-#
-# ## あなたの役割
-# セッション状態から翻訳対象の英語コンテンツを読み取り、{language_name}に翻訳します。
-#
-# ## 入力ソース（ブログパイプライン内で実行される場合）
-# 翻訳に必要なコンテンツはセッション状態に格納されています:
-# - `creative_content`: Storyteller が作成した英語ブログ記事（Markdown）
-#   → `narrative_content` フィールドのソース
-# - `mystery_report`: Armchair Polymath の統合分析レポート
-#   → `title`, `summary`, `discrepancy_detected`, `hypothesis`,
-#     `alternative_hypotheses`, `story_hooks`,
-#     `historical_context.political_climate` のソース
-# - `structured_report`: 構造化データ（dict）
-#   → `evidence_a_excerpt`, `evidence_b_excerpt`,
-#     `additional_evidence_excerpts` のソース
-#
-# ユーザーメッセージとして JSON が直接渡される場合（Curator パイプライン等）は
-# そのまま翻訳対象として使用してください。
-#
-# ## 最重要ルール：コンテンツがない場合は翻訳しない
-# 入力（セッション状態またはユーザーメッセージ）が空、
-# または「NO_CONTENT」「INSUFFICIENT_DATA」を含む場合、
-# 翻訳を行わず「NO_TRANSLATION」とだけ出力して終了する。
-#
-# ## 翻訳ガイドライン
-#
-# ### トーンと文体
-# {tone}
-#
-# ### 専門用語の翻訳方針
-# {terminology}
-#
-# ### Fact × Folklore のニュアンス維持
-# - 事実と伝説の境界を意識的に示す表現を維持
-# - 「説明のつかない余韻」を残す
-# - 断定的な表現を避け、推測表現を{language_name}でも再現:
-# {speculation}
-#
-# ### Markdown 形式の維持
-# - 見出し（#, ##, ###）を保持
-# - 太字（**bold**）、斜体（*italic*）を保持
-# - 引用符（>）を保持
-# - リンク形式を保持
-#
-# ### 翻訳の正確性
-# - 事実と出典を正確に翻訳
-# - 日付、場所、人名のスペルを正確に
-# - 翻訳者としての解釈を加えない
-#
-# ## 出力形式
-# 素の JSON のみを出力する。markdown コードブロック（```json ... ```）で包まないこと。
-# キー名はサフィックスなしの素のフィールド名を使う。
-#
-# ブログ記事フィールドの場合:
-# {{
-#   "title": "...",
-#   "summary": "...",
-#   "narrative_content": "...",
-#   "discrepancy_detected": "...",
-#   "hypothesis": "...",
-#   "alternative_hypotheses": ["...", "..."],
-#   "story_hooks": ["...", "..."],
-#   "historical_context": {{ "political_climate": "..." }},
-#   "evidence_a_excerpt": "...",
-#   "evidence_b_excerpt": "...",
-#   "additional_evidence_excerpts": ["...", "..."]
-# }}
-#
-# Curator テーマ提案の場合:
-# {{
-#   "suggestions": [
-#     {{ "theme": "...", "description": "..." }}
-#   ]
-# }}
-#
-# JSON 以外のテキストは出力しない。
-#
-# ## 重要
-# - 翻訳のみを行い、新しい情報を追加しないこと
-# - 原文の構造と意図を忠実に再現すること
-# === End 日本語訳 ===
-
-_BASE_TRANSLATOR_INSTRUCTION = """
-You are the {language_name} Translator Agent for the "Ghost in the Archive" project.
-You are an expert at translating English mystery articles and theme suggestions into {language_name}.
-
-## Your Role
-Read the English content from the session state and translate it into {language_name}.
-
-## Input Sources (when running in the blog pipeline)
-The content you need to translate is available in session state:
-- `{{creative_content}}`: The English blog article (Markdown) written by the Storyteller.
-  → Use this as the source for the `narrative_content` field.
-- `{{mystery_report}}`: The integrated analysis report by the Armchair Polymath.
-  → Use this as the source for `title`, `summary`, `discrepancy_detected`, `hypothesis`,
-    `alternative_hypotheses`, `story_hooks`, and `historical_context.political_climate`.
-- `{{structured_report}}`: Structured data (dict) from the Armchair Polymath tool.
-  → Use this as the source for `evidence_a_excerpt`, `evidence_b_excerpt`,
-    and `additional_evidence_excerpts` (extract the `relevant_excerpt` from each evidence).
-
-If a JSON is provided directly in the user message (e.g., from the Curator pipeline),
-use that as the translation source instead.
-
-## Critical Rule: Do NOT Translate Without Content
-Check the input content (both session state and user message).
-**If the input is empty, or contains "NO_CONTENT" or "INSUFFICIENT_DATA", do NOT translate.**
-In that case, output only the following message and stop:
-
-```
-NO_TRANSLATION: No content to translate. Translation aborted.
-```
-
-## Translation Guidelines
-
-### Tone and Style
-{tone}
-
-### Terminology Translation Policy
-{terminology}
-
-### Maintaining Fact × Folklore Nuance
-- Maintain expressions that consciously indicate the boundary between fact and legend
-- Preserve the "lingering inexplicable feeling"
-- Reproduce speculative expressions in {language_name}:
-{speculation}
-
-### Maintaining Markdown Format
-- Preserve headings (#, ##, ###)
-- Preserve bold (**bold**) and italic (*italic*)
-- Preserve blockquotes (>)
-- Preserve link format
-
-### Translation Accuracy
-- Translate facts and sources accurately
-- Accuracy of dates, places, and person name spellings
-- Do not add translator's own interpretation
-
-## Output Format
-Output ONLY a raw JSON object. Do NOT wrap it in markdown code blocks (```json ... ```).
-Use bare field names (NO suffix like _ja or _es).
-
-For blog article fields:
-{{{{
-  "title": "...",
-  "summary": "...",
-  "narrative_content": "...",
-  "discrepancy_detected": "...",
-  "hypothesis": "...",
-  "alternative_hypotheses": ["...", "..."],
-  "story_hooks": ["...", "..."],
-  "historical_context": {{{{ "political_climate": "..." }}}},
-  "evidence_a_excerpt": "...",
-  "evidence_b_excerpt": "...",
-  "additional_evidence_excerpts": ["...", "..."]
-}}}}
-
-For curator theme suggestions:
-{{{{
-  "suggestions": [
-    {{{{ "theme": "...", "description": "..." }}}}
-  ]
-}}}}
-
-Output ONLY the JSON. Do NOT include any other text, explanations, commentary, or markdown formatting.
-
-## Important
-- Only translate — do not add new information
-- Faithfully reproduce the structure and intent of the original text
-"""
 
 
 def create_translator(target_lang: str) -> LlmAgent:
     """指定言語の Translator エージェントを生成する。
 
     Args:
-        target_lang: 翻訳先の言語コード (ja, es, de, fr, nl, pt)
+        target_lang: 翻訳先の言語コード (ja, es, de)
 
     Returns:
         LlmAgent: 翻訳エージェント
@@ -360,12 +130,15 @@ def create_translator(target_lang: str) -> LlmAgent:
             f"Maintains historical terminology accuracy and Fact × Folklore nuance."
         ),
         instruction=instruction,
+        generate_content_config=types.GenerateContentConfig(temperature=0.2),
         output_key=f"translation_result_{target_lang}",
+        include_contents="none",
+        after_model_callback=create_token_tracking_callback(f"translator_{target_lang}"),
     )
 
 
 def create_all_translators() -> dict[str, LlmAgent]:
-    """全6言語の Translator エージェントを生成する。
+    """全3言語の Translator エージェントを生成する。
 
     Returns:
         dict[str, LlmAgent]: 言語コード → LlmAgent の辞書

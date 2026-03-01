@@ -34,7 +34,7 @@ export async function POST() {
         "Content-Type": "application/json",
         ...authHeaders,
       },
-      signal: AbortSignal.timeout(120000),
+      signal: AbortSignal.timeout(240000),
     });
 
     if (!response.ok) {

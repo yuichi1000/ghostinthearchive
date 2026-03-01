@@ -6,7 +6,6 @@
 
 from mystery_agents.agents.pipeline_gate import (
     _is_meaningful,
-    make_polymath_gate,
     make_post_story_gate,
     make_scholar_gate,
     make_storyteller_gate,
@@ -107,8 +106,8 @@ class TestScholarGate:
         result = gate(ctx)
         assert result is None
 
-    def test_no_selected_languages_defaults_to_en(self):
-        """selected_languages がない場合 ['en'] をデフォルトにする。"""
+    def test_no_selected_languages_defaults_to_all(self):
+        """selected_languages がない場合、全言語をデフォルトにする。"""
         ctx = MockCallbackContext(state={
             "collected_documents_en": "Found documents...",
         })
@@ -117,28 +116,69 @@ class TestScholarGate:
         assert result is None
 
 
-class TestPolymathGate:
-    """make_polymath_gate のテスト。"""
+class TestScholarGateFulltext:
+    """ScholarGate の全文チェック関連テスト。"""
 
-    def test_all_scholars_failed_skips(self):
+    def test_no_fulltext_terminates(self, caplog):
+        """全文ドキュメントが 0 件で NO_FULLTEXT_AVAILABLE を返す。"""
         ctx = MockCallbackContext(state={
-            "selected_languages": ["en", "es"],
-            "scholar_analysis_en": "INSUFFICIENT_DATA: Not enough material for analysis.",
-            "scholar_analysis_es": "INSUFFICIENT_DATA: No sources available.",
+            "selected_languages": ["en"],
+            "collected_documents_en": "# Collected Documents (English) — 3 documents...",
+            "fulltext_metrics": {
+                "total_documents": 3,
+                "fulltext_documents": 0,
+                "metadata_only_documents": 3,
+                "by_language": {"en": {"total": 3, "fulltext": 0, "metadata_only": 3}},
+            },
         })
-        gate = make_polymath_gate()
+        gate = make_scholar_gate()
         result = gate(ctx)
         assert result is not None
+        assert "NO_FULLTEXT_AVAILABLE" in caplog.text
 
-    def test_one_scholar_succeeded_proceeds(self):
+    def test_some_fulltext_passes(self):
+        """全文ドキュメントが 1 件以上あれば通過する。"""
         ctx = MockCallbackContext(state={
-            "selected_languages": ["en", "es"],
-            "scholar_analysis_en": "Analysis of Bell Witch phenomenon...",
-            "scholar_analysis_es": "INSUFFICIENT_DATA: No sources.",
+            "selected_languages": ["en"],
+            "collected_documents_en": "# Collected Documents (English) — 5 documents...",
+            "fulltext_metrics": {
+                "total_documents": 5,
+                "fulltext_documents": 2,
+                "metadata_only_documents": 3,
+                "by_language": {"en": {"total": 5, "fulltext": 2, "metadata_only": 3}},
+            },
         })
-        gate = make_polymath_gate()
+        gate = make_scholar_gate()
         result = gate(ctx)
         assert result is None
+
+    def test_missing_metrics_passes(self):
+        """fulltext_metrics が未設定でも通過する（後方互換）。"""
+        ctx = MockCallbackContext(state={
+            "selected_languages": ["en"],
+            "collected_documents_en": "Found 5 documents about Bell Witch...",
+        })
+        gate = make_scholar_gate()
+        result = gate(ctx)
+        assert result is None
+
+    def test_no_documents_takes_precedence(self, caplog):
+        """ドキュメントなし + 全文なしの場合、INSUFFICIENT_DATA が先に発動する。"""
+        ctx = MockCallbackContext(state={
+            "selected_languages": ["en"],
+            "collected_documents_en": "NO_DOCUMENTS_FOUND: No English-language documents.",
+            "fulltext_metrics": {
+                "total_documents": 0,
+                "fulltext_documents": 0,
+                "metadata_only_documents": 0,
+                "by_language": {},
+            },
+        })
+        gate = make_scholar_gate()
+        result = gate(ctx)
+        assert result is not None
+        assert "INSUFFICIENT_DATA" in caplog.text
+        assert "NO_FULLTEXT_AVAILABLE" not in caplog.text
 
 
 class TestStorytellerGate:

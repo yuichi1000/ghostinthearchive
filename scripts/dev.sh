@@ -115,7 +115,10 @@ start_emulator() {
     fi
 
     log_info "Firebase エミュレータを起動中..."
-    firebase emulators:start --project ghostinthearchive &
+    EMULATOR_DATA_DIR="$PROJECT_ROOT/.firebase-emulator-data"
+    firebase emulators:start --project ghostinthearchive \
+        --import="$EMULATOR_DATA_DIR" \
+        --export-on-exit="$EMULATOR_DATA_DIR" &
     EMULATOR_PID=$!
 
     # エミュレータ起動を待つ

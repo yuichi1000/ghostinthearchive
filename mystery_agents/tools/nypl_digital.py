@@ -1,89 +1,132 @@
-"""NYPL Digital Collections API tool.
+"""NYPL Digital Collections API ソース。
 
-Searches the New York Public Library's digitized collections
-including manuscripts, maps, photographs, and rare materials.
+ニューヨーク公共図書館のデジタル化コレクション（写本、地図、写真、
+希少資料）を検索する。
+
+plain_text エンドポイントによる OCR 全文テキスト取得にも対応。
 """
 
-import json
+import logging
 import os
-import time
-from typing import Any, Dict, List, Optional
 
 import requests
 
-from shared.http_retry import create_retry_session
-
-from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
+from ..schemas.document import ArchiveDocument, SourceLanguage
+from .archive_source_base import ArchiveSearchResult, ArchiveSource
+from .fulltext_extraction import build_extraction_keywords, extract_keyword_passages
 from .search_utils import build_search_query
+from .source_registry import register_source
+
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://api.repo.nypl.org/api/v2/items/search"
-_session = create_retry_session()
-MIN_REQUEST_DELAY = 1.0
-_last_request_time = 0.0
+_PLAIN_TEXT_URL = "https://api.repo.nypl.org/api/v2/items/plain_text/{uuid}"
+
+# 全文取得の上限設定
+_MAX_FULLTEXT_FETCHES = 10
+_FULLTEXT_TIMEOUT = 15
+_MAX_RAW_FETCH = 200_000
 
 
-def _rate_limit() -> None:
-    global _last_request_time
-    now = time.time()
-    elapsed = now - _last_request_time
-    if elapsed < MIN_REQUEST_DELAY:
-        time.sleep(MIN_REQUEST_DELAY - elapsed)
-    _last_request_time = time.time()
-
-
-def search_nypl(
-    keywords: List[str],
-    date_start: str = "1800",
-    date_end: str = "1899",
-    max_results: int = 20,
-) -> Dict[str, Any]:
-    """Search NYPL Digital Collections.
+def _fetch_plain_text(
+    session: requests.Session, uuid: str, token: str = ""
+) -> str | None:
+    """NYPL plain_text エンドポイントから OCR テキストを取得する。
 
     Args:
-        keywords: List of search keywords
-        date_start: Start year
-        date_end: End year
-        max_results: Maximum results to return
+        session: HTTP セッション
+        uuid: NYPL アイテムの UUID
 
     Returns:
-        Dict with documents, total_hits, error keys.
+        OCR テキスト（安全上限で切り詰め）。取得失敗時は None。
     """
-    api_token = os.environ.get("NYPL_API_TOKEN", "")
-    if not api_token:
-        return {"documents": [], "total_hits": 0, "error": "NYPL_API_TOKEN not set"}
-
-    search_text = build_search_query(keywords)
-    if not search_text:
-        return {"documents": [], "total_hits": 0, "error": "No keywords provided"}
-
-    # Include date range in query for filtering
-    start_year = date_start[:4] if len(date_start) >= 4 else date_start
-    end_year = date_end[:4] if len(date_end) >= 4 else date_end
-    search_text_with_date = f"{search_text} {start_year}-{end_year}"
-
-    params = {
-        "q": search_text_with_date,
-        "per_page": min(max_results, 100),
-        "page": 1,
-        "publicDomainOnly": "true",
-    }
-
-    _rate_limit()
-
     try:
-        response = _session.get(
+        headers = {"User-Agent": "GhostInTheArchive/1.0"}
+        if token:
+            headers["Authorization"] = f'Token token="{token}"'
+        resp = session.get(
+            _PLAIN_TEXT_URL.format(uuid=uuid),
+            timeout=_FULLTEXT_TIMEOUT,
+            headers=headers,
+        )
+        if resp.status_code != 200:
+            logger.debug("NYPL plain_text %d for UUID %s", resp.status_code, uuid)
+            return None
+
+        data = resp.json()
+        # レスポンス構造: nyplAPI.response.text (文字列)
+        text = (
+            data.get("nyplAPI", {})
+            .get("response", {})
+            .get("text", "")
+        )
+        if not text or not isinstance(text, str):
+            return None
+        return text.strip()[:_MAX_RAW_FETCH]
+
+    except (requests.RequestException, ValueError, KeyError) as e:
+        logger.debug("NYPL plain_text 取得失敗 (UUID %s): %s", uuid, e)
+        return None
+
+
+class NYPLSource(ArchiveSource):
+    """NYPL Digital Collections ソース。"""
+
+    source_key = "nypl"
+    source_name = "NYPL Digital Collections"
+    source_type = "nypl"
+    min_request_delay = 1.0
+    supported_languages = {"en"}
+    supports_language_filter = False
+    is_newspaper_source = False
+    expected_domains = ["digitalcollections.nypl.org", "nypl.org"]
+    env_var_key = "NYPL_API_TOKEN"
+
+    def _search_impl(
+        self,
+        keywords: list[str],
+        date_start: str | None,
+        date_end: str | None,
+        max_results: int,
+        language: str | None,
+        reference_keywords: list[str] | None = None,
+    ) -> ArchiveSearchResult:
+        search_text = build_search_query(keywords)
+        if not search_text:
+            return ArchiveSearchResult(error="No keywords provided")
+
+        # 空文字日付対応: 日付範囲をクエリに含めるのを条件付きに
+        if date_start and date_end:
+            start_year = date_start[:4] if len(date_start) >= 4 else date_start
+            end_year = date_end[:4] if len(date_end) >= 4 else date_end
+            search_text_with_date = f"{search_text} {start_year}-{end_year}"
+        else:
+            search_text_with_date = search_text
+
+        params = {
+            "q": search_text_with_date,
+            "per_page": min(max_results, 100),
+            "page": 1,
+            "publicDomainOnly": "true",
+        }
+
+        token = os.environ.get("NYPL_API_TOKEN", "")
+        response = self._session.get(
             BASE_URL,
             params=params,
             timeout=30,
             headers={
-                "Authorization": f'Token token="{api_token}"',
                 "User-Agent": "GhostInTheArchive/1.0",
+                "Authorization": f'Token token="{token}"',
             },
         )
         response.raise_for_status()
         data = response.json()
 
         documents = []
+        # 全文取得対象の (index, uuid) ペア
+        fulltext_targets: list[tuple[int, str]] = []
+
         nypl_response = data.get("nyplAPI", {}).get("response", {})
         results = nypl_response.get("result", [])
         if not isinstance(results, list):
@@ -101,31 +144,48 @@ def search_nypl(
 
             date_str = item.get("dateDigitized", "")
 
+            # サムネイル URL 構築（imageID から）
+            image_id = item.get("imageID", "")
+            thumbnail_url = (
+                f"https://images.nypl.org/index.php?id={image_id}&t=w"
+                if image_id
+                else None
+            )
+
             doc = ArchiveDocument(
                 title=str(title)[:500],
-                date=_parse_year(str(date_str)),
+                date=self.parse_year(str(date_str)),
                 source_url=url,
                 summary=str(title)[:500],
                 language=SourceLanguage.EN,
                 location="New York",
-                source_type=SourceType.NYPL,
+                source_type=self.source_type,
                 raw_text=None,
-                keywords_matched=[kw for kw in keywords if kw.lower() in str(title).lower()],
+                thumbnail_url=thumbnail_url,
+                keywords_matched=[
+                    kw for kw in keywords if kw.lower() in str(title).lower()
+                ],
             )
             documents.append(doc)
 
+            # UUID が存在する場合は全文取得候補に追加（上位5件まで）
+            if uuid and len(fulltext_targets) < _MAX_FULLTEXT_FETCHES:
+                fulltext_targets.append((len(documents) - 1, uuid))
+
+        # 全文テキストエンリッチメント（キーワード指向抽出）
+        for idx, uuid in fulltext_targets:
+            self._rate_limit()
+            text = _fetch_plain_text(self._session, uuid, token=token)
+            if text:
+                extraction_kws = build_extraction_keywords(
+                    keywords, title=documents[idx].title
+                )
+                documents[idx].raw_text = extract_keyword_passages(text, extraction_kws)
+
         total_hits = int(nypl_response.get("numResults", 0))
-        return {"documents": documents, "total_hits": total_hits, "error": None}
-
-    except (requests.RequestException, json.JSONDecodeError, ValueError) as e:
-        return {"documents": [], "total_hits": 0, "error": f"NYPL API error: {e}"}
+        return ArchiveSearchResult(documents=documents, total_hits=total_hits)
 
 
-def _parse_year(date_str: str) -> Optional[str]:
-    if not date_str:
-        return None
-    import re
-    year_match = re.search(r"\b(1[5-9]\d{2}|20\d{2})\b", date_str)
-    if year_match:
-        return f"{year_match.group(1)}-01-01"
-    return date_str[:10] if len(date_str) > 10 else date_str
+# レジストリに自動登録
+_instance = NYPLSource()
+register_source(_instance)

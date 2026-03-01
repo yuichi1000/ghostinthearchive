@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "google-adk>=0.1.0",
+    "anthropic[vertex]>=0.43.0",
     "google-cloud-aiplatform>=1.60.0",
 
     "google-cloud-storage>=2.18.0",
@@ -16,7 +17,10 @@ dependencies = [
     "firebase-admin>=6.5.0",
     "Pillow>=10.0.0",
     "google-cloud-texttospeech>=2.16.0",
+    "google-cloud-translate>=3.15.0",
     "pydub>=0.25.1",
+    "litellm>=1.75.5",
+    "rembg[cpu]>=2.0.50",
 ]
 
 [project.optional-dependencies]
@@ -32,7 +36,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["mystery_agents*", "curator_agents*", "podcast_agents*", "shared*", "services*"]
+include = ["mystery_agents*", "curator_agents*", "podcast_agents*", "alchemist_agents*", "shared*", "services*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -58,12 +62,13 @@ ignore = ["E501"]
 "mystery_agents/cli.py" = ["E402"]
 "curator_agents/cli.py" = ["E402"]
 "podcast_agents/cli.py" = ["E402"]
+"alchemist_agents/cli.py" = ["E402"]
 "shared/firestore.py" = ["E402"]
 "mystery_agents/tools/illustrator_tools.py" = ["E402"]
 "tests/**" = ["E402"]
 
 [tool.coverage.run]
-source = ["mystery_agents", "curator_agents", "podcast_agents", "shared"]
+source = ["mystery_agents", "curator_agents", "podcast_agents", "alchemist_agents", "shared"]
 omit = ["*/tests/*", "*/__pycache__/*"]
 
 [tool.coverage.report]

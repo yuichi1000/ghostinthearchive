@@ -12,6 +12,24 @@ const TECH_STACK = [
 ] as const
 
 /**
+ * 一次資料提供元一覧（固有名詞のため翻訳不要）
+ * pending: true の項目は API 利用申請中
+ */
+const PRIMARY_SOURCES = [
+  // 米国
+  { label: "Library of Congress", href: "https://www.loc.gov/" },
+  { label: "NYPL Digital Collections", href: "https://digitalcollections.nypl.org/" },
+  // 欧州
+  { label: "Europeana", href: "https://www.europeana.eu/" },
+  { label: "Delpher (KB)", href: "https://www.delpher.nl/" },
+  // アジア太平洋
+  { label: "NDL Search", href: "https://ndlsearch.ndl.go.jp/" },
+  { label: "Trove", href: "https://trove.nla.gov.au/", pending: true },
+  // グローバル
+  { label: "Internet Archive", href: "https://archive.org/" },
+] as const
+
+/**
  * Footer ラベル（web-public から辞書を渡す用）
  * 未指定時は英語デフォルト
  */
@@ -20,17 +38,20 @@ interface FooterLabels {
   primarySources?: string
   technical?: string
   classification?: string
+  pendingApplication?: string
 }
 
 interface FooterProps {
   labels?: FooterLabels
+  siteLinks?: Array<{ label: string; href: string }>
 }
 
-export function Footer({ labels }: FooterProps) {
-  const description = labels?.description ?? "AI-powered excavation of historical mysteries and folkloric anomalies from public digital archives."
+export function Footer({ labels, siteLinks }: FooterProps) {
+  const description = labels?.description ?? "AI-driven analysis of the world's public digital archives — unearthing the Ghosts hiding in the gaps between records, archives, and disciplines."
   const primarySources = labels?.primarySources ?? "Primary Sources"
   const technical = labels?.technical ?? "Technical"
   const classification = labels?.classification ?? "Document Classification: PUBLIC RELEASE"
+  const pendingApplication = labels?.pendingApplication ?? "Application Pending"
 
   return (
     <footer className="border-t border-border/50 bg-card/50 mt-auto">
@@ -45,56 +66,41 @@ export function Footer({ labels }: FooterProps) {
             <p className="text-sm text-muted-foreground leading-relaxed">
               {description}
             </p>
+            {siteLinks && siteLinks.length > 0 && (
+              <nav className="flex gap-4">
+                {siteLinks.map(({ label, href }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    className="text-sm text-muted-foreground hover:text-gold transition-colors no-underline"
+                  >
+                    {label}
+                  </a>
+                ))}
+              </nav>
+            )}
           </div>
 
           {/* Sources */}
           <div className="space-y-4">
             <h3 className="text-sm font-mono uppercase tracking-wider text-parchment">{primarySources}</h3>
-            <ul className="space-y-2">
-              <li>
-                <a
-                  href="https://www.loc.gov/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-muted-foreground hover:text-gold transition-colors inline-flex items-center gap-1.5 no-underline"
-                >
-                  Library of Congress
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://dp.la/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-muted-foreground hover:text-gold transition-colors inline-flex items-center gap-1.5 no-underline"
-                >
-                  Digital Public Library of America
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://digitalcollections.nypl.org/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-muted-foreground hover:text-gold transition-colors inline-flex items-center gap-1.5 no-underline"
-                >
-                  New York Public Library
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://archive.org/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-muted-foreground hover:text-gold transition-colors inline-flex items-center gap-1.5 no-underline"
-                >
-                  Internet Archive
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </li>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+              {PRIMARY_SOURCES.map(({ label, href, ...rest }) => (
+                <li key={href}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-muted-foreground hover:text-gold transition-colors inline-flex items-center gap-1.5 no-underline"
+                  >
+                    {label}
+                    <ExternalLink className="w-3 h-3 shrink-0" />
+                  </a>
+                  {"pending" in rest && rest.pending && (
+                    <span className="ml-1 text-xs text-muted-foreground/60">({pendingApplication})</span>
+                  )}
+                </li>
+              ))}
             </ul>
           </div>
 

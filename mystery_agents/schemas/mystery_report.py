@@ -72,6 +72,57 @@ class HistoricalContext(BaseModel):
     )
 
 
+class SourceCoverage(BaseModel):
+    """ソースカバレッジ評価 — Polymath が行う調査範囲の自己評価。"""
+
+    apis_searched: List[str] = Field(
+        default_factory=list,
+        description="検索した API/アーカイブのリスト",
+    )
+    apis_with_results: List[str] = Field(
+        default_factory=list,
+        description="結果を返した API/アーカイブのリスト",
+    )
+    apis_without_results: List[str] = Field(
+        default_factory=list,
+        description="結果を返さなかった API/アーカイブのリスト",
+    )
+    known_undigitized_sources: List[str] = Field(
+        default_factory=list,
+        description="この時代・地域に存在するがデジタル化されていない既知のソース",
+    )
+    coverage_assessment: Optional[str] = Field(
+        None,
+        description="デジタル化範囲と調査限界に関する総合評価",
+    )
+
+
+class AcademicCoverage(BaseModel):
+    """学術論文カバレッジ — OpenAlex データに基づく学術界の分析。"""
+
+    papers_found: int = Field(0, description="関連論文の総数")
+    language_distribution: dict[str, int] = Field(
+        default_factory=dict,
+        description="言語別の論文数（例: {'en': 35, 'de': 5}）",
+    )
+    temporal_distribution: dict[str, int] = Field(
+        default_factory=dict,
+        description="時代別の論文数（例: {'pre-1950': 3, '1950-1999': 15, '2000-present': 24}）",
+    )
+    key_concepts: List[str] = Field(
+        default_factory=list,
+        description="頻出概念タグ上位5件",
+    )
+    identified_gaps: List[str] = Field(
+        default_factory=list,
+        description="Polymath が特定した学術的盲点",
+    )
+    consensus_vs_primary: Optional[str] = Field(
+        None,
+        description="学術的コンセンサスと一次資料の緊張関係",
+    )
+
+
 class AgentLogEntry(BaseModel):
     """パイプライン実行中の単一エージェントのログエントリ。"""
 
@@ -128,6 +179,18 @@ class MysteryReport(BaseModel):
     )
     confidence_level: ConfidenceLevel = Field(
         ..., description="Confidence level in the primary hypothesis"
+    )
+    source_coverage: Optional[SourceCoverage] = Field(
+        None,
+        description="ソースカバレッジ評価（検索範囲と限界の自己評価）",
+    )
+    academic_coverage: Optional[AcademicCoverage] = Field(
+        None,
+        description="学術論文カバレッジ（OpenAlex データに基づく）",
+    )
+    confidence_rationale: Optional[str] = Field(
+        None,
+        description="confidence_level 判定の根拠（なぜその水準か）",
     )
 
     historical_context: HistoricalContext = Field(

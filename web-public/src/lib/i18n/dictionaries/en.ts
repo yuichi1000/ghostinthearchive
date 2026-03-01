@@ -4,17 +4,17 @@ const dict: Dictionary = {
   hero: {
     badge: "AI-POWERED INVESTIGATION UNIT",
     title: "Ghost in the Archive",
-    subtitle: "Historical mysteries unearthed by autonomous AI agents",
+    subtitle: "Unearthing the Ghosts in the world's records — AI-driven discovery across history, folklore, anthropology, linguistics, and archival science",
     description:
-      "Uncovering forgotten anomalies, vanished persons, and unexplained events buried in the world's digital archives.",
+      "What the world's public records cannot explain — even after exhaustive analysis — that is the Ghost.",
   },
   disclosure: {
     title: "Operational Disclosure",
     notice: "NOTICE —",
     paragraph1:
-      "The investigative unit behind this archive is not human. It is an autonomous AI agent system built on Google Agent Development Kit (ADK), operating under codename GHOST IN THE ARCHIVE.",
+      "The investigative unit behind this archive is not human. It is an autonomous AI agent system built on Google Agent Development Kit (ADK), operating under codename GHOST IN THE ARCHIVE. It conducts interdisciplinary analysis across five academic fields: History, Folklore Studies, Cultural Anthropology, Linguistics, and Archival Science.",
     paragraph2:
-      "All source materials are retrieved exclusively from public digital archives — the Library of Congress, DPLA, NYPL, Internet Archive, and similar institutions. No classified information is used in any investigation. (We do not have clearance. We have not applied for clearance.)",
+      "All source materials are retrieved exclusively from public digital archives worldwide — national libraries, cultural heritage portals, and historical newspaper collections across multiple countries and languages. No classified information is used in any investigation. (We do not have clearance. We have not applied for clearance.)",
     paragraph3:
       "Be advised: AI agents are capable of presenting erroneous conclusions with remarkable confidence. Readers are encouraged to verify all claims independently. The archive makes no warranty, express or implied, regarding the accuracy of any paranormal, folkloric, or historical assertion contained herein.",
     footer: {
@@ -25,6 +25,7 @@ const dict: Dictionary = {
   },
   nav: {
     about: "About",
+    archive: "Archive",
   },
   home: {
     latestDiscoveries: "Latest Discoveries",
@@ -33,10 +34,84 @@ const dict: Dictionary = {
     noMysteriesDesc:
       "No published mysteries at this time. Check back for new discoveries.",
     classifiedRedacted: "Additional cases remain classified",
+    viewAllArticles: "View all case files",
+  },
+  archive: {
+    title: "Case Archive | Ghost in the Archive",
+    heading: "Case Archive",
+    description: "Complete index of all investigated anomalies, discrepancies, and unexplained phenomena unearthed from the world's public records.",
+    noArticles: "No case files have been published yet.",
+    filterActive: "Showing: {classification}",
+    clearFilter: "Show all",
+    page: "Page",
+    previous: "Previous",
+    next: "Next",
   },
   about: {
     title: "About | Ghost in the Archive",
     heading: "About This Archive",
+    concept: {
+      heading: "What is the Ghost?",
+      intro:
+        "The world's public digital archives hold billions of records — yet what they do not say may be more revealing than what they do. When analyzed across multiple archives and disciplines, contradictions emerge that no single record or field of study can explain alone. The inexplicable remainder that persists after exhaustive analysis — the presence felt in absence — that is the Ghost.",
+      principlesHeading: "This system operates on five principles:",
+      autonomousAgents: "Autonomous AI Agents",
+      autonomousAgentsDesc:
+        "Investigation without human bias or fatigue",
+      transparency: "Radical Transparency",
+      transparencyDesc:
+        "Every hypothesis built on, and verifiable through, public records alone",
+      crossDiscovery: "AI-Powered Cross-Discovery",
+      crossDiscoveryDesc:
+        "Anomalies visible only when records from different archives and disciplines are cross-referenced",
+      interdisciplinary: "Interdisciplinary Analysis",
+      interdisciplinaryDesc:
+        "Five academic fields: History, Folklore Studies, Cultural Anthropology, Linguistics, and Archival Science",
+      intellectualAwe: "Intellectual Awe",
+      intellectualAweDesc:
+        "The uncanny as a legitimate subject of scholarly inquiry, not sensationalism",
+      folklore:
+        "Folklore is not decoration. It is complementary evidence — the unofficial record that fills the silences left by official documentation.",
+    },
+    methodology: {
+      heading: "How We Investigate",
+      intro:
+        "Each investigation follows a six-step pipeline. Step 1 uses an AI agent to generate search keywords, which are then sent to archive APIs programmatically. Steps 2–3 are deterministic program operations — no AI interpretation is involved. Steps 4–6 use large language models (LLMs) for analysis, synthesis, and narrative generation.",
+      programLabel: "PROGRAM",
+      llmLabel: "LLM",
+      hybridLabel: "LLM + PROGRAM",
+      steps: {
+        search: {
+          title: "API Search",
+          description: "An AI agent analyzes the investigation theme and generates search keywords — both systematic terms for reproducibility and exploratory terms for broader discovery. These keywords are then sent programmatically to public digital archive APIs — Trove, NDL Search, NYPL Digital Collections, Chronicling America, Internet Archive, and Delpher — to retrieve metadata and catalog records.",
+        },
+        fulltext: {
+          title: "Full-text Retrieval",
+          description: "For each record returned, the system follows source URLs to retrieve the full text of primary documents. This is a mechanical fetch — no summarization or interpretation occurs.",
+        },
+        excerpt: {
+          title: "Excerpt Extraction",
+          description: "Relevant passages are extracted from retrieved documents using keyword matching and positional heuristics. The raw excerpts are preserved verbatim for downstream analysis.",
+        },
+        analysis: {
+          title: "Interdisciplinary Analysis",
+          description: "Language-specific Scholar agents analyze the collected documents through five academic lenses: History, Folklore Studies, Cultural Anthropology, Linguistics, and Archival Science. Each identifies contradictions, anomalies, and patterns within its assigned language group.",
+        },
+        debate: {
+          title: "Cross-Disciplinary Debate",
+          description: "Scholar agents engage in structured debate, challenging each other's findings and identifying discrepancies that no single analysis could surface.",
+        },
+        certification: {
+          title: "Ghost Certification",
+          description: "The Armchair Polymath synthesizes all analyses and debates, applying the three Ghost certification criteria: multiple independent sources, API-limitation exclusion, and reproducibility. The result is classified as Confirmed Ghost, Suspected Ghost, or Archival Echo.",
+        },
+      },
+    },
+    storytellers: {
+      heading: "Our Storytellers",
+      intro:
+        "Each article in this archive is written by a different AI language model — our storytellers. Different models bring different analytical perspectives to the same archival evidence.",
+    },
   },
   detail: {
     returnToArchive: "Return to Archive",
@@ -55,18 +130,81 @@ const dict: Dictionary = {
     storyAngles: "Story Angles",
     classificationNotice:
       "This case file represents AI-generated analysis of archival records. All sources should be independently verified.",
+    breadcrumbHome: "Home",
+    tableOfContents: "Table of Contents",
+    tocNarrative: "Narrative",
+    tocDiscrepancy: "Discovered Discrepancy",
+    tocEvidence: "Archival Evidence",
+    tocHypothesis: "Hypothesis",
+    tocHistoricalContext: "Historical Context",
+    relatedArticles: "Related Case Files",
+    storytoldBy: "Storytold by",
   },
   evidence: {
     source: "Source",
     view: "View",
     originalText: "Original text",
   },
+  classification: {
+    HIS: "History",
+    FLK: "Folklore",
+    ANT: "Anthropology",
+    OCC: "Occult",
+    URB: "Urban Legend",
+    CRM: "Crime",
+    REL: "Religion",
+    LOC: "Locus",
+    moreLocations: "+{count} more",
+  },
+  siteIntro: {
+    tagline: "AI-driven discovery of anomalies across archives and disciplines",
+    description:
+      "An autonomous AI agent system that analyzes the world's public digital archives through five academic disciplines — history, folklore, anthropology, linguistics, and archival science — surfacing contradictions that no single record or field of study can explain alone.",
+  },
+  classificationGuide: {
+    heading: "Classification Index",
+    descriptions: {
+      HIS: "Historical record discrepancies, missing persons, document gaps",
+      FLK: "Local traditions, oral folklore, folk beliefs",
+      ANT: "Rituals, social structures, cross-cultural contact",
+      OCC: "Unexplainable phenomena, supernatural events",
+      URB: "Modern rumors, contemporary ghost stories",
+      CRM: "Unsolved crimes, disappearances, mysterious deaths",
+      REL: "Religious taboos, curses, forbidden rites",
+      LOC: "Place-bound anomalies, haunted locations",
+    },
+  },
+  share: {
+    shareOnX: "Share on X",
+    shareOnFacebook: "Share on Facebook",
+    shareOnReddit: "Share on Reddit",
+    copyLink: "Copy link",
+    linkCopied: "Link copied!",
+    shareThisArticle: "Share this case file",
+  },
+  confidence: {
+    confirmedGhost: "Confirmed Ghost",
+    suspectedGhost: "Suspected Ghost",
+    archivalEcho: "Archival Echo",
+  },
+  sourceCoverage: {
+    heading: "Ghost Assessment",
+  },
+  seo: {
+    homeDescription: "An autonomous AI agent system analyzing the world's public digital archives through five academic disciplines — unearthing anomalies that no single record or field of study can explain.",
+    archiveDescription: "Complete index of all investigated anomalies, discrepancies, and unexplained phenomena unearthed from the world's public records.",
+    aboutDescription: "Learn about Ghost in the Archive — an autonomous AI investigation unit that analyzes the world's public digital archives across history, folklore, anthropology, linguistics, and archival science.",
+  },
   footer: {
     description:
-      "AI-powered investigation into historical mysteries and folkloric anomalies from public digital archives.",
+      "AI-driven analysis of the world's public digital archives — unearthing the Ghosts hiding in the gaps between records, archives, and disciplines.",
     primarySources: "Primary Sources",
     technical: "Technical",
     classification: "Classification:",
+    pendingApplication: "Application Pending",
+    home: "Home",
+    archive: "Archive",
+    about: "About",
   },
 };
 

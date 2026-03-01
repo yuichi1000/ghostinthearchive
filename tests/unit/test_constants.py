@@ -3,8 +3,9 @@
 from shared.constants import (
     ALLOWED_LANGUAGES,
     DEFAULT_SELECTED_LANGUAGES,
-    MAX_LANGUAGES,
+    FAILURE_MARKERS,
     TRANSLATION_LANGUAGES,
+    is_meaningful,
 )
 
 
@@ -15,31 +16,42 @@ class TestLanguageConstants:
         """翻訳対象言語に英語は含まれない（英語はソース言語）。"""
         assert "en" not in TRANSLATION_LANGUAGES
 
-    def test_translation_languages_includes_ja(self):
-        """翻訳対象言語に日本語が含まれる。"""
-        assert "ja" in TRANSLATION_LANGUAGES
+    def test_default_selected_languages_is_all(self):
+        """DEFAULT_SELECTED_LANGUAGES は全言語を含む。"""
+        assert set(DEFAULT_SELECTED_LANGUAGES) == ALLOWED_LANGUAGES
 
-    def test_translation_languages_overlap_with_allowed(self):
-        """翻訳対象言語のうち ja 以外は全て ALLOWED_LANGUAGES に含まれる。"""
-        non_ja = {lang for lang in TRANSLATION_LANGUAGES if lang != "ja"}
-        assert non_ja <= ALLOWED_LANGUAGES
-
-    def test_default_language_in_allowed(self):
-        """デフォルト言語は ALLOWED_LANGUAGES に含まれる。"""
-        for lang in DEFAULT_SELECTED_LANGUAGES:
-            assert lang in ALLOWED_LANGUAGES
+    def test_default_selected_languages_is_sorted(self):
+        """DEFAULT_SELECTED_LANGUAGES はソート済み。"""
+        assert DEFAULT_SELECTED_LANGUAGES == sorted(DEFAULT_SELECTED_LANGUAGES)
 
 
-class TestReexportConsistency:
-    """theme_analyzer_tools 経由の再エクスポートが shared.constants と一致するか。"""
+class TestIsMeaningful:
+    """is_meaningful() の仕様テスト。"""
 
-    def test_allowed_languages_matches(self):
-        from mystery_agents.tools.theme_analyzer_tools import (
-            ALLOWED_LANGUAGES as TAT_ALLOWED,
+    def test_empty_string_is_not_meaningful(self):
+        assert is_meaningful("") is False
+
+    def test_none_is_not_meaningful(self):
+        assert is_meaningful(None) is False
+
+    def test_failure_markers_at_start_are_not_meaningful(self):
+        """全失敗マーカーが先頭にある場合、無意味と判定する。"""
+        for marker in FAILURE_MARKERS:
+            assert is_meaningful(f"{marker}: details here") is False
+
+    def test_real_content_is_meaningful(self):
+        assert is_meaningful("The Bell Witch haunting of Adams, Tennessee...") is True
+
+    def test_trailing_failure_marker_is_still_meaningful(self):
+        """本文末尾に失敗マーカーがあっても、先頭が有意なら有意と判定する。"""
+        text = (
+            "**Document 1**\n"
+            "- **Title**: A history of Block Island\n"
+            "\n---\n\n"
+            "NO_DOCUMENTS_FOUND: No documents found."
         )
-        from mystery_agents.tools.theme_analyzer_tools import (
-            MAX_LANGUAGES as TAT_MAX,
-        )
+        assert is_meaningful(text) is True
 
-        assert TAT_ALLOWED is ALLOWED_LANGUAGES
-        assert TAT_MAX is MAX_LANGUAGES
+    def test_whitespace_before_failure_marker_is_not_meaningful(self):
+        """先頭に空白があっても失敗マーカーで始まれば無意味と判定する。"""
+        assert is_meaningful("  NO_DOCUMENTS_FOUND: nothing.") is False

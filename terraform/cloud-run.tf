@@ -225,6 +225,36 @@ resource "google_cloud_run_v2_service" "pipeline" {
       }
 
       env {
+        name = "OPENROUTER_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.openrouter_api_key.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "EUROPEANA_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.europeana_api_key.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "OPENALEX_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.openalex_api_key.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
         name  = "CLOUD_BUILD_TRIGGER_ID"
         value = google_cloudbuild_trigger.web_public.name
       }

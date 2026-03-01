@@ -11,6 +11,7 @@ Usage:
 """
 
 import asyncio
+import json
 import sys
 from pathlib import Path
 
@@ -18,7 +19,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-from .agent import podcast_script_commander
+from .agent import build_pipeline, SKIP_AUTHORS
 from .tools.firestore_tools import (
     load_mystery,
     create_podcast,
@@ -33,6 +34,58 @@ from shared.pipeline_run import create_pipeline_run
 
 
 PIPELINE_TIMEOUT_SECONDS = 1200  # 20分
+
+# Evidence 型フィールドのキー（人間可読テキスト整形用）
+_EVIDENCE_FIELDS = (
+    "source_title", "source_date", "source_type", "source_language",
+    "relevant_excerpt", "source_url", "location_context",
+)
+
+
+def _format_single_evidence(label: str, evidence: dict) -> str:
+    """単一の Evidence オブジェクトを人間可読テキストに整形する。"""
+    lines = [f"### {label}"]
+    for field in _EVIDENCE_FIELDS:
+        value = evidence.get(field)
+        if value:
+            lines.append(f"- {field}: {value}")
+    # フィールドが1つもなければ空文字を返す
+    return "\n".join(lines) if len(lines) > 1 else ""
+
+
+def _format_evidence_summary(mystery: dict) -> str:
+    """mystery ドキュメントの evidence フィールドを人間可読テキストに整形する。
+
+    Evidence A, Evidence B, Additional Evidence を統合し、
+    ScriptPlanner / Scriptwriter が証拠を直接引用できるテキストを生成する。
+    空の場合は空文字列を返す。
+    """
+    sections: list[str] = []
+
+    # Evidence A
+    ev_a = mystery.get("evidence_a")
+    if ev_a and isinstance(ev_a, dict):
+        text = _format_single_evidence("Evidence A", ev_a)
+        if text:
+            sections.append(text)
+
+    # Evidence B
+    ev_b = mystery.get("evidence_b")
+    if ev_b and isinstance(ev_b, dict):
+        text = _format_single_evidence("Evidence B", ev_b)
+        if text:
+            sections.append(text)
+
+    # Additional Evidence
+    additional = mystery.get("additional_evidence")
+    if additional and isinstance(additional, list):
+        for i, ev in enumerate(additional, 1):
+            if isinstance(ev, dict):
+                text = _format_single_evidence(f"Additional Evidence {i}", ev)
+                if text:
+                    sections.append(text)
+
+    return "\n\n".join(sections)
 
 
 async def generate_script(
@@ -103,12 +156,24 @@ async def generate_script(
     try:
         # Orchestrator 呼び出し
         result = await run_pipeline(
-            agent=podcast_script_commander,
+            agent=build_pipeline(),
             app_name="ghost_in_the_archive_podcast",
             user_message=f"以下のブログ記事からポッドキャストを作成してください: {title}",
             initial_state={
                 "creative_content": narrative_content,
+                "mystery_title": title,
                 "custom_instructions": custom_instructions,
+                # Polymath 統合分析テキスト（最も情報量が多い補助材料）
+                "mystery_report": mystery.get("mystery_report", ""),
+                # 証拠サマリー（evidence_a/b/additional を整形）
+                "evidence_summary": _format_evidence_summary(mystery),
+                # ナラティブフック・未解決の研究課題
+                "story_hooks": json.dumps(
+                    mystery.get("story_hooks", []), ensure_ascii=False,
+                ),
+                "research_questions": json.dumps(
+                    mystery.get("research_questions", []), ensure_ascii=False,
+                ),
                 # 後続エージェントの instruction プレースホルダー解決用に初期化
                 # ScriptPlanner/Scriptwriter が output_key で上書きする
                 "script_outline": "",
@@ -118,7 +183,7 @@ async def generate_script(
             run_type="podcast",
             timeout_seconds=PIPELINE_TIMEOUT_SECONDS,
             max_llm_calls=30,
-            skip_authors={"podcast_script_commander"},
+            skip_authors=SKIP_AUTHORS,
             sequential_agents={"script_planner", "scriptwriter", "podcast_translator_ja"},
             on_text=lambda text: print(text),
         )

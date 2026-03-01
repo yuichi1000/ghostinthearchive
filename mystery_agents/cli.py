@@ -5,7 +5,6 @@ The agent definition lives in mystery_agents/agent.py (ADK convention).
 """
 
 import asyncio
-import logging
 import sys
 from pathlib import Path
 
@@ -15,15 +14,13 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 from .agent import ghost_commander, SKIP_AUTHORS
+from shared.logging_config import setup_logging
 from shared.orchestrator import run_pipeline
 
-# プロジェクト全体のログを有効化（Publisher, Illustrator 等の既存ログが出力される）
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(name)s [%(levelname)s] %(message)s",
-)
+# プロジェクト全体のログを有効化（Cloud Run: JSON / ローカル: プレーンテキスト）
+setup_logging()
 
-PIPELINE_TIMEOUT_SECONDS = 1800  # 30 minutes
+PIPELINE_TIMEOUT_SECONDS = 2400  # 40 minutes
 
 
 async def investigate(query: str, *, run_id: str | None = None) -> str | None:

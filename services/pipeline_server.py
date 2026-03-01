@@ -1,4 +1,4 @@
-"""Pipeline Server - FastAPI HTTP wrapper for Blog/Podcast pipelines.
+"""Pipeline Server - FastAPI HTTP wrapper for Blog/Podcast/Design pipelines.
 
 Exposes the long-running pipelines as HTTP endpoints using a
 fire-and-forget pattern: each request creates a pipeline_run document,
@@ -17,6 +17,8 @@ Endpoints:
     POST /investigate              - Start blog creation pipeline
     POST /podcast/generate-script  - Start podcast script generation
     POST /podcast/generate-audio   - Start podcast audio generation
+    POST /design/generate          - Start design proposal generation
+    POST /design/render-assets     - Start design asset rendering
     GET  /health                   - Health check
 """
 
@@ -29,13 +31,12 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import uvicorn
 
+from shared.logging_config import setup_logging, suppress_health_check_logs
 from shared.pipeline_run import create_pipeline_run, error_pipeline_run
 
-# プロジェクト全体のログを有効化（Publisher, Illustrator 等の既存ログが出力される）
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(name)s [%(levelname)s] %(message)s",
-)
+# プロジェクト全体のログを有効化（Cloud Run: JSON / ローカル: プレーンテキスト）
+setup_logging()
+suppress_health_check_logs()
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ app = FastAPI()
 
 class InvestigateRequest(BaseModel):
     query: str
+    storyteller: str = "claude"
 
 
 class GenerateScriptRequest(BaseModel):
@@ -57,20 +59,32 @@ class GenerateAudioRequest(BaseModel):
     voice_name: str = "en-US-Chirp3-HD-Enceladus"
 
 
-async def _run_investigate(query: str, run_id: str) -> None:
+class GenerateDesignRequest(BaseModel):
+    mystery_id: str
+    custom_instructions: str = ""
+
+
+class RenderAssetsRequest(BaseModel):
+    design_id: str
+
+
+async def _run_investigate(query: str, run_id: str, storyteller: str = "claude") -> None:
     """Background task wrapper for the blog pipeline.
 
     CLI を経由せず Orchestrator を直接呼ぶことで、stdout ノイズを除去する。
     """
     try:
         from shared.orchestrator import run_pipeline
-        from mystery_agents.agent import ghost_commander, SKIP_AUTHORS
+        from mystery_agents.agent import ghost_commander, build_pipeline, SKIP_AUTHORS
+        from shared.model_config import DEFAULT_STORYTELLER
+
+        agent = build_pipeline(storyteller) if storyteller != DEFAULT_STORYTELLER else ghost_commander
 
         await run_pipeline(
-            agent=ghost_commander,
+            agent=agent,
             app_name="ghost_in_the_archive",
             user_message=query,
-            initial_state={"investigation_query": query},
+            initial_state={"investigation_query": query, "storyteller": storyteller},
             run_id=run_id,
             run_type="blog",
             skip_authors=SKIP_AUTHORS,
@@ -127,7 +141,7 @@ async def health():
 async def investigate_endpoint(body: InvestigateRequest):
     try:
         run_id = create_pipeline_run("blog", query=body.query)
-        asyncio.create_task(_run_investigate(body.query, run_id))
+        asyncio.create_task(_run_investigate(body.query, run_id, storyteller=body.storyteller))
         return JSONResponse(content={"status": "accepted", "run_id": run_id})
     except Exception as e:
         logger.exception("Failed to start blog pipeline: %s", e)
@@ -186,6 +200,103 @@ async def generate_audio_endpoint(body: GenerateAudioRequest):
         return JSONResponse(
             status_code=500,
             content={"error": "Failed to start podcast audio generation", "detail": str(e)},
+        )
+
+
+async def _run_generate_design(
+    mystery_id: str, custom_instructions: str, run_id: str, design_id: str
+) -> None:
+    """Background task wrapper for design proposal generation."""
+    try:
+        from alchemist_agents.cli import generate_design
+
+        await generate_design(
+            mystery_id, custom_instructions, run_id=run_id, design_id=design_id
+        )
+    except Exception as e:
+        logger.exception("Design generation failed: %s", e)
+        error_pipeline_run(run_id, str(e))
+        from alchemist_agents.tools.firestore_tools import set_design_status
+        set_design_status(design_id, "error", str(e))
+
+
+async def _run_render_assets(design_id: str, run_id: str) -> None:
+    """Background task wrapper for design asset rendering."""
+    try:
+        from alchemist_agents.cli import render_assets
+
+        await render_assets(design_id, run_id=run_id)
+    except Exception as e:
+        logger.exception("Design rendering failed: %s", e)
+        error_pipeline_run(run_id, str(e))
+        from alchemist_agents.tools.firestore_tools import set_design_status
+        set_design_status(design_id, "error", str(e))
+
+
+@app.post("/design/generate")
+async def generate_design_endpoint(body: GenerateDesignRequest):
+    """デザイン提案を生成（fire-and-forget）
+
+    design_id を同期的に作成してレスポンスに含める。
+    フロントエンドが即座に /designs/{design_id} に遷移できるようにする。
+    """
+    try:
+        from alchemist_agents.tools.firestore_tools import create_design
+
+        run_id = create_pipeline_run("design", mystery_id=body.mystery_id)
+        design_id = create_design(
+            body.mystery_id, body.custom_instructions, pipeline_run_id=run_id
+        )
+        asyncio.create_task(
+            _run_generate_design(
+                body.mystery_id, body.custom_instructions, run_id, design_id
+            )
+        )
+        return JSONResponse(
+            content={
+                "status": "accepted",
+                "run_id": run_id,
+                "design_id": design_id,
+            }
+        )
+    except Exception as e:
+        logger.exception("Failed to start design generation: %s", e)
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Failed to start design generation", "detail": str(e)},
+        )
+
+
+@app.post("/design/render-assets")
+async def render_assets_endpoint(body: RenderAssetsRequest):
+    """デザインアセットをレンダリング（fire-and-forget）"""
+    try:
+        from alchemist_agents.tools.firestore_tools import get_design
+
+        design = get_design(body.design_id)
+        if not design:
+            return JSONResponse(
+                status_code=404,
+                content={"error": f"Design '{body.design_id}' not found"},
+            )
+
+        mystery_id = design.get("mystery_id", "")
+        run_id = create_pipeline_run("design_render", mystery_id=mystery_id)
+        asyncio.create_task(
+            _run_render_assets(body.design_id, run_id)
+        )
+        return JSONResponse(
+            content={
+                "status": "accepted",
+                "run_id": run_id,
+                "design_id": body.design_id,
+            }
+        )
+    except Exception as e:
+        logger.exception("Failed to start design rendering: %s", e)
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Failed to start design rendering", "detail": str(e)},
         )
 
 

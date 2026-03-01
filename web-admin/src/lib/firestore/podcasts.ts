@@ -1,6 +1,6 @@
 /**
- * Podcasts Firestore 操作（管理者用）
- * podcasts コレクションの CRUD 操作
+ * Podcasts Firestore 読み取り操作（管理者用）
+ * 書き込み操作は Server Actions（@/actions/podcasts）に移行済み
  */
 
 import type { FirestorePodcast, PodcastScript } from "@ghost/shared/src/types/mystery"
@@ -93,22 +93,16 @@ export async function getPodcastsByMysteryId(
 }
 
 /**
- * 脚本を更新（編集後の保存）
+ * mystery_id → 最新 Podcast の Map を構築
+ * getAllPodcasts が updated_at desc で返すため、最初に見つかるものが最新
  */
-export async function updatePodcastScript(
-  podcastId: string,
-  script: PodcastScript
-): Promise<void> {
-  const { doc, updateDoc, Timestamp } = await import("firebase/firestore")
-  const { getFirestoreDb, COLLECTIONS } = await import("@ghost/shared/src/lib/firebase/config")
-
-  const db = getFirestoreDb()
-  const docRef = doc(db, COLLECTIONS.PODCASTS, podcastId)
-
-  await updateDoc(docRef, {
-    script,
-    updated_at: Timestamp.now(),
-  })
+export async function getPodcastsByMysteryIdMap(): Promise<Map<string, FirestorePodcast>> {
+  const podcasts = await getAllPodcasts(200)
+  const map = new Map<string, FirestorePodcast>()
+  for (const p of podcasts) {
+    if (!map.has(p.mystery_id)) map.set(p.mystery_id, p)
+  }
+  return map
 }
 
 export { docToPodcast }

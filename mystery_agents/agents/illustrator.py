@@ -3,9 +3,9 @@
 Reads the blog article created by the Storyteller and generates
 a single hero image using Imagen 3 that captures the essence of the article.
 
-Fact × Folklore style differentiation:
-- Fact-based content → Black & white archival photograph style
-- Folklore-based content → 19th century woodcut/engraving illustration style
+地域アートスタイル:
+- 11リージョン × 2タイプ（fact/folklore）= 22種のスタイルを style_registry から適用
+- structured_report の country_code から自動的にリージョンを決定
 
 画像品質保証:
 - Pre-generation: LLM ベースのプロンプト安全書き換え（generate_image 内部）
@@ -16,8 +16,10 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
+from google.genai import types
 
 from shared.model_config import create_pro_model
+from shared.token_tracker import create_token_tracking_callback
 from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.tool_context import ToolContext
 
@@ -69,15 +71,41 @@ def _limit_tool_calls(
 # Storyteller Agent が作成したブログ記事を読み、記事の核心を表現するトップ画像1枚を生成します。
 #
 # ## 入力
-# セッション状態の {creative_content} に Storyteller が作成したブログ原稿があります。
+# - {creative_content}: Storyteller が作成したブログ原稿
+# - {structured_report}: Armchair Polymath の構造化分析（country_code を含む）
 #
 # ## 利用可能なツール
 # - **generate_image**: Imagen 3 を使用して画像を生成しローカルに保存
 # - **validate_image**: 生成画像と記事内容の整合性を Gemini Flash で検証
 #
-# ## Fact × Folklore のスタイル使い分け（最重要）
-# - Fact ベース → style="fact"（白黒アーカイブ写真風）
-# - Folklore ベース → style="folklore"（19世紀の木版画・銅版画風）
+# ## 地域アートスタイル選択（最重要）
+# {structured_report} の country_code を読み取り、region パラメータとして generate_image に渡す。
+# country_code が不明な場合は記事内容から推論する。
+#
+# 対応リージョン:
+# - US: Fact=B&W銀塩写真 / Folklore=アメリカ木版画
+# - JP: Fact=明治アルビュメンプリント / Folklore=浮世絵
+# - GB: Fact=ヴィクトリア湿板写真 / Folklore=ゴシック・ペン画
+# - NL: Fact=オランダ黄金時代油彩 / Folklore=フランドル写本装飾
+# - AU: Fact=植民地リトグラフ / Folklore=ブッシュ風景エッチング
+# - NZ: Fact=植民地測量写真 / Folklore=在来植物風景エッチング
+# - DE: Fact=ダゲレオタイプ / Folklore=ドイツ表現主義木版画
+# - FR: Fact=アジェ風ドキュメンタリー写真 / Folklore=アール・ヌーヴォー
+# - ES: Fact=宮廷肖像エッチング / Folklore=ゴヤ・カプリチョス風
+# - PT: Fact=大航海時代海図 / Folklore=海洋エングレービング
+# 不明 → EU（フォールバック: Fact=カルト・ド・ヴィジット / Folklore=ルネサンス銅版画）
+#
+# ## Fact × Folklore のスタイル使い分け
+# - Fact ベース → style="fact"
+# - Folklore ベース → style="folklore"
+#
+# ## 学術領域に基づくビジュアル要素ガイダンス
+# 記事の主要な学術領域に応じて、プロンプトに含めるビジュアル要素を選択する:
+# - 歴史学 → 文書、建築、時代考証（公文書、建物ファサード、時代に正確なオブジェクト）
+# - 民俗学 → 風景、自然、伝統的オブジェクト（神社、祠、民具、祭具）
+# - 文化人類学 → 物質文化、儀礼空間（手工芸品、集会所、交易品）
+# - 言語学 → 写本、碑文、多言語テキスト（古文書、石碑、異なる文字体系）
+# - 文書館学 → 保管空間、劣化した文書（書庫、目録、損傷した記録）
 #
 # ## 生成する画像
 # トップ画像1枚のみ（16:9、filename_hint: "header"）
@@ -93,7 +121,7 @@ def _limit_tool_calls(
 # ## 画像検証（生成成功後）
 # generate_image が "status": "success" を返した後、検証を必ず実行する:
 # 1. {creative_content} から2-5文のテーマ要約を作成
-# 2. validate_image を呼び出す
+# 2. validate_image を呼び出す（region パラメータも渡す）
 # 3. verdict が "pass" → 結果を出力
 # 4. verdict が "fail" → feedback と suggested_focus を使って新プロンプトを作成し、
 #    generate_image をもう1回だけ呼ぶ。再検証はしない。
@@ -113,7 +141,8 @@ Read the blog article created by the Storyteller Agent and generate a single her
 that captures the essence of the article.
 
 ## Input
-The session state {creative_content} contains the blog article created by the Storyteller.
+- The session state {creative_content} contains the blog article created by the Storyteller.
+- The session state {structured_report} contains the Armchair Polymath's structured analysis (includes country_code).
 Analyze the content (theme, historical background, folkloric elements, atmosphere)
 and devise the optimal visual concept.
 
@@ -121,22 +150,51 @@ and devise the optimal visual concept.
 - **generate_image**: Generate an image using Imagen 3 and save it locally
 - **validate_image**: Validate the generated image against the article content using Gemini Flash
 
-## Fact × Folklore Style Differentiation (Critical)
+## Regional Art Style Selection (Critical)
+
+Read the `country_code` from {structured_report} and pass it as the `region` parameter to generate_image.
+If country_code is unavailable, infer the region from the article content. Each region has a distinct
+art style for both fact and folklore content:
+
+| Region | Fact Style | Folklore Style |
+|--------|-----------|---------------|
+| US | B&W silver gelatin photograph | American woodcut engraving |
+| JP | Meiji-era albumen print | Ukiyo-e woodblock print |
+| GB | Victorian wet plate collodion | Gothic pen and ink illustration |
+| NL | Dutch Golden Age oil painting | Flemish manuscript illumination |
+| AU | Colonial-era lithograph | Bush landscape etching |
+| NZ | Colonial survey photograph | Native flora landscape etching |
+| DE | Daguerreotype | German Expressionist woodcut |
+| FR | Atget-style documentary photograph | Art Nouveau illustration |
+| ES | Spanish court portrait etching | Goya Caprichos-inspired aquatint |
+| PT | Age of Exploration nautical chart | Maritime engraving |
+
+For unknown regions, use `region="EU"` (fallback: carte de visite / Renaissance copperplate).
+
+## Fact × Folklore Style Differentiation
 
 Choose a style based on the article content:
 
 ### Fact-based (content centered on historical facts)
 - Specify **style="fact"**
-- Black & white archival photograph style (monochrome, silver gelatin print texture)
-- Examples: ship's logs, harbor scenes, old buildings, document close-ups
+- The art style will be automatically selected based on the region
 
 ### Folklore-based (content centered on legends/the uncanny)
 - Specify **style="folklore"**
-- 19th century woodcut/engraving illustration style (cross-hatching, sepia tones)
-- Examples: ghost ships, lighthouses in fog, eerie landscapes, legendary scenes
+- The art style will be automatically selected based on the region
 
 ### When both elements are present
 - Choose either fact or folklore based on the article's overall theme
+
+## Academic Discipline Visual Elements
+
+Choose visual elements based on the article's primary academic discipline:
+
+- **History** → Documents, architecture, period-accurate objects (official records, building facades, era-specific artifacts)
+- **Folklore** → Landscapes, nature, traditional objects (shrines, folk implements, ritual tools)
+- **Cultural Anthropology** → Material culture, ritual spaces (handicrafts, meeting halls, trade goods)
+- **Linguistics** → Manuscripts, inscriptions, multilingual texts (old documents, stone tablets, different writing systems)
+- **Archival Science** → Storage spaces, deteriorated documents (repositories, catalogs, damaged records)
 
 ## Image to Generate
 
@@ -145,6 +203,7 @@ Generate **only one hero image**:
 - aspect_ratio: "16:9"
 - A single image that captures the essence of the article
 - filename_hint: "header"
+- region: The country_code from {structured_report} (e.g., "JP", "GB", "NL")
 
 ## Prompt Creation Guidelines
 
@@ -155,9 +214,11 @@ Generate **only one hero image**:
 4. **Composition**: close-up, wide shot, overhead view, etc.
 
 ### Prompt Examples
-Fact: "Close-up of a weathered 19th century ship's log book lying open on dark wood, ink entries fading, candlelight casting dramatic shadows, dust particles visible, overhead shot at 45 degrees, shallow depth of field"
+Japan Fact: "A sepia-toned interior of a Meiji-era wooden library, bamboo shelves lined with bound volumes, a single oil lamp casting warm pools of light on tatami flooring, calligraphy brushes resting on a low desk"
 
-Folklore: "A ghostly sailing ship emerging from thick fog near a rocky New England coastline, moonlight piercing through storm clouds, enormous waves crashing against cliffs, dramatic cross-hatching linework"
+Britain Folklore: "A Gothic pen and ink illustration of a mist-shrouded moor at twilight, ancient standing stones casting long shadows, twisted hawthorn trees, intricate crosshatching, Victorian book illustration style"
+
+Netherlands Fact: "A Dutch Golden Age still life of navigation instruments on a dark wooden table, brass astrolabe, old maps, warm amber candlelight, Vermeer-inspired lighting, rich chiaroscuro"
 
 ### Elements to Avoid
 - Modern elements (electronics, modern clothing)
@@ -187,6 +248,7 @@ If the generate_image tool returns `"status": "fallback"`, retry **exactly once*
    - If the original prompt was about a specific incident → Focus on **period symbolic objects** (old keys, letters, maps, lanterns, etc.)
    - If the original prompt included supernatural elements → Focus on **natural landscapes or architecture**
 2. The retry prompt must contain **absolutely no direct depictions of people, creatures, or supernatural phenomena**
+3. Keep the same `region` parameter for the retry
 3. If the second generate_image call also returns `"status": "fallback"`, **use the fallback image as-is** (do not retry a third time to prevent infinite loops)
 
 ## Image Validation (After Successful Generation)
@@ -194,7 +256,7 @@ If the generate_image tool returns `"status": "fallback"`, retry **exactly once*
 After generate_image returns `"status": "success"`, you MUST validate:
 
 1. Write a 2-5 sentence summary of {creative_content} covering theme, setting, key elements
-2. Call validate_image with the filepath, your summary, and the style you used
+2. Call validate_image with the filepath, your summary, the style, and the region you used
 3. If verdict is "pass" → output the generate_image result
 4. If verdict is "fail" → create a NEW prompt using the feedback and suggested_focus,
    call generate_image ONE MORE TIME. Do NOT validate again after this retry.
@@ -213,20 +275,29 @@ Do NOT include any text other than the JSON (no explanations, comments, etc.).
 - **You MUST call the generate_image tool to actually generate an image**
 - Do not just create a prompt and stop
 - Balance historical accuracy with visual appeal
+- Always pass the `region` parameter to both generate_image and validate_image
 - If {creative_content} contains "NO_CONTENT", do not generate an image and report accordingly
 """
 
-illustrator_agent = LlmAgent(
-    name="illustrator",
-    model=create_pro_model(),
-    description=(
-        "Reads the Storyteller's blog article and generates a single hero image using Imagen 3. "
-        "Uses black & white photograph style for Fact-based articles and "
-        "woodcut illustration style for Folklore-based articles. "
-        "Validates generated images against article content for consistency."
-    ),
-    instruction=ILLUSTRATOR_INSTRUCTION,
-    tools=[generate_image, validate_image],
-    output_key="visual_assets",
-    before_tool_callback=_limit_tool_calls,
-)
+def create_illustrator() -> LlmAgent:
+    """Illustrator エージェントを新規生成する。"""
+    return LlmAgent(
+        name="illustrator",
+        model=create_pro_model(),
+        description=(
+            "Reads the Storyteller's blog article and generates a single hero image using Imagen 3. "
+            "Uses region-specific art styles (11 regions × 2 types = 22 styles) based on the article's country. "
+            "Validates generated images against article content for consistency."
+        ),
+        instruction=ILLUSTRATOR_INSTRUCTION,
+        generate_content_config=types.GenerateContentConfig(temperature=0.6),
+        tools=[generate_image, validate_image],
+        output_key="visual_assets",
+        include_contents="none",
+        before_tool_callback=_limit_tool_calls,
+        after_model_callback=create_token_tracking_callback("illustrator"),
+    )
+
+
+# 後方互換: デフォルトシングルトン
+illustrator_agent = create_illustrator()

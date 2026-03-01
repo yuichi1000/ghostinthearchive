@@ -16,18 +16,20 @@ class SourceLanguage(str, Enum):
     FR = "fr"
     NL = "nl"
     PT = "pt"
+    JA = "ja"
 
 
 class SourceType(str, Enum):
     """Type of archive source."""
 
     NEWSPAPER = "newspaper"
-    LOC_DIGITAL = "loc_digital"
-    DPLA = "dpla"
     NYPL = "nypl"
-    PARES = "pares"
     INTERNET_ARCHIVE = "internet_archive"
-    DDB = "ddb"
+    EUROPEANA = "europeana"
+    TROVE = "trove"
+    DELPHER = "delpher"
+    NDL = "ndl"
+    CHRONICLING_AMERICA = "chronicling_america"
 
 
 class ArchiveDocument(BaseModel):
@@ -40,10 +42,12 @@ class ArchiveDocument(BaseModel):
     date: Optional[str] = Field(None, description="ISO date string (YYYY-MM-DD)")
     source_url: str = Field(..., description="URL to the original source")
     summary: str = Field(..., description="Brief summary of the document content")
-    language: SourceLanguage = Field(..., description="Primary language: en, es, de, fr, nl, or pt")
+    language: str = Field(..., description="Primary language as ISO 639-1 code (e.g. en, de, ja)")
     location: str = Field(..., description="Physical location or origin")
-    source_type: SourceType = Field(..., description="Source API type")
+    source_type: str = Field(..., description="Source API type (e.g. 'loc_digital', 'dpla')")
     raw_text: Optional[str] = Field(None, description="Full OCR or text content")
+    thumbnail_url: Optional[str] = Field(None, description="Thumbnail image URL from the archive")
+    image_url: Optional[str] = Field(None, description="Full-resolution image URL from the archive")
     record_group: Optional[str] = Field(None, description="Record Group ID")
     keywords_matched: List[str] = Field(
         default_factory=list, description="Keywords that matched this document"

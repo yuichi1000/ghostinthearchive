@@ -8,9 +8,13 @@
 - create_retry_session(): 一時的なエラー（429, 5xx）に対する自動リトライ
 """
 
+import logging
+
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+logger = logging.getLogger(__name__)
 
 
 def create_retry_session(
@@ -43,5 +47,10 @@ def create_retry_session(
     session = requests.Session()
     session.mount("https://", adapter)
     session.mount("http://", adapter)
+
+    logger.debug(
+        "リトライセッション作成: retries=%d, backoff=%.1f, status=%s",
+        retries, backoff_factor, status_forcelist,
+    )
 
     return session

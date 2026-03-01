@@ -1,14 +1,17 @@
 """Mystery ID schema and classification codes.
 
 Defines the naming convention for mystery article IDs:
-    {Classification}-{StateCode}-{AreaCode}-{Timestamp}
-    Example: OCC-MA-617-20260207143025
+    {Classification}-{CountryISO2}-{RegionIATA}-{Timestamp}
+    Example: OCC-US-BOS-20260207143025
 
 References:
 - Classification: Project-specific 3-letter codes
-- State Code: USPS/ISO 3166-2:US standard (2 letters)
-- Area Code: US telephone area codes (3 digits)
+- Country Code: ISO 3166-1 alpha-2 standard (2 letters)
+- Region Code: IATA airport code or abbreviation (3-5 uppercase letters)
 - Timestamp: UTC datetime as YYYYMMDDHHMMSS
+
+Note: v1 形式（{CLS}-{StateCode}-{AreaCode3digits}-{Timestamp}, 例: OCC-MA-617-...）は
+廃止済み。既存 ID は Firestore に後方互換として残るが、新規生成は v2 のみ。
 """
 
 from enum import Enum
@@ -56,54 +59,111 @@ CLASSIFICATION_DESCRIPTIONS_EN = {
 }
 
 
-# Common US area codes by city (reference for agents)
-# Format: "CITY_NAME": ("STATE_CODE", "AREA_CODE")
-AREA_CODES = {
-    # Northeast
-    "BOSTON": ("MA", "617"),
-    "CAMBRIDGE": ("MA", "617"),
-    "SALEM": ("MA", "978"),
-    "NEW_YORK": ("NY", "212"),
-    "MANHATTAN": ("NY", "212"),
-    "BROOKLYN": ("NY", "718"),
-    "PHILADELPHIA": ("PA", "215"),
-    "PITTSBURGH": ("PA", "412"),
-    "PROVIDENCE": ("RI", "401"),
-    "HARTFORD": ("CT", "860"),
-    # Southeast
-    "WASHINGTON_DC": ("DC", "202"),
-    "BALTIMORE": ("MD", "410"),
-    "RICHMOND": ("VA", "804"),
-    "CHARLESTON": ("SC", "843"),
-    "SAVANNAH": ("GA", "912"),
-    "ATLANTA": ("GA", "404"),
-    "NEW_ORLEANS": ("LA", "504"),
-    "MIAMI": ("FL", "305"),
-    # Midwest
-    "CHICAGO": ("IL", "312"),
-    "DETROIT": ("MI", "313"),
-    "CLEVELAND": ("OH", "216"),
-    "CINCINNATI": ("OH", "513"),
-    "ST_LOUIS": ("MO", "314"),
-    "MILWAUKEE": ("WI", "414"),
-    "MINNEAPOLIS": ("MN", "612"),
-    # Southwest
-    "DALLAS": ("TX", "214"),
-    "HOUSTON": ("TX", "713"),
-    "SAN_ANTONIO": ("TX", "210"),
-    "AUSTIN": ("TX", "512"),
-    "PHOENIX": ("AZ", "602"),
-    "ALBUQUERQUE": ("NM", "505"),
-    "DENVER": ("CO", "303"),
-    # West Coast
-    "LOS_ANGELES": ("CA", "213"),
-    "SAN_FRANCISCO": ("CA", "415"),
-    "SAN_DIEGO": ("CA", "619"),
-    "SEATTLE": ("WA", "206"),
-    "PORTLAND": ("OR", "503"),
-    # Pacific
-    "HONOLULU": ("HI", "808"),
-    "ANCHORAGE": ("AK", "907"),
+# 国際都市の地域コード
+# Format: "CITY_NAME": ("COUNTRY_ISO2", "IATA_CODE")
+REGION_CODES = {
+    # United States
+    "BOSTON": ("US", "BOS"),
+    "CAMBRIDGE": ("US", "BOS"),
+    "SALEM": ("US", "BOS"),
+    "NEW_YORK": ("US", "JFK"),
+    "MANHATTAN": ("US", "JFK"),
+    "BROOKLYN": ("US", "JFK"),
+    "PHILADELPHIA": ("US", "PHL"),
+    "PITTSBURGH": ("US", "PIT"),
+    "PROVIDENCE": ("US", "PVD"),
+    "HARTFORD": ("US", "BDL"),
+    "WASHINGTON_DC": ("US", "IAD"),
+    "BALTIMORE": ("US", "BWI"),
+    "RICHMOND": ("US", "RIC"),
+    "CHARLESTON": ("US", "CHS"),
+    "SAVANNAH": ("US", "SAV"),
+    "ATLANTA": ("US", "ATL"),
+    "NEW_ORLEANS": ("US", "MSY"),
+    "MIAMI": ("US", "MIA"),
+    "CHICAGO": ("US", "ORD"),
+    "DETROIT": ("US", "DTW"),
+    "CLEVELAND": ("US", "CLE"),
+    "CINCINNATI": ("US", "CVG"),
+    "ST_LOUIS": ("US", "STL"),
+    "MILWAUKEE": ("US", "MKE"),
+    "MINNEAPOLIS": ("US", "MSP"),
+    "DALLAS": ("US", "DFW"),
+    "HOUSTON": ("US", "IAH"),
+    "SAN_ANTONIO": ("US", "SAT"),
+    "AUSTIN": ("US", "AUS"),
+    "PHOENIX": ("US", "PHX"),
+    "ALBUQUERQUE": ("US", "ABQ"),
+    "DENVER": ("US", "DEN"),
+    "LOS_ANGELES": ("US", "LAX"),
+    "SAN_FRANCISCO": ("US", "SFO"),
+    "SAN_DIEGO": ("US", "SAN"),
+    "SEATTLE": ("US", "SEA"),
+    "PORTLAND": ("US", "PDX"),
+    "HONOLULU": ("US", "HNL"),
+    "ANCHORAGE": ("US", "ANC"),
+    # United Kingdom / Ireland
+    "LONDON": ("GB", "LHR"),
+    "EDINBURGH": ("GB", "EDI"),
+    "GLASGOW": ("GB", "GLA"),
+    "DUBLIN": ("IE", "DUB"),
+    "MANCHESTER": ("GB", "MAN"),
+    "LIVERPOOL": ("GB", "LPL"),
+    "OXFORD": ("GB", "OXF"),
+    "CAMBRIDGE_UK": ("GB", "CBG"),
+    # Germany / Austria / Switzerland
+    "BERLIN": ("DE", "BER"),
+    "MUNICH": ("DE", "MUC"),
+    "HAMBURG": ("DE", "HAM"),
+    "COLOGNE": ("DE", "CGN"),
+    "FRANKFURT": ("DE", "FRA"),
+    "VIENNA": ("AT", "VIE"),
+    "ZURICH": ("CH", "ZRH"),
+    "HEIDELBERG": ("DE", "FRA"),
+    # Spain
+    "MADRID": ("ES", "MAD"),
+    "BARCELONA": ("ES", "BCN"),
+    "SEVILLE": ("ES", "SVQ"),
+    "TOLEDO": ("ES", "MAD"),
+    # France / Belgium
+    "PARIS": ("FR", "CDG"),
+    "LYON": ("FR", "LYS"),
+    "MARSEILLE": ("FR", "MRS"),
+    "BRUSSELS": ("BE", "BRU"),
+    "STRASBOURG": ("FR", "SXB"),
+    # Netherlands
+    "AMSTERDAM": ("NL", "AMS"),
+    "ROTTERDAM": ("NL", "RTM"),
+    "THE_HAGUE": ("NL", "AMS"),
+    "LEIDEN": ("NL", "AMS"),
+    # Portugal / Brazil
+    "LISBON": ("PT", "LIS"),
+    "PORTO": ("PT", "OPO"),
+    "RIO_DE_JANEIRO": ("BR", "GIG"),
+    "SAO_PAULO": ("BR", "GRU"),
+    "SALVADOR": ("BR", "SSA"),
+    # Japan
+    "TOKYO": ("JP", "NRT"),
+    "KYOTO": ("JP", "KIX"),
+    "OSAKA": ("JP", "KIX"),
+    "NARA": ("JP", "KIX"),
+    # Other
+    "CAIRO": ("EG", "CAI"),
+    "ISTANBUL": ("TR", "IST"),
+    "ROME": ("IT", "FCO"),
+    "FLORENCE": ("IT", "FLR"),
+    "VENICE": ("IT", "VCE"),
+    "ATHENS": ("GR", "ATH"),
+    "MEXICO_CITY": ("MX", "MEX"),
+    "LIMA": ("PE", "LIM"),
+    "BUENOS_AIRES": ("AR", "EZE"),
+    "HAVANA": ("CU", "HAV"),
+    "MUMBAI": ("IN", "BOM"),
+    "BEIJING": ("CN", "PEK"),
+    "SYDNEY": ("AU", "SYD"),
+    "CAPE_TOWN": ("ZA", "CPT"),
+    "NAIROBI": ("KE", "NBO"),
+    "MARRAKECH": ("MA", "RAK"),
 }
 
 
@@ -116,28 +176,30 @@ def validate_mystery_id(mystery_id: str) -> bool:
     Returns:
         True if valid format, False otherwise.
 
-    Expected format: {CLS}-{ST}-{AREA}-{YYYYMMDDHHMMSS}
-    Example: OCC-MA-617-20260207143025
+    Expected format: {CLS}-{CC}-{REGION}-{YYYYMMDDHHMMSS}
+    Example: OCC-US-BOS-20260207143025
     """
     parts = mystery_id.split("-")
     if len(parts) != 4:
         return False
 
-    classification, state, area, timestamp = parts
+    classification, country, region, timestamp = parts
 
-    # Validate classification (3 uppercase letters)
+    # 分類コード（3文字大文字）
     if len(classification) != 3 or not classification.isupper():
         return False
 
-    # Validate state code (2 uppercase letters)
-    if len(state) != 2 or not state.isupper():
+    # 国コード（2文字大文字）
+    if len(country) != 2 or not country.isupper():
         return False
 
-    # Validate area code (3 digits)
-    if len(area) != 3 or not area.isdigit():
+    # 地域コード（3-5文字大文字アルファベット）
+    if not region.isalpha() or not region.isupper():
+        return False
+    if not (3 <= len(region) <= 5):
         return False
 
-    # Validate timestamp (14 digits)
+    # タイムスタンプ（14桁数字）
     if len(timestamp) != 14 or not timestamp.isdigit():
         return False
 
@@ -151,7 +213,8 @@ def parse_mystery_id(mystery_id: str) -> dict | None:
         mystery_id: ID string to parse.
 
     Returns:
-        Dictionary with classification, state, area, timestamp, or None if invalid.
+        Dictionary with classification, country_code, region_code, timestamp,
+        or None if invalid.
     """
     if not validate_mystery_id(mystery_id):
         return None
@@ -159,7 +222,7 @@ def parse_mystery_id(mystery_id: str) -> dict | None:
     parts = mystery_id.split("-")
     return {
         "classification": parts[0],
-        "state": parts[1],
-        "area": parts[2],
+        "country_code": parts[1],
+        "region_code": parts[2],
         "timestamp": parts[3],
     }

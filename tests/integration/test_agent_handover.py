@@ -2,21 +2,34 @@
 
 Tests verify that session state is correctly passed between agents
 in the multilingual pipeline:
-  ThemeAnalyzer → ParallelLibrarians → ParallelScholars → DebateLoop
+  ParallelAPILibrarians → Aggregator → DynamicScholarBlock(analysis+debate)
     → ArmchairPolymath → Storyteller → Illustrator → Translator → Publisher
 """
+
+from shared.state_registry import STATE_KEYS
+
+
+def _registry_output_keys() -> set[str]:
+    """STATE_KEYS から output_key（LLM エージェントの output_key）として
+    使用されるキー名パターンを抽出する。{lang} テンプレートは除外。"""
+    return {
+        sk.name for sk in STATE_KEYS
+        if "{lang}" not in sk.name
+        and any("tools" not in w for w in sk.written_by)
+    }
 
 
 class TestSessionStateKeys:
     """Tests for session state key conventions."""
 
-    def test_librarian_output_keys(self):
-        """Language-specific Librarian agents should use 'collected_documents_{lang}' output keys."""
-        from mystery_agents.agents.language_librarians import create_all_librarians
+    def test_api_librarian_output_keys(self):
+        """API-based Librarian agents should use 'collected_documents_{api_key}' output keys."""
+        from mystery_agents.agents.api_librarians import API_CONFIGS, create_all_api_librarians
 
-        librarians = create_all_librarians()
-        for lang, agent in librarians.items():
-            assert agent.output_key == f"collected_documents_{lang}"
+        librarians = create_all_api_librarians()
+        expected_keys = [f"collected_documents_{key}" for key in API_CONFIGS]
+        actual_keys = [agent.output_key for agent in librarians]
+        assert sorted(actual_keys) == sorted(expected_keys)
 
     def test_scholar_output_keys(self):
         """Language-specific Scholar agents should use 'scholar_analysis_{lang}' output keys."""
@@ -38,11 +51,31 @@ class TestSessionStateKeys:
 
         assert illustrator_agent.output_key == "visual_assets"
 
-    def test_publisher_output_key(self):
-        """Publisher agent should use 'published_episode' output key."""
+    def test_publisher_is_custom_agent(self):
+        """Publisher agent should be a Custom Agent (BaseAgent) named 'publisher'."""
         from mystery_agents.agents.publisher import publisher_agent
 
-        assert publisher_agent.output_key == "published_episode"
+        # MagicMock 環境では .name がモックになるため repr で検証
+        assert "publisher" in repr(publisher_agent)
+
+
+    def test_output_keys_registered_in_state_registry(self):
+        """主要 output_key が state_registry に登録されていること。"""
+        registry_names = {sk.name for sk in STATE_KEYS}
+
+        # テンプレート展開なしで存在を確認するキー
+        expected = {"creative_content", "visual_assets", "mystery_report", "published_episode"}
+        for key in expected:
+            assert key in registry_names, (
+                f"output_key '{key}' が state_registry に未登録"
+            )
+
+        # テンプレートパターンで存在を確認するキー
+        template_keys = {"collected_documents_{lang}", "scholar_analysis_{lang}", "translation_result_{lang}"}
+        for key in template_keys:
+            assert key in registry_names, (
+                f"output_key pattern '{key}' が state_registry に未登録"
+            )
 
 
 class TestPodcastSessionStateKeys:
@@ -54,32 +87,11 @@ class TestPodcastSessionStateKeys:
 
         assert scriptwriter_agent.output_key == "podcast_script"
 
-    def test_producer_output_key(self):
-        """Producer agent should use 'audio_assets' output key."""
-        from podcast_agents.agents.producer import producer_agent
+    def test_script_planner_output_key(self):
+        """ScriptPlanner agent should use 'script_outline' output key."""
+        from podcast_agents.agents.script_planner import script_planner_agent
 
-        assert producer_agent.output_key == "audio_assets"
-
-
-class TestFailureMarkers:
-    """Tests for failure marker propagation between agents."""
-
-    def test_no_documents_found_marker_format(self):
-        """NO_DOCUMENTS_FOUND marker should follow expected format."""
-        marker = "NO_DOCUMENTS_FOUND"
-        assert marker.isupper()
-        assert "_" in marker
-
-    def test_insufficient_data_marker_format(self):
-        """INSUFFICIENT_DATA marker should follow expected format."""
-        marker = "INSUFFICIENT_DATA"
-        assert marker.isupper()
-        assert "_" in marker
-
-    def test_no_content_marker_format(self):
-        """NO_CONTENT marker should follow expected format."""
-        marker = "NO_CONTENT"
-        assert marker.isupper()
+        assert script_planner_agent.output_key == "script_outline"
 
 
 class TestInstructionPlaceholders:
@@ -91,15 +103,6 @@ class TestInstructionPlaceholders:
 
         scholar_en = create_scholar("en")
         assert "{collected_documents_en}" in scholar_en.instruction
-
-    def test_armchair_polymath_references_analyses(self):
-        """ArmchairPolymath should reference all scholar_analysis keys."""
-        from mystery_agents.agents.armchair_polymath import armchair_polymath_agent
-
-        instruction = armchair_polymath_agent.instruction
-        assert "{scholar_analysis_en}" in instruction
-        assert "{scholar_analysis_de}" in instruction
-        assert "{scholar_analysis_es}" in instruction
 
     def test_armchair_polymath_references_whiteboard(self):
         """ArmchairPolymath should reference {debate_whiteboard}."""
@@ -119,14 +122,13 @@ class TestInstructionPlaceholders:
 
         assert "{creative_content}" in illustrator_agent.instruction
 
-    def test_publisher_references_required_keys(self):
-        """Publisher instruction should reference all required session state keys."""
+    def test_publisher_has_no_instruction(self):
+        """Publisher Custom Agent は LLM を使わないため instruction を持たない。"""
         from mystery_agents.agents.publisher import publisher_agent
 
-        instruction = publisher_agent.instruction
-        assert "{mystery_report}" in instruction
-        assert "{creative_content}" in instruction
-        assert "{visual_assets}" in instruction
+        assert not hasattr(publisher_agent, "instruction") or not isinstance(
+            getattr(publisher_agent, "instruction", None), str
+        )
 
 
 class TestPodcastInstructionPlaceholders:
@@ -138,11 +140,11 @@ class TestPodcastInstructionPlaceholders:
 
         assert "{creative_content}" in scriptwriter_agent.instruction
 
-    def test_producer_references_podcast_script(self):
-        """Producer instruction should reference {podcast_script}."""
-        from podcast_agents.agents.producer import producer_agent
+    def test_podcast_translator_references_podcast_script(self):
+        """Podcast Translator instruction should reference {podcast_script}."""
+        from podcast_agents.agents.podcast_translator import podcast_translator_ja
 
-        assert "{podcast_script}" in producer_agent.instruction
+        assert "{podcast_script}" in podcast_translator_ja.instruction
 
 
 class TestRootAgentConfiguration:
@@ -171,24 +173,21 @@ class TestRootAgentConfiguration:
         assert isinstance(root_agent, SequentialAgent)
 
     def test_podcast_commander_is_root_agent(self):
-        """podcast_commander should be exported as root_agent."""
-        from podcast_agents.agent import podcast_commander, root_agent
+        """podcast_script_commander should be exported as root_agent."""
+        from podcast_agents.agent import podcast_script_commander, root_agent
 
-        assert root_agent is podcast_commander
+        assert root_agent is podcast_script_commander
 
 
 class TestLanguageGateCallbacks:
     """Tests for before_agent_callback on language agents."""
 
-    def test_librarians_have_gate_callback(self):
-        """All librarians should have a before_agent_callback."""
-        from mystery_agents.agents.language_librarians import create_all_librarians
+    def test_api_librarian_count(self):
+        """API-based Librarians should match the number of API configs."""
+        from mystery_agents.agents.api_librarians import API_CONFIGS, create_all_api_librarians
 
-        librarians = create_all_librarians()
-        for lang, agent in librarians.items():
-            assert agent.before_agent_callback is not None, (
-                f"librarian_{lang} should have before_agent_callback"
-            )
+        librarians = create_all_api_librarians()
+        assert len(librarians) == len(API_CONFIGS)
 
     def test_scholars_have_gate_callback(self):
         """All scholars should have a before_agent_callback."""
@@ -297,66 +296,59 @@ class TestArmchairPolymath:
         assert "armchair_polymath" in repr(armchair_polymath_agent)
 
 
-class TestDebateLoopConfiguration:
-    """Tests for the debate loop LoopAgent configuration."""
+def _find_sub_agent(pipeline, name: str):
+    """パイプライン内のサブエージェントを名前で再帰検索する。"""
+    for agent in pipeline.sub_agents:
+        if hasattr(agent, "name") and agent.name == name:
+            return agent
+        # MagicMock 環境では name が内部名として repr に含まれる
+        if name in repr(agent):
+            return agent
+        # 再帰検索
+        if hasattr(agent, "sub_agents"):
+            found = _find_sub_agent(agent, name)
+            if found is not None:
+                return found
+    return None
 
-    def test_debate_loop_is_created_via_loop_agent(self):
-        """debate_loop should be created via LoopAgent constructor."""
-        from mystery_agents.agent import debate_loop
 
-        # MagicMock 環境では LoopAgent(...) の戻り値は MagicMock インスタンス
-        # debate_loop が存在し、名前に debate_loop が含まれることを確認
-        assert "debate_loop" in repr(debate_loop)
+class TestDynamicScholarBlockConfiguration:
+    """Tests for the DynamicScholarBlock in the pipeline."""
 
-    def test_debate_loop_max_iterations(self):
-        """debate_loop should have max_iterations=2."""
-        from mystery_agents.agent import debate_loop
+    def test_dynamic_scholar_block_exists(self):
+        """ghost_commander should contain dynamic_scholar_block."""
+        from mystery_agents.agent import ghost_commander
 
-        assert debate_loop.max_iterations == 2
+        dsb = _find_sub_agent(ghost_commander, "dynamic_scholar_block")
+        assert dsb is not None
+        assert "dynamic_scholar_block" in repr(dsb)
 
-    def test_debate_loop_has_gate_callback(self):
-        """debate_loop should have a before_agent_callback."""
-        from mystery_agents.agent import debate_loop
+    def test_dynamic_scholar_block_is_base_agent(self):
+        """dynamic_scholar_block should be a BaseAgent."""
+        from google.adk.agents import BaseAgent
 
-        # before_agent_callback が設定されていること（callable であること）
-        assert debate_loop.before_agent_callback is not None
-        assert callable(debate_loop.before_agent_callback)
+        from mystery_agents.agent import ghost_commander
 
-    def test_debate_loop_sub_agents_count(self):
-        """debate_loop should have 6 sub_agents (one per language)."""
-        from mystery_agents.agent import debate_loop
-
-        assert len(debate_loop.sub_agents) == 6
+        dsb = _find_sub_agent(ghost_commander, "dynamic_scholar_block")
+        assert isinstance(dsb, BaseAgent)
 
 
 class TestPipelineGateCallbacks:
     """Tests for pipeline gate callbacks on block agents."""
 
-    def test_scholar_block_has_gate(self):
-        """scholar_block should have a before_agent_callback."""
-        from mystery_agents.agent import scholar_block
-
-        assert scholar_block.before_agent_callback is not None
-        assert callable(scholar_block.before_agent_callback)
-
-    def test_polymath_block_has_gate(self):
-        """polymath_block should have a before_agent_callback."""
-        from mystery_agents.agent import polymath_block
-
-        assert polymath_block.before_agent_callback is not None
-        assert callable(polymath_block.before_agent_callback)
-
     def test_storyteller_block_has_gate(self):
         """storyteller_block should have a before_agent_callback."""
-        from mystery_agents.agent import storyteller_block
+        from mystery_agents.agent import ghost_commander
 
+        storyteller_block = _find_sub_agent(ghost_commander, "storyteller_block")
         assert storyteller_block.before_agent_callback is not None
         assert callable(storyteller_block.before_agent_callback)
 
     def test_post_story_block_has_gate(self):
         """post_story_block should have a before_agent_callback."""
-        from mystery_agents.agent import post_story_block
+        from mystery_agents.agent import ghost_commander
 
+        post_story_block = _find_sub_agent(ghost_commander, "post_story_block")
         assert post_story_block.before_agent_callback is not None
         assert callable(post_story_block.before_agent_callback)
 
@@ -366,7 +358,16 @@ class TestPipelineGateCallbacks:
 
         sub_agent_names = [repr(a) for a in ghost_commander.sub_agents]
         sub_agents_str = " ".join(sub_agent_names)
-        assert "scholar_block" in sub_agents_str
-        assert "polymath_block" in sub_agents_str
+        assert "dynamic_scholar_block" in sub_agents_str
+        assert "dynamic_polymath_block" in sub_agents_str
         assert "storyteller_block" in sub_agents_str
         assert "post_story_block" in sub_agents_str
+
+    def test_ghost_commander_contains_aggregator(self):
+        """ghost_commander should contain the aggregator agent after parallel librarians."""
+        from mystery_agents.agent import ghost_commander
+
+        sub_agent_names = [repr(a) for a in ghost_commander.sub_agents]
+        sub_agents_str = " ".join(sub_agent_names)
+        assert "parallel_api_librarians" in sub_agents_str
+        assert "aggregator" in sub_agents_str

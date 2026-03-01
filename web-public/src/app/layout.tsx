@@ -2,6 +2,7 @@ import React from "react"
 import type { Metadata } from 'next'
 import { GoogleTagManager } from '@next/third-parties/google'
 import { Playfair_Display, Inter, Noto_Sans_JP } from 'next/font/google'
+import { getSiteUrl } from '@/lib/site-url'
 import './globals.css'
 
 const playfair = Playfair_Display({
@@ -23,9 +24,21 @@ const notoSansJP = Noto_Sans_JP({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: 'Ghost in the Archive',
-  description: 'AI がアーカイブの闇から発掘する、歴史の亡霊たち — Unearthing historical mysteries and folkloric anomalies from public digital archives.',
-  keywords: ["歴史", "ミステリー", "民俗学", "フォークロア", "デジタルアーカイブ", "AI"],
+  description: 'Unearthing the Ghosts in the world\'s records — AI-driven discovery across five academic disciplines in the world\'s public digital archives.',
+  keywords: ["history", "folklore", "cultural anthropology", "linguistics", "archival science", "digital archives", "AI", "OSINT", "mystery", "歴史", "民俗学", "文化人類学", "言語学", "文書館学"],
+  openGraph: {
+    siteName: 'Ghost in the Archive',
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
+  alternates: {
+    types: {
+      'application/atom+xml': '/feed.xml',
+    },
+  },
 }
 
 const gtmId = process.env.NEXT_PUBLIC_GTM_ID

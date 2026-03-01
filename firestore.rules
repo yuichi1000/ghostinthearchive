@@ -3,17 +3,23 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // mysteries: web-admin（Cloud IAP 保護下）からの読み書き許可
+    // mysteries: 読み取りのみ許可（書き込みは Server Actions 経由で Admin SDK を使用）
     // web-public は SSG ビルド時に Admin SDK でアクセスするためルール不要
     match /mysteries/{mysteryId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if false;
     }
 
-    // podcasts: web-admin からの読み書き許可
+    // podcasts: 読み取りのみ許可（書き込みは Server Actions 経由で Admin SDK を使用）
     match /podcasts/{podcastId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if false;
+    }
+
+    // product_designs: 読み取りのみ許可（書き込みは Python Admin SDK のみ）
+    match /product_designs/{designId} {
+      allow read: if true;
+      allow write: if false;
     }
 
     // pipeline_runs: web-admin から読み取りのみ（進捗表示用）

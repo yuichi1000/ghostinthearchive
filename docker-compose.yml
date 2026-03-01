@@ -33,5 +33,10 @@ services:
       - FIRESTORE_EMULATOR_HOST=host.docker.internal:8080
       - STORAGE_EMULATOR_HOST=http://host.docker.internal:9199
       - STORAGE_EMULATOR_PUBLIC_HOST=http://localhost:9199
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - EUROPEANA_API_KEY=${EUROPEANA_API_KEY}
+      - TROVE_API_KEY=${TROVE_API_KEY}
+      - NYPL_API_TOKEN=${NYPL_API_TOKEN}
+      - OPENALEX_API_KEY=${OPENALEX_API_KEY}
     volumes:
       - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/keys/adc.json:ro

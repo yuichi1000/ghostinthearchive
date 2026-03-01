@@ -1,34 +1,58 @@
-"""Internet Archive (Archive.org) Search API tool.
+"""Internet Archive (Archive.org) Search API ソース。
 
-Searches the Internet Archive's vast collection of books, magazines,
-web pages, and other digitized materials.
+Internet Archive の膨大なコレクション（書籍、雑誌、ウェブページ、
+その他のデジタル化資料）を検索する。
+djvu.txt エンドポイントによる OCR 全文テキスト取得にも対応。
 """
 
-import json
-import time
-from typing import Any, Dict, List, Optional
+import logging
 
 import requests
 
-from shared.http_retry import create_retry_session
+from ..schemas.document import ArchiveDocument
+from .archive_source_base import ArchiveSearchResult, ArchiveSource
+from .fulltext_extraction import build_extraction_keywords, extract_keyword_passages
+from .search_utils import build_combined_query, build_search_query
+from .source_registry import register_source
 
-from ..schemas.document import ArchiveDocument, SourceLanguage, SourceType
-from .search_utils import build_search_query
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://archive.org/advancedsearch.php"
-_session = create_retry_session()
-MIN_REQUEST_DELAY = 2.0
-_last_request_time = 0.0
+_DJVU_TEXT_URL = "https://archive.org/download/{identifier}/{identifier}_djvu.txt"
+
+# 全文取得の上限設定
+_MAX_FULLTEXT_FETCHES = 10
+_FULLTEXT_TIMEOUT = 15
+_MAX_RAW_FETCH = 200_000
 
 
-def _rate_limit() -> None:
-    global _last_request_time
-    now = time.time()
-    elapsed = now - _last_request_time
-    if elapsed < MIN_REQUEST_DELAY:
-        time.sleep(MIN_REQUEST_DELAY - elapsed)
-    _last_request_time = time.time()
+def _fetch_djvu_text(
+    session: requests.Session, identifier: str
+) -> str | None:
+    """Internet Archive の djvu.txt から OCR テキストを取得する。
 
+    Args:
+        session: HTTP セッション
+        identifier: Internet Archive アイテム識別子
+
+    Returns:
+        OCR テキスト（安全上限で切り詰め）。取得失敗時は None。
+    """
+    try:
+        url = _DJVU_TEXT_URL.format(identifier=identifier)
+        resp = session.get(
+            url,
+            timeout=_FULLTEXT_TIMEOUT,
+            headers={"User-Agent": "GhostInTheArchive/1.0"},
+        )
+        if resp.status_code != 200:
+            logger.debug("IA djvu.txt %d for %s", resp.status_code, identifier)
+            return None
+        text = resp.text.strip()
+        return text[:_MAX_RAW_FETCH] if text else None
+    except (requests.RequestException, ValueError) as e:
+        logger.debug("IA djvu.txt 取得失敗 (%s): %s", identifier, e)
+        return None
 
 _LANG_CODE_MAP = {
     "en": ["eng", "english"],
@@ -37,56 +61,71 @@ _LANG_CODE_MAP = {
     "fr": ["fre", "fra", "french", "français"],
     "nl": ["dut", "nld", "dutch", "nederlands"],
     "pt": ["por", "portuguese", "português"],
+    "ja": ["jpn", "japanese"],
 }
 
 
-def search_internet_archive(
-    keywords: List[str],
-    date_start: str = "1800",
-    date_end: str = "1899",
-    max_results: int = 20,
-    language: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Search Internet Archive for historical materials.
+class InternetArchiveSource(ArchiveSource):
+    """Internet Archive ソース。"""
 
-    Args:
-        keywords: List of search keywords
-        date_start: Start year
-        date_end: End year
-        max_results: Maximum results to return
-        language: Optional ISO 639-1 language code (en, de, fr, etc.) to filter results
+    source_key = "internet_archive"
+    source_name = "Internet Archive"
+    source_type = "internet_archive"
+    min_request_delay = 2.0
+    supported_languages = {"en", "es", "de", "fr", "nl", "pt", "ja"}
+    supports_language_filter = True
+    is_newspaper_source = False
+    expected_domains = ["archive.org"]
+    env_var_key = None
 
-    Returns:
-        Dict with documents, total_hits, error keys.
-    """
-    search_text = build_search_query(keywords)
-    if not search_text:
-        return {"documents": [], "total_hits": 0, "error": "No keywords provided"}
+    def _search_impl(
+        self,
+        keywords: list[str],
+        date_start: str | None,
+        date_end: str | None,
+        max_results: int,
+        language: str | None,
+        reference_keywords: list[str] | None = None,
+    ) -> ArchiveSearchResult:
+        search_text = (
+            build_combined_query(reference_keywords, keywords)
+            if reference_keywords
+            else build_search_query(keywords)
+        )
+        if not search_text:
+            return ArchiveSearchResult(error="No keywords provided")
 
-    start_year = date_start[:4] if len(date_start) >= 4 else date_start
-    end_year = date_end[:4] if len(date_end) >= 4 else date_end
+        # 空文字日付対応: 日付フィルタを条件付きに
+        query = f"({search_text})"
+        if date_start and date_end:
+            start_year = date_start[:4] if len(date_start) >= 4 else date_start
+            end_year = date_end[:4] if len(date_end) >= 4 else date_end
+            query += f" AND date:[{start_year}-01-01 TO {end_year}-12-31]"
 
-    query = f"({search_text}) AND date:[{start_year}-01-01 TO {end_year}-12-31]"
+        # 言語フィルタ
+        if language and language in _LANG_CODE_MAP:
+            lang_codes = _LANG_CODE_MAP[language]
+            lang_filter = " OR ".join(f'language:"{code}"' for code in lang_codes)
+            query = f"{query} AND ({lang_filter})"
 
-    # 言語フィルタ: ocr_detected_lang または language メタデータで絞り込み
-    if language and language in _LANG_CODE_MAP:
-        lang_codes = _LANG_CODE_MAP[language]
-        lang_filter = " OR ".join(f'language:"{code}"' for code in lang_codes)
-        query = f"{query} AND ({lang_filter})"
+        params = {
+            "q": query,
+            "fl[]": [
+                "identifier",
+                "title",
+                "description",
+                "date",
+                "language",
+                "subject",
+                "creator",
+            ],
+            "sort[]": "date asc",
+            "rows": min(max_results, 100),
+            "page": 1,
+            "output": "json",
+        }
 
-    params = {
-        "q": query,
-        "fl[]": ["identifier", "title", "description", "date", "language", "subject", "creator"],
-        "sort[]": "date asc",
-        "rows": min(max_results, 100),
-        "page": 1,
-        "output": "json",
-    }
-
-    _rate_limit()
-
-    try:
-        response = _session.get(
+        response = self._session.get(
             BASE_URL,
             params=params,
             timeout=30,
@@ -97,6 +136,8 @@ def search_internet_archive(
 
         resp = data.get("response", {})
         documents = []
+        # 全文取得対象の (index, identifier, subjects) タプル
+        fulltext_targets: list[tuple[int, str, list[str]]] = []
 
         for item in resp.get("docs", []):
             title = item.get("title", "Unknown Title")
@@ -124,44 +165,60 @@ def search_internet_archive(
             combined = f"{title} {description}".lower()
             matched = [kw for kw in keywords if kw.lower() in combined]
 
+            # サムネイル URL（identifier から構築）
+            thumbnail_url = (
+                f"https://archive.org/services/img/{identifier}" if identifier else None
+            )
+
             doc = ArchiveDocument(
                 title=str(title)[:500],
-                date=_parse_year(str(date_str)),
+                date=self.parse_year(str(date_str), min_century=13),
                 source_url=url,
                 summary=str(description)[:500] if description else str(title)[:500],
                 language=lang,
                 location="Unknown",
-                source_type=SourceType.INTERNET_ARCHIVE,
-                raw_text=str(description)[:5000] if description else None,
+                source_type=self.source_type,
+                raw_text=None,
+                thumbnail_url=thumbnail_url,
                 keywords_matched=matched,
             )
             documents.append(doc)
 
+            # 全文取得候補に追加（上位5件まで）
+            if identifier and len(fulltext_targets) < _MAX_FULLTEXT_FETCHES:
+                subjects_raw = item.get("subject", [])
+                if isinstance(subjects_raw, str):
+                    subjects_raw = [subjects_raw]
+                fulltext_targets.append((len(documents) - 1, identifier, subjects_raw))
+
+        # 全文テキストエンリッチメント（キーワード指向抽出）
+        for idx, ident, subjects in fulltext_targets:
+            self._rate_limit()
+            text = _fetch_djvu_text(self._session, ident)
+            if text:
+                extraction_kws = build_extraction_keywords(
+                    keywords, title=documents[idx].title, subjects=subjects
+                )
+                documents[idx].raw_text = extract_keyword_passages(text, extraction_kws)
+
         total_hits = resp.get("numFound", 0)
-        return {"documents": documents, "total_hits": total_hits, "error": None}
-
-    except (requests.RequestException, json.JSONDecodeError) as e:
-        return {"documents": [], "total_hits": 0, "error": f"Internet Archive API error: {e}"}
+        return ArchiveSearchResult(documents=documents, total_hits=total_hits)
 
 
-def _detect_source_language(lang_str: str) -> SourceLanguage:
-    """メタデータの言語文字列から SourceLanguage を判定する。"""
+def _detect_source_language(lang_str: str) -> str:
+    """メタデータの言語文字列から ISO 639-1 コードを返す。
+
+    _LANG_CODE_MAP でマッピング可能ならそのコードを返す。
+    不明な場合はフォールバックとして "en" を返す。
+    """
     lower = lang_str.lower()
     for lang_code, identifiers in _LANG_CODE_MAP.items():
         for ident in identifiers:
             if ident in lower:
-                try:
-                    return SourceLanguage(lang_code)
-                except ValueError:
-                    break
-    return SourceLanguage.EN
+                return lang_code
+    return "en"
 
 
-def _parse_year(date_str: str) -> Optional[str]:
-    if not date_str:
-        return None
-    import re
-    year_match = re.search(r"\b(1[3-9]\d{2}|20\d{2})\b", date_str)
-    if year_match:
-        return f"{year_match.group(1)}-01-01"
-    return date_str[:10] if len(date_str) > 10 else date_str
+# レジストリに自動登録
+_instance = InternetArchiveSource()
+register_source(_instance)

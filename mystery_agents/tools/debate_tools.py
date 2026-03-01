@@ -11,6 +11,8 @@ import re
 
 from google.adk.tools.tool_context import ToolContext
 
+from shared.state_keys import DEBATE_WHITEBOARD
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,10 +37,10 @@ def append_to_whiteboard(
     Returns:
         Confirmation message.
     """
-    current = tool_context.state.get("debate_whiteboard", "")
+    current = tool_context.state.get(DEBATE_WHITEBOARD, "")
 
     entry = f"### [Round {round_number}] {speaker} Perspective\n\n{contribution}\n\n"
-    tool_context.state["debate_whiteboard"] = current + entry
+    tool_context.state[DEBATE_WHITEBOARD] = current + entry
 
     return f"Contribution from {speaker} (Round {round_number}) appended to whiteboard."
 
@@ -76,6 +78,44 @@ def _extract_words(text: str) -> set[str]:
     return set(words)
 
 
+def is_debate_converged(whiteboard: str) -> bool:
+    """ホワイトボードの内容から討論の収束を判定する（純粋関数）。
+
+    DynamicScholarBlock から LLM を介さず直接呼び出すために用意。
+    LoopAgent の ConvergenceChecker とは異なり、escalate は行わない。
+
+    Args:
+        whiteboard: ホワイトボードのテキスト全文。
+
+    Returns:
+        収束していれば True。
+    """
+    if not whiteboard:
+        return False
+
+    rounds = _extract_rounds(whiteboard)
+    if len(rounds) < 2:
+        return False
+
+    sorted_nums = sorted(rounds.keys())
+    prev_words = _extract_words(rounds[sorted_nums[-2]])
+    curr_words = _extract_words(rounds[sorted_nums[-1]])
+
+    if not curr_words:
+        return False
+
+    new_words = curr_words - prev_words
+    new_word_ratio = len(new_words) / len(curr_words)
+
+    converged = new_word_ratio < _CONVERGENCE_THRESHOLD
+    logger.info(
+        "Direct convergence check: new_word_ratio=%.1f%%, converged=%s",
+        new_word_ratio * 100,
+        converged,
+    )
+    return converged
+
+
 def check_debate_convergence(tool_context: ToolContext) -> str:
     """討論の収束を判定する。
 
@@ -91,7 +131,7 @@ def check_debate_convergence(tool_context: ToolContext) -> str:
     Returns:
         収束判定結果のメッセージ。
     """
-    whiteboard = tool_context.state.get("debate_whiteboard", "")
+    whiteboard = tool_context.state.get(DEBATE_WHITEBOARD, "")
     if not whiteboard:
         return "No whiteboard content found. Debate should continue."
 
@@ -114,6 +154,7 @@ def check_debate_convergence(tool_context: ToolContext) -> str:
     new_words = curr_words - prev_words
     new_word_ratio = len(new_words) / len(curr_words)
 
+    converged = new_word_ratio < _CONVERGENCE_THRESHOLD
     logger.info(
         "Convergence check: round %d→%d, prev_words=%d, curr_words=%d, "
         "new_words=%d, ratio=%.1f%%",
@@ -123,9 +164,14 @@ def check_debate_convergence(tool_context: ToolContext) -> str:
         len(curr_words),
         len(new_words),
         new_word_ratio * 100,
+        extra={
+            "convergence_round": sorted_round_nums[-1],
+            "convergence_score": round(new_word_ratio, 3),
+            "converged": converged,
+        },
     )
 
-    if new_word_ratio < _CONVERGENCE_THRESHOLD:
+    if converged:
         tool_context.actions.escalate = True
         return (
             f"Debate has CONVERGED. New word ratio: {new_word_ratio:.1%} "

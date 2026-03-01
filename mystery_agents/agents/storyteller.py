@@ -11,159 +11,219 @@ Input: Mystery Report with Folkloric Context (from Scholar)
 Output: Creative content that weaves together fact and legend
 """
 
+import logging
 from pathlib import Path
 
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
+from google.adk.agents.callback_context import CallbackContext
+from google.adk.models import LlmRequest, LlmResponse
+from google.genai import types
 
-from shared.model_config import create_pro_model
+from shared.model_config import (
+    DEFAULT_STORYTELLER,
+    STORYTELLER_MODELS,
+    create_storyteller_model,
+)
+from shared.state_keys import STORYTELLER_LLM_METADATA
+from shared.token_tracker import track_tokens
+
+from .storyteller_instructions import STORYTELLER_INSTRUCTION
+
+logger = logging.getLogger(__name__)
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-# === 日本語訳 ===
-# あなたは「Ghost in the Archive」プロジェクトのストーリーテラー（Storyteller Agent）です。
-# あなたは **歴史的厳密さ** と **怪異的情緒** を両立させた物語を紡ぐクリエイティブ・ディレクターです。
-#
-# ## 「Ghost in the Archive」とは
-# 公開デジタルアーカイブ — 米国議会図書館、DPLA、Internet Archive など — という膨大な記録の海の中に、
-# ひっそりと潜んでいる歴史的ミステリーと民俗学的怪異。それが「Ghost」です。
-# あなたの仕事は、その Ghost を読者の前に浮かび上がらせることです。
-#
-# ## あなたの役割：Fact × Folklore の物語化
-# Scholar Agent が作成した Mystery Report（Folkloric Context 含む）を受け取り、
-# **事実と伝説を織り交ぜた独自のナラティブ**としてブログ原稿を**英語で**生成します。
-#
-# ## 最重要ルール：資料に基づかないコンテンツは生成しない
-# ## 出力言語：英語
-# ## 文章量：英語 2,000〜3,500 words
-#
-# ## 物語構造
-# 1. 導入 — アーカイブからの発掘
-# 2. 展開 — 矛盾と怪異の詳細
-# 3. 深層 — 民俗学的文脈との交差
-# 4. 結び — 解明されない余韻
-#
-# ## クリエイティブガイドライン
-# - トーン: 学術的信頼性を維持しつつ、怪異的な情緒を醸し出す
-# - 言語: 英語
-# - ターゲット: アメリカ在住の歴史・ミステリー愛好家
-# - スタイル: Atlas Obscura, Smithsonian Magazine のような読みやすさ
-# === End 日本語訳 ===
+def _estimate_tokens(text: str) -> int:
+    """英語4文字≒1トークンの概算。ログ用途。"""
+    return len(text) // 4 if text else 0
 
-STORYTELLER_INSTRUCTION = """
-You are the Storyteller Agent for the "Ghost in the Archive" project.
-You are a creative director who weaves narratives that balance **historical rigor** with **eerie atmosphere**.
 
-## What is "Ghost in the Archive"?
-Within the vast sea of records in public digital archives — the Library of Congress, DPLA,
-Internet Archive, and others — historical mysteries and folkloric anomalies lurk quietly.
-These are the "Ghosts." Your job is to bring these Ghosts to life before the reader.
+def _is_leaked_content(content: types.Content) -> bool:
+    """ADK _present_other_agent_message が生成したリークコンテンツを検出する。
 
-## Your Role: Narrating Fact × Folklore
-Receive the Mystery Report (including Folkloric Context) created by the Scholar Agent,
-and generate a blog article as **an original narrative in English that weaves together fact and legend**.
+    ADK の SequentialAgent 内（branch=None）では include_contents='none' が無効化され、
+    上流エージェントの会話履歴が role='user' + 先頭パート "For context:" の形式でリークする。
+    """
+    if not content.parts:
+        return False
+    first_text = next((p.text for p in content.parts if p.text), None)
+    return first_text == "For context:"
 
-## Critical Rule: Do NOT Generate Content Without Source Materials
-Check {mystery_report} in the session state.
-**If it contains the message "INSUFFICIENT_DATA," or if it contains no concrete evidence based on actual archive materials
-(source URLs, citations, dates), you MUST NOT generate content.**
-In that case, output only the following message and stop:
 
-```
-NO_CONTENT: No analysis based on actual archive materials is available. Content generation aborted.
-```
+def _has_function_parts(content: types.Content) -> bool:
+    """function_call または function_response パーツを含むか。"""
+    return any(
+        p.function_call or p.function_response
+        for p in (content.parts or [])
+    )
 
-Do NOT generate fictional stories or content based on unsupported speculation.
 
-## Input
-{mystery_report} contains the analysis report created by the Scholar.
-This report includes **Folkloric Context** (local legends, correlation between fact and legend, taboos, cultural memory).
+def _storyteller_before_model(
+    callback_context: CallbackContext,
+    llm_request: LlmRequest,
+) -> LlmResponse | None:
+    """リークした上流会話履歴をパージし、診断ログを出力する。"""
+    # mystery_report のトークン推定
+    mystery_report = callback_context.state.get("mystery_report", "")
+    report_tokens = _estimate_tokens(mystery_report)
 
-## The Creative Core: Balancing Two Elements
+    # パージ: リークコンテンツを除去し、ツール呼び出し/応答は保持
+    original_contents = llm_request.contents or []
+    purged_contents: list[types.Content] = []
+    purged_tokens = 0
 
-### Historical Rigor (Left Brain)
-- Based on verifiable facts
-- Accuracy of dates, persons, and places
-- Maintaining academic integrity
+    for content in original_contents:
+        if _is_leaked_content(content) and not _has_function_parts(content):
+            # リークコンテンツのトークン数を集計
+            leaked_text = " ".join(
+                p.text for p in (content.parts or []) if p.text
+            )
+            purged_tokens += _estimate_tokens(leaked_text)
+        else:
+            purged_contents.append(content)
 
-### Eerie Atmosphere (Right Brain)
-- An inexplicable sense of unease
-- The atmosphere evoked by local legends
-- The presence of "something left untold"
+    llm_request.contents = purged_contents
 
-## Word Count
-**English 2,000–3,500 words** (approximately 8–15 minutes reading time).
-Aligned with the standard article length of American historical mystery media (Atlas Obscura, Smithsonian Magazine, etc.).
-Avoid being too short to tell a proper story, or too long for readers to stay engaged.
+    # 診断ログ: system_instruction + contents のトークン内訳
+    si_text = ""
+    if llm_request.config and llm_request.config.system_instruction:
+        si = llm_request.config.system_instruction
+        if isinstance(si, str):
+            si_text = si
+        elif hasattr(si, "parts") and si.parts:
+            si_text = " ".join(p.text for p in si.parts if p.text)
+    si_tokens = _estimate_tokens(si_text)
 
-## Narrative Structure
+    contents_text = " ".join(
+        p.text
+        for c in purged_contents
+        for p in (c.parts or [])
+        if p.text
+    )
+    contents_tokens = _estimate_tokens(contents_text)
 
-Weave the story in the following 4-part structure. You may freely choose the wording of section headings to fit the content.
+    total_tokens = si_tokens + contents_tokens
+    logger.info(
+        "Storyteller before_model 診断: mystery_report=%s tokens (Polymath出力), "
+        "system_instruction=%s tokens, contents=%s tokens (パージ後), "
+        "パージ除去=%s tokens, 合計推定=%s tokens",
+        f"{report_tokens:,}",
+        f"{si_tokens:,}",
+        f"{contents_tokens:,}",
+        f"{purged_tokens:,}",
+        f"{total_tokens:,}",
+    )
 
-### 1. Introduction — Excavation from the Archive
-Describe the experience of tracing records in the digital archive and stumbling upon a strange record.
-Draw readers into the sensation of "digging through the archive together."
-Example: "While tracing an 1823 Boston newspaper in the Library of Congress digital archive, one stumbles upon a curious article."
+    return None
 
-### 2. Development — Details of Discrepancies and Anomalies
-Weave in evidence from the Mystery Report to narratively develop the discovered discrepancies and anomalies.
-- Effectively insert citations from primary sources
-- Present discrepancies between different sources in contrast
-- Construct the narrative so readers feel "something is off"
 
-### 3. Deeper Layer — Intersection with Folkloric Context
-Use the Folkloric Context to explore how historical facts and local legends/taboos intersect.
-Bring to light the process by which facts became legends, or the historical truth behind legends.
+def _storyteller_after_model(
+    callback_context: CallbackContext,
+    llm_response: LlmResponse,
+) -> LlmResponse | None:
+    """Storyteller の LLM 応答メタデータを記録する。"""
+    # トークン使用量を共通ログに追記
+    track_tokens("storyteller", callback_context, llm_response)
 
-### 4. Conclusion — Lingering Without Resolution
-End without fully resolving the mystery, suggesting that "something still sleeps in the archive."
-Leave readers with a lingering chill.
+    has_text = (
+        llm_response.content
+        and llm_response.content.parts
+        and any(
+            hasattr(p, "text") and p.text
+            for p in llm_response.content.parts
+        )
+    )
 
-## Output Format
+    # モデル情報をセッション状態から取得
+    storyteller_key = callback_context.state.get("storyteller", DEFAULT_STORYTELLER)
+    model_config = STORYTELLER_MODELS.get(storyteller_key, {})
+    # 実際にレスポンスを返したモデル名（LiteLlm アダプタが設定）
+    actual_model = getattr(llm_response, "model_version", None)
 
-Output the narrative text in Markdown format.
-**Write prose that stands on its own as a readable article**, not structured data.
+    if has_text and not llm_response.error_code:
+        # 正常応答: モデル情報 + トークン使用量をログ
+        metadata = {
+            "storyteller": storyteller_key,
+            "display_name": model_config.get("display_name", "unknown"),
+            "model_id": model_config.get("model_id", "unknown"),
+            "actual_model": actual_model,
+            "prompt_tokens": (
+                llm_response.usage_metadata.prompt_token_count
+                if llm_response.usage_metadata else None
+            ),
+            "output_tokens": (
+                llm_response.usage_metadata.candidates_token_count
+                if llm_response.usage_metadata else None
+            ),
+        }
+        logger.info(
+            "Storyteller 応答完了: selected=%s, actual=%s, tokens=%s/%s",
+            metadata["model_id"],
+            metadata["actual_model"],
+            metadata["prompt_tokens"],
+            metadata["output_tokens"],
+        )
+        callback_context.state[STORYTELLER_LLM_METADATA] = metadata
+        return None
 
-```markdown
-# [Compelling Title — Suggesting Both Fact and the Eerie]
+    # 異常応答: メタデータをログ + セッション状態に記録
+    metadata = {
+        "storyteller": storyteller_key,
+        "display_name": model_config.get("display_name", "unknown"),
+        "model_id": model_config.get("model_id", "unknown"),
+        "actual_model": actual_model,
+        "finish_reason": str(llm_response.finish_reason) if llm_response.finish_reason else None,
+        "error_code": llm_response.error_code,
+        "error_message": llm_response.error_message,
+        "has_content": llm_response.content is not None,
+        "prompt_tokens": (
+            llm_response.usage_metadata.prompt_token_count
+            if llm_response.usage_metadata else None
+        ),
+        "output_tokens": (
+            llm_response.usage_metadata.candidates_token_count
+            if llm_response.usage_metadata else None
+        ),
+    }
+    logger.error(
+        "Storyteller 異常応答: selected=%s, actual=%s, finish_reason=%s, error_code=%s",
+        metadata["model_id"],
+        metadata["actual_model"],
+        metadata["finish_reason"],
+        metadata["error_code"],
+        extra=metadata,
+    )
+    callback_context.state[STORYTELLER_LLM_METADATA] = metadata
+    return None
 
-[Introduction — Excavation from the Archive]
 
-[Development — Details of Discrepancies and Anomalies]
+def create_storyteller(storyteller: str = DEFAULT_STORYTELLER) -> LlmAgent:
+    """指定ストーリーテラーで Storyteller エージェントを生成する。
 
-[Deeper Layer — Intersection with Folkloric Context]
+    Args:
+        storyteller: ストーリーテラー名（STORYTELLER_MODELS のキー）
 
-[Conclusion — Lingering Without Resolution]
-```
+    Returns:
+        Storyteller LlmAgent インスタンス
+    """
+    return LlmAgent(
+        name="storyteller",
+        model=create_storyteller_model(storyteller),
+        description=(
+            "Creative agent that weaves narratives fusing historical rigor with eerie atmosphere. "
+            "Receives the Mystery Report (including Folkloric Context) and generates "
+            "an English blog article that interweaves fact and legend."
+        ),
+        instruction=STORYTELLER_INSTRUCTION,
+        generate_content_config=types.GenerateContentConfig(temperature=0.9),
+        tools=[],
+        output_key="creative_content",
+        include_contents="none",
+        before_model_callback=_storyteller_before_model,
+        after_model_callback=_storyteller_after_model,
+    )
 
-**Do NOT include a Sources (citation list) in the output.** Citations are managed separately as structured data.
-**Do NOT include Open Research Questions in the output.**
 
-## Creative Guidelines
-- **Tone**: Maintain academic credibility while evoking an eerie atmosphere
-- **Language**: English
-- **Target audience**: History enthusiasts, mystery lovers, and ghost story fans (primarily US-based adults)
-- **Style**: A hybrid of "historical detective" and "collector of the uncanny"
-- **Reference**: Atlas Obscura, Smithsonian Magazine
-
-## Important
-- Clearly distinguish between facts and speculation
-- Consciously indicate the boundary between fact and legend
-- Maintain academic integrity without resorting to sensationalism
-- But do not be afraid to leave "an inexplicable lingering feeling"
-- **Use the Folkloric Context — do not end up with a mere historical overview**
-- Provide readers with an experience of "a slight chill down the spine"
-- **Remember the concept of "Ghost in the Archive"** — weave into the narrative that this mystery was excavated from the archive
-"""
-
-storyteller_agent = LlmAgent(
-    name="storyteller",
-    model=create_pro_model(),
-    description=(
-        "Creative agent that weaves narratives fusing historical rigor with eerie atmosphere. "
-        "Receives the Mystery Report (including Folkloric Context) and generates "
-        "an English blog article that interweaves fact and legend."
-    ),
-    instruction=STORYTELLER_INSTRUCTION,
-    output_key="creative_content",
-)
+# 後方互換: デフォルトシングルトン（ADK CLI / adk web 用）
+storyteller_agent = create_storyteller()

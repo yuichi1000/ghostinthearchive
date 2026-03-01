@@ -3,6 +3,7 @@
 import { ExternalLink, FileText } from "lucide-react"
 import type { Evidence } from "../types/mystery"
 import { cn } from "../lib/utils"
+import { getArchiveName } from "../lib/archive-name"
 
 interface EvidenceLabels {
   source?: string
@@ -26,6 +27,7 @@ export function EvidenceBlock({ evidence, label, translatedExcerpt, labels, clas
   // 空 excerpt のフォールバック: テキスト部分を非表示にする（既存 Firestore データ対応）
   const hasExcerpt = !!evidence.relevant_excerpt?.trim()
   const hasTranslatedExcerpt = !!translatedExcerpt?.trim()
+  const archiveName = getArchiveName(evidence)
 
   return (
     <figure className={cn("relative group", className)}>
@@ -40,9 +42,6 @@ export function EvidenceBlock({ evidence, label, translatedExcerpt, labels, clas
       >
         {/* Top edge wear effect */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-b from-parchment/10 to-transparent" />
-
-        {/* Corner fold effect */}
-        <div className="absolute top-0 right-0 w-6 h-6 corner-fold" />
 
         {/* Date badge + Quote marks row */}
         <div className="flex items-start justify-between mb-1">
@@ -91,6 +90,12 @@ export function EvidenceBlock({ evidence, label, translatedExcerpt, labels, clas
           <FileText className="w-4 h-4 text-gold shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
             <span className="text-parchment/80 font-medium">{sourceLabel} </span>
+            {archiveName && (
+              <>
+                <span className="text-gold/70">{archiveName}</span>
+                <span className="text-muted-foreground/40"> — </span>
+              </>
+            )}
             {evidence.source_title}
           </p>
         </div>

@@ -1,18 +1,21 @@
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
-import { Footer } from "@ghost/shared/src/components/footer"
+import { PublicFooter } from "@/components/public-footer"
 import { FeaturedMysteryCard } from "@/components/featured-mystery-card"
-import { FeaturedMysteryCardSkeleton } from "@/components/featured-mystery-card-skeleton"
 import { MysteryCard } from "@/components/mystery-card"
-import { MysteryCardSkeleton } from "@/components/mystery-card-skeleton"
+import { MysteryListSkeleton } from "@/components/mystery-list-skeleton"
 import { getPublishedMysteries } from "@ghost/shared/src/lib/firestore/queries"
 import { HOMEPAGE_MYSTERY_LIMIT } from "@/lib/constants"
+import Link from "next/link"
 import { FileStack, Search } from "lucide-react"
+import { SiteIntro } from "@/components/site-intro"
+import { ClassificationGuide } from "@/components/classification-guide"
 import { isValidLang } from "@/lib/i18n/config"
 import type { SupportedLang } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 import type { Dictionary } from "@/lib/i18n/dictionaries"
+import { buildOgpMetadata, buildAlternates } from "@/lib/seo"
 
 async function MysteryList({ lang, dict }: { lang: SupportedLang; dict: Dictionary }) {
   let mysteries: Awaited<ReturnType<typeof getPublishedMysteries>> = []
@@ -50,6 +53,8 @@ async function MysteryList({ lang, dict }: { lang: SupportedLang; dict: Dictiona
           mystery={featured}
           lang={lang}
           label={dict.home.featuredStory}
+          classificationLabels={dict.classification}
+          confidenceLabels={dict.confidence}
         />
       </div>
 
@@ -68,7 +73,7 @@ async function MysteryList({ lang, dict }: { lang: SupportedLang; dict: Dictiona
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {rest.map((mystery) => (
-              <MysteryCard key={mystery.mystery_id} mystery={mystery} lang={lang} />
+              <MysteryCard key={mystery.mystery_id} mystery={mystery} lang={lang} classificationLabels={dict.classification} confidenceLabels={dict.confidence} />
             ))}
           </div>
         </>
@@ -77,19 +82,28 @@ async function MysteryList({ lang, dict }: { lang: SupportedLang; dict: Dictiona
   )
 }
 
-function MysteryListSkeleton() {
-  return (
-    <>
-      <div className="mb-12">
-        <FeaturedMysteryCardSkeleton />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(6)].map((_, i) => (
-          <MysteryCardSkeleton key={i} />
-        ))}
-      </div>
-    </>
-  )
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>
+}) {
+  const { lang } = await params
+  if (!isValidLang(lang)) return {}
+
+  const dict = await getDictionary(lang)
+
+  return {
+    title: "Ghost in the Archive",
+    description: dict.seo.homeDescription,
+    alternates: buildAlternates(""),
+    ...buildOgpMetadata(lang, {
+      title: "Ghost in the Archive",
+      description: dict.seo.homeDescription,
+      path: "",
+      type: "website",
+      images: [{ url: "/images/hero-bg_xl.webp", alt: "Ghost in the Archive" }],
+    }),
+  }
 }
 
 export default async function HomePage({
@@ -107,27 +121,35 @@ export default async function HomePage({
       <Header lang={lang} nav={dict.nav} />
 
       <main className="flex-1">
-        {/* sr-only h1 */}
-        <h1 className="sr-only">Ghost in the Archive</h1>
+        {/* サイトイントロ */}
+        <SiteIntro dict={dict} />
 
         {/* 記事一覧 */}
-        <section className="py-16 md:py-24">
+        <section className="pb-16 md:pb-24">
           <div className="container mx-auto px-4">
             <Suspense fallback={<MysteryListSkeleton />}>
               <MysteryList lang={lang} dict={dict} />
             </Suspense>
+          </div>
+        </section>
 
-            {/* View all link */}
-            <div className="mt-12 text-center">
-              <p className="text-sm text-muted-foreground font-mono">
-                <span className="redacted">████████</span> {dict.home.classifiedRedacted} <span className="redacted">████████</span>
-              </p>
-            </div>
+        {/* 分類インデックス */}
+        <ClassificationGuide lang={lang} dict={dict} />
+
+        {/* アーカイブ導線 */}
+        <section className="pb-16">
+          <div className="container mx-auto px-4 text-center">
+            <Link
+              href={`/${lang}/archive/`}
+              className="inline-block text-sm font-mono text-muted-foreground hover:text-gold transition-colors no-underline"
+            >
+              <span className="redacted">████</span> {dict.home.viewAllArticles} → <span className="redacted">████</span>
+            </Link>
           </div>
         </section>
       </main>
 
-      <Footer labels={dict.footer} />
+      <PublicFooter lang={lang} dict={dict} />
     </div>
   )
 }

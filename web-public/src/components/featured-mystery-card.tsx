@@ -4,23 +4,28 @@ import { ResponsiveHeroImage } from "@/components/responsive-hero-image"
 import type { FirestoreMystery } from "@ghost/shared/src/types/mystery"
 import { localizeMystery } from "@ghost/shared/src/lib/localize"
 import { cn } from "@ghost/shared/src/lib/utils"
+import { ClassificationBadge } from "@/components/classification-badge"
+import { GhostConfidenceBadge } from "@/components/ghost-confidence-badge"
 import type { SupportedLang } from "@/lib/i18n/config"
+import type { Dictionary } from "@/lib/i18n/dictionaries"
 
 interface FeaturedMysteryCardProps {
   mystery: FirestoreMystery
   lang: SupportedLang
   label: string
+  classificationLabels: Dictionary["classification"]
+  confidenceLabels: Dictionary["confidence"]
 }
 
-export function FeaturedMysteryCard({ mystery, lang, label }: FeaturedMysteryCardProps) {
+export function FeaturedMysteryCard({ mystery, lang, label, classificationLabels, confidenceLabels }: FeaturedMysteryCardProps) {
   const { title, summary } = localizeMystery(mystery, lang)
 
-  const location = mystery.historical_context?.geographic_scope?.[0] || ""
+  const locations = mystery.historical_context?.geographic_scope || []
   const timePeriod = mystery.historical_context?.time_period || ""
   const hasImage = !!mystery.images?.hero
 
   return (
-    <Link href={`/${lang}/mystery/${mystery.mystery_id}`} className="block group no-underline">
+    <Link href={`/${lang}/mystery/${mystery.mystery_id}/`} className="block group no-underline">
       <article className={cn(
         "aged-card letterpress-border rounded-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-black/20",
         hasImage && "lg:grid lg:grid-cols-2"
@@ -46,12 +51,18 @@ export function FeaturedMysteryCard({ mystery, lang, label }: FeaturedMysteryCar
           "p-6 md:p-8",
           hasImage && "lg:flex lg:flex-col lg:justify-center lg:py-10 lg:px-10"
         )}>
-          {/* フィーチャーバッジ */}
-          <div className="flex items-center gap-2 mb-4">
-            <Star className="w-4 h-4 text-gold" />
-            <span className="text-xs font-mono uppercase tracking-widest text-gold">
-              {label}
-            </span>
+          {/* フィーチャーバッジ + 分類バッジ + ゴーストレベル */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Star className="w-4 h-4 text-gold" />
+              <span className="text-xs font-mono uppercase tracking-widest text-gold">
+                {label}
+              </span>
+            </div>
+            <ClassificationBadge mysteryId={mystery.mystery_id} labels={classificationLabels} />
+            {mystery.confidence_level && (
+              <GhostConfidenceBadge level={mystery.confidence_level} labels={confidenceLabels} />
+            )}
           </div>
 
           {/* メタデータ */}
@@ -79,10 +90,15 @@ export function FeaturedMysteryCard({ mystery, lang, label }: FeaturedMysteryCar
 
           {/* フッターメタデータ */}
           <div className="flex items-center gap-3 pt-4 border-t border-border/50 text-xs text-muted-foreground">
-            {location && (
+            {locations.length > 0 && (
               <span className="flex items-center gap-1">
                 <MapPin className="w-3 h-3" />
-                {location}
+                {locations[0]}
+                {locations.length > 1 && (
+                  <span className="text-muted-foreground/70">
+                    {classificationLabels.moreLocations.replace("{count}", String(locations.length - 1))}
+                  </span>
+                )}
               </span>
             )}
             {timePeriod && (

@@ -1,1 +1,2 @@
 export const HOMEPAGE_MYSTERY_LIMIT = 20
+export const ARCHIVE_PAGE_SIZE = 12

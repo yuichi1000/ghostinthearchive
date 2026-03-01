@@ -8,6 +8,7 @@ Flash モデルを使用し、コストを最小限に抑える。
 """
 
 from google.adk.agents import LlmAgent
+from google.genai import types
 
 from shared.model_config import create_flash_model
 
@@ -25,14 +26,21 @@ You are a convergence checker agent. Your only job is to call the
 Return the tool's result as your response.
 """
 
-convergence_checker_agent = LlmAgent(
-    name="convergence_checker",
-    model=create_flash_model(),
-    description=(
-        "Checks if the debate has converged by analyzing the whiteboard. "
-        "Calls check_debate_convergence tool and escalates to end the "
-        "debate loop if no significant new arguments are being introduced."
-    ),
-    instruction=_CONVERGENCE_CHECKER_INSTRUCTION,
-    tools=[check_debate_convergence],
-)
+def create_convergence_checker() -> LlmAgent:
+    """収束判定エージェントを新規生成する。"""
+    return LlmAgent(
+        name="convergence_checker",
+        model=create_flash_model(),
+        description=(
+            "Checks if the debate has converged by analyzing the whiteboard. "
+            "Calls check_debate_convergence tool and escalates to end the "
+            "debate loop if no significant new arguments are being introduced."
+        ),
+        instruction=_CONVERGENCE_CHECKER_INSTRUCTION,
+        generate_content_config=types.GenerateContentConfig(temperature=0.1),
+        tools=[check_debate_convergence],
+    )
+
+
+# 後方互換: デフォルトシングルトン
+convergence_checker_agent = create_convergence_checker()

@@ -37,15 +37,45 @@ class StateKey:
 STATE_KEYS: list[StateKey] = [
     StateKey(
         name="selected_languages",
-        description="調査対象言語リスト（ThemeAnalyzer が選択）",
-        written_by=("theme_analyzer_tools",),
+        description="調査対象言語リスト（Aggregator が検索結果から動的に設定）",
+        written_by=("pipeline_init", "aggregator"),
         read_by=("language_gate", "pipeline_gate"),
     ),
     StateKey(
+        name="active_languages",
+        description="ドキュメント数ランキング順の言語リスト（Aggregator が設定）",
+        written_by=("aggregator",),
+        read_by=("dynamic_scholar_block", "dynamic_polymath_block"),
+    ),
+    StateKey(
+        name="active_analyses_summary",
+        description="DynamicScholarBlock が生成する分析概要（ログ/診断用プレーンテキスト）",
+        written_by=("dynamic_scholar_block",),
+        read_by=(),
+    ),
+    StateKey(
+        name="collected_documents_{api_key}",
+        description="API Librarian の検索結果テキスト（API グループ別）",
+        written_by=("librarian_{api_key}",),
+        read_by=("aggregator",),
+    ),
+    StateKey(
         name="collected_documents_{lang}",
-        description="Librarian が収集した資料（言語別）",
-        written_by=("librarian_{lang}",),
+        description="Aggregator が集約した資料（言語別、Scholar が参照）",
+        written_by=("aggregator",),
         read_by=("scholar_{lang}", "pipeline_gate", "publisher_tools"),
+    ),
+    StateKey(
+        name="raw_search_results",
+        description="Librarian ツールが直接書き込む検索結果リスト（ベースキー）",
+        written_by=("librarian_tools",),
+        read_by=("search_metadata", "search_metrics"),
+    ),
+    StateKey(
+        name="raw_search_results_{lang}",
+        description="Librarian ツールが直接書き込む検索結果リスト（言語別）",
+        written_by=("librarian_tools",),
+        read_by=("search_metadata", "search_metrics"),
     ),
     StateKey(
         name="scholar_analysis_{lang}",
@@ -56,7 +86,7 @@ STATE_KEYS: list[StateKey] = [
     StateKey(
         name="debate_whiteboard",
         description="討論ホワイトボード（Scholar 討論モードが累積書き込み）",
-        written_by=("theme_analyzer_tools", "debate_tools"),
+        written_by=("pipeline_init", "debate_tools"),
         read_by=("armchair_polymath",),
     ),
     StateKey(
@@ -96,12 +126,67 @@ STATE_KEYS: list[StateKey] = [
         read_by=("publisher_tools",),
     ),
     StateKey(
+        name="archive_images",
+        description="Librarian が収集したアーカイブ資料画像リスト（title, source_url, thumbnail_url, image_url 等）",
+        written_by=("librarian_tools",),
+        read_by=("document_inventory", "scholar_tools"),
+    ),
+    StateKey(
+        name="approved_archive_images",
+        description="Polymath が審査・承認したアーカイブ資料画像リスト",
+        written_by=("scholar_tools",),
+        read_by=("storyteller",),
+    ),
+    StateKey(
         name="published_episode",
         description="Publisher の公開結果（output_key）",
         written_by=("publisher",),
         read_by=(),
     ),
+    # --- Alchemist パイプライン ---
+    StateKey(
+        name="design_proposals",
+        description="Alchemist のデザイン提案テキスト（output_key）",
+        written_by=("alchemist",),
+        read_by=("alchemist_cli",),
+    ),
+    StateKey(
+        name="structured_design_proposal",
+        description="Alchemist の構造化デザイン提案 JSON（ツール書き込み）",
+        written_by=("design_tools",),
+        read_by=("alchemist_renderer", "alchemist_cli"),
+    ),
+    StateKey(
+        name="design_assets",
+        description="AlchemistRenderer が生成したアセット画像リスト（ツール累積書き込み）",
+        written_by=("render_tools",),
+        read_by=("alchemist_cli",),
+    ),
+    StateKey(
+        name="render_summary",
+        description="AlchemistRenderer のレンダリングサマリー（output_key）",
+        written_by=("alchemist_renderer",),
+        read_by=("alchemist_cli",),
+    ),
     # --- Podcast パイプライン ---
+    StateKey(
+        name="script_outline",
+        description="ScriptPlanner のテキストアウトライン（output_key）",
+        written_by=("script_planner",),
+        read_by=("scriptwriter",),
+    ),
+    StateKey(
+        name="structured_outline",
+        description="ScriptPlanner の構造化アウトライン JSON（ツール書き込み）",
+        written_by=("script_tools",),
+        read_by=("script_tools",),
+    ),
+    StateKey(
+        name="segment_buffer",
+        description="Scriptwriter のセグメント蓄積バッファ（ツール書き込み）",
+        written_by=("script_tools",),
+        read_by=("script_tools",),
+    ),
     StateKey(
         name="podcast_script",
         description="Scriptwriter のポッドキャスト台本（output_key）",
@@ -119,6 +204,24 @@ STATE_KEYS: list[StateKey] = [
         description="Podcast Translator の日本語台本（output_key）",
         written_by=("podcast_translator",),
         read_by=("podcast_cli",),
+    ),
+    StateKey(
+        name="custom_instructions",
+        description="管理者からのカスタム指示（パイプライン初期化時にセット）",
+        written_by=("pipeline_init",),
+        read_by=("script_planner", "scriptwriter", "alchemist"),
+    ),
+    StateKey(
+        name="fulltext_metrics",
+        description="Aggregator が算出する全文テキスト取得指標（全言語合計 + 言語別）",
+        written_by=("aggregator",),
+        read_by=("pipeline_gate",),
+    ),
+    StateKey(
+        name="search_log",
+        description="Librarian 検索活動ログ（API 別統計・キーワード分類を蓄積、Publisher が Firestore 永続化）",
+        written_by=("librarian_tools",),
+        read_by=("publisher_tools",),
     ),
 ]
 

@@ -5,17 +5,17 @@ const dict: Dictionary = {
     badge: "KI-GESTÜTZTE ERMITTLUNGSEINHEIT",
     title: "Ghost in the Archive",
     subtitle:
-      "Historische Mysterien, ausgegraben von autonomen KI-Agenten",
+      "Die Geister in den Aufzeichnungen der Welt aufspüren — KI-gestützte Entdeckung in Geschichte, Volkskunde, Anthropologie, Linguistik und Archivwissenschaft",
     description:
-      "Vergessene Anomalien, verschwundene Personen und unerklärliche Ereignisse, verborgen in den digitalen Archiven der Welt, werden ans Licht gebracht.",
+      "Was die öffentlichen Aufzeichnungen der Welt nicht erklären können — selbst nach erschöpfender Analyse — das ist der Ghost.",
   },
   disclosure: {
     title: "Operative Offenlegung",
     notice: "HINWEIS —",
     paragraph1:
-      "Die Ermittlungseinheit hinter diesem Archiv ist nicht menschlich. Es handelt sich um ein autonomes KI-Agentensystem, das auf dem Google Agent Development Kit (ADK) aufgebaut ist und unter dem Codenamen GHOST IN THE ARCHIVE operiert.",
+      "Die Ermittlungseinheit hinter diesem Archiv ist nicht menschlich. Es handelt sich um ein autonomes KI-Agentensystem, das auf dem Google Agent Development Kit (ADK) aufgebaut ist und unter dem Codenamen GHOST IN THE ARCHIVE operiert. Es führt interdisziplinäre Analysen in fünf akademischen Bereichen durch: Geschichtswissenschaft, Volkskunde, Kulturanthropologie, Linguistik und Archivwissenschaft.",
     paragraph2:
-      "Alle Quellmaterialien stammen ausschließlich aus öffentlichen digitalen Archiven — der Library of Congress, DPLA, NYPL, dem Internet Archive und ähnlichen Institutionen. Bei keiner Ermittlung werden Verschlusssachen verwendet. (Wir besitzen keine Sicherheitsfreigabe. Wir haben auch keine beantragt.)",
+      "Alle Quellmaterialien stammen ausschließlich aus öffentlichen digitalen Archiven weltweit — Nationalbibliotheken, Kulturerbe-Portale und historische Zeitungssammlungen in zahlreichen Ländern und Sprachen. Bei keiner Ermittlung werden Verschlusssachen verwendet. (Wir besitzen keine Sicherheitsfreigabe. Wir haben auch keine beantragt.)",
     paragraph3:
       "Bitte beachten Sie: KI-Agenten sind in der Lage, fehlerhafte Schlussfolgerungen mit bemerkenswerter Überzeugungskraft zu präsentieren. Leser werden ermutigt, alle Behauptungen unabhängig zu überprüfen. Das Archiv gibt keinerlei Garantie, weder ausdrücklich noch stillschweigend, hinsichtlich der Richtigkeit paranormaler, folkloristischer oder historischer Behauptungen.",
     footer: {
@@ -26,6 +26,7 @@ const dict: Dictionary = {
   },
   nav: {
     about: "Über uns",
+    archive: "Archiv",
   },
   home: {
     latestDiscoveries: "Neueste Entdeckungen",
@@ -34,10 +35,84 @@ const dict: Dictionary = {
     noMysteriesDesc:
       "Derzeit sind keine Mysterien veröffentlicht. Schauen Sie später nach neuen Entdeckungen.",
     classifiedRedacted: "Weitere Fälle bleiben als Verschlusssache eingestuft",
+    viewAllArticles: "Alle Fallakten anzeigen",
+  },
+  archive: {
+    title: "Fallarchiv | Ghost in the Archive",
+    heading: "Fallarchiv",
+    description: "Vollständiges Verzeichnis aller untersuchten Anomalien, Diskrepanzen und unerklärlichen Phänomene aus den öffentlichen Aufzeichnungen der Welt.",
+    noArticles: "Es wurden noch keine Fallakten veröffentlicht.",
+    filterActive: "Anzeige: {classification}",
+    clearFilter: "Alle anzeigen",
+    page: "Seite",
+    previous: "Zurück",
+    next: "Weiter",
   },
   about: {
     title: "Über uns | Ghost in the Archive",
     heading: "Über dieses Archiv",
+    concept: {
+      heading: "Was ist der Ghost?",
+      intro:
+        "Die öffentlichen digitalen Archive der Welt enthalten Milliarden von Aufzeichnungen — doch was sie nicht sagen, kann aufschlussreicher sein als das, was sie sagen. Bei der Analyse über mehrere Archive und Disziplinen hinweg treten Widersprüche zutage, die keine einzelne Aufzeichnung und kein einzelnes Fachgebiet allein erklären kann. Der unerklärliche Rest, der nach erschöpfender Analyse bestehen bleibt — die Anwesenheit, die in der Abwesenheit spürbar wird — das ist der Ghost.",
+      principlesHeading: "Dieses System arbeitet nach fünf Prinzipien:",
+      autonomousAgents: "Autonome KI-Agenten",
+      autonomousAgentsDesc:
+        "Ermittlung ohne menschliche Voreingenommenheit oder Ermüdung",
+      transparency: "Radikale Transparenz",
+      transparencyDesc:
+        "Jede Hypothese ausschließlich auf öffentlichen Aufzeichnungen aufgebaut und durch diese verifizierbar",
+      crossDiscovery: "KI-gestützte Kreuzentdeckung",
+      crossDiscoveryDesc:
+        "Anomalien, die erst sichtbar werden, wenn Aufzeichnungen aus verschiedenen Archiven und Disziplinen abgeglichen werden",
+      interdisciplinary: "Interdisziplinäre Analyse",
+      interdisciplinaryDesc:
+        "Fünf akademische Bereiche: Geschichtswissenschaft, Volkskunde, Kulturanthropologie, Linguistik und Archivwissenschaft",
+      intellectualAwe: "Intellektuelle Ehrfurcht",
+      intellectualAweDesc:
+        "Das Unheimliche als legitimer Gegenstand wissenschaftlicher Forschung, nicht Sensationalismus",
+      folklore:
+        "Folklore ist keine Dekoration. Sie ist ergänzende Evidenz — die inoffizielle Aufzeichnung, die das Schweigen der offiziellen Dokumentation füllt.",
+    },
+    methodology: {
+      heading: "Wie wir ermitteln",
+      intro:
+        "Jede Ermittlung folgt einem sechsstufigen Prozess. Schritt 1 verwendet einen KI-Agenten zur Generierung von Suchbegriffen, die dann programmatisch an die Archiv-APIs gesendet werden. Die Schritte 2–3 sind deterministische Programmoperationen — keine KI-Interpretation ist beteiligt. Die Schritte 4–6 verwenden große Sprachmodelle (LLMs) für Analyse, Synthese und Textgenerierung.",
+      programLabel: "PROGRAMM",
+      llmLabel: "LLM",
+      hybridLabel: "LLM + PROGRAMM",
+      steps: {
+        search: {
+          title: "API-Suche",
+          description: "Ein KI-Agent analysiert das Ermittlungsthema und generiert Suchbegriffe — sowohl systematische Begriffe für die Reproduzierbarkeit als auch explorative Begriffe für breitere Entdeckungen. Diese Suchbegriffe werden dann programmatisch an die APIs öffentlicher digitaler Archive gesendet — Trove, NDL Search, NYPL Digital Collections, Chronicling America, Internet Archive und Delpher — um Metadaten und Katalogeinträge abzurufen.",
+        },
+        fulltext: {
+          title: "Volltextabruf",
+          description: "Für jeden zurückgegebenen Datensatz folgt das System den Quell-URLs, um den Volltext der Primärdokumente abzurufen. Dies ist ein mechanischer Abruf — keine Zusammenfassung oder Interpretation findet statt.",
+        },
+        excerpt: {
+          title: "Auszugsextraktion",
+          description: "Relevante Passagen werden aus den abgerufenen Dokumenten mittels Schlüsselwortabgleich und positionellen Heuristiken extrahiert. Die Rohauszüge werden wörtlich für die nachgelagerte Analyse aufbewahrt.",
+        },
+        analysis: {
+          title: "Interdisziplinäre Analyse",
+          description: "Sprachspezifische Scholar-Agenten analysieren die gesammelten Dokumente durch fünf akademische Perspektiven: Geschichtswissenschaft, Volkskunde, Kulturanthropologie, Linguistik und Archivwissenschaft. Jeder identifiziert Widersprüche, Anomalien und Muster innerhalb seiner zugewiesenen Sprachgruppe.",
+        },
+        debate: {
+          title: "Interdisziplinäre Debatte",
+          description: "Scholar-Agenten führen eine strukturierte Debatte, hinterfragen gegenseitig ihre Ergebnisse und identifizieren Diskrepanzen, die keine einzelne Analyse aufdecken könnte.",
+        },
+        certification: {
+          title: "Ghost-Zertifizierung",
+          description: "Der Armchair Polymath synthetisiert alle Analysen und Debatten und wendet die drei Ghost-Zertifizierungskriterien an: mehrere unabhängige Quellen, Ausschluss von API-Limitierungen und Reproduzierbarkeit. Das Ergebnis wird als Bestätigter Geist, Verdächtiger Geist oder Archivisches Echo klassifiziert.",
+        },
+      },
+    },
+    storytellers: {
+      heading: "Unsere Erzähler",
+      intro:
+        "Jeder Artikel in diesem Archiv wird von einem anderen KI-Sprachmodell verfasst — unseren Erzählern. Verschiedene Modelle bringen unterschiedliche analytische Perspektiven zu denselben Archivbelegen ein.",
+    },
   },
   detail: {
     returnToArchive: "Zurück zum Archiv",
@@ -56,18 +131,81 @@ const dict: Dictionary = {
     storyAngles: "Erzählperspektiven",
     classificationNotice:
       "Diese Fallakte stellt eine KI-generierte Analyse von Archivunterlagen dar. Alle Quellen sollten unabhängig überprüft werden.",
+    breadcrumbHome: "Startseite",
+    tableOfContents: "Inhaltsverzeichnis",
+    tocNarrative: "Bericht",
+    tocDiscrepancy: "Entdeckte Diskrepanz",
+    tocEvidence: "Archivische Beweislage",
+    tocHypothesis: "Hypothese",
+    tocHistoricalContext: "Historischer Kontext",
+    relatedArticles: "Verwandte Fallakten",
+    storytoldBy: "Erzählt von",
   },
   evidence: {
     source: "Quelle",
     view: "Ansehen",
     originalText: "Originaltext",
   },
+  classification: {
+    HIS: "Geschichte",
+    FLK: "Volkskunde",
+    ANT: "Anthropologie",
+    OCC: "Okkultismus",
+    URB: "Urbane Legende",
+    CRM: "Kriminalfall",
+    REL: "Religion",
+    LOC: "Genius Loci",
+    moreLocations: "+{count} weitere",
+  },
+  siteIntro: {
+    tagline: "KI-gestützte Entdeckung von Anomalien über Archive und Disziplinen hinweg",
+    description:
+      "Ein autonomes KI-Agentensystem, das die öffentlichen digitalen Archive der Welt durch fünf akademische Disziplinen analysiert — Geschichte, Volkskunde, Anthropologie, Linguistik und Archivwissenschaft — und Widersprüche aufdeckt, die keine einzelne Aufzeichnung oder Disziplin allein erklären kann.",
+  },
+  classificationGuide: {
+    heading: "Klassifikationsindex",
+    descriptions: {
+      HIS: "Diskrepanzen in historischen Aufzeichnungen, vermisste Personen, Dokumentenlücken",
+      FLK: "Lokale Traditionen, mündliche Überlieferungen, Volksglauben",
+      ANT: "Rituale, Sozialstrukturen, interkultureller Kontakt",
+      OCC: "Unerklärliche Phänomene, übernatürliche Ereignisse",
+      URB: "Moderne Gerüchte, zeitgenössische Geistergeschichten",
+      CRM: "Ungelöste Verbrechen, Verschwundene, mysteriöse Todesfälle",
+      REL: "Religiöse Tabus, Flüche, verbotene Riten",
+      LOC: "Ortsgebundene Anomalien, Spukorte",
+    },
+  },
+  share: {
+    shareOnX: "Auf X teilen",
+    shareOnFacebook: "Auf Facebook teilen",
+    shareOnReddit: "Auf Reddit teilen",
+    copyLink: "Link kopieren",
+    linkCopied: "Link kopiert!",
+    shareThisArticle: "Diese Fallakte teilen",
+  },
+  confidence: {
+    confirmedGhost: "Bestätigter Geist",
+    suspectedGhost: "Verdächtiger Geist",
+    archivalEcho: "Archivisches Echo",
+  },
+  sourceCoverage: {
+    heading: "Ghost-Bewertung",
+  },
+  seo: {
+    homeDescription: "Ein autonomes KI-Agentensystem, das die öffentlichen digitalen Archive der Welt durch fünf akademische Disziplinen analysiert — Anomalien aufdeckend, die kein einzelnes Dokument oder Fachgebiet allein erklären kann.",
+    archiveDescription: "Vollständiger Index aller untersuchten Anomalien, Diskrepanzen und unerklärlichen Phänomene, die aus den öffentlichen Aufzeichnungen der Welt ausgegraben wurden.",
+    aboutDescription: "Erfahren Sie mehr über Ghost in the Archive — eine autonome KI-Ermittlungseinheit, die die öffentlichen digitalen Archive der Welt durch fünf akademische Disziplinen analysiert: Geschichte, Volkskunde, Anthropologie, Linguistik und Archivwissenschaft.",
+  },
   footer: {
     description:
-      "KI-gestützte Ermittlungen zu historischen Mysterien und folkloristischen Anomalien aus öffentlichen digitalen Archiven.",
+      "KI-gestützte Analyse der öffentlichen digitalen Archive der Welt — die Geister aufspüren, die sich in den Lücken zwischen Aufzeichnungen, Archiven und Disziplinen verbergen.",
     primarySources: "Primärquellen",
     technical: "Technik",
     classification: "Klassifikation:",
+    pendingApplication: "Antrag ausstehend",
+    home: "Startseite",
+    archive: "Archiv",
+    about: "Über uns",
   },
 };
 

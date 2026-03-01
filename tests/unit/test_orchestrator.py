@@ -1,5 +1,7 @@
 """Unit tests for shared/orchestrator.py"""
 
+import asyncio
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -8,9 +10,11 @@ from shared.orchestrator import (
     PipelineResult,
     _build_state_summary,
     _detect_gate_failure,
+    _extract_mystery_id,
     _format_exception_group,
     run_pipeline,
 )
+from shared.state_keys import PUBLISHED_EPISODE, PUBLISHED_MYSTERY_ID, STORYTELLER_LLM_METADATA
 from tests.fakes import FakeInMemorySessionService
 
 
@@ -222,7 +226,11 @@ class TestRunPipeline:
 
         mock_error.assert_called_once_with(
             "run-005", "Something went wrong",
-            error_detail={"error_type": "exception", "exception_class": "RuntimeError"},
+            error_detail={
+                "error_type": "exception",
+                "exception_class": "RuntimeError",
+                "pipeline_log": [],
+            },
         )
 
     @pytest.mark.asyncio
@@ -606,6 +614,35 @@ class TestDetectGateFailure:
         assert summary["published_mystery_id"] == "missing"
 
 
+    def test_includes_storyteller_llm_metadata_when_present(self):
+        """storyteller_llm_metadata があれば error_detail に含まれる。"""
+        llm_meta = {
+            "finish_reason": "SAFETY",
+            "error_code": "SAFETY_FILTER",
+            "error_message": "Content blocked",
+            "has_content": False,
+            "prompt_tokens": 5000,
+            "output_tokens": 0,
+        }
+        state = {
+            "mystery_report": "A valid analysis...",
+            "creative_content": "",
+            STORYTELLER_LLM_METADATA: llm_meta,
+        }
+        _, detail = _detect_gate_failure(state)
+        assert detail[STORYTELLER_LLM_METADATA] == llm_meta
+        assert detail["failed_stage"] == "storyteller"
+
+    def test_no_storyteller_llm_metadata_when_absent(self):
+        """storyteller_llm_metadata がない場合は error_detail に含まれない。"""
+        state = {
+            "mystery_report": "A valid analysis...",
+            "creative_content": "",
+        }
+        _, detail = _detect_gate_failure(state)
+        assert STORYTELLER_LLM_METADATA not in detail
+
+
 class TestGateFailureIntegration:
     """blog パイプラインのゲート失敗 → error_pipeline_run の統合テスト"""
 
@@ -807,6 +844,178 @@ class TestExceptionGroupInPipeline:
         error_detail = mock_error.call_args[1]["error_detail"]
         assert error_detail["error_type"] == "exception"
         assert error_detail["exception_class"] == "ExceptionGroup"
+
+
+class TestErrorRemainingAgents:
+    """エラー発生時に running エージェントがエラーマークされるテスト"""
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.error_pipeline_run")
+    @patch("shared.orchestrator.update_agent_started", return_value=0)
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-500")
+    async def test_running_agents_marked_error_on_exception(
+        self, mock_create, mock_started, mock_error
+    ):
+        """例外発生時に running 中のエージェントが status: "error" になること。"""
+        async def error_after_events(**kwargs):
+            yield _make_event(author="librarian", text="Searching...")
+            yield _make_event(author="scholar", text="Analyzing...")
+            raise RuntimeError("OpenRouter API failed")
+            yield
+
+        runner = MagicMock()
+        runner.run_async = error_after_events
+        fake_session = FakeInMemorySessionService()
+
+        with patch("shared.orchestrator.Runner", return_value=runner), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            with pytest.raises(RuntimeError, match="OpenRouter API failed"):
+                await run_pipeline(
+                    agent=MagicMock(),
+                    app_name="test_app",
+                    user_message="test",
+                    initial_state={},
+                )
+
+        # error_pipeline_run の error_detail に pipeline_log が含まれる
+        mock_error.assert_called_once()
+        error_detail = mock_error.call_args[1]["error_detail"]
+        pipeline_log = error_detail["pipeline_log"]
+
+        # librarian と scholar が error ステータスになっている
+        error_agents = [log for log in pipeline_log if log["status"] == "error"]
+        error_names = {log["agent_name"] for log in error_agents}
+        assert {"librarian", "scholar"} == error_names
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.error_pipeline_run")
+    @patch("shared.orchestrator.update_agent_started", return_value=0)
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-501")
+    async def test_running_agents_marked_error_on_timeout(
+        self, mock_create, mock_started, mock_error
+    ):
+        """タイムアウト時に running 中のエージェントが status: "error" になること。"""
+        async def slow_events(**kwargs):
+            yield _make_event(author="storyteller", text="Writing...")
+            await asyncio.sleep(10)
+            yield
+
+        runner = MagicMock()
+        runner.run_async = slow_events
+        fake_session = FakeInMemorySessionService()
+
+        with patch("shared.orchestrator.Runner", return_value=runner), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            with pytest.raises(TimeoutError):
+                await run_pipeline(
+                    agent=MagicMock(),
+                    app_name="test_app",
+                    user_message="test",
+                    initial_state={},
+                    timeout_seconds=0.01,
+                )
+
+        # error_pipeline_run の error_detail に pipeline_log が含まれる
+        mock_error.assert_called_once()
+        error_detail = mock_error.call_args[1]["error_detail"]
+        pipeline_log = error_detail["pipeline_log"]
+
+        # storyteller が error ステータスになっている
+        error_agents = [log for log in pipeline_log if log["status"] == "error"]
+        assert len(error_agents) == 1
+        assert error_agents[0]["agent_name"] == "storyteller"
+
+    @pytest.mark.asyncio
+    @patch("shared.orchestrator.error_pipeline_run")
+    @patch("shared.orchestrator.update_agent_started", return_value=0)
+    @patch("shared.orchestrator.create_pipeline_run", return_value="run-502")
+    async def test_error_detail_includes_pipeline_log(
+        self, mock_create, mock_started, mock_error
+    ):
+        """error_detail に pipeline_log キーが含まれること。"""
+        async def error_run_async(**kwargs):
+            yield _make_event(author="librarian", text="Found docs")
+            raise RuntimeError("Unexpected error")
+            yield
+
+        runner = MagicMock()
+        runner.run_async = error_run_async
+        fake_session = FakeInMemorySessionService()
+
+        with patch("shared.orchestrator.Runner", return_value=runner), \
+             patch("shared.orchestrator.InMemorySessionService", return_value=fake_session):
+            with pytest.raises(RuntimeError):
+                await run_pipeline(
+                    agent=MagicMock(),
+                    app_name="test_app",
+                    user_message="test",
+                    initial_state={},
+                )
+
+        error_detail = mock_error.call_args[1]["error_detail"]
+        assert "pipeline_log" in error_detail
+        assert isinstance(error_detail["pipeline_log"], list)
+
+
+class TestExtractMysteryId:
+    """_extract_mystery_id: セッション状態から mystery_id を抽出する純粋関数。"""
+
+    def test_from_published_mystery_id_key(self):
+        """Should return mystery_id from PUBLISHED_MYSTERY_ID (priority 1)."""
+        state = {PUBLISHED_MYSTERY_ID: "OCC-US-BOS-20260207143025"}
+        assert _extract_mystery_id(state) == "OCC-US-BOS-20260207143025"
+
+    def test_from_published_episode_json_string(self):
+        """Should extract mystery_id from PUBLISHED_EPISODE JSON string (fallback)."""
+        state = {
+            PUBLISHED_EPISODE: json.dumps({
+                "status": "success",
+                "mystery_id": "HIS-GB-EDI-20260301120000",
+            }),
+        }
+        assert _extract_mystery_id(state) == "HIS-GB-EDI-20260301120000"
+
+    def test_from_published_episode_dict(self):
+        """Should extract mystery_id from PUBLISHED_EPISODE dict."""
+        state = {
+            PUBLISHED_EPISODE: {
+                "status": "success",
+                "mystery_id": "FLK-JP-KYO-20260315090000",
+            },
+        }
+        assert _extract_mystery_id(state) == "FLK-JP-KYO-20260315090000"
+
+    def test_published_mystery_id_takes_priority(self):
+        """Should prefer PUBLISHED_MYSTERY_ID over PUBLISHED_EPISODE."""
+        state = {
+            PUBLISHED_MYSTERY_ID: "OCC-US-BOS-20260207143025",
+            PUBLISHED_EPISODE: json.dumps({"mystery_id": "WRONG-ID"}),
+        }
+        assert _extract_mystery_id(state) == "OCC-US-BOS-20260207143025"
+
+    def test_empty_state_returns_none(self):
+        """Should return None for empty session state."""
+        assert _extract_mystery_id({}) is None
+
+    def test_no_mystery_id_in_published_episode(self):
+        """Should return None when PUBLISHED_EPISODE has no mystery_id."""
+        state = {PUBLISHED_EPISODE: json.dumps({"status": "error"})}
+        assert _extract_mystery_id(state) is None
+
+    def test_invalid_json_returns_none(self):
+        """Should return None when PUBLISHED_EPISODE is invalid JSON."""
+        state = {PUBLISHED_EPISODE: "not valid json"}
+        assert _extract_mystery_id(state) is None
+
+    def test_non_json_text_returns_none(self):
+        """Should return None when PUBLISHED_EPISODE is plain text."""
+        state = {PUBLISHED_EPISODE: "Pipeline completed successfully"}
+        assert _extract_mystery_id(state) is None
+
+    def test_empty_string_published_episode(self):
+        """Should return None when PUBLISHED_EPISODE is empty string."""
+        state = {PUBLISHED_EPISODE: ""}
+        assert _extract_mystery_id(state) is None
 
 
 class TestBuildStateSummary:
