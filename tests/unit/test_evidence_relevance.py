@@ -184,6 +184,48 @@ class TestValidateImageUrl:
         )
         assert _validate_image_url(url) is False
 
+    @responses.activate
+    def test_ia_default_icon_rejected_by_redirect(self):
+        """IA デフォルト建物アイコン（notfound.png リダイレクト）が拒否される。"""
+        from mystery_agents.tools.librarian_tools import _validate_image_url
+
+        url = "https://archive.org/services/img/nonexistent_item"
+        # IA はサムネイルなしアイテムを /images/notfound.png にリダイレクトする
+        responses.add(
+            responses.HEAD, url,
+            status=302,
+            headers={"Location": "https://archive.org/images/notfound.png"},
+        )
+        responses.add(
+            responses.HEAD, "https://archive.org/images/notfound.png",
+            status=200, headers={"Content-Length": "2212"},
+        )
+        assert _validate_image_url(url) is False
+
+    @responses.activate
+    def test_ia_default_icon_rejected_by_size(self):
+        """IA デフォルトアイコンが既知サイズで拒否される（リダイレクトなし想定）。"""
+        from mystery_agents.tools.librarian_tools import _validate_image_url
+
+        url = "https://archive.org/services/img/nonexistent_item"
+        responses.add(
+            responses.HEAD, url,
+            status=200, headers={"Content-Length": "2212"},
+        )
+        assert _validate_image_url(url) is False
+
+    @responses.activate
+    def test_ia_real_thumbnail_accepted(self):
+        """IA 実サムネイル（異なるサイズ）は受け入れられる。"""
+        from mystery_agents.tools.librarian_tools import _validate_image_url
+
+        url = "https://archive.org/services/img/real_book_with_cover"
+        responses.add(
+            responses.HEAD, url,
+            status=200, headers={"Content-Length": "50000"},
+        )
+        assert _validate_image_url(url) is True
+
 
 class TestAccumulateImagesValidation:
     """_accumulate_archive_images の画像バリデーション統合テスト。"""
