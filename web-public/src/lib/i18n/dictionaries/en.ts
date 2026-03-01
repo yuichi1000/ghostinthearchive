@@ -4,7 +4,7 @@ const dict: Dictionary = {
   hero: {
     badge: "AI-POWERED INVESTIGATION UNIT",
     title: "Ghost in the Archive",
-    subtitle: "Unearthing the Ghosts in the world's records — through multi-lingual cross-analysis and five academic disciplines",
+    subtitle: "Unearthing the Ghosts in the world's records — through multi-lingual cross-analysis across history, folklore, anthropology, linguistics, and archival science",
     description:
       "What the world's public records cannot explain — even after exhaustive analysis — that is the Ghost.",
   },
@@ -125,7 +125,7 @@ const dict: Dictionary = {
   siteIntro: {
     tagline: "Unearthing anomalies across languages, archives, and disciplines",
     description:
-      "An autonomous AI agent system that cross-analyzes the world's public digital archives through five academic fields — surfacing the contradictions that no single record, language, or discipline can explain alone.",
+      "An autonomous AI agent system that cross-analyzes the world's public digital archives through history, folklore, anthropology, linguistics, and archival science — surfacing the contradictions that no single record, language, or discipline can explain alone.",
   },
   classificationGuide: {
     heading: "Classification Index",
@@ -157,9 +157,9 @@ const dict: Dictionary = {
     heading: "Ghost Assessment",
   },
   seo: {
-    homeDescription: "An autonomous AI agent system cross-analyzing the world's public digital archives through five academic disciplines — unearthing anomalies that no single record, language, or field can explain.",
+    homeDescription: "An autonomous AI agent system cross-analyzing the world's public digital archives through history, folklore, anthropology, linguistics, and archival science — unearthing anomalies that no single record, language, or field can explain.",
     archiveDescription: "Complete index of all investigated anomalies, discrepancies, and unexplained phenomena unearthed from the world's public records.",
-    aboutDescription: "Learn about Ghost in the Archive — an autonomous AI investigation unit that cross-analyzes the world's public digital archives across five academic disciplines.",
+    aboutDescription: "Learn about Ghost in the Archive — an autonomous AI investigation unit that cross-analyzes the world's public digital archives across history, folklore, anthropology, linguistics, and archival science.",
   },
   footer: {
     description:
