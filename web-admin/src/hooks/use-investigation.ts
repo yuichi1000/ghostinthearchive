@@ -10,7 +10,7 @@ interface ThemeSuggestion {
   description_ja?: string
   coverage_score?: "HIGH" | "MEDIUM" | "LOW"
   primary_apis?: string[]
-  probe_hits?: Record<string, number>
+  probe_hits?: Record<string, boolean>
 }
 
 interface UseInvestigationOptions {
