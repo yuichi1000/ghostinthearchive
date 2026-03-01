@@ -4,19 +4,24 @@
 各 Librarian はテーマに応じて検索言語を自律的に判断し、
 collected_documents_{api_key} に結果を保存する。
 
+各 API Librarian は SequentialAgent(Round 1 + Round 2) でラップされる:
+- Round 1（temp=0.3）: 堅実な初回検索
+- Round 2（temp=0.7）: Round 1 の結果を踏まえた適応的再検索
+
 後段の AggregatorAgent が全 Librarian 出力を言語別に再集約する。
 
 全 Librarian は gemini-2.5-flash を使用（資料検索は Flash で十分）。
 モデル設定は shared/model_config.py で一元管理（429 リトライ付き）。
 """
 
-from google.adk.agents import LlmAgent
+from google.adk.agents import LlmAgent, SequentialAgent
 from google.genai import types
 
 from shared.model_config import create_flash_model
 from shared.token_tracker import create_token_tracking_callback
 
 from ..tools.librarian_tools import search_archives, search_newspapers
+from .librarian_instructions import ADAPTIVE_INSTRUCTION as _ADAPTIVE_INSTRUCTION
 from .librarian_instructions import BASE_INSTRUCTION as _BASE_INSTRUCTION
 
 # ---------------------------------------------------------------------------
@@ -238,36 +243,62 @@ API_CONFIGS: dict[str, dict] = {
 }
 
 
-def create_api_librarian(api_key: str) -> LlmAgent:
+def create_api_librarian(api_key: str) -> SequentialAgent:
     """指定された API グループの Librarian エージェントを生成する。
+
+    SequentialAgent(Round 1 + Round 2) を返す:
+    - Round 1（temp=0.3）: 堅実な初回検索 → collected_documents_{api_key}
+    - Round 2（temp=0.7）: 適応的再検索 → adaptive_search_{api_key}
 
     Args:
         api_key: API_CONFIGS のキー（例: "us_archives", "europeana"）
 
     Returns:
-        LlmAgent インスタンス
+        SequentialAgent（Round 1 + Round 2 を内包）
     """
     config = API_CONFIGS[api_key]
-    instruction = _BASE_INSTRUCTION.format(**config)
     tools = [search_archives]
     if config.get("has_newspapers"):
         tools.append(search_newspapers)
 
-    return LlmAgent(
+    # Round 1: 堅実な検索（temp=0.3）
+    round1 = LlmAgent(
         name=f"librarian_{api_key}",
         model=create_flash_model(),
         description=(
             f"{config['api_display_name']} specialist librarian. "
             f"Searches {config['api_display_name']} for primary sources."
         ),
-        instruction=instruction,
+        instruction=_BASE_INSTRUCTION.format(**config),
         tools=tools,
         output_key=f"collected_documents_{api_key}",
         generate_content_config=types.GenerateContentConfig(temperature=0.3),
         after_model_callback=create_token_tracking_callback(f"librarian_{api_key}"),
     )
 
+    # Round 2: 探索的再検索（temp=0.7）— 常時実行
+    round2 = LlmAgent(
+        name=f"librarian_{api_key}_adaptive",
+        model=create_flash_model(),
+        description=(
+            f"{config['api_display_name']} adaptive search librarian. "
+            f"Performs complementary follow-up search based on Round 1 results."
+        ),
+        instruction=_ADAPTIVE_INSTRUCTION.format(**config, api_key=api_key),
+        tools=tools,
+        output_key=f"adaptive_search_{api_key}",
+        generate_content_config=types.GenerateContentConfig(temperature=0.7),
+        after_model_callback=create_token_tracking_callback(
+            f"librarian_{api_key}_adaptive"
+        ),
+    )
 
-def create_all_api_librarians() -> list[LlmAgent]:
+    return SequentialAgent(
+        name=f"librarian_{api_key}_block",
+        sub_agents=[round1, round2],
+    )
+
+
+def create_all_api_librarians() -> list[SequentialAgent]:
     """全 API グループの Librarian エージェントをリストで返す。"""
     return [create_api_librarian(key) for key in API_CONFIGS]

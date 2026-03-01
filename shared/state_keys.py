@@ -59,3 +59,8 @@ def translation_result_key(lang: str) -> str:
 def raw_search_results_key(identifier: str) -> str:
     """Librarian 検索結果キー（API/言語別）。"""
     return f"raw_search_results_{identifier}"
+
+
+def adaptive_search_key(api_key: str) -> str:
+    """Librarian Round 2（適応的検索）の出力キー。"""
+    return f"adaptive_search_{api_key}"
