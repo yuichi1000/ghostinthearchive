@@ -3,6 +3,7 @@
 API カバレッジメタデータ、プロンプトテーブル生成、スコア算出ロジックをテストする。
 """
 
+from curator_agents.probe import ProbeResult
 from shared.api_coverage import (
     API_COVERAGE_REGISTRY,
     VALID_API_KEYS,
@@ -80,33 +81,66 @@ class TestCalculateCoverageScore:
 
     def test_high_score_three_apis_with_high_reliability(self):
         """3+ API で全文取得可能、うち 1+ が HIGH → HIGH。"""
-        probe = {"us_archives": True, "internet_archive": True, "trove": True}
+        probe = {
+            "us_archives": ProbeResult(has_content=True, total_hits=10),
+            "internet_archive": ProbeResult(has_content=True, total_hits=5),
+            "trove": ProbeResult(has_content=True, total_hits=3),
+        }
         score, apis = calculate_coverage_score(probe)
         assert score == "HIGH"
         assert set(apis) == {"us_archives", "internet_archive", "trove"}
 
     def test_medium_score_two_apis(self):
         """2 API で全文取得可能 → MEDIUM。"""
-        probe = {"europeana": True, "ndl": True}
+        probe = {
+            "europeana": ProbeResult(has_content=True, total_hits=5),
+            "ndl": ProbeResult(has_content=True, total_hits=3),
+        }
         score, apis = calculate_coverage_score(probe)
         assert score == "MEDIUM"
         assert set(apis) == {"europeana", "ndl"}
 
     def test_high_score_three_apis_with_delpher(self):
         """3 API で全文取得可能、delpher(HIGH) 含む → HIGH。"""
-        probe = {"europeana": True, "ndl": True, "delpher": True}
+        probe = {
+            "europeana": ProbeResult(has_content=True, total_hits=5),
+            "ndl": ProbeResult(has_content=True, total_hits=3),
+            "delpher": ProbeResult(has_content=True, total_hits=10),
+        }
         score, apis = calculate_coverage_score(probe)
         assert score == "HIGH"
 
+    def test_high_score_boosted_by_deep_hits(self):
+        """2 API + HIGH reliability + total_hits>=50 → HIGH に昇格。"""
+        probe = {
+            "us_archives": ProbeResult(has_content=True, total_hits=120),
+            "internet_archive": ProbeResult(has_content=True, total_hits=50),
+        }
+        score, apis = calculate_coverage_score(probe)
+        assert score == "HIGH"
+        assert set(apis) == {"us_archives", "internet_archive"}
+
+    def test_medium_two_apis_without_deep_hits(self):
+        """2 API + HIGH reliability だが total_hits<50 → MEDIUM のまま。"""
+        probe = {
+            "us_archives": ProbeResult(has_content=True, total_hits=10),
+            "internet_archive": ProbeResult(has_content=True, total_hits=5),
+        }
+        score, apis = calculate_coverage_score(probe)
+        assert score == "MEDIUM"
+
     def test_low_score_single_api(self):
         """1 API のみ全文取得可能 → LOW。"""
-        probe = {"ndl": True}
+        probe = {"ndl": ProbeResult(has_content=True, total_hits=5)}
         score, apis = calculate_coverage_score(probe)
         assert score == "LOW"
 
     def test_low_score_no_hits(self):
         """全 API で全文取得不可 → LOW。"""
-        probe = {"us_archives": False, "europeana": False}
+        probe = {
+            "us_archives": ProbeResult(has_content=False, total_hits=0),
+            "europeana": ProbeResult(has_content=False, total_hits=0),
+        }
         score, apis = calculate_coverage_score(probe)
         assert score == "LOW"
         assert apis == []
@@ -117,9 +151,20 @@ class TestCalculateCoverageScore:
         assert score == "LOW"
         assert apis == []
 
+    def test_backward_compat_bool_values(self):
+        """dict[str, bool] でも動作すること（後方互換）。"""
+        probe = {"us_archives": True, "internet_archive": True, "trove": True}
+        score, apis = calculate_coverage_score(probe)
+        assert score == "HIGH"
+        assert set(apis) == {"us_archives", "internet_archive", "trove"}
+
     def test_unknown_api_key_ignored_for_reliability_check(self):
         """未知の API キーは信頼度チェックで無視される。"""
-        probe = {"unknown_api_1": True, "unknown_api_2": True, "unknown_api_3": True}
+        probe = {
+            "unknown_api_1": ProbeResult(has_content=True, total_hits=5),
+            "unknown_api_2": ProbeResult(has_content=True, total_hits=5),
+            "unknown_api_3": ProbeResult(has_content=True, total_hits=5),
+        }
         score, apis = calculate_coverage_score(probe)
         # 3 API で全文取得可能だが全て未知 → HIGH reliability なし → MEDIUM
         assert score == "MEDIUM"
