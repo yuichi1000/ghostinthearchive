@@ -45,6 +45,53 @@ class TestThemeSuggestion:
         with pytest.raises(Exception):
             ThemeSuggestion.model_validate(data)
 
+    def test_coverage_score_accepts_valid_values(self):
+        """coverage_score が HIGH/MEDIUM/LOW/None を受け入れること。"""
+        for score in ("HIGH", "MEDIUM", "LOW"):
+            data = {
+                "theme": "T", "description": "D", "category": "HIS",
+                "coverage_score": score,
+            }
+            s = ThemeSuggestion.model_validate(data)
+            assert s.coverage_score == score
+
+    def test_coverage_score_defaults_to_none(self):
+        """coverage_score 未指定時は None がデフォルトであること。"""
+        data = {"theme": "T", "description": "D", "category": "HIS"}
+        s = ThemeSuggestion.model_validate(data)
+        assert s.coverage_score is None
+
+    def test_probe_keywords_defaults_to_empty_list(self):
+        """probe_keywords 未指定時は空リストがデフォルトであること。"""
+        data = {"theme": "T", "description": "D", "category": "HIS"}
+        s = ThemeSuggestion.model_validate(data)
+        assert s.probe_keywords == []
+
+    def test_probe_hits_defaults_to_empty_dict(self):
+        """probe_hits 未指定時は空 dict がデフォルトであること。"""
+        data = {"theme": "T", "description": "D", "category": "HIS"}
+        s = ThemeSuggestion.model_validate(data)
+        assert s.probe_hits == {}
+
+    def test_primary_apis_filters_invalid_keys(self):
+        """primary_apis の不正な API キーが除外されること。"""
+        data = {
+            "theme": "T", "description": "D", "category": "HIS",
+            "primary_apis": ["us_archives", "invalid_api", "trove"],
+        }
+        s = ThemeSuggestion.model_validate(data)
+        assert s.primary_apis == ["us_archives", "trove"]
+
+    def test_primary_apis_accepts_all_valid_keys(self):
+        """全有効 API キーが受け入れられること。"""
+        from shared.api_coverage import VALID_API_KEYS
+        data = {
+            "theme": "T", "description": "D", "category": "HIS",
+            "primary_apis": list(VALID_API_KEYS),
+        }
+        s = ThemeSuggestion.model_validate(data)
+        assert set(s.primary_apis) == VALID_API_KEYS
+
 
 class TestValidateSuggestions:
     """validate_suggestions() のテスト。"""
@@ -93,6 +140,24 @@ class TestValidateSuggestions:
         with caplog.at_level(logging.WARNING, logger="curator_agents.schemas"):
             validate_suggestions([{"bad": "data"}])
         assert "テーマ提案 #0 を除外" in caplog.text
+
+    def test_preserves_coverage_fields(self):
+        """validate_suggestions がカバレッジフィールドを保持すること。"""
+        raw = [
+            {
+                "theme": "Theme A", "description": "Desc A", "category": "HIS",
+                "coverage_score": "HIGH",
+                "primary_apis": ["us_archives", "trove"],
+                "probe_keywords": ["Boston", "1850"],
+                "probe_hits": {"us_archives": 5, "trove": 2},
+            },
+        ]
+        result = validate_suggestions(raw)
+        assert len(result) == 1
+        assert result[0]["coverage_score"] == "HIGH"
+        assert result[0]["primary_apis"] == ["us_archives", "trove"]
+        assert result[0]["probe_keywords"] == ["Boston", "1850"]
+        assert result[0]["probe_hits"] == {"us_archives": 5, "trove": 2}
 
 
 class TestBuildCategoryPromptSection:

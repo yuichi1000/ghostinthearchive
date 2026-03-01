@@ -6,13 +6,23 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 
+def _identity_probe(themes):
+    """プローブをモックするヘルパー: テーマにダミーのカバレッジフィールドを付与。"""
+    for t in themes:
+        t["coverage_score"] = "HIGH"
+        t["primary_apis"] = ["us_archives"]
+        t["probe_hits"] = {"us_archives": 5}
+    return themes
+
+
 @pytest.fixture
 def mock_firestore_queries():
-    """Firestore クエリ3つをモック。"""
+    """Firestore クエリ3つ + プローブをモック。"""
     with patch("curator_agents.core.get_existing_titles", return_value=["Theme A"]), \
          patch("curator_agents.core.get_recent_failures", return_value=[]), \
          patch("curator_agents.core.get_category_distribution", return_value={"HIS": 2}), \
-         patch("curator_agents.core.format_category_distribution", return_value="HIS: 2"):
+         patch("curator_agents.core.format_category_distribution", return_value="HIS: 2"), \
+         patch("curator_agents.core.probe_all_themes", side_effect=_identity_probe):
         yield
 
 
@@ -141,3 +151,19 @@ class TestSuggestThemes:
 
             with pytest.raises(ValueError, match="failure marker"):
                 await suggest_themes()
+
+    @pytest.mark.asyncio
+    async def test_includes_coverage_score_after_probe(self, mock_firestore_queries, valid_agent_output):
+        """Should include coverage_score from probe in results."""
+        with patch(
+            "curator_agents.core.run_single_agent",
+            new_callable=AsyncMock,
+            return_value=valid_agent_output,
+        ):
+            from curator_agents.core import suggest_themes
+
+            result = await suggest_themes()
+
+        assert result[0]["coverage_score"] == "HIGH"
+        assert result[0]["primary_apis"] == ["us_archives"]
+        assert result[0]["probe_hits"] == {"us_archives": 5}
