@@ -172,8 +172,8 @@ class TestFetchPlainText:
         assert _fetch_plain_text(session, "uuid-timeout") is None
 
     @responses.activate
-    def test_truncated_at_5000(self):
-        """テキストが5000文字で切り詰められる。"""
+    def test_returns_full_text_under_raw_limit(self):
+        """安全上限以下のテキストはそのまま返す（キーワード抽出は呼び出し側で行う）。"""
         url = _PLAIN_TEXT_URL.format(uuid="uuid-long")
         long_text = "A" * 6000
         mock_data = {"nyplAPI": {"response": {"text": long_text}}}
@@ -185,7 +185,7 @@ class TestFetchPlainText:
         text = _fetch_plain_text(session, "uuid-long")
 
         assert text is not None
-        assert len(text) == 5000
+        assert len(text) == 6000
 
 
 class TestNYPLFulltextEnrichment:

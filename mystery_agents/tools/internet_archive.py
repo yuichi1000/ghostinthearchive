@@ -11,6 +11,7 @@ import requests
 
 from ..schemas.document import ArchiveDocument
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
+from .fulltext_extraction import build_extraction_keywords, extract_keyword_passages
 from .search_utils import build_search_query
 from .source_registry import register_source
 
@@ -22,7 +23,7 @@ _DJVU_TEXT_URL = "https://archive.org/download/{identifier}/{identifier}_djvu.tx
 # 全文取得の上限設定
 _MAX_FULLTEXT_FETCHES = 5
 _FULLTEXT_TIMEOUT = 15
-_MAX_TEXT_LENGTH = 5000
+_MAX_RAW_FETCH = 200_000
 
 
 def _fetch_djvu_text(
@@ -35,7 +36,7 @@ def _fetch_djvu_text(
         identifier: Internet Archive アイテム識別子
 
     Returns:
-        OCR テキスト（最大5000文字）。取得失敗時は None。
+        OCR テキスト（安全上限で切り詰め）。取得失敗時は None。
     """
     try:
         url = _DJVU_TEXT_URL.format(identifier=identifier)
@@ -48,7 +49,7 @@ def _fetch_djvu_text(
             logger.debug("IA djvu.txt %d for %s", resp.status_code, identifier)
             return None
         text = resp.text.strip()
-        return text[:_MAX_TEXT_LENGTH] if text else None
+        return text[:_MAX_RAW_FETCH] if text else None
     except (requests.RequestException, ValueError) as e:
         logger.debug("IA djvu.txt 取得失敗 (%s): %s", identifier, e)
         return None
@@ -130,8 +131,8 @@ class InternetArchiveSource(ArchiveSource):
 
         resp = data.get("response", {})
         documents = []
-        # 全文取得対象の (index, identifier) ペア
-        fulltext_targets: list[tuple[int, str]] = []
+        # 全文取得対象の (index, identifier, subjects) タプル
+        fulltext_targets: list[tuple[int, str, list[str]]] = []
 
         for item in resp.get("docs", []):
             title = item.get("title", "Unknown Title")
@@ -180,14 +181,20 @@ class InternetArchiveSource(ArchiveSource):
 
             # 全文取得候補に追加（上位5件まで）
             if identifier and len(fulltext_targets) < _MAX_FULLTEXT_FETCHES:
-                fulltext_targets.append((len(documents) - 1, identifier))
+                subjects_raw = item.get("subject", [])
+                if isinstance(subjects_raw, str):
+                    subjects_raw = [subjects_raw]
+                fulltext_targets.append((len(documents) - 1, identifier, subjects_raw))
 
-        # 全文テキストエンリッチメント
-        for idx, ident in fulltext_targets:
+        # 全文テキストエンリッチメント（キーワード指向抽出）
+        for idx, ident, subjects in fulltext_targets:
             self._rate_limit()
             text = _fetch_djvu_text(self._session, ident)
             if text:
-                documents[idx].raw_text = text
+                extraction_kws = build_extraction_keywords(
+                    keywords, title=documents[idx].title, subjects=subjects
+                )
+                documents[idx].raw_text = extract_keyword_passages(text, extraction_kws)
 
         # 全文取得成功したドキュメントのみ保持
         documents = [doc for doc in documents if doc.raw_text]

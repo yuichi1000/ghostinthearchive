@@ -306,8 +306,8 @@ class TestFetchOcrText:
         assert result is None
 
     @responses.activate
-    def test_truncates_long_text(self):
-        """5000文字を超えるテキストは切り詰める。"""
+    def test_returns_full_text_under_raw_limit(self):
+        """安全上限以下のテキストはそのまま返す（キーワード抽出は呼び出し側で行う）。"""
         resolver_url = "http://resolver.kb.nl/resolve?urn=ddd:long"
         responses.add(
             responses.GET,
@@ -319,7 +319,7 @@ class TestFetchOcrText:
         session = create_retry_session()
         result = _fetch_ocr_text(session, resolver_url)
 
-        assert len(result) == 5000
+        assert len(result) == 6000
 
     @responses.activate
     def test_returns_none_on_empty_text(self):

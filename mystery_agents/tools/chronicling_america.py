@@ -11,6 +11,7 @@ import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
+from .fulltext_extraction import build_extraction_keywords, extract_keyword_passages
 from .search_utils import build_search_query
 from .source_registry import register_source
 
@@ -34,7 +35,7 @@ BASE_URL = "https://www.loc.gov/search/"
 # 全文取得の上限設定
 _MAX_FULLTEXT_FETCHES = 5
 _FULLTEXT_TIMEOUT = 15
-_MAX_TEXT_LENGTH = 5000
+_MAX_RAW_FETCH = 200_000
 
 
 def _fetch_page_fulltext(
@@ -47,7 +48,7 @@ def _fetch_page_fulltext(
         page_url: LOC ページ URL
 
     Returns:
-        OCR テキスト（最大5000文字）。取得失敗時は None。
+        OCR テキスト（安全上限で切り詰め）。取得失敗時は None。
     """
     try:
         sep = "&" if "?" in page_url else "?"
@@ -61,7 +62,7 @@ def _fetch_page_fulltext(
             return None
         data = resp.json()
         text = data.get("full_text", "")
-        return text.strip()[:_MAX_TEXT_LENGTH] if text else None
+        return text.strip()[:_MAX_RAW_FETCH] if text else None
     except (requests.RequestException, ValueError, KeyError) as e:
         logger.debug("LOC page fulltext 取得失敗: %s", e)
         return None
@@ -80,7 +81,7 @@ def _fetch_item_fulltext(
         item_url: LOC アイテム URL
 
     Returns:
-        OCR テキスト（最大5000文字）。取得失敗時は None。
+        OCR テキスト（安全上限で切り詰め）。取得失敗時は None。
     """
     try:
         sep = "&" if "?" in item_url else "?"
@@ -97,7 +98,7 @@ def _fetch_item_fulltext(
         # 直接 full_text がある場合
         full_text = data.get("full_text", "")
         if full_text:
-            return full_text.strip()[:_MAX_TEXT_LENGTH]
+            return full_text.strip()[:_MAX_RAW_FETCH]
 
         # resources → 最初のページから full_text を取得
         resources = data.get("resources", [])
@@ -222,12 +223,15 @@ class ChroniclingAmericaSource(ArchiveSource):
             if url and len(fulltext_targets) < _MAX_FULLTEXT_FETCHES:
                 fulltext_targets.append((len(documents) - 1, url))
 
-        # 全文テキストエンリッチメント（ベストエフォート）
+        # 全文テキストエンリッチメント（キーワード指向抽出）
         for idx, item_url in fulltext_targets:
             self._rate_limit()
             text = _fetch_item_fulltext(self._session, item_url)
             if text:
-                documents[idx].raw_text = text
+                extraction_kws = build_extraction_keywords(
+                    keywords, title=documents[idx].title
+                )
+                documents[idx].raw_text = extract_keyword_passages(text, extraction_kws)
 
         pagination = data.get("pagination", {})
         total_hits = pagination.get("total", pagination.get("of", 0))

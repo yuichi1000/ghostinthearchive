@@ -15,6 +15,7 @@ import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
+from .fulltext_extraction import build_extraction_keywords, extract_keyword_passages
 from .source_registry import register_source
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ _NDL_LAB_URL = "https://lab.ndl.go.jp/dl/api/book/layouttext/{pid}"
 # 全文取得の上限設定
 _MAX_FULLTEXT_FETCHES = 5
 _FULLTEXT_TIMEOUT = 15
-_MAX_TEXT_LENGTH = 5000
+_MAX_RAW_FETCH = 200_000
 
 # RSS 2.0 + Dublin Core 等の XML 名前空間
 _NS = {
@@ -64,7 +65,7 @@ def _fetch_fulltext(session: requests.Session, pid: str) -> str | None:
         pid: NDL デジタルコレクションの PID
 
     Returns:
-        OCR テキスト（最大5000文字）。取得失敗時は None。
+        OCR テキスト（安全上限で切り詰め）。取得失敗時は None。
     """
     try:
         resp = session.get(
@@ -87,7 +88,7 @@ def _fetch_fulltext(session: requests.Session, pid: str) -> str | None:
 
         if not lines:
             return None
-        return "\n".join(lines)[:_MAX_TEXT_LENGTH]
+        return "\n".join(lines)[:_MAX_RAW_FETCH]
 
     except (requests.RequestException, ValueError, KeyError) as e:
         logger.debug("NDL Lab 全文取得失敗 (PID %s): %s", pid, e)
@@ -204,12 +205,15 @@ class NDLSearchSource(ArchiveSource):
             if pid and len(fulltext_targets) < _MAX_FULLTEXT_FETCHES:
                 fulltext_targets.append((len(documents) - 1, pid))
 
-        # 全文テキストエンリッチメント（ベストエフォート）
+        # 全文テキストエンリッチメント（キーワード指向抽出）
         for idx, pid in fulltext_targets:
             self._rate_limit()
             text = _fetch_fulltext(self._session, pid)
             if text:
-                documents[idx].raw_text = text
+                extraction_kws = build_extraction_keywords(
+                    keywords, title=documents[idx].title
+                )
+                documents[idx].raw_text = extract_keyword_passages(text, extraction_kws)
 
         return ArchiveSearchResult(documents=documents, total_hits=total_hits)
 
