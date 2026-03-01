@@ -289,8 +289,8 @@ class TestFetchFulltext:
         assert _fetch_fulltext(session, "11111") is None
 
     @responses.activate
-    def test_truncated_at_5000(self):
-        """テキストが5000文字で切り詰められる。"""
+    def test_returns_full_text_under_raw_limit(self):
+        """安全上限以下のテキストはそのまま返す（キーワード抽出は呼び出し側で行う）。"""
         lab_url = _NDL_LAB_URL.format(pid="22222")
         # 6000文字のテキストを含む1行
         long_text = "あ" * 6000
@@ -303,7 +303,7 @@ class TestFetchFulltext:
         text = _fetch_fulltext(session, "22222")
 
         assert text is not None
-        assert len(text) == 5000
+        assert len(text) == 6000
 
 
 class TestNDLFulltextEnrichment:

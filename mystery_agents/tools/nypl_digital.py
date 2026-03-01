@@ -13,6 +13,7 @@ import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
+from .fulltext_extraction import build_extraction_keywords, extract_keyword_passages
 from .search_utils import build_search_query
 from .source_registry import register_source
 
@@ -24,7 +25,7 @@ _PLAIN_TEXT_URL = "https://api.repo.nypl.org/api/v2/items/plain_text/{uuid}"
 # 全文取得の上限設定
 _MAX_FULLTEXT_FETCHES = 5
 _FULLTEXT_TIMEOUT = 15
-_MAX_TEXT_LENGTH = 5000
+_MAX_RAW_FETCH = 200_000
 
 
 def _fetch_plain_text(
@@ -37,7 +38,7 @@ def _fetch_plain_text(
         uuid: NYPL アイテムの UUID
 
     Returns:
-        OCR テキスト（最大5000文字）。取得失敗時は None。
+        OCR テキスト（安全上限で切り詰め）。取得失敗時は None。
     """
     try:
         headers = {"User-Agent": "GhostInTheArchive/1.0"}
@@ -61,7 +62,7 @@ def _fetch_plain_text(
         )
         if not text or not isinstance(text, str):
             return None
-        return text.strip()[:_MAX_TEXT_LENGTH]
+        return text.strip()[:_MAX_RAW_FETCH]
 
     except (requests.RequestException, ValueError, KeyError) as e:
         logger.debug("NYPL plain_text 取得失敗 (UUID %s): %s", uuid, e)
@@ -170,12 +171,15 @@ class NYPLSource(ArchiveSource):
             if uuid and len(fulltext_targets) < _MAX_FULLTEXT_FETCHES:
                 fulltext_targets.append((len(documents) - 1, uuid))
 
-        # 全文テキストエンリッチメント（ベストエフォート）
+        # 全文テキストエンリッチメント（キーワード指向抽出）
         for idx, uuid in fulltext_targets:
             self._rate_limit()
             text = _fetch_plain_text(self._session, uuid, token=token)
             if text:
-                documents[idx].raw_text = text
+                extraction_kws = build_extraction_keywords(
+                    keywords, title=documents[idx].title
+                )
+                documents[idx].raw_text = extract_keyword_passages(text, extraction_kws)
 
         total_hits = int(nypl_response.get("numResults", 0))
         return ArchiveSearchResult(documents=documents, total_hits=total_hits)

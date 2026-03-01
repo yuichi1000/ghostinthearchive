@@ -12,6 +12,7 @@ import requests
 
 from ..schemas.document import ArchiveDocument, SourceLanguage
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
+from .fulltext_extraction import build_extraction_keywords, extract_keyword_passages
 from .search_utils import build_search_query
 from .source_registry import register_source
 
@@ -22,7 +23,7 @@ BASE_URL = "https://jsru.kb.nl/sru/sru"
 # 全文取得の上限設定
 _MAX_FULLTEXT_FETCHES = 5
 _FULLTEXT_TIMEOUT = 15
-_MAX_TEXT_LENGTH = 5000
+_MAX_RAW_FETCH = 200_000
 
 
 def _fetch_ocr_text(
@@ -37,7 +38,7 @@ def _fetch_ocr_text(
         resolver_url: Delpher resolver URL（例: http://resolver.kb.nl/resolve?urn=...）
 
     Returns:
-        OCR テキスト（最大5000文字）。取得失敗時は None。
+        OCR テキスト（安全上限で切り詰め）。取得失敗時は None。
     """
     try:
         ocr_url = f"{resolver_url.rstrip('/')}:ocr"
@@ -50,7 +51,7 @@ def _fetch_ocr_text(
             logger.debug("Delpher OCR %d for %s", resp.status_code, resolver_url)
             return None
         text = resp.text.strip()
-        return text[:_MAX_TEXT_LENGTH] if text else None
+        return text[:_MAX_RAW_FETCH] if text else None
     except (requests.RequestException, ValueError) as e:
         logger.debug("Delpher OCR 取得失敗 (%s): %s", resolver_url, e)
         return None
@@ -219,7 +220,12 @@ class DelpherSource(ArchiveSource):
             self._rate_limit()
             text = _fetch_ocr_text(self._session, url)
             if text:
-                result.documents[idx].raw_text = text
+                extraction_kws = build_extraction_keywords(
+                    keywords, title=result.documents[idx].title
+                )
+                result.documents[idx].raw_text = extract_keyword_passages(
+                    text, extraction_kws
+                )
 
         # 全文取得成功したドキュメントのみ保持
         filtered = [doc for doc in result.documents if doc.raw_text]

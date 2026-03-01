@@ -9,6 +9,7 @@ from typing import Any
 
 from ..schemas.document import ArchiveDocument, SourceLanguage
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
+from .fulltext_extraction import build_extraction_keywords, extract_keyword_passages
 from .search_utils import build_search_query
 from .source_registry import register_source
 
@@ -110,6 +111,14 @@ class TroveSource(ArchiveSource):
             combined = f"{title} {summary_text}".lower()
             matched = [kw for kw in keywords if kw.lower() in combined]
 
+            # キーワード指向抽出（Trove はインラインで全文を取得）
+            raw_text = None
+            if article_text:
+                extraction_kws = build_extraction_keywords(
+                    keywords, title=str(title)
+                )
+                raw_text = extract_keyword_passages(article_text, extraction_kws)
+
             doc = ArchiveDocument(
                 title=str(title)[:500],
                 date=self.parse_year(str(date_str), min_century=18),
@@ -118,7 +127,7 @@ class TroveSource(ArchiveSource):
                 language=SourceLanguage.EN,
                 location=str(location)[:200],
                 source_type=self.source_type,
-                raw_text=article_text[:5000] if article_text else None,
+                raw_text=raw_text,
                 keywords_matched=matched,
             )
             documents.append(doc)
