@@ -43,22 +43,12 @@ export function EvidenceBlock({ evidence, label, translatedExcerpt, labels, clas
         {/* Top edge wear effect */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-b from-parchment/10 to-transparent" />
 
-        {/* Date badge + Quote marks row */}
-        <div className="flex items-start justify-between mb-1">
-          {(hasExcerpt || hasTranslatedExcerpt) && (
-            <div className="text-4xl text-parchment/20 font-serif leading-none" aria-hidden="true">
-              &ldquo;
-            </div>
-          )}
-          {evidence.source_date && (
-            <div className={cn(
-              "px-2 py-0.5 bg-blood-red/20 border border-blood-red/30 rounded-sm shrink-0",
-              !(hasExcerpt || hasTranslatedExcerpt) && "ml-auto"
-            )}>
-              <span className="text-xs font-mono text-[#ff6b6b]">{evidence.source_date}</span>
-            </div>
-          )}
-        </div>
+        {/* Quote marks */}
+        {(hasExcerpt || hasTranslatedExcerpt) && (
+          <div className="text-4xl text-parchment/20 font-serif leading-none mb-1" aria-hidden="true">
+            &ldquo;
+          </div>
+        )}
 
         {/* Evidence text: 翻訳があればメインに、原文はサブに。空 excerpt は非表示。 */}
         {hasTranslatedExcerpt ? (

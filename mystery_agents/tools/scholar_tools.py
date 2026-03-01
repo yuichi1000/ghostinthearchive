@@ -126,6 +126,15 @@ def _validate_evidence_grounding(
             if raw_source_type:
                 ev["archive_source"] = raw_source_type
 
+            # relevant_excerpt を API 原文でグラウンディング
+            raw_text = raw_doc.get("raw_text")
+            if raw_text and raw_text.strip():
+                ev["relevant_excerpt"] = raw_text
+            else:
+                warnings.append(
+                    f"{label}: raw_text が空 — LLM excerpt を維持"
+                )
+
             # キーワード妥当性チェック
             kw_matched = raw_doc.get("keywords_matched", [])
             ev["_kw_match_count"] = len(kw_matched)
@@ -135,6 +144,7 @@ def _validate_evidence_grounding(
                     f"(title: {raw_doc.get('title', 'unknown')})"
                 )
         else:
+            ev["_ungrounded"] = True
             warnings.append(
                 f"{label}: source_url not found in collected documents"
             )
@@ -264,11 +274,40 @@ def save_structured_report(
             warnings.append(f"additional_evidence: {kw_removed} 件除外 (キーワード無一致)")
         report_data["additional_evidence"] = additional
 
+    # additional_evidence: _ungrounded 項目を除外
+    additional = report_data.get("additional_evidence")
+    if additional is not None:
+        before_ungrounded = len(additional)
+        additional = [ev for ev in additional if not ev.get("_ungrounded")]
+        ungrounded_removed = before_ungrounded - len(additional)
+        if ungrounded_removed:
+            warnings.append(
+                f"additional_evidence: {ungrounded_removed} 件除外 (URL 不一致)"
+            )
+        report_data["additional_evidence"] = additional
+
+    # evidence_a / evidence_b: _ungrounded の場合フォールバック挿入
+    for key in ("evidence_a", "evidence_b"):
+        ev = report_data.get(key)
+        if ev and isinstance(ev, dict) and ev.get("_ungrounded"):
+            source_title = ev.get("source_title", "unknown source")
+            ev["relevant_excerpt"] = f"[See original source: {source_title}]"
+            warnings.append(
+                f"{key}: URL 不一致 — excerpt をフォールバックに置換"
+            )
+
     # evidence_a / evidence_b の一時フィールドをクリーンアップ
     for key in ("evidence_a", "evidence_b"):
         ev = report_data.get(key)
         if ev and isinstance(ev, dict):
             ev.pop("_kw_match_count", None)
+            ev.pop("_ungrounded", None)
+
+    # additional_evidence の一時フィールドをクリーンアップ
+    additional = report_data.get("additional_evidence")
+    if additional is not None:
+        for ev in additional:
+            ev.pop("_ungrounded", None)
 
     # タグバリデーション
     tags = report_data.get("tags")
