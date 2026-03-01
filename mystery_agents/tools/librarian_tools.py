@@ -23,7 +23,7 @@ from shared.state_keys import (
 )
 
 from ..schemas.document import ArchiveDocument
-from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
+from .bilingual_search import expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
 from .link_validator import ValidationSummary, validate_documents
 from .search_orchestration import (
@@ -681,25 +681,3 @@ def search_archives(
         ))
 
     return json.dumps(result, ensure_ascii=False, indent=2)
-
-
-def get_available_keywords() -> str:
-    """Get the list of available bilingual keyword pairs.
-
-    .. deprecated::
-        Bilingual keyword pairs are no longer used in the pipeline.
-        Each language Librarian generates keywords natively.
-        Retained for backward compatibility.
-
-    Returns:
-        JSON string containing keyword pairs
-    """
-    return json.dumps(
-        {
-            "description": "Available bilingual keyword pairs for historical mystery searches",
-            "keyword_pairs": KEYWORD_PAIRS,
-            "usage": "Use these keywords to search both English and Spanish sources",
-        },
-        ensure_ascii=False,
-        indent=2,
-    )
