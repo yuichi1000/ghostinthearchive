@@ -19,6 +19,7 @@ from .source_registry import register_source
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://jsru.kb.nl/sru/sru"
+COLLECTION = "DDD_artikel"
 
 # 全文取得の上限設定
 _MAX_FULLTEXT_FETCHES = 5
@@ -188,6 +189,7 @@ class DelpherSource(ArchiveSource):
         params = {
             "operation": "searchRetrieve",
             "version": "1.2",
+            "x-collection": COLLECTION,
             "query": query,
             "maximumRecords": min(max_results, 100),
             "recordSchema": "dc",

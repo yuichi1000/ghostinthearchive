@@ -5,10 +5,12 @@ import responses
 from mystery_agents.schemas.document import SourceLanguage
 from mystery_agents.tools.delpher import (
     BASE_URL,
+    COLLECTION,
     DelpherSource,
     _fetch_ocr_text,
     _parse_sru_response,
 )
+from mystery_agents.tools.search_utils import build_search_query
 from shared.http_retry import create_retry_session
 
 # モック SRU XML レスポンス
@@ -165,6 +167,7 @@ class TestDelpherSource:
         request = responses.calls[0].request
         assert "operation=searchRetrieve" in request.url
         assert "version=1.2" in request.url
+        assert "x-collection=DDD_artikel" in request.url
         assert "recordSchema=dc" in request.url
         assert "spook" in request.url
 
@@ -212,6 +215,14 @@ class TestDelpherSource:
         source = DelpherSource()
         result = source.search(keywords=[])
         assert result.error == "No keywords provided"
+
+    def test_multi_word_keywords_quoted_in_cql(self):
+        """複数語キーワードが CQL クエリ内で正しくクォートされる。"""
+        query = build_search_query(["Oera Linda Boek", "1867"])
+        assert '"Oera Linda Boek"' in query
+        assert "1867" in query
+        # 単語キーワードはクォートされない
+        assert query == '"Oera Linda Boek" OR 1867'
 
     def test_date_parsing(self):
         """SRU の日付フォーマット（YYYY/MM/DD HH:MM:SS）が正しくパースされる。"""
