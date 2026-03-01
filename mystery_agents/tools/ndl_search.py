@@ -27,7 +27,7 @@ BASE_URL = "https://ndlsearch.ndl.go.jp/api/opensearch"
 _NDL_LAB_URL = "https://lab.ndl.go.jp/dl/api/book/layouttext/{pid}"
 
 # 全文取得の上限設定
-_MAX_FULLTEXT_FETCHES = 5
+_MAX_FULLTEXT_FETCHES = 10
 _FULLTEXT_TIMEOUT = 15
 _MAX_RAW_FETCH = 200_000
 

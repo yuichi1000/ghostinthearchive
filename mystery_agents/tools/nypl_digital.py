@@ -23,7 +23,7 @@ BASE_URL = "https://api.repo.nypl.org/api/v2/items/search"
 _PLAIN_TEXT_URL = "https://api.repo.nypl.org/api/v2/items/plain_text/{uuid}"
 
 # 全文取得の上限設定
-_MAX_FULLTEXT_FETCHES = 5
+_MAX_FULLTEXT_FETCHES = 10
 _FULLTEXT_TIMEOUT = 15
 _MAX_RAW_FETCH = 200_000
 

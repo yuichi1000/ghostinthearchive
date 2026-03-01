@@ -22,7 +22,7 @@ BASE_URL = "https://api.europeana.eu/record/v2/search.json"
 _FULLTEXT_URL = "https://api.europeana.eu/fulltext/v3/{dataset_id}/{local_id}"
 
 # 全文取得の上限設定
-_MAX_FULLTEXT_FETCHES = 5
+_MAX_FULLTEXT_FETCHES = 10
 _FULLTEXT_TIMEOUT = 15
 _MAX_TEXT_LENGTH = 5000
 
@@ -275,9 +275,6 @@ class EuropeanaSource(ArchiveSource):
                 text = _fetch_fulltext(self._session, ds_id, loc_id, api_key)
                 if text:
                     documents[idx].raw_text = text
-
-        # 全文取得成功したドキュメントのみ保持
-        documents = [doc for doc in documents if doc.raw_text]
 
         total_hits = data.get("totalResults", len(documents))
         return ArchiveSearchResult(documents=documents, total_hits=total_hits)

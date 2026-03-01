@@ -352,8 +352,8 @@ class TestDelpherFulltextFilter:
     """Delpher 全文フィルタリングテスト。"""
 
     @responses.activate
-    def test_filters_docs_without_ocr(self):
-        """OCR 取得に失敗したドキュメントは除外される。"""
+    def test_preserves_docs_without_ocr(self):
+        """OCR 取得に失敗したドキュメントもメタデータとして保持される。"""
         responses.add(
             responses.GET,
             BASE_URL,
@@ -378,6 +378,8 @@ class TestDelpherFulltextFilter:
         source = DelpherSource()
         result = source.search(keywords=["spookhuis"])
 
-        assert len(result.documents) == 1
+        # フィルタリング緩和: OCR 失敗のドキュメントもメタデータとして保持
+        assert len(result.documents) == 2
         assert result.documents[0].title == "Het spookhuis te Amsterdam"
         assert result.documents[0].raw_text == "OCR tekst beschikbaar."
+        assert result.documents[1].raw_text is None
