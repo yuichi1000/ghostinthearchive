@@ -5,7 +5,6 @@ import responses
 from mystery_agents.schemas.document import SourceLanguage
 from mystery_agents.tools.delpher import (
     BASE_URL,
-    COLLECTION,
     DelpherSource,
     _fetch_ocr_text,
     _parse_sru_response,
