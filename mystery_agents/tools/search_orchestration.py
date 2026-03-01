@@ -97,12 +97,41 @@ def _search_single_source(
 def _filter_irrelevant_documents(
     docs: list[ArchiveDocument],
 ) -> tuple[list[ArchiveDocument], int]:
-    """keywords_matched が空のドキュメントを除外する。"""
-    filtered = [d for d in docs if d.keywords_matched]
-    removed = len(docs) - len(filtered)
-    if removed > 0:
-        logger.info("キーワード無一致ドキュメント除外: %d 件", removed)
-    return filtered, removed
+    """keywords_matched が空のドキュメントを除外する。
+
+    ソース単位の全除外防止: あるソースの全ドキュメントが除外対象の場合、
+    API の検索結果を尊重してそのソースのドキュメントを全て保持する。
+    これにより、形態論的差異（オランダ語等）で部分文字列マッチが
+    系統的に失敗するソースのドキュメントが失われることを防ぐ。
+    """
+    by_source: dict[str, list[ArchiveDocument]] = defaultdict(list)
+    for doc in docs:
+        by_source[doc.source_type].append(doc)
+
+    filtered: list[ArchiveDocument] = []
+    total_removed = 0
+
+    for source_type, source_docs in by_source.items():
+        matched = [d for d in source_docs if d.keywords_matched]
+        if matched:
+            # 一部マッチ → マッチしたもののみ保持（通常フィルタ）
+            filtered.extend(matched)
+            removed = len(source_docs) - len(matched)
+            if removed > 0:
+                logger.info(
+                    "キーワード無一致ドキュメント除外: %s から %d 件",
+                    source_type, removed,
+                )
+            total_removed += removed
+        else:
+            # 全除外防止: API 検索結果を尊重して全保持
+            filtered.extend(source_docs)
+            logger.info(
+                "キーワード無一致 全除外防止: %s の %d 件を保持（API 検索結果を尊重）",
+                source_type, len(source_docs),
+            )
+
+    return filtered, total_removed
 
 
 def _rank_documents(
