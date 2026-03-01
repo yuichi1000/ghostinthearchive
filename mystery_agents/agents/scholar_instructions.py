@@ -33,6 +33,13 @@ Multilingual Scholar の instruction テンプレートを定義する。
 #   "FALSE POSITIVE: [タイトル] — 調査と無関係（キーワードの同音異義語またはメタデータマッチの可能性）"とフラグする
 # - false positive ドキュメントに基づいて分析結論を構築してはならない
 #
+# **Reference キーワード指標**: 各ドキュメントに "Reference keywords matched" 行が含まれる。
+# `(none — exploratory match only)` のドキュメントは、タイトルやテキストに調査テーマの固有名詞・日付・地名が含まれない。
+# これらのドキュメントは:
+# - **文脈情報としてのみ**扱うこと（時代背景、法制度など）
+# - 矛盾・アノマリー・食い違いの特定に使用しては**ならない**
+# - いかなる主張の一次証拠として引用しては**ならない**
+#
 # ## 分析フレームワーク 5: ソースカバレッジ評価
 # - デジタル化範囲: この時代・地域の {language_name} 語資料のうちデジタル化済みの割合
 # - OCR 品質: 当該時代の文書のOCR信頼性（活字体変遷、印刷品質、手書き文書）
@@ -82,6 +89,13 @@ INSUFFICIENT_DATA: No {language_name}-language documents available for analysis.
 - If a document's title and description have no clear connection to the investigation theme, flag it as:
   "FALSE POSITIVE: [title] — appears unrelated to the investigation (possible keyword homonym or metadata match)"
 - Do NOT build analysis conclusions on false positive documents.
+
+**Reference keyword indicator**: Each document now includes a "Reference keywords matched"
+line. Documents with `(none — exploratory match only)` have NO proper nouns, dates, or
+place names from the investigation theme in their title or text. These documents:
+- MUST be treated as **CONTEXT ONLY** (background on the era, legal system, etc.)
+- MUST NOT be used to identify discrepancies, anomalies, or contradictions
+- MUST NOT be cited as primary evidence for any claim
 
 ### 1. Source Analysis
 - Analyze {language_name}-language sources for their unique perspective on the investigation theme

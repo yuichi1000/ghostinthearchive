@@ -52,6 +52,10 @@ class ArchiveDocument(BaseModel):
     keywords_matched: List[str] = Field(
         default_factory=list, description="Keywords that matched this document"
     )
+    reference_keywords_matched: List[str] = Field(
+        default_factory=list,
+        description="Reference keywords (proper nouns, dates, places) found in title/summary",
+    )
 
     model_config = {"use_enum_values": True}
 

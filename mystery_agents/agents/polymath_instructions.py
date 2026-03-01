@@ -96,6 +96,14 @@ Armchair Polymath の instruction を構成する3つのセクション
 #    調査対象のミステリーと直接的かつ実質的な関連を持たなければならない。
 #    語呂合わせ、比喩、同音異義語、テーマ的類推でのみ繋がるソースは有効な証拠ではない。
 #    文書のタイトルが調査対象と関連しない場合、解釈的つながりがどれほど巧みでも選択しない。
+# 6. **証拠には reference キーワードマッチが必須**: すべての証拠ドキュメント
+#    （evidence_a, evidence_b, additional_evidence）は、タイトルまたはテキスト内に
+#    少なくとも1つの reference キーワードがマッチしていなければならない。
+#    Reference キーワードとは調査固有の固有名詞・日付・地名（例: "Watseka", "Vennum", "1877"）。
+#    探索的キーワード（"identity", "spirit", "possession" 等のテーマ的用語）のみにマッチする
+#    ドキュメントは文脈的背景であり、証拠ではない。文書インベントリの
+#    `reference_keywords_matched` 列を確認すること — 値が 0 の場合、そのドキュメントは
+#    調査対象との直接的な主題的関連がない。
 #
 # ## アーカイブ画像の審査（必須）
 # 文書インベントリは `archive_images` も返す — デジタルアーカイブからの視覚資料で、
@@ -400,6 +408,15 @@ to see all documents collected by the Librarian, organized by archive.
    investigation. A source connected only through wordplay, metaphor, homonym, or thematic
    analogy is NOT valid evidence. If a document's title does not relate to the investigation
    subject, do not select it — regardless of how clever the interpretive connection may seem.
+
+6. **Reference keyword matching is required for evidence**: Every evidence document
+   (evidence_a, evidence_b, additional_evidence) MUST match at least one reference
+   keyword in its title or text. Reference keywords are proper nouns, dates, and place
+   names specific to the investigation (e.g., "Watseka", "Vennum", "1877"). Documents
+   matching ONLY exploratory keywords (thematic terms like "identity", "spirit",
+   "possession") are contextual background, NOT evidence. In the document inventory,
+   check the `reference_keywords_matched` column — a value of 0 means the document
+   has no direct topical connection to the investigation subject.
 
 ## Archive Image Review (MANDATORY)
 
