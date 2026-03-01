@@ -40,6 +40,10 @@ logger = logging.getLogger(__name__)
 # 画像バリデーション: この閾値未満はプレースホルダーとみなす
 MIN_IMAGE_BYTES = 5000
 
+# IA デフォルトサムネイル（notfound.png）の既知サイズ（バイト）
+# サムネイルのないアイテムは /images/notfound.png にリダイレクトされる
+_IA_DEFAULT_ICON_SIZES: frozenset[int] = frozenset({2212})
+
 # 並列実行の最大ワーカー数
 _MAX_WORKERS = 6
 
@@ -47,15 +51,37 @@ _MAX_WORKERS = 6
 _TOTAL_DOCS_CAP = 30
 
 
+def _is_ia_default_icon(resp: requests.Response, url: str) -> bool:
+    """IA デフォルトサムネイル（notfound.png）を検出する。
+
+    archive.org/services/img/ が返す notfound.png を2段階で検出:
+    1. リダイレクト先 URL が /images/notfound.png で終わる
+    2. Content-Length が既知のデフォルトアイコンサイズに一致
+    """
+    # リダイレクト先 URL で検出（最も堅牢）
+    if resp.url.endswith("/images/notfound.png"):
+        return True
+    # Content-Length + URL パターンで検出（リダイレクトなしで配信される場合の備え）
+    if "archive.org/services/img" in url:
+        content_length = resp.headers.get("Content-Length")
+        if content_length is not None and int(content_length) in _IA_DEFAULT_ICON_SIZES:
+            return True
+    return False
+
+
 def _validate_image_url(url: str, timeout: float = 5.0) -> bool:
     """HEAD リクエストで画像 URL の有効性を検証する。
 
     Europeana サムネイル API 等が返す白いプレースホルダー画像（1211バイト等）を
     Content-Length ヘッダで検出し、除外する。
+    Internet Archive のデフォルトサムネイル（notfound.png）も検出・除外する。
     """
     try:
         resp = requests.head(url, timeout=timeout, allow_redirects=True)
         if resp.status_code != 200:
+            return False
+        # IA デフォルトサムネイル検出
+        if _is_ia_default_icon(resp, url):
             return False
         content_length = resp.headers.get("Content-Length")
         if content_length is not None and int(content_length) < MIN_IMAGE_BYTES:
