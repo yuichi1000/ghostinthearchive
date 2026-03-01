@@ -339,8 +339,8 @@ class TestNDLFulltextEnrichment:
         assert result.documents[0].raw_text is None
 
     @responses.activate
-    def test_max_5_fulltext_fetches(self):
-        """全文取得は最大5件まで。"""
+    def test_max_10_fulltext_fetches(self):
+        """全文取得は最大10件まで（7件なら全件取得される）。"""
         # 7件のアイテムを含む RSS を作成（全て PID あり）
         items = ""
         for i in range(7):
@@ -376,14 +376,11 @@ class TestNDLFulltextEnrichment:
         result = source.search(keywords=["書籍"])
 
         assert len(result.documents) == 7
-        # 上位5件のみ全文取得（Lab API へのリクエスト数で確認）
-        # 検索1回 + Lab 5回 = 6回
-        assert len(responses.calls) == 6
-        # 5件目までは raw_text あり、6-7件目は None
-        for i in range(5):
+        # 7件全て全文取得（上限10件以内）
+        # 検索1回 + Lab 7回 = 8回
+        assert len(responses.calls) == 8
+        for i in range(7):
             assert result.documents[i].raw_text is not None
-        for i in range(5, 7):
-            assert result.documents[i].raw_text is None
 
 
 class TestStripHtml:

@@ -21,7 +21,7 @@ BASE_URL = "https://archive.org/advancedsearch.php"
 _DJVU_TEXT_URL = "https://archive.org/download/{identifier}/{identifier}_djvu.txt"
 
 # 全文取得の上限設定
-_MAX_FULLTEXT_FETCHES = 5
+_MAX_FULLTEXT_FETCHES = 10
 _FULLTEXT_TIMEOUT = 15
 _MAX_RAW_FETCH = 200_000
 
@@ -195,9 +195,6 @@ class InternetArchiveSource(ArchiveSource):
                     keywords, title=documents[idx].title, subjects=subjects
                 )
                 documents[idx].raw_text = extract_keyword_passages(text, extraction_kws)
-
-        # 全文取得成功したドキュメントのみ保持
-        documents = [doc for doc in documents if doc.raw_text]
 
         total_hits = resp.get("numFound", 0)
         return ArchiveSearchResult(documents=documents, total_hits=total_hits)

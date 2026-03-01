@@ -22,7 +22,7 @@ BASE_URL = "https://jsru.kb.nl/sru/sru"
 COLLECTION = "DDD_artikel"
 
 # 全文取得の上限設定
-_MAX_FULLTEXT_FETCHES = 5
+_MAX_FULLTEXT_FETCHES = 10
 _FULLTEXT_TIMEOUT = 15
 _MAX_RAW_FETCH = 200_000
 
@@ -229,9 +229,7 @@ class DelpherSource(ArchiveSource):
                     text, extraction_kws
                 )
 
-        # 全文取得成功したドキュメントのみ保持
-        filtered = [doc for doc in result.documents if doc.raw_text]
-        return ArchiveSearchResult(documents=filtered, total_hits=result.total_hits)
+        return ArchiveSearchResult(documents=result.documents, total_hits=result.total_hits)
 
 
 # レジストリに自動登録

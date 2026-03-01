@@ -33,7 +33,7 @@ EAST_COAST_STATES = [
 BASE_URL = "https://www.loc.gov/search/"
 
 # 全文取得の上限設定
-_MAX_FULLTEXT_FETCHES = 5
+_MAX_FULLTEXT_FETCHES = 10
 _FULLTEXT_TIMEOUT = 15
 _MAX_RAW_FETCH = 200_000
 
