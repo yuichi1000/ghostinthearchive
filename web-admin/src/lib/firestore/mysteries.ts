@@ -1,6 +1,6 @@
 /**
- * Mysteries Firestore 操作（管理者用）
- * 書き込み操作と管理者固有の読み取りクエリのみ
+ * Mysteries Firestore 読み取り操作（管理者用）
+ * 書き込み操作は Server Actions（@/actions/mysteries）に移行済み
  * 共通の読み取りクエリは @ghost/shared から動的ラッパー経由で提供
  *
  * NOTE: @ghost/shared/src/lib/firestore/queries は firebase/firestore と
@@ -77,61 +77,4 @@ export async function getAllMysteries(
 
   const snapshot = await getDocs(q);
   return snapshot.docs.map((d) => docToMystery(d.data()));
-}
-
-// ============================================
-// 書き込み操作
-// ============================================
-
-/**
- * ミステリーを承認（直接公開）
- * status を pending → published に更新
- * English-first フローでは翻訳は既にパイプライン内で完了しているため、
- * Approve は即座に公開する。
- */
-export async function approveMystery(mysteryId: string): Promise<void> {
-  const { doc, updateDoc, Timestamp } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("@ghost/shared/src/lib/firebase/config");
-
-  const db = getFirestoreDb();
-  const docRef = doc(db, COLLECTIONS.MYSTERIES, mysteryId);
-
-  await updateDoc(docRef, {
-    status: "published" as MysteryStatus,
-    publishedAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
-  });
-}
-
-/**
- * ミステリーをアーカイブ（非公開化）
- */
-export async function archiveMystery(mysteryId: string): Promise<void> {
-  const { doc, updateDoc, Timestamp } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("@ghost/shared/src/lib/firebase/config");
-
-  const db = getFirestoreDb();
-  const docRef = doc(db, COLLECTIONS.MYSTERIES, mysteryId);
-
-  await updateDoc(docRef, {
-    status: "archived" as MysteryStatus,
-    updatedAt: Timestamp.now(),
-  });
-}
-
-/**
- * 公開済みミステリーを非公開に戻す（published → pending）
- * publishedAt は再公開時の参考情報として保持する
- */
-export async function unpublishMystery(mysteryId: string): Promise<void> {
-  const { doc, updateDoc, Timestamp } = await import("firebase/firestore");
-  const { getFirestoreDb, COLLECTIONS } = await import("@ghost/shared/src/lib/firebase/config");
-
-  const db = getFirestoreDb();
-  const docRef = doc(db, COLLECTIONS.MYSTERIES, mysteryId);
-
-  await updateDoc(docRef, {
-    status: "pending" as MysteryStatus,
-    updatedAt: Timestamp.now(),
-  });
 }

@@ -1,6 +1,6 @@
 /**
- * Podcasts Firestore 操作（管理者用）
- * podcasts コレクションの CRUD 操作
+ * Podcasts Firestore 読み取り操作（管理者用）
+ * 書き込み操作は Server Actions（@/actions/podcasts）に移行済み
  */
 
 import type { FirestorePodcast, PodcastScript } from "@ghost/shared/src/types/mystery"
@@ -90,25 +90,6 @@ export async function getPodcastsByMysteryId(
   const snapshot = await getDocs(q)
 
   return snapshot.docs.map((doc) => docToPodcast(doc.id, doc.data()))
-}
-
-/**
- * 脚本を更新（編集後の保存）
- */
-export async function updatePodcastScript(
-  podcastId: string,
-  script: PodcastScript
-): Promise<void> {
-  const { doc, updateDoc, Timestamp } = await import("firebase/firestore")
-  const { getFirestoreDb, COLLECTIONS } = await import("@ghost/shared/src/lib/firebase/config")
-
-  const db = getFirestoreDb()
-  const docRef = doc(db, COLLECTIONS.PODCASTS, podcastId)
-
-  await updateDoc(docRef, {
-    script,
-    updated_at: Timestamp.now(),
-  })
 }
 
 /**
