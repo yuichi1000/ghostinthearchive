@@ -54,7 +54,7 @@ class TestFilterIrrelevantDocuments:
         assert removed == 0
 
     def test_filter_all_zero_match(self):
-        """全件0一致 → 空リスト。"""
+        """同一ソースで全件0一致 → 全除外防止で全件保持。"""
         from mystery_agents.tools.search_orchestration import _filter_irrelevant_documents
 
         docs = [
@@ -62,7 +62,43 @@ class TestFilterIrrelevantDocuments:
             make_archive_doc(url="https://example.com/2", keywords_matched=[]),
         ]
         result, removed = _filter_irrelevant_documents(docs)
-        assert result == []
+        assert len(result) == 2
+        assert removed == 0
+
+    def test_filter_preserves_source_with_all_zero_match(self):
+        """ソースA全件0一致 + ソースB一部一致 → ソースA全保持、ソースB通常フィルタ。"""
+        from mystery_agents.tools.search_orchestration import _filter_irrelevant_documents
+
+        docs = [
+            # delpher: 全件0一致 → 全除外防止で保持
+            make_archive_doc(url="https://example.com/d1", source_type="delpher", keywords_matched=[]),
+            make_archive_doc(url="https://example.com/d2", source_type="delpher", keywords_matched=[]),
+            # nypl: 一部一致 → 0一致は通常通り除外
+            make_archive_doc(url="https://example.com/n1", source_type="nypl", keywords_matched=["key1"]),
+            make_archive_doc(url="https://example.com/n2", source_type="nypl", keywords_matched=[]),
+        ]
+        result, removed = _filter_irrelevant_documents(docs)
+        urls = [d.source_url for d in result]
+        # delpher 2件は全保持
+        assert "https://example.com/d1" in urls
+        assert "https://example.com/d2" in urls
+        # nypl はマッチした1件のみ
+        assert "https://example.com/n1" in urls
+        assert "https://example.com/n2" not in urls
+        assert removed == 1
+
+    def test_filter_partial_match_source_still_filters(self):
+        """同一ソースで一部マッチ → 0一致ドキュメントは通常通り除外。"""
+        from mystery_agents.tools.search_orchestration import _filter_irrelevant_documents
+
+        docs = [
+            make_archive_doc(url="https://example.com/1", source_type="delpher", keywords_matched=["key"]),
+            make_archive_doc(url="https://example.com/2", source_type="delpher", keywords_matched=[]),
+            make_archive_doc(url="https://example.com/3", source_type="delpher", keywords_matched=[]),
+        ]
+        result, removed = _filter_irrelevant_documents(docs)
+        assert len(result) == 1
+        assert result[0].source_url == "https://example.com/1"
         assert removed == 2
 
 
