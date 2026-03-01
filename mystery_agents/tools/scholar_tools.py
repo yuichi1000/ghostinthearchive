@@ -126,15 +126,6 @@ def _validate_evidence_grounding(
             if raw_source_type:
                 ev["archive_source"] = raw_source_type
 
-            # relevant_excerpt を API 原文でグラウンディング
-            raw_text = raw_doc.get("raw_text")
-            if raw_text and raw_text.strip():
-                ev["relevant_excerpt"] = raw_text
-            else:
-                warnings.append(
-                    f"{label}: raw_text が空 — LLM excerpt を維持"
-                )
-
             # キーワード妥当性チェック
             kw_matched = raw_doc.get("keywords_matched", [])
             ev["_kw_match_count"] = len(kw_matched)
