@@ -11,12 +11,11 @@ from .source_registry import (
 )
 
 # Low-level API tools
-from .bilingual_search import KEYWORD_PAIRS, expand_keywords_bilingual
+from .bilingual_search import expand_keywords_bilingual
 from .chronicling_america import search_chronicling_america
 
 # Librarian Agent LLM-facing tools
 from .librarian_tools import (
-    get_available_keywords,
     save_search_results,
     search_archives,
     search_newspapers,
@@ -57,14 +56,12 @@ __all__ = [
     "resolve_sources",
     "resolve_newspaper_sources",
     # Low-level
-    "KEYWORD_PAIRS",
     "expand_keywords_bilingual",
     "search_chronicling_america",
     # Librarian LLM tools
     "search_newspapers",
     "search_archives",
     "save_search_results",
-    "get_available_keywords",
     # Illustrator LLM tools
     "generate_image",
     "resize_image_variants",
