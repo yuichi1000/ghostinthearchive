@@ -123,6 +123,7 @@ def get_document_inventory(tool_context: Optional[ToolContext] = None) -> str:
                 "date": doc.get("date"),
                 "language": doc.get("language", ""),
                 "keywords_matched": len(doc.get("keywords_matched", [])),
+                "reference_keywords_matched": len(doc.get("reference_keywords_matched", [])),
             }
             by_archive[archive_name].append(entry)
             total += 1

@@ -143,6 +143,17 @@ def _validate_evidence_grounding(
                     f"{label}: キーワード無一致 — false positive の可能性 "
                     f"(title: {raw_doc.get('title', 'unknown')})"
                 )
+
+            # reference キーワード妥当性チェック
+            # フィールドが明示的に存在する場合のみ（後方互換: 旧データにはフィールドなし）
+            ref_kw_matched = raw_doc.get("reference_keywords_matched")
+            if ref_kw_matched is not None:
+                ev["_ref_kw_match_count"] = len(ref_kw_matched)
+                if isinstance(ref_kw_matched, list) and not ref_kw_matched:
+                    warnings.append(
+                        f"{label}: reference キーワード無一致 — 主題的関連性が低い可能性 "
+                        f"(title: {raw_doc.get('title', 'unknown')})"
+                    )
         else:
             ev["_ungrounded"] = True
             warnings.append(
@@ -274,6 +285,32 @@ def save_structured_report(
             warnings.append(f"additional_evidence: {kw_removed} 件除外 (キーワード無一致)")
         report_data["additional_evidence"] = additional
 
+    # additional_evidence: reference キーワード無一致の項目を除外
+    # ただし、全 evidence の reference_keywords が空の場合はスキップ
+    # （Librarian が reference_keywords を生成しなかった調査を許容）
+    additional = report_data.get("additional_evidence")
+    if additional is not None:
+        # evidence_a/b + additional の全 evidence を対象に has_any_ref を判定
+        evidence_items_all = []
+        for key in ("evidence_a", "evidence_b"):
+            ev = report_data.get(key)
+            if ev and isinstance(ev, dict):
+                evidence_items_all.append(ev)
+        evidence_items_all.extend(additional)
+
+        has_any_ref = any(
+            ev.get("_ref_kw_match_count", 0) > 0 for ev in evidence_items_all
+        )
+        if has_any_ref:
+            before_ref = len(additional)
+            additional = [ev for ev in additional if ev.get("_ref_kw_match_count", 0) > 0]
+            ref_removed = before_ref - len(additional)
+            if ref_removed:
+                warnings.append(
+                    f"additional_evidence: {ref_removed} 件除外 (reference キーワード無一致)"
+                )
+        report_data["additional_evidence"] = additional
+
     # additional_evidence: _ungrounded 項目を除外
     additional = report_data.get("additional_evidence")
     if additional is not None:
@@ -301,6 +338,7 @@ def save_structured_report(
         ev = report_data.get(key)
         if ev and isinstance(ev, dict):
             ev.pop("_kw_match_count", None)
+            ev.pop("_ref_kw_match_count", None)
             ev.pop("_ungrounded", None)
 
     # additional_evidence の一時フィールドをクリーンアップ
@@ -308,6 +346,7 @@ def save_structured_report(
     if additional is not None:
         for ev in additional:
             ev.pop("_ungrounded", None)
+            ev.pop("_ref_kw_match_count", None)
 
     # タグバリデーション
     tags = report_data.get("tags")

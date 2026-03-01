@@ -243,6 +243,45 @@ class TestGetDocumentInventory:
         assert "_inventory_consulted" not in ctx.state
 
 
+class TestDocumentInventoryReferenceKeywords:
+    """reference_keywords_matched のインベントリ表示テスト。"""
+
+    def test_inventory_includes_reference_keywords_matched_count(self):
+        """インベントリの各エントリに reference_keywords_matched 数が含まれるべき。"""
+        ctx = make_tool_context(state={
+            "raw_search_results_en": [{
+                "documents": [
+                    {
+                        "title": "Watseka Wonder",
+                        "source_url": "https://loc.gov/item/1",
+                        "source_type": "nypl",
+                        "date": "1877-01-01",
+                        "language": "en",
+                        "keywords_matched": ["spirit"],
+                        "reference_keywords_matched": ["Watseka", "Vennum"],
+                    },
+                    {
+                        "title": "Spirit Phenomena",
+                        "source_url": "https://archive.org/details/1",
+                        "source_type": "internet_archive",
+                        "date": "1880-06-15",
+                        "language": "en",
+                        "keywords_matched": ["spirit", "identity"],
+                        "reference_keywords_matched": [],
+                    },
+                ],
+            }],
+        })
+
+        result = json.loads(get_document_inventory(ctx))
+
+        assert result["status"] == "ok"
+        nypl_docs = result["by_archive"]["NYPL Digital Collections"]
+        ia_docs = result["by_archive"]["Internet Archive"]
+        assert nypl_docs[0]["reference_keywords_matched"] == 2
+        assert ia_docs[0]["reference_keywords_matched"] == 0
+
+
 class TestArchiveImagesInInventory:
     """archive_images セクションのテスト。"""
 

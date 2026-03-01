@@ -91,6 +91,14 @@ def _search_single_source(
             if docs:
                 break
 
+    # reference_keywords_matched を算出: title/summary 内の固有名詞マッチ
+    if reference_keywords:
+        for doc in docs:
+            combined = f"{doc.title} {doc.summary}".lower()
+            doc.reference_keywords_matched = [
+                kw for kw in reference_keywords if kw.lower() in combined
+            ]
+
     return key, docs, total_hits, error, fallback_used
 
 
@@ -150,7 +158,10 @@ def _rank_documents(
     for doc in docs:
         by_source[doc.source_type].append(doc)
     for key in by_source:
-        by_source[key].sort(key=lambda d: len(d.keywords_matched), reverse=True)
+        by_source[key].sort(
+            key=lambda d: (len(d.reference_keywords_matched), len(d.keywords_matched)),
+            reverse=True,
+        )
 
     # ラウンドロビンインターリーブ
     result: list[ArchiveDocument] = []

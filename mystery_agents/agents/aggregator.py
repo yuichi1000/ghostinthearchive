@@ -220,6 +220,13 @@ def _format_documents(
         if matched:
             kw_str = ", ".join(matched) if isinstance(matched, list) else str(matched)
             lines.append(f"- **Keywords matched**: {kw_str}")
+        ref_matched = doc.get("reference_keywords_matched")
+        if isinstance(ref_matched, list):
+            if ref_matched:
+                ref_str = ", ".join(ref_matched)
+                lines.append(f"- **Reference keywords matched**: {ref_str}")
+            else:
+                lines.append("- **Reference keywords matched**: (none — exploratory match only)")
         if doc.get("raw_text"):
             # テキスト抜粋は5000文字に制限（fulltext_extraction.max_output_chars と一致）
             excerpt = str(doc["raw_text"])[:5000]

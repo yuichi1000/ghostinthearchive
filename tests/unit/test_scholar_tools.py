@@ -794,6 +794,140 @@ class TestValidateEvidenceGroundingDirect:
         assert warnings == []
 
 
+class TestReferenceKeywordGrounding:
+    """reference_keywords_matched によるグラウンディング検証のテスト。"""
+
+    def test_evidence_with_no_reference_match_warns(self):
+        """evidence_a/b が reference keyword 無一致の場合、警告が出るべき。"""
+        mock_ctx = _make_ctx({
+            "raw_search_results_en": [{
+                "documents": [{
+                    "title": "General Spiritual Phenomena",
+                    "source_url": "https://archive.org/details/spirit",
+                    "source_type": "internet_archive",
+                    "keywords_matched": ["spirit"],
+                    "reference_keywords_matched": [],
+                    "raw_text": "A general article about spiritual phenomena.",
+                }],
+            }],
+        })
+
+        report_data = {
+            "title": "Test",
+            "evidence_a": {
+                "source_url": "https://archive.org/details/spirit",
+                "relevant_excerpt": "Text",
+            },
+            "approved_image_urls": [],
+        }
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        assert any(
+            "reference キーワード無一致" in w
+            for w in result_data["warnings"]
+        )
+
+    def test_additional_evidence_no_reference_match_filtered(self):
+        """additional_evidence で reference keyword 無一致の項目は除外されるべき。"""
+        mock_ctx = _make_ctx({
+            "raw_search_results_en": [{
+                "documents": [
+                    {
+                        "title": "Watseka Wonder",
+                        "source_url": "https://loc.gov/item/watseka",
+                        "source_type": "nypl",
+                        "keywords_matched": ["spirit", "Watseka"],
+                        "reference_keywords_matched": ["Watseka"],
+                        "raw_text": "The Watseka Wonder case.",
+                    },
+                    {
+                        "title": "General Spirit Article",
+                        "source_url": "https://archive.org/details/spirit",
+                        "source_type": "internet_archive",
+                        "keywords_matched": ["spirit"],
+                        "reference_keywords_matched": [],
+                        "raw_text": "A general article.",
+                    },
+                ],
+            }],
+        })
+
+        report_data = {
+            "title": "Test",
+            "evidence_a": {
+                "source_url": "https://loc.gov/item/watseka",
+                "relevant_excerpt": "Text",
+            },
+            "additional_evidence": [
+                {
+                    "source_url": "https://archive.org/details/spirit",
+                    "relevant_excerpt": "General text",
+                },
+            ],
+            "approved_image_urls": [],
+        }
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved = mock_ctx.state["structured_report"]
+        # reference keyword 無一致の additional_evidence は除外される
+        assert len(saved["additional_evidence"]) == 0
+        assert any(
+            "reference キーワード無一致" in w
+            for w in result_data["warnings"]
+        )
+
+    def test_reference_keywords_empty_skips_filter(self):
+        """raw_search_results に reference_keywords_matched が空の場合、フィルタをスキップすべき。"""
+        mock_ctx = _make_ctx({
+            "raw_search_results_en": [{
+                "documents": [
+                    {
+                        "title": "Doc A",
+                        "source_url": "https://loc.gov/item/a",
+                        "source_type": "nypl",
+                        "keywords_matched": ["keyword"],
+                        "reference_keywords_matched": [],
+                        "raw_text": "Some text.",
+                    },
+                    {
+                        "title": "Doc B",
+                        "source_url": "https://archive.org/details/b",
+                        "source_type": "internet_archive",
+                        "keywords_matched": ["keyword"],
+                        "reference_keywords_matched": [],
+                        "raw_text": "Another text.",
+                    },
+                ],
+            }],
+        })
+
+        report_data = {
+            "title": "Test",
+            "evidence_a": {
+                "source_url": "https://loc.gov/item/a",
+                "relevant_excerpt": "Text",
+            },
+            "additional_evidence": [
+                {
+                    "source_url": "https://archive.org/details/b",
+                    "relevant_excerpt": "Other text",
+                },
+            ],
+            "approved_image_urls": [],
+        }
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved = mock_ctx.state["structured_report"]
+        # 全 evidence の reference_keywords が空 → フィルタスキップ → 保持
+        assert len(saved["additional_evidence"]) == 1
+
+
 class TestWordCountVerifiedCheck:
     """語数検証フラグ強制チェックのテスト。"""
 

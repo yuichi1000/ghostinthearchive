@@ -339,6 +339,14 @@ def search_newspapers(
         },
     )
 
+    # reference_keywords_matched を算出: title/summary 内の固有名詞マッチ
+    if reference_list:
+        for doc in all_docs:
+            combined = f"{doc.title} {doc.summary}".lower()
+            doc.reference_keywords_matched = [
+                kw for kw in reference_list if kw.lower() in combined
+            ]
+
     docs = [doc.model_dump() for doc in all_docs]
 
     link_validation_dict = {

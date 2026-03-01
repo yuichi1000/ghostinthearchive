@@ -234,6 +234,43 @@ class TestComputeFulltextMetrics:
         assert metrics["by_language"]["de"]["metadata_only"] == 2
 
 
+class TestReferenceKeywordsDisplay:
+    """reference_keywords_matched の表示テスト。"""
+
+    def test_format_documents_shows_reference_keywords(self):
+        """reference_keywords_matched があるドキュメントは表示されるべき。"""
+        docs = [
+            {
+                "title": "The Watseka Wonder",
+                "source_url": "https://example.com/watseka",
+                "summary": "About Lurancy Vennum",
+                "language": "en",
+                "source_type": "nypl",
+                "keywords_matched": ["spirit", "identity"],
+                "reference_keywords_matched": ["Watseka", "Vennum"],
+            }
+        ]
+        result = _format_documents("en", docs)
+        assert "Watseka, Vennum" in result
+        assert "Reference keywords matched" in result
+
+    def test_format_documents_shows_none_for_exploratory_only(self):
+        """reference_keywords_matched が空のドキュメントは (none) と表示されるべき。"""
+        docs = [
+            {
+                "title": "Spiritual Phenomena in 19th Century",
+                "source_url": "https://example.com/spirit",
+                "summary": "General article about spirits",
+                "language": "en",
+                "source_type": "internet_archive",
+                "keywords_matched": ["spirit", "identity"],
+                "reference_keywords_matched": [],
+            }
+        ]
+        result = _format_documents("en", docs)
+        assert "(none — exploratory match only)" in result
+
+
 class TestCreateAggregator:
     """create_aggregator ファクトリのテスト。"""
 
