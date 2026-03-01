@@ -4,7 +4,11 @@ raw_search_results からの言語別集約ロジックを検証する。
 """
 
 
-from mystery_agents.agents.aggregator import _format_documents, create_aggregator
+from mystery_agents.agents.aggregator import (
+    _compute_fulltext_metrics,
+    _format_documents,
+    create_aggregator,
+)
 
 
 class TestFormatDocuments:
@@ -132,6 +136,102 @@ class TestFormatDocuments:
         ]
         result = _format_documents("it", docs)
         assert "Italian" in result
+
+
+class TestFulltextMetrics:
+    """全文テキスト取得メトリクス関連のテスト。"""
+
+    def test_header_includes_fulltext_metrics(self):
+        """ヘッダーに全文/メタデータ専用の内訳が含まれる。"""
+        docs = [
+            {
+                "title": "Doc with text",
+                "source_url": "https://example.com/1",
+                "language": "en",
+                "source_type": "loc",
+                "raw_text": "Full text content here",
+            },
+            {
+                "title": "Doc without text",
+                "source_url": "https://example.com/2",
+                "language": "en",
+                "source_type": "loc",
+            },
+        ]
+        result = _format_documents(
+            "en", docs, lang_fulltext=1, lang_metadata_only=1, global_fulltext=5,
+        )
+        assert "(1 with full text, 1 metadata-only)" in result
+
+    def test_metadata_only_label(self):
+        """raw_text なしドキュメントにメタデータ専用ラベルが付く。"""
+        docs = [
+            {
+                "title": "Metadata Only Doc",
+                "source_url": "https://example.com/meta",
+                "language": "en",
+                "source_type": "loc",
+            },
+        ]
+        result = _format_documents("en", docs)
+        assert "[metadata only — full text not available]" in result
+
+    def test_limited_evidence_note(self):
+        """全言語合計の全文ドキュメントが 1-2 件の場合、限定的証拠の注記が出る。"""
+        docs = [
+            {
+                "title": "Sole Doc",
+                "source_url": "https://example.com/sole",
+                "language": "en",
+                "source_type": "loc",
+                "raw_text": "Some text",
+            },
+        ]
+        result = _format_documents(
+            "en", docs, lang_fulltext=1, lang_metadata_only=0, global_fulltext=1,
+        )
+        assert "Only 1 document(s) with full text available" in result
+
+    def test_no_limited_note_when_enough_fulltext(self):
+        """全文ドキュメントが 3+ 件の場合、限定的証拠の注記は出ない。"""
+        docs = [
+            {
+                "title": "Doc",
+                "source_url": "https://example.com/doc",
+                "language": "en",
+                "source_type": "loc",
+                "raw_text": "Text",
+            },
+        ]
+        result = _format_documents(
+            "en", docs, lang_fulltext=1, lang_metadata_only=0, global_fulltext=5,
+        )
+        assert "Only" not in result
+        assert "limited" not in result.lower()
+
+
+class TestComputeFulltextMetrics:
+    """_compute_fulltext_metrics のテスト。"""
+
+    def test_mixed_docs(self):
+        """全文あり/なしが混在するケースでメトリクスが正しく算出される。"""
+        docs_by_lang = {
+            "en": [
+                {"source_url": "https://a.com/1", "raw_text": "text"},
+                {"source_url": "https://a.com/2"},
+                {"source_url": "https://a.com/3", "raw_text": "more text"},
+            ],
+            "de": [
+                {"source_url": "https://b.com/1"},
+                {"source_url": "https://b.com/2"},
+            ],
+        }
+        metrics = _compute_fulltext_metrics(docs_by_lang, ["en", "de"])
+        assert metrics["total_documents"] == 5
+        assert metrics["fulltext_documents"] == 2
+        assert metrics["metadata_only_documents"] == 3
+        assert metrics["by_language"]["en"]["fulltext"] == 2
+        assert metrics["by_language"]["de"]["metadata_only"] == 2
 
 
 class TestCreateAggregator:

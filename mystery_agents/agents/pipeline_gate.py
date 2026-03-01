@@ -14,6 +14,7 @@ from google.genai import types
 from shared.constants import DEFAULT_SELECTED_LANGUAGES, is_meaningful
 from shared.state_keys import (
     CREATIVE_CONTENT,
+    FULLTEXT_METRICS,
     INVESTIGATION_QUERY,
     MYSTERY_REPORT,
     PIPELINE_RUN_ID,
@@ -60,24 +61,43 @@ def make_scholar_gate():
         if not isinstance(selected, list):
             selected = list(DEFAULT_SELECTED_LANGUAGES)
 
+        has_docs = False
         for lang in selected:
             docs = callback_context.state.get(collected_documents_key(lang), "")
             if _is_meaningful(docs):
-                logger.info(
-                    "Pipeline gate [scholar]: 通過（%s に有意なデータあり）", lang,
-                    extra={"gate_name": "scholar", "decision": "pass"},
-                )
-                return None  # 有意なデータあり → 実行
+                has_docs = True
+                break
 
-        message = (
-            "INSUFFICIENT_DATA: All Librarians returned no documents. "
-            "Pipeline terminated to conserve resources."
+        if not has_docs:
+            message = (
+                "INSUFFICIENT_DATA: All Librarians returned no documents. "
+                "Pipeline terminated to conserve resources."
+            )
+            _log_and_record_failure(callback_context, "librarian", message)
+            return types.Content(
+                parts=[types.Part(text=message)],
+                role="model",
+            )
+
+        # Check 2: 全文ドキュメントが 0 件なら早期終了
+        metrics = callback_context.state.get(FULLTEXT_METRICS)
+        if isinstance(metrics, dict) and metrics.get("fulltext_documents", -1) == 0:
+            message = (
+                "NO_FULLTEXT_AVAILABLE: Documents found but none contain full text. "
+                "Scholar analysis requires full text excerpts. "
+                "Pipeline terminated to conserve resources."
+            )
+            _log_and_record_failure(callback_context, "aggregator", message)
+            return types.Content(
+                parts=[types.Part(text=message)],
+                role="model",
+            )
+
+        logger.info(
+            "Pipeline gate [scholar]: 通過",
+            extra={"gate_name": "scholar", "decision": "pass"},
         )
-        _log_and_record_failure(callback_context, "librarian", message)
-        return types.Content(
-            parts=[types.Part(text=message)],
-            role="model",
-        )
+        return None
 
     return gate
 
