@@ -11,7 +11,17 @@ def _identity_probe(themes):
     for t in themes:
         t["coverage_score"] = "HIGH"
         t["primary_apis"] = ["us_archives"]
-        t["probe_hits"] = {"us_archives": 5}
+        t["probe_hits"] = {"us_archives": {"has_content": True, "total_hits": 5}}
+    return themes
+
+
+def _varied_score_probe(themes):
+    """テーマごとに異なるスコアを付与するプローブモック。"""
+    scores = ["LOW", "HIGH", "MEDIUM"]
+    for i, t in enumerate(themes):
+        t["coverage_score"] = scores[i % len(scores)]
+        t["primary_apis"] = []
+        t["probe_hits"] = {}
     return themes
 
 
@@ -166,4 +176,29 @@ class TestSuggestThemes:
 
         assert result[0]["coverage_score"] == "HIGH"
         assert result[0]["primary_apis"] == ["us_archives"]
-        assert result[0]["probe_hits"] == {"us_archives": 5}
+        assert result[0]["probe_hits"] == {"us_archives": {"has_content": True, "total_hits": 5}}
+
+    @pytest.mark.asyncio
+    async def test_results_sorted_by_coverage_score(self):
+        """結果が HIGH → MEDIUM → LOW 順にソートされること。"""
+        agent_output = json.dumps([
+            {"theme": "Low Theme", "description": "D", "category": "HIS"},
+            {"theme": "High Theme", "description": "D", "category": "FLK"},
+            {"theme": "Medium Theme", "description": "D", "category": "OCC"},
+        ])
+        with patch("curator_agents.core.get_existing_titles", return_value=[]), \
+             patch("curator_agents.core.get_recent_failures", return_value=[]), \
+             patch("curator_agents.core.get_category_distribution", return_value={}), \
+             patch("curator_agents.core.format_category_distribution", return_value=""), \
+             patch("curator_agents.core.probe_all_themes", side_effect=_varied_score_probe), \
+             patch(
+                 "curator_agents.core.run_single_agent",
+                 new_callable=AsyncMock,
+                 return_value=agent_output,
+             ):
+            from curator_agents.core import suggest_themes
+
+            result = await suggest_themes()
+
+        scores = [r["coverage_score"] for r in result]
+        assert scores == ["HIGH", "MEDIUM", "LOW"]

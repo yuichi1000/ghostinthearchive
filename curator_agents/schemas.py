@@ -38,8 +38,8 @@ class ThemeSuggestion(BaseModel):
     primary_apis: list[str] = []
     # LLM が出力、プローブで使用（未出力時はテーマ文をフォールバック分割）
     probe_keywords: list[str] = []
-    # プローブ結果（API グループ → 全文取得可否）
-    probe_hits: dict[str, bool] = {}
+    # プローブ結果（API グループ → {has_content, total_hits}）
+    probe_hits: dict[str, dict] = {}
 
     @field_validator("primary_apis")
     @classmethod

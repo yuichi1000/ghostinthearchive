@@ -100,4 +100,8 @@ async def suggest_themes(
     # API プローブ: 実際のヒット件数に基づいて coverage_score を算出・上書き
     suggestions = await asyncio.to_thread(probe_all_themes, suggestions)
 
+    # カバレッジスコア順にソート（HIGH → MEDIUM → LOW）
+    _SCORE_ORDER = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+    suggestions.sort(key=lambda s: _SCORE_ORDER.get(s.get("coverage_score", "LOW"), 2))
+
     return suggestions

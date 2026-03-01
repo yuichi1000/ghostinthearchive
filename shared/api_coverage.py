@@ -132,20 +132,30 @@ def build_coverage_prompt_table() -> str:
 
 
 def calculate_coverage_score(
-    probe_results: dict[str, bool],
+    probe_results: dict,
 ) -> tuple[str, list[str]]:
     """プローブ結果からスコアと有効 API リストを算出する。
 
     Args:
-        probe_results: {api_key: has_content} 形式のプローブ結果
+        probe_results: {api_key: ProbeResult} または {api_key: bool}（後方互換）形式
 
     Returns:
         (score, primary_apis) タプル。
         score は "HIGH" / "MEDIUM" / "LOW"。
         primary_apis は全文取得可能だった API キーのリスト。
     """
+    from curator_agents.probe import ProbeResult
+
+    # 後方互換: bool 値を ProbeResult に変換
+    normalized: dict[str, ProbeResult] = {}
+    for k, v in probe_results.items():
+        if isinstance(v, bool):
+            normalized[k] = ProbeResult(has_content=v, total_hits=0)
+        else:
+            normalized[k] = v
+
     # 全文取得可能な API を抽出
-    hit_apis = [k for k, v in probe_results.items() if v]
+    hit_apis = [k for k, pr in normalized.items() if pr.has_content]
     hit_count = len(hit_apis)
 
     # 全文信頼度 HIGH の API がヒットに含まれるか
@@ -155,7 +165,16 @@ def calculate_coverage_score(
         if k in API_COVERAGE_REGISTRY
     )
 
+    # いずれかの API で total_hits >= 50 のディープヒットがあるか
+    has_deep_hits = any(
+        normalized[k].total_hits >= 50
+        for k in hit_apis
+    )
+
     if hit_count >= 3 and has_high_reliability:
+        score = "HIGH"
+    elif hit_count >= 2 and has_high_reliability and has_deep_hits:
+        # 2 API でも HIGH 信頼度 + ディープヒットがあれば HIGH に昇格
         score = "HIGH"
     elif hit_count >= 2:
         score = "MEDIUM"

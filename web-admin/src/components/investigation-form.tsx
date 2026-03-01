@@ -40,7 +40,7 @@ interface ThemeSuggestion {
   description_ja?: string
   coverage_score?: "HIGH" | "MEDIUM" | "LOW"
   primary_apis?: string[]
-  probe_hits?: Record<string, boolean>
+  probe_hits?: Record<string, { has_content: boolean; total_hits: number }>
 }
 
 interface InvestigationFormProps {
@@ -143,18 +143,18 @@ export function InvestigationForm({
               <p className="text-xs text-muted-foreground mb-1.5">{s.description_ja || s.description}</p>
               {s.probe_hits && Object.keys(s.probe_hits).length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                  {Object.entries(s.probe_hits).map(([api, found]) => (
+                  {Object.entries(s.probe_hits).map(([api, probe]) => (
                     <span
                       key={api}
                       className={`text-[10px] font-mono px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${
-                        found
+                        probe.has_content
                           ? "bg-border/30 text-muted-foreground"
                           : "bg-border/10 text-muted-foreground/40"
                       }`}
                     >
                       {API_DISPLAY_NAMES[api] || api}
-                      {found
-                        ? <Check className="w-3 h-3 text-emerald-400" />
+                      {probe.has_content
+                        ? <><Check className="w-3 h-3 text-emerald-400" />{probe.total_hits > 0 && <span className="text-emerald-400/70">{probe.total_hits}</span>}</>
                         : <X className="w-3 h-3 text-red-400/50" />
                       }
                     </span>

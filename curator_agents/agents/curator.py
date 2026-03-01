@@ -219,5 +219,5 @@ curator_agent = LlmAgent(
     ),
     instruction=CURATOR_INSTRUCTION,
     output_key="suggested_themes",
-    generate_content_config=types.GenerateContentConfig(temperature=1.2),
+    generate_content_config=types.GenerateContentConfig(temperature=0.9),
 )
