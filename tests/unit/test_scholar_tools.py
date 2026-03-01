@@ -448,7 +448,7 @@ class TestEvidenceGrounding:
     """証拠グラウンディング検証のテスト。"""
 
     def test_matching_url_overwrites_metadata(self):
-        """URL が raw_search_results と一致 → title/date を上書き。"""
+        """URL が raw_search_results と一致 → title/date/excerpt を上書き。"""
         mock_ctx = _make_ctx({
             "raw_search_results_en": [{
                 "documents": [{
@@ -456,6 +456,7 @@ class TestEvidenceGrounding:
                     "source_url": "https://loc.gov/item/123",
                     "date": "1893-01-15",
                     "source_type": "nypl",
+                    "raw_text": "Original text from the API document.",
                 }],
             }],
         })
@@ -466,7 +467,7 @@ class TestEvidenceGrounding:
                 "source_url": "https://loc.gov/item/123",
                 "source_title": "Wrong Title From LLM",
                 "source_date": "1893",
-                "relevant_excerpt": "Some text",
+                "relevant_excerpt": "LLM generated summary",
             },
         }
         result = save_structured_report(json.dumps(report_data), mock_ctx)
@@ -478,6 +479,134 @@ class TestEvidenceGrounding:
         assert saved_ev["source_title"] == "Correct Title From API"
         assert saved_ev["source_date"] == "1893-01-15"
         assert saved_ev["archive_source"] == "nypl"
+        # relevant_excerpt が raw_text で上書きされている
+        assert saved_ev["relevant_excerpt"] == "Original text from the API document."
+
+    def test_matching_url_overwrites_relevant_excerpt(self):
+        """URL 一致時に raw_text → relevant_excerpt 上書き。"""
+        mock_ctx = _make_ctx({
+            "raw_search_results_en": [{
+                "documents": [{
+                    "title": "API Doc",
+                    "source_url": "https://loc.gov/item/456",
+                    "raw_text": "Authentic archive text from LOC.",
+                    "keywords_matched": ["key"],
+                }],
+            }],
+        })
+
+        report_data = {
+            "title": "Test",
+            "evidence_a": {
+                "source_url": "https://loc.gov/item/456",
+                "relevant_excerpt": "LLM fabricated text",
+            },
+        }
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved_ev = mock_ctx.state["structured_report"]["evidence_a"]
+        assert saved_ev["relevant_excerpt"] == "Authentic archive text from LOC."
+
+    def test_matching_url_empty_raw_text_keeps_llm_excerpt(self):
+        """raw_text が空の場合 LLM テキストを維持し警告。"""
+        mock_ctx = _make_ctx({
+            "raw_search_results_en": [{
+                "documents": [{
+                    "title": "API Doc",
+                    "source_url": "https://loc.gov/item/789",
+                    "raw_text": "",
+                    "keywords_matched": ["key"],
+                }],
+            }],
+        })
+
+        report_data = {
+            "title": "Test",
+            "evidence_a": {
+                "source_url": "https://loc.gov/item/789",
+                "relevant_excerpt": "LLM generated text kept as fallback",
+            },
+        }
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved_ev = mock_ctx.state["structured_report"]["evidence_a"]
+        assert saved_ev["relevant_excerpt"] == "LLM generated text kept as fallback"
+        assert any("raw_text が空" in w for w in result_data["warnings"])
+
+    def test_ungrounded_additional_evidence_removed(self):
+        """URL 不一致の additional_evidence が除外される。"""
+        mock_ctx = _make_ctx({
+            "raw_search_results_en": [{
+                "documents": [{
+                    "title": "Real Doc",
+                    "source_url": "https://loc.gov/item/real",
+                    "raw_text": "Real text",
+                    "keywords_matched": ["key"],
+                }],
+            }],
+        })
+
+        report_data = {
+            "title": "Test",
+            "evidence_a": {
+                "source_url": "https://loc.gov/item/real",
+                "relevant_excerpt": "Text",
+            },
+            "additional_evidence": [
+                {
+                    "source_url": "https://hallucinated.com/fake",
+                    "relevant_excerpt": "Hallucinated text",
+                },
+            ],
+            "approved_image_urls": [],
+        }
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved = mock_ctx.state["structured_report"]
+        assert len(saved["additional_evidence"]) == 0
+        assert any("URL 不一致" in w for w in result_data["warnings"])
+
+    def test_ungrounded_evidence_a_gets_fallback(self):
+        """URL 不一致の evidence_a にフォールバック挿入。"""
+        mock_ctx = _make_ctx({
+            "raw_search_results_en": [{
+                "documents": [{
+                    "title": "Real Doc",
+                    "source_url": "https://loc.gov/item/real",
+                    "raw_text": "Real text",
+                    "keywords_matched": ["key"],
+                }],
+            }],
+        })
+
+        report_data = {
+            "title": "Test",
+            "evidence_a": {
+                "source_url": "https://hallucinated.com/fake",
+                "source_title": "Fake Source",
+                "relevant_excerpt": "LLM made this up",
+            },
+            "evidence_b": {
+                "source_url": "https://loc.gov/item/real",
+                "relevant_excerpt": "Real text",
+            },
+            "approved_image_urls": [],
+        }
+        result = save_structured_report(json.dumps(report_data), mock_ctx)
+        result_data = json.loads(result)
+
+        assert result_data["status"] == "success"
+        saved_ev = mock_ctx.state["structured_report"]["evidence_a"]
+        assert saved_ev["relevant_excerpt"] == "[See original source: Fake Source]"
+        # _ungrounded フラグがクリーンアップされている
+        assert "_ungrounded" not in saved_ev
+        assert any("URL 不一致" in w for w in result_data["warnings"])
 
     def test_non_matching_url_warns(self):
         """URL が raw_search_results に不在 → 警告。"""
@@ -514,12 +643,14 @@ class TestEvidenceGrounding:
                         "source_url": "https://archive.org/details/a",
                         "date": "1900-01-01",
                         "source_type": "internet_archive",
+                        "raw_text": "Raw text A",
                     },
                     {
                         "title": "Doc B",
                         "source_url": "https://loc.gov/item/b",
                         "date": "1901-06-15",
                         "source_type": "nypl",
+                        "raw_text": "Raw text B",
                     },
                 ],
             }],
@@ -552,8 +683,9 @@ class TestEvidenceGrounding:
         assert saved["evidence_a"]["archive_source"] == "internet_archive"
         assert saved["evidence_b"]["source_title"] == "Doc B"
         assert saved["evidence_b"]["archive_source"] == "nypl"
-        # additional_evidence[0] は URL 不在で警告
+        # additional_evidence[0] は URL 不在で警告 + 除外
         assert any("additional_evidence[0]" in w for w in result_data["warnings"])
+        assert len(saved["additional_evidence"]) == 0
 
     def test_no_raw_search_results_skips_grounding(self):
         """raw_search_results がない場合はグラウンディングをスキップ。"""
@@ -584,6 +716,7 @@ class TestEvidenceGrounding:
                     "date": "1800-01-01",
                     "source_type": "dpla",
                     "keywords_matched": ["keyword"],
+                    "raw_text": "Base raw text",
                 }],
             }],
             "raw_search_results_ja": [{
@@ -593,6 +726,7 @@ class TestEvidenceGrounding:
                     "date": "1900-05-01",
                     "source_type": "ndl",
                     "keywords_matched": ["キーワード"],
+                    "raw_text": "JA raw text",
                 }],
             }],
         })
