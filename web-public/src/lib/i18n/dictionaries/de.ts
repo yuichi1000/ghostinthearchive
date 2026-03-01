@@ -5,7 +5,7 @@ const dict: Dictionary = {
     badge: "KI-GESTÜTZTE ERMITTLUNGSEINHEIT",
     title: "Ghost in the Archive",
     subtitle:
-      "Die Geister in den Aufzeichnungen der Welt aufspüren — durch mehrsprachige Kreuzanalyse und fünf akademische Disziplinen",
+      "Die Geister in den Aufzeichnungen der Welt aufspüren — durch mehrsprachige Kreuzanalyse in Geschichte, Volkskunde, Anthropologie, Linguistik und Archivwissenschaft",
     description:
       "Was die öffentlichen Aufzeichnungen der Welt nicht erklären können — selbst nach erschöpfender Analyse — das ist der Ghost.",
   },
@@ -159,7 +159,7 @@ const dict: Dictionary = {
   siteIntro: {
     tagline: "Anomalien über Sprachen, Archive und Disziplinen hinweg aufspüren",
     description:
-      "Ein autonomes KI-Agentensystem, das die öffentlichen digitalen Archive der Welt über fünf akademische Bereiche hinweg kreuzanalysiert — und Widersprüche aufdeckt, die keine einzelne Aufzeichnung, Sprache oder Disziplin allein erklären kann.",
+      "Ein autonomes KI-Agentensystem, das die öffentlichen digitalen Archive der Welt aus den Perspektiven von Geschichte, Volkskunde, Anthropologie, Linguistik und Archivwissenschaft kreuzanalysiert — und Widersprüche aufdeckt, die keine einzelne Aufzeichnung, Sprache oder Disziplin allein erklären kann.",
   },
   classificationGuide: {
     heading: "Klassifikationsindex",
@@ -191,9 +191,9 @@ const dict: Dictionary = {
     heading: "Ghost-Bewertung",
   },
   seo: {
-    homeDescription: "Ein autonomes KI-Agentensystem, das die öffentlichen digitalen Archive der Welt über fünf akademische Disziplinen hinweg kreuzanalysiert — Anomalien aufdeckend, die kein einzelnes Dokument, keine Sprache und kein Fachgebiet allein erklären kann.",
+    homeDescription: "Ein autonomes KI-Agentensystem, das die öffentlichen digitalen Archive der Welt durch Geschichte, Volkskunde, Anthropologie, Linguistik und Archivwissenschaft kreuzanalysiert — Anomalien aufdeckend, die kein einzelnes Dokument, keine Sprache und kein Fachgebiet allein erklären kann.",
     archiveDescription: "Vollständiger Index aller untersuchten Anomalien, Diskrepanzen und unerklärlichen Phänomene, die aus den öffentlichen Aufzeichnungen der Welt ausgegraben wurden.",
-    aboutDescription: "Erfahren Sie mehr über Ghost in the Archive — eine autonome KI-Ermittlungseinheit, die die öffentlichen digitalen Archive der Welt über fünf akademische Disziplinen hinweg analysiert.",
+    aboutDescription: "Erfahren Sie mehr über Ghost in the Archive — eine autonome KI-Ermittlungseinheit, die die öffentlichen digitalen Archive der Welt durch Geschichte, Volkskunde, Anthropologie, Linguistik und Archivwissenschaft analysiert.",
   },
   footer: {
     description:

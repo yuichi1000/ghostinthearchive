@@ -5,7 +5,7 @@ const dict: Dictionary = {
     badge: "UNIDAD DE INVESTIGACIÓN AUTÓNOMA CON IA",
     title: "Ghost in the Archive",
     subtitle:
-      "Desenterrando los Fantasmas en los registros del mundo — mediante análisis multilingüe cruzado y cinco disciplinas académicas",
+      "Desenterrando los Fantasmas en los registros del mundo — mediante análisis multilingüe cruzado en historia, folclore, antropología, lingüística y archivística",
     description:
       "Lo que los registros públicos del mundo no pueden explicar — ni siquiera tras un análisis exhaustivo — eso es el Ghost.",
   },
@@ -159,7 +159,7 @@ const dict: Dictionary = {
   siteIntro: {
     tagline: "Desenterrando anomalías entre idiomas, archivos y disciplinas",
     description:
-      "Un sistema autónomo de agentes de IA que analiza cruzadamente los archivos digitales públicos del mundo a través de cinco campos académicos — revelando las contradicciones que ningún registro, idioma o disciplina puede explicar por sí solo.",
+      "Un sistema autónomo de agentes de IA que analiza cruzadamente los archivos digitales públicos del mundo a través de la historia, el folclore, la antropología, la lingüística y la archivística — revelando las contradicciones que ningún registro, idioma o disciplina puede explicar por sí solo.",
   },
   classificationGuide: {
     heading: "Índice de clasificación",
@@ -191,9 +191,9 @@ const dict: Dictionary = {
     heading: "Evaluación Ghost",
   },
   seo: {
-    homeDescription: "Un sistema autónomo de agentes de IA que analiza los archivos digitales públicos del mundo a través de cinco disciplinas académicas — revelando anomalías que ningún registro, idioma o campo puede explicar por sí solo.",
+    homeDescription: "Un sistema autónomo de agentes de IA que analiza los archivos digitales públicos del mundo a través de la historia, el folclore, la antropología, la lingüística y la archivística — revelando anomalías que ningún registro, idioma o campo puede explicar por sí solo.",
     archiveDescription: "Índice completo de todas las anomalías, discrepancias y fenómenos inexplicables desenterrados de los registros públicos del mundo.",
-    aboutDescription: "Descubre Ghost in the Archive — una unidad autónoma de investigación con IA que analiza los archivos digitales públicos del mundo a través de cinco disciplinas académicas.",
+    aboutDescription: "Descubre Ghost in the Archive — una unidad autónoma de investigación con IA que analiza los archivos digitales públicos del mundo a través de la historia, el folclore, la antropología, la lingüística y la archivística.",
   },
   footer: {
     description:
