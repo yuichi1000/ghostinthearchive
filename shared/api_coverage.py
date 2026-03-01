@@ -132,20 +132,20 @@ def build_coverage_prompt_table() -> str:
 
 
 def calculate_coverage_score(
-    probe_results: dict[str, int],
+    probe_results: dict[str, bool],
 ) -> tuple[str, list[str]]:
     """プローブ結果からスコアと有効 API リストを算出する。
 
     Args:
-        probe_results: {api_key: total_hits} 形式のプローブ結果
+        probe_results: {api_key: has_content} 形式のプローブ結果
 
     Returns:
         (score, primary_apis) タプル。
         score は "HIGH" / "MEDIUM" / "LOW"。
-        primary_apis はヒットがあった API キーのリスト。
+        primary_apis は全文取得可能だった API キーのリスト。
     """
-    # ヒットがあった API を抽出
-    hit_apis = [k for k, v in probe_results.items() if v > 0]
+    # 全文取得可能な API を抽出
+    hit_apis = [k for k, v in probe_results.items() if v]
     hit_count = len(hit_apis)
 
     # 全文信頼度 HIGH の API がヒットに含まれるか

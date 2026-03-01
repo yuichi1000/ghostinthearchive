@@ -149,7 +149,7 @@ class TestValidateSuggestions:
                 "coverage_score": "HIGH",
                 "primary_apis": ["us_archives", "trove"],
                 "probe_keywords": ["Boston", "1850"],
-                "probe_hits": {"us_archives": 5, "trove": 2},
+                "probe_hits": {"us_archives": True, "trove": True},
             },
         ]
         result = validate_suggestions(raw)
@@ -157,7 +157,7 @@ class TestValidateSuggestions:
         assert result[0]["coverage_score"] == "HIGH"
         assert result[0]["primary_apis"] == ["us_archives", "trove"]
         assert result[0]["probe_keywords"] == ["Boston", "1850"]
-        assert result[0]["probe_hits"] == {"us_archives": 5, "trove": 2}
+        assert result[0]["probe_hits"] == {"us_archives": True, "trove": True}
 
 
 class TestBuildCategoryPromptSection:

@@ -1,13 +1,12 @@
 """テーマ候補に対する軽量 API プローブ。
 
 Curator が生成した probe_keywords を使い、全ソースを並列検索して
-実際のヒット件数に基づいた coverage_score を算出・上書きする。
+全文取得可能かどうかに基づいた coverage_score を算出・上書きする。
 """
 
 from __future__ import annotations
 
 import logging
-from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from mystery_agents.tools.source_registry import get_all_sources
@@ -25,19 +24,20 @@ def _build_source_to_group_map() -> dict[str, str]:
     return mapping
 
 
-def probe_theme(keywords: list[str]) -> dict[str, int]:
-    """1テーマについて全ソースを並列プローブし、API グループごとのヒット件数を返す。
+def probe_theme(keywords: list[str]) -> dict[str, bool]:
+    """1テーマについて全ソースを並列プローブし、API グループごとの全文取得可否を返す。
 
     Args:
         keywords: 検索キーワードリスト（probe_keywords）
 
     Returns:
-        {api_group_key: total_hits} 形式の dict
+        {api_group_key: has_content} 形式の dict。
+        raw_text を持つドキュメントが1件でもあれば True。
     """
     all_sources = get_all_sources()
     source_to_group = _build_source_to_group_map()
 
-    group_hits: dict[str, int] = defaultdict(int)
+    group_content: dict[str, bool] = {}
 
     with ThreadPoolExecutor(max_workers=7) as executor:
         futures = {
@@ -49,7 +49,14 @@ def probe_theme(keywords: list[str]) -> dict[str, int]:
             try:
                 result = future.result()
                 api_group = source_to_group.get(source_key, source_key)
-                group_hits[api_group] += result.total_hits
+                has_content = any(
+                    getattr(doc, "raw_text", None)
+                    for doc in result.documents
+                )
+                if has_content:
+                    group_content[api_group] = True
+                elif api_group not in group_content:
+                    group_content[api_group] = False
             except Exception:
                 logger.debug(
                     "プローブ失敗 (source=%s): %s",
@@ -57,7 +64,7 @@ def probe_theme(keywords: list[str]) -> dict[str, int]:
                     future.exception(),
                 )
 
-    return dict(group_hits)
+    return dict(group_content)
 
 
 def probe_all_themes(themes: list[dict]) -> list[dict]:

@@ -1,8 +1,10 @@
 import { Button } from "@ghost/shared/src/components/ui/button"
 import {
+  Check,
   Loader2,
   Search,
   Sparkles,
+  X,
 } from "lucide-react"
 
 const STORYTELLER_OPTIONS = [
@@ -38,7 +40,7 @@ interface ThemeSuggestion {
   description_ja?: string
   coverage_score?: "HIGH" | "MEDIUM" | "LOW"
   primary_apis?: string[]
-  probe_hits?: Record<string, number>
+  probe_hits?: Record<string, boolean>
 }
 
 interface InvestigationFormProps {
@@ -139,15 +141,22 @@ export function InvestigationForm({
                 <p className="text-xs text-muted-foreground mb-1">{s.theme_ja}</p>
               )}
               <p className="text-xs text-muted-foreground mb-1.5">{s.description_ja || s.description}</p>
-              {s.primary_apis && s.primary_apis.length > 0 && (
+              {s.probe_hits && Object.keys(s.probe_hits).length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                  {s.primary_apis.map((api) => (
+                  {Object.entries(s.probe_hits).map(([api, found]) => (
                     <span
                       key={api}
-                      className="text-[10px] font-mono px-1.5 py-0.5 bg-border/30 text-muted-foreground rounded"
+                      className={`text-[10px] font-mono px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${
+                        found
+                          ? "bg-border/30 text-muted-foreground"
+                          : "bg-border/10 text-muted-foreground/40"
+                      }`}
                     >
                       {API_DISPLAY_NAMES[api] || api}
-                      {s.probe_hits?.[api] != null && ` (${s.probe_hits[api]})`}
+                      {found
+                        ? <Check className="w-3 h-3 text-emerald-400" />
+                        : <X className="w-3 h-3 text-red-400/50" />
+                      }
                     </span>
                   ))}
                 </div>
