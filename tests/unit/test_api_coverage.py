@@ -79,34 +79,34 @@ class TestCalculateCoverageScore:
     """calculate_coverage_score() のスコア算出ロジックテスト。"""
 
     def test_high_score_three_apis_with_high_reliability(self):
-        """3+ API ヒット、うち 1+ が HIGH → HIGH。"""
-        probe = {"us_archives": 5, "internet_archive": 3, "trove": 2}
+        """3+ API で全文取得可能、うち 1+ が HIGH → HIGH。"""
+        probe = {"us_archives": True, "internet_archive": True, "trove": True}
         score, apis = calculate_coverage_score(probe)
         assert score == "HIGH"
         assert set(apis) == {"us_archives", "internet_archive", "trove"}
 
     def test_medium_score_two_apis(self):
-        """2 API ヒット → MEDIUM。"""
-        probe = {"europeana": 3, "ndl": 1}
+        """2 API で全文取得可能 → MEDIUM。"""
+        probe = {"europeana": True, "ndl": True}
         score, apis = calculate_coverage_score(probe)
         assert score == "MEDIUM"
         assert set(apis) == {"europeana", "ndl"}
 
     def test_high_score_three_apis_with_delpher(self):
-        """3 API ヒットで delpher(HIGH) 含む → HIGH。"""
-        probe = {"europeana": 3, "ndl": 2, "delpher": 1}
+        """3 API で全文取得可能、delpher(HIGH) 含む → HIGH。"""
+        probe = {"europeana": True, "ndl": True, "delpher": True}
         score, apis = calculate_coverage_score(probe)
         assert score == "HIGH"
 
     def test_low_score_single_api(self):
-        """1 API のみヒット → LOW。"""
-        probe = {"ndl": 5}
+        """1 API のみ全文取得可能 → LOW。"""
+        probe = {"ndl": True}
         score, apis = calculate_coverage_score(probe)
         assert score == "LOW"
 
     def test_low_score_no_hits(self):
-        """全 API ヒットなし → LOW。"""
-        probe = {"us_archives": 0, "europeana": 0}
+        """全 API で全文取得不可 → LOW。"""
+        probe = {"us_archives": False, "europeana": False}
         score, apis = calculate_coverage_score(probe)
         assert score == "LOW"
         assert apis == []
@@ -119,7 +119,7 @@ class TestCalculateCoverageScore:
 
     def test_unknown_api_key_ignored_for_reliability_check(self):
         """未知の API キーは信頼度チェックで無視される。"""
-        probe = {"unknown_api_1": 5, "unknown_api_2": 3, "unknown_api_3": 2}
+        probe = {"unknown_api_1": True, "unknown_api_2": True, "unknown_api_3": True}
         score, apis = calculate_coverage_score(probe)
-        # 3 API ヒットだが全て未知 → HIGH reliability なし → MEDIUM
+        # 3 API で全文取得可能だが全て未知 → HIGH reliability なし → MEDIUM
         assert score == "MEDIUM"

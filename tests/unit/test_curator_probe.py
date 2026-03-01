@@ -1,6 +1,6 @@
 """Unit tests for curator_agents/probe.py.
 
-API プローブの並列実行、ヒット集約、エラー時のグレースフルデグラデーションをテストする。
+API プローブの並列実行、全文取得可否判定、エラー時のグレースフルデグラデーションをテストする。
 """
 
 from unittest.mock import MagicMock, patch
@@ -8,7 +8,18 @@ from unittest.mock import MagicMock, patch
 from curator_agents.probe import probe_all_themes, probe_theme
 
 
-def _make_mock_source(source_key: str, total_hits: int = 0, raise_error: bool = False):
+def _make_mock_doc(raw_text: str | None = None):
+    """テスト用のモックドキュメントを生成する。"""
+    doc = MagicMock()
+    doc.raw_text = raw_text
+    return doc
+
+
+def _make_mock_source(
+    source_key: str,
+    documents: list | None = None,
+    raise_error: bool = False,
+):
     """テスト用のモックソースを生成する。"""
     source = MagicMock()
     source.source_key = source_key
@@ -16,7 +27,8 @@ def _make_mock_source(source_key: str, total_hits: int = 0, raise_error: bool = 
         source.search.side_effect = Exception("API error")
     else:
         result = MagicMock()
-        result.total_hits = total_hits
+        result.documents = documents if documents is not None else []
+        result.total_hits = len(result.documents)
         source.search.return_value = result
     return source
 
@@ -24,26 +36,47 @@ def _make_mock_source(source_key: str, total_hits: int = 0, raise_error: bool = 
 class TestProbeTheme:
     """probe_theme() のテスト。"""
 
-    def test_aggregates_hits_by_api_group(self):
-        """source_key レベルの結果を API グループレベルに集約すること。"""
+    def test_detects_content_by_api_group(self):
+        """raw_text を持つドキュメントがある API グループは True になること。"""
         mock_sources = {
-            "nypl": _make_mock_source("nypl", total_hits=5),
-            "chronicling_america": _make_mock_source("chronicling_america", total_hits=3),
-            "europeana": _make_mock_source("europeana", total_hits=2),
-            "internet_archive": _make_mock_source("internet_archive", total_hits=0),
+            "nypl": _make_mock_source("nypl", documents=[_make_mock_doc("Full text here")]),
+            "chronicling_america": _make_mock_source("chronicling_america", documents=[_make_mock_doc("More text")]),
+            "europeana": _make_mock_source("europeana", documents=[_make_mock_doc("European text")]),
+            "internet_archive": _make_mock_source("internet_archive", documents=[]),
         }
         with patch("curator_agents.probe.get_all_sources", return_value=mock_sources):
             result = probe_theme(["Boston", "1850"])
 
-        # nypl + chronicling_america → us_archives に集約
-        assert result.get("us_archives", 0) == 8
-        assert result.get("europeana", 0) == 2
-        # internet_archive はヒット0だが結果には含まれる
-        assert result.get("internet_archive", 0) == 0
+        # nypl + chronicling_america → us_archives に集約（いずれかが True なら True）
+        assert result["us_archives"] is True
+        assert result["europeana"] is True
+        # internet_archive はドキュメントなし → False
+        assert result["internet_archive"] is False
+
+    def test_false_when_no_raw_text(self):
+        """ドキュメントはあるが raw_text が None の場合は False になること。"""
+        mock_sources = {
+            "europeana": _make_mock_source("europeana", documents=[_make_mock_doc(None)]),
+        }
+        with patch("curator_agents.probe.get_all_sources", return_value=mock_sources):
+            result = probe_theme(["test"])
+
+        assert result["europeana"] is False
+
+    def test_true_when_any_source_in_group_has_content(self):
+        """同一グループの複数ソースのうち1つでも raw_text があれば True になること。"""
+        mock_sources = {
+            "nypl": _make_mock_source("nypl", documents=[]),
+            "chronicling_america": _make_mock_source("chronicling_america", documents=[_make_mock_doc("Text")]),
+        }
+        with patch("curator_agents.probe.get_all_sources", return_value=mock_sources):
+            result = probe_theme(["test"])
+
+        assert result["us_archives"] is True
 
     def test_calls_search_with_max_results_1(self):
         """search を max_results=1 で呼ぶこと。"""
-        mock_source = _make_mock_source("nypl", total_hits=10)
+        mock_source = _make_mock_source("nypl", documents=[_make_mock_doc("text")])
         mock_sources = {"nypl": mock_source}
         with patch("curator_agents.probe.get_all_sources", return_value=mock_sources):
             probe_theme(["test"])
@@ -54,14 +87,14 @@ class TestProbeTheme:
         """API エラー時は該当ソースをスキップし、他のソースの結果を返すこと。"""
         mock_sources = {
             "nypl": _make_mock_source("nypl", raise_error=True),
-            "europeana": _make_mock_source("europeana", total_hits=5),
+            "europeana": _make_mock_source("europeana", documents=[_make_mock_doc("text")]),
         }
         with patch("curator_agents.probe.get_all_sources", return_value=mock_sources):
             result = probe_theme(["test"])
 
         # nypl はエラーで結果なし、europeana は正常
-        assert "us_archives" not in result or result.get("us_archives", 0) == 0
-        assert result.get("europeana", 0) == 5
+        assert "us_archives" not in result
+        assert result["europeana"] is True
 
     def test_empty_sources_returns_empty(self):
         """ソースが空の場合は空 dict を返すこと。"""
@@ -80,10 +113,10 @@ class TestProbeAllThemes:
              "probe_keywords": ["Boston", "harbor", "ghost"]},
         ]
         mock_sources = {
-            "nypl": _make_mock_source("nypl", total_hits=5),
-            "chronicling_america": _make_mock_source("chronicling_america", total_hits=3),
-            "internet_archive": _make_mock_source("internet_archive", total_hits=2),
-            "trove": _make_mock_source("trove", total_hits=1),
+            "nypl": _make_mock_source("nypl", documents=[_make_mock_doc("text")]),
+            "chronicling_america": _make_mock_source("chronicling_america", documents=[_make_mock_doc("text")]),
+            "internet_archive": _make_mock_source("internet_archive", documents=[_make_mock_doc("text")]),
+            "trove": _make_mock_source("trove", documents=[_make_mock_doc("text")]),
         }
         with patch("curator_agents.probe.get_all_sources", return_value=mock_sources):
             result = probe_all_themes(themes)
@@ -99,7 +132,7 @@ class TestProbeAllThemes:
             {"theme": "Boston Harbor Ghosts 1850", "description": "Test", "category": "OCC"},
         ]
         mock_sources = {
-            "nypl": _make_mock_source("nypl", total_hits=1),
+            "nypl": _make_mock_source("nypl", documents=[_make_mock_doc("text")]),
         }
         with patch("curator_agents.probe.get_all_sources", return_value=mock_sources) as _:
             probe_all_themes(themes)
