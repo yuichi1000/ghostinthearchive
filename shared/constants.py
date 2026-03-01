@@ -43,6 +43,7 @@ SCHEMA_VERSION = 2
 # セッション状態の値がこれらで始まる場合、有意なデータなしと判定する。
 FAILURE_MARKERS: frozenset[str] = frozenset({
     "NO_DOCUMENTS_FOUND",
+    "NO_FULLTEXT_AVAILABLE",
     "INSUFFICIENT_DATA",
     "NO_CONTENT",
     "Not available",

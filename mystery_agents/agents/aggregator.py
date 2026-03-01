@@ -19,6 +19,7 @@ from google.genai import types
 from shared.language_names import get_language_name
 from shared.state_keys import (
     ACTIVE_LANGUAGES,
+    FULLTEXT_METRICS,
     RAW_SEARCH_RESULTS,
     SELECTED_LANGUAGES,
     collected_documents_key,
@@ -62,25 +63,40 @@ class AggregatorAgent(BaseAgent):
             reverse=True,
         )
 
+        # 全文メトリクス算出
+        fulltext_metrics = _compute_fulltext_metrics(docs_by_lang, active_languages)
+
+        global_fulltext = fulltext_metrics["fulltext_documents"]
+
         # state_delta を構築
         state_delta: dict[str, object] = {}
 
         for lang in active_languages:
             docs = docs_by_lang[lang]
-            text = _format_documents(lang, docs)
+            lang_stats = fulltext_metrics["by_language"].get(lang, {})
+            text = _format_documents(
+                lang,
+                docs,
+                lang_fulltext=lang_stats.get("fulltext", 0),
+                lang_metadata_only=lang_stats.get("metadata_only", 0),
+                global_fulltext=global_fulltext,
+            )
             state_delta[collected_documents_key(lang)] = text
 
         state_delta[ACTIVE_LANGUAGES] = active_languages
+        state_delta[FULLTEXT_METRICS] = fulltext_metrics
 
         # selected_languages を active_languages で更新（Scholar/debate layer 互換）
         if active_languages:
             state_delta[SELECTED_LANGUAGES] = active_languages
 
         total_docs = sum(len(d) for d in docs_by_lang.values())
+        ft = fulltext_metrics["fulltext_documents"]
         summary = (
             f"Aggregated {total_docs} documents across "
             f"{len(active_languages)} languages: "
             f"{', '.join(f'{lang}({len(docs_by_lang[lang])})' for lang in active_languages)}"
+            f" Full text: {ft}/{total_docs}"
         )
         logger.info(
             "Aggregator: %s",
@@ -88,6 +104,7 @@ class AggregatorAgent(BaseAgent):
             extra={
                 "active_languages": active_languages,
                 "total_documents": total_docs,
+                "fulltext_documents": ft,
                 "docs_per_language": {
                     lang: len(docs_by_lang[lang]) for lang in active_languages
                 },
@@ -105,22 +122,71 @@ class AggregatorAgent(BaseAgent):
         )
 
 
-def _format_documents(lang: str, docs: list[dict]) -> str:
+def _deduplicate_docs(docs: list[dict]) -> list[dict]:
+    """URL ベースでドキュメントを重複除去する。"""
+    seen_urls: set[str] = set()
+    unique: list[dict] = []
+    for doc in docs:
+        url = doc.get("source_url", "")
+        if url and url not in seen_urls:
+            seen_urls.add(url)
+            unique.append(doc)
+        elif not url:
+            unique.append(doc)
+    return unique
+
+
+def _compute_fulltext_metrics(
+    docs_by_lang: dict[str, list[dict]],
+    active_languages: list[str],
+) -> dict:
+    """全文テキスト取得メトリクスを算出する。
+
+    Returns:
+        {
+            "total_documents": int,
+            "fulltext_documents": int,
+            "metadata_only_documents": int,
+            "by_language": {
+                lang: {"total": int, "fulltext": int, "metadata_only": int},
+                ...
+            }
+        }
+    """
+    by_language: dict[str, dict[str, int]] = {}
+    total = 0
+    total_ft = 0
+
+    for lang in active_languages:
+        docs = _deduplicate_docs(docs_by_lang[lang])
+        ft = sum(1 for d in docs if d.get("raw_text"))
+        mo = len(docs) - ft
+        by_language[lang] = {"total": len(docs), "fulltext": ft, "metadata_only": mo}
+        total += len(docs)
+        total_ft += ft
+
+    return {
+        "total_documents": total,
+        "fulltext_documents": total_ft,
+        "metadata_only_documents": total - total_ft,
+        "by_language": by_language,
+    }
+
+
+def _format_documents(
+    lang: str,
+    docs: list[dict],
+    *,
+    lang_fulltext: int = 0,
+    lang_metadata_only: int = 0,
+    global_fulltext: int = 0,
+) -> str:
     """ドキュメントリストを Scholar が読める形式にフォーマットする。
 
     重複 URL を除去し、各ドキュメントのメタデータとテキスト抜粋を
     構造化テキストとして整形する。
     """
-    # URL 重複除去
-    seen_urls: set[str] = set()
-    unique_docs: list[dict] = []
-    for doc in docs:
-        url = doc.get("source_url", "")
-        if url and url not in seen_urls:
-            seen_urls.add(url)
-            unique_docs.append(doc)
-        elif not url:
-            unique_docs.append(doc)
+    unique_docs = _deduplicate_docs(docs)
 
     lang_name = get_language_name(lang)
 
@@ -128,8 +194,16 @@ def _format_documents(lang: str, docs: list[dict]) -> str:
         return f"NO_DOCUMENTS_FOUND: No {lang_name}-language documents collected."
 
     lines = [
-        f"# Collected Documents ({lang_name}) — {len(unique_docs)} documents\n"
+        f"# Collected Documents ({lang_name}) — {len(unique_docs)} documents"
+        f" ({lang_fulltext} with full text, {lang_metadata_only} metadata-only)\n"
     ]
+
+    # 全言語合計の全文ドキュメントが 1-2 件の場合、限定的証拠の注記
+    if 0 < global_fulltext <= 2:
+        lines.append(
+            f"> **Note**: Only {global_fulltext} document(s) with full text available "
+            f"across all languages. Analysis may be limited.\n"
+        )
 
     for i, doc in enumerate(unique_docs, 1):
         lines.append(f"## [{i}] {doc.get('title', 'Untitled')}")
@@ -152,6 +226,8 @@ def _format_documents(lang: str, docs: list[dict]) -> str:
             if len(str(doc["raw_text"])) > 3000:
                 excerpt += "..."
             lines.append(f"- **Excerpt**: {excerpt}")
+        else:
+            lines.append("- **Excerpt**: [metadata only — full text not available]")
         lines.append("")  # ドキュメント間の空行
 
     return "\n".join(lines)

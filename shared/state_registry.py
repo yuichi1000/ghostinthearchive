@@ -212,6 +212,12 @@ STATE_KEYS: list[StateKey] = [
         read_by=("script_planner", "scriptwriter", "alchemist"),
     ),
     StateKey(
+        name="fulltext_metrics",
+        description="Aggregator が算出する全文テキスト取得指標（全言語合計 + 言語別）",
+        written_by=("aggregator",),
+        read_by=("pipeline_gate",),
+    ),
+    StateKey(
         name="search_log",
         description="Librarian 検索活動ログ（API 別統計・キーワード分類を蓄積、Publisher が Firestore 永続化）",
         written_by=("librarian_tools",),
