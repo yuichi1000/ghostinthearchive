@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { approveMystery, archiveMystery, unpublishMystery } from "@/lib/firestore/mysteries"
+import { approveMystery, archiveMystery, unpublishMystery } from "@/actions/mysteries"
 import { useActionFeedback, type ActionFeedback } from "@/hooks/use-action-feedback"
 
 interface UseMysteryActionsOptions {
@@ -21,42 +21,36 @@ export function useMysteryActions({ onSuccess }: UseMysteryActionsOptions) {
   }
 
   const handleApprove = useCallback(async (id: string) => {
-    try {
-      await approveMystery(id)
+    const result = await approveMystery(id)
+    if (result.success) {
       feedback.showSuccess(`Case ${id} approved and published`)
       onSuccess()
       triggerRebuild()
-    } catch (error) {
-      console.error("Failed to approve:", error)
-      const message = error instanceof Error ? error.message : "不明なエラー"
-      feedback.showError(`承認に失敗しました: ${message}`)
+    } else {
+      feedback.showError(`承認に失敗しました: ${result.error}`)
     }
   }, [feedback, onSuccess])
 
   const handleArchive = useCallback(async (id: string) => {
-    try {
-      await archiveMystery(id)
+    const result = await archiveMystery(id)
+    if (result.success) {
       feedback.showSuccess(`Case ${id} archived`)
       onSuccess()
       triggerRebuild()
-    } catch (error) {
-      console.error("Failed to archive:", error)
-      const message = error instanceof Error ? error.message : "不明なエラー"
-      feedback.showError(`アーカイブに失敗しました: ${message}`)
+    } else {
+      feedback.showError(`アーカイブに失敗しました: ${result.error}`)
     }
   }, [feedback, onSuccess])
 
   const handleUnpublish = useCallback(async (id: string) => {
     if (!window.confirm("この記事を非公開に戻しますか？公開サイトから削除されます。")) return
-    try {
-      await unpublishMystery(id)
+    const result = await unpublishMystery(id)
+    if (result.success) {
       feedback.showSuccess(`Case ${id} unpublished`)
       onSuccess()
       triggerRebuild()
-    } catch (error) {
-      console.error("Failed to unpublish:", error)
-      const message = error instanceof Error ? error.message : "不明なエラー"
-      feedback.showError(`非公開への変更に失敗しました: ${message}`)
+    } else {
+      feedback.showError(`非公開への変更に失敗しました: ${result.error}`)
     }
   }, [feedback, onSuccess])
 

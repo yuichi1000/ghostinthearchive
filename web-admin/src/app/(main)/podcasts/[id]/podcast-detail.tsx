@@ -6,7 +6,7 @@ import { Button } from "@ghost/shared/src/components/ui/button"
 import { usePodcast } from "@/hooks/use-podcast"
 import { usePipelineRun } from "@/hooks/use-pipeline-run"
 import { useActionFeedback } from "@/hooks/use-action-feedback"
-import { updatePodcastScript } from "@/lib/firestore/podcasts"
+import { updatePodcastScript } from "@/actions/podcasts"
 import { PodcastStatusBadge } from "@/components/podcast-status-badge"
 import { AudioPlayer } from "@/components/audio-player"
 import { ScriptEditor } from "@/components/script-editor"
@@ -52,13 +52,13 @@ export function PodcastDetail({ podcastId }: PodcastDetailProps) {
     if (!editedScript || !podcast) return
     setSaving(true)
     try {
-      await updatePodcastScript(podcastId, editedScript)
-      hasUnsavedChanges.current = false
-      feedback.showSuccess("脚本を保存しました")
-    } catch (error) {
-      console.error("Failed to save script:", error)
-      const message = error instanceof Error ? error.message : "不明なエラー"
-      feedback.showError(`脚本の保存に失敗しました: ${message}`)
+      const result = await updatePodcastScript(podcastId, editedScript)
+      if (result.success) {
+        hasUnsavedChanges.current = false
+        feedback.showSuccess("脚本を保存しました")
+      } else {
+        feedback.showError(`脚本の保存に失敗しました: ${result.error}`)
+      }
     } finally {
       setSaving(false)
     }
