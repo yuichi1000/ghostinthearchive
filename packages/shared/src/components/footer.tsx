@@ -47,7 +47,7 @@ interface FooterProps {
 }
 
 export function Footer({ labels, siteLinks }: FooterProps) {
-  const description = labels?.description ?? "Multi-lingual cross-analysis of the world's public digital archives — unearthing the Ghosts hiding in the gaps between records, languages, and disciplines."
+  const description = labels?.description ?? "AI-driven analysis of the world's public digital archives — unearthing the Ghosts hiding in the gaps between records, archives, and disciplines."
   const primarySources = labels?.primarySources ?? "Primary Sources"
   const technical = labels?.technical ?? "Technical"
   const classification = labels?.classification ?? "Document Classification: PUBLIC RELEASE"

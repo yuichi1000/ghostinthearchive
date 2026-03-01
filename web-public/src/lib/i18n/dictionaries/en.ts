@@ -4,7 +4,7 @@ const dict: Dictionary = {
   hero: {
     badge: "AI-POWERED INVESTIGATION UNIT",
     title: "Ghost in the Archive",
-    subtitle: "Unearthing the Ghosts in the world's records — through multi-lingual cross-analysis across history, folklore, anthropology, linguistics, and archival science",
+    subtitle: "Unearthing the Ghosts in the world's records — AI-driven discovery across history, folklore, anthropology, linguistics, and archival science",
     description:
       "What the world's public records cannot explain — even after exhaustive analysis — that is the Ghost.",
   },
@@ -53,7 +53,7 @@ const dict: Dictionary = {
     concept: {
       heading: "What is the Ghost?",
       intro:
-        "The world's public digital archives hold billions of records — yet what they do not say may be more revealing than what they do. When analyzed across languages and disciplines, contradictions emerge that no single archive, language, or field of study can explain alone. The inexplicable remainder that persists after exhaustive analysis — the presence felt in absence — that is the Ghost.",
+        "The world's public digital archives hold billions of records — yet what they do not say may be more revealing than what they do. When analyzed across multiple archives and disciplines, contradictions emerge that no single record or field of study can explain alone. The inexplicable remainder that persists after exhaustive analysis — the presence felt in absence — that is the Ghost.",
       principlesHeading: "This system operates on five principles:",
       autonomousAgents: "Autonomous AI Agents",
       autonomousAgentsDesc:
@@ -61,9 +61,9 @@ const dict: Dictionary = {
       transparency: "Radical Transparency",
       transparencyDesc:
         "Every hypothesis built on, and verifiable through, public records alone",
-      crossDiscovery: "Multi-lingual Cross-discovery",
+      crossDiscovery: "AI-Powered Cross-Discovery",
       crossDiscoveryDesc:
-        "Anomalies visible only when records in different languages are compared",
+        "Anomalies visible only when records from different archives and disciplines are cross-referenced",
       interdisciplinary: "Interdisciplinary Analysis",
       interdisciplinaryDesc:
         "Five academic fields: History, Folklore Studies, Cultural Anthropology, Linguistics, and Archival Science",
@@ -98,8 +98,8 @@ const dict: Dictionary = {
           description: "Language-specific Scholar agents analyze the collected documents through five academic lenses: History, Folklore Studies, Cultural Anthropology, Linguistics, and Archival Science. Each identifies contradictions, anomalies, and patterns within its assigned language group.",
         },
         debate: {
-          title: "Cross-lingual Debate",
-          description: "Scholars from different language groups engage in structured debate, challenging each other's findings and identifying cross-lingual discrepancies that no single-language analysis could surface.",
+          title: "Cross-Disciplinary Debate",
+          description: "Scholar agents engage in structured debate, challenging each other's findings and identifying discrepancies that no single analysis could surface.",
         },
         certification: {
           title: "Ghost Certification",
@@ -157,9 +157,9 @@ const dict: Dictionary = {
     moreLocations: "+{count} more",
   },
   siteIntro: {
-    tagline: "Unearthing anomalies across languages, archives, and disciplines",
+    tagline: "AI-driven discovery of anomalies across archives and disciplines",
     description:
-      "An autonomous AI agent system that cross-analyzes the world's public digital archives through history, folklore, anthropology, linguistics, and archival science — surfacing the contradictions that no single record, language, or discipline can explain alone.",
+      "An autonomous AI agent system that analyzes the world's public digital archives through five academic disciplines — history, folklore, anthropology, linguistics, and archival science — surfacing contradictions that no single record or field of study can explain alone.",
   },
   classificationGuide: {
     heading: "Classification Index",
@@ -191,13 +191,13 @@ const dict: Dictionary = {
     heading: "Ghost Assessment",
   },
   seo: {
-    homeDescription: "An autonomous AI agent system cross-analyzing the world's public digital archives through history, folklore, anthropology, linguistics, and archival science — unearthing anomalies that no single record, language, or field can explain.",
+    homeDescription: "An autonomous AI agent system analyzing the world's public digital archives through five academic disciplines — unearthing anomalies that no single record or field of study can explain.",
     archiveDescription: "Complete index of all investigated anomalies, discrepancies, and unexplained phenomena unearthed from the world's public records.",
-    aboutDescription: "Learn about Ghost in the Archive — an autonomous AI investigation unit that cross-analyzes the world's public digital archives across history, folklore, anthropology, linguistics, and archival science.",
+    aboutDescription: "Learn about Ghost in the Archive — an autonomous AI investigation unit that analyzes the world's public digital archives across history, folklore, anthropology, linguistics, and archival science.",
   },
   footer: {
     description:
-      "Multi-lingual cross-analysis of the world's public digital archives — unearthing the Ghosts hiding in the gaps between records, languages, and disciplines.",
+      "AI-driven analysis of the world's public digital archives — unearthing the Ghosts hiding in the gaps between records, archives, and disciplines.",
     primarySources: "Primary Sources",
     technical: "Technical",
     classification: "Classification:",
