@@ -26,7 +26,7 @@ const notoSansJP = Noto_Sans_JP({
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: 'Ghost in the Archive',
-  description: 'Unearthing the Ghosts in the world\'s records — multi-lingual cross-analysis of public digital archives through five academic disciplines.',
+  description: 'Unearthing the Ghosts in the world\'s records — AI-driven discovery across five academic disciplines in the world\'s public digital archives.',
   keywords: ["history", "folklore", "cultural anthropology", "linguistics", "archival science", "digital archives", "AI", "OSINT", "mystery", "歴史", "民俗学", "文化人類学", "言語学", "文書館学"],
   openGraph: {
     siteName: 'Ghost in the Archive',

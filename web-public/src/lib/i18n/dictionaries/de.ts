@@ -5,7 +5,7 @@ const dict: Dictionary = {
     badge: "KI-GESTÜTZTE ERMITTLUNGSEINHEIT",
     title: "Ghost in the Archive",
     subtitle:
-      "Die Geister in den Aufzeichnungen der Welt aufspüren — durch mehrsprachige Kreuzanalyse in Geschichte, Volkskunde, Anthropologie, Linguistik und Archivwissenschaft",
+      "Die Geister in den Aufzeichnungen der Welt aufspüren — KI-gestützte Entdeckung in Geschichte, Volkskunde, Anthropologie, Linguistik und Archivwissenschaft",
     description:
       "Was die öffentlichen Aufzeichnungen der Welt nicht erklären können — selbst nach erschöpfender Analyse — das ist der Ghost.",
   },
@@ -54,7 +54,7 @@ const dict: Dictionary = {
     concept: {
       heading: "Was ist der Ghost?",
       intro:
-        "Die öffentlichen digitalen Archive der Welt enthalten Milliarden von Aufzeichnungen — doch was sie nicht sagen, kann aufschlussreicher sein als das, was sie sagen. Bei der Analyse über Sprachen und Disziplinen hinweg treten Widersprüche zutage, die kein einzelnes Archiv, keine einzelne Sprache und kein einzelnes Fachgebiet allein erklären kann. Der unerklärliche Rest, der nach erschöpfender Analyse bestehen bleibt — die Anwesenheit, die in der Abwesenheit spürbar wird — das ist der Ghost.",
+        "Die öffentlichen digitalen Archive der Welt enthalten Milliarden von Aufzeichnungen — doch was sie nicht sagen, kann aufschlussreicher sein als das, was sie sagen. Bei der Analyse über mehrere Archive und Disziplinen hinweg treten Widersprüche zutage, die keine einzelne Aufzeichnung und kein einzelnes Fachgebiet allein erklären kann. Der unerklärliche Rest, der nach erschöpfender Analyse bestehen bleibt — die Anwesenheit, die in der Abwesenheit spürbar wird — das ist der Ghost.",
       principlesHeading: "Dieses System arbeitet nach fünf Prinzipien:",
       autonomousAgents: "Autonome KI-Agenten",
       autonomousAgentsDesc:
@@ -62,9 +62,9 @@ const dict: Dictionary = {
       transparency: "Radikale Transparenz",
       transparencyDesc:
         "Jede Hypothese ausschließlich auf öffentlichen Aufzeichnungen aufgebaut und durch diese verifizierbar",
-      crossDiscovery: "Mehrsprachige Kreuzentdeckung",
+      crossDiscovery: "KI-gestützte Kreuzentdeckung",
       crossDiscoveryDesc:
-        "Anomalien, die erst sichtbar werden, wenn Aufzeichnungen in verschiedenen Sprachen verglichen werden",
+        "Anomalien, die erst sichtbar werden, wenn Aufzeichnungen aus verschiedenen Archiven und Disziplinen abgeglichen werden",
       interdisciplinary: "Interdisziplinäre Analyse",
       interdisciplinaryDesc:
         "Fünf akademische Bereiche: Geschichtswissenschaft, Volkskunde, Kulturanthropologie, Linguistik und Archivwissenschaft",
@@ -99,8 +99,8 @@ const dict: Dictionary = {
           description: "Sprachspezifische Scholar-Agenten analysieren die gesammelten Dokumente durch fünf akademische Perspektiven: Geschichtswissenschaft, Volkskunde, Kulturanthropologie, Linguistik und Archivwissenschaft. Jeder identifiziert Widersprüche, Anomalien und Muster innerhalb seiner zugewiesenen Sprachgruppe.",
         },
         debate: {
-          title: "Sprachübergreifende Debatte",
-          description: "Scholars aus verschiedenen Sprachgruppen führen eine strukturierte Debatte, hinterfragen gegenseitig ihre Ergebnisse und identifizieren sprachübergreifende Diskrepanzen, die keine einsprachige Analyse aufdecken könnte.",
+          title: "Interdisziplinäre Debatte",
+          description: "Scholar-Agenten führen eine strukturierte Debatte, hinterfragen gegenseitig ihre Ergebnisse und identifizieren Diskrepanzen, die keine einzelne Analyse aufdecken könnte.",
         },
         certification: {
           title: "Ghost-Zertifizierung",
@@ -158,9 +158,9 @@ const dict: Dictionary = {
     moreLocations: "+{count} weitere",
   },
   siteIntro: {
-    tagline: "Anomalien über Sprachen, Archive und Disziplinen hinweg aufspüren",
+    tagline: "KI-gestützte Entdeckung von Anomalien über Archive und Disziplinen hinweg",
     description:
-      "Ein autonomes KI-Agentensystem, das die öffentlichen digitalen Archive der Welt aus den Perspektiven von Geschichte, Volkskunde, Anthropologie, Linguistik und Archivwissenschaft kreuzanalysiert — und Widersprüche aufdeckt, die keine einzelne Aufzeichnung, Sprache oder Disziplin allein erklären kann.",
+      "Ein autonomes KI-Agentensystem, das die öffentlichen digitalen Archive der Welt durch fünf akademische Disziplinen analysiert — Geschichte, Volkskunde, Anthropologie, Linguistik und Archivwissenschaft — und Widersprüche aufdeckt, die keine einzelne Aufzeichnung oder Disziplin allein erklären kann.",
   },
   classificationGuide: {
     heading: "Klassifikationsindex",
@@ -192,13 +192,13 @@ const dict: Dictionary = {
     heading: "Ghost-Bewertung",
   },
   seo: {
-    homeDescription: "Ein autonomes KI-Agentensystem, das die öffentlichen digitalen Archive der Welt durch Geschichte, Volkskunde, Anthropologie, Linguistik und Archivwissenschaft kreuzanalysiert — Anomalien aufdeckend, die kein einzelnes Dokument, keine Sprache und kein Fachgebiet allein erklären kann.",
+    homeDescription: "Ein autonomes KI-Agentensystem, das die öffentlichen digitalen Archive der Welt durch fünf akademische Disziplinen analysiert — Anomalien aufdeckend, die kein einzelnes Dokument oder Fachgebiet allein erklären kann.",
     archiveDescription: "Vollständiger Index aller untersuchten Anomalien, Diskrepanzen und unerklärlichen Phänomene, die aus den öffentlichen Aufzeichnungen der Welt ausgegraben wurden.",
-    aboutDescription: "Erfahren Sie mehr über Ghost in the Archive — eine autonome KI-Ermittlungseinheit, die die öffentlichen digitalen Archive der Welt durch Geschichte, Volkskunde, Anthropologie, Linguistik und Archivwissenschaft analysiert.",
+    aboutDescription: "Erfahren Sie mehr über Ghost in the Archive — eine autonome KI-Ermittlungseinheit, die die öffentlichen digitalen Archive der Welt durch fünf akademische Disziplinen analysiert: Geschichte, Volkskunde, Anthropologie, Linguistik und Archivwissenschaft.",
   },
   footer: {
     description:
-      "Mehrsprachige Kreuzanalyse der öffentlichen digitalen Archive der Welt — die Geister aufspüren, die sich in den Lücken zwischen Aufzeichnungen, Sprachen und Disziplinen verbergen.",
+      "KI-gestützte Analyse der öffentlichen digitalen Archive der Welt — die Geister aufspüren, die sich in den Lücken zwischen Aufzeichnungen, Archiven und Disziplinen verbergen.",
     primarySources: "Primärquellen",
     technical: "Technik",
     classification: "Klassifikation:",

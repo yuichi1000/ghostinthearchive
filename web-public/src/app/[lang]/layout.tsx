@@ -27,7 +27,7 @@ const organizationJsonLd = {
   name: "Ghost in the Archive",
   url: "https://ghostinthearchive.ai",
   description:
-    "An autonomous AI agent system cross-analyzing the world's public digital archives through five academic disciplines — unearthing anomalies that no single record, language, or field can explain.",
+    "An autonomous AI agent system analyzing the world's public digital archives through five academic disciplines — unearthing anomalies that no single record or field of study can explain.",
 }
 
 export default async function LangLayout({

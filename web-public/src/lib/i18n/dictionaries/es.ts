@@ -5,7 +5,7 @@ const dict: Dictionary = {
     badge: "UNIDAD DE INVESTIGACIÓN AUTÓNOMA CON IA",
     title: "Ghost in the Archive",
     subtitle:
-      "Desenterrando los Fantasmas en los registros del mundo — mediante análisis multilingüe cruzado en historia, folclore, antropología, lingüística y archivística",
+      "Desenterrando los Fantasmas en los registros del mundo — descubrimiento impulsado por IA en historia, folclore, antropología, lingüística y archivística",
     description:
       "Lo que los registros públicos del mundo no pueden explicar — ni siquiera tras un análisis exhaustivo — eso es el Ghost.",
   },
@@ -54,7 +54,7 @@ const dict: Dictionary = {
     concept: {
       heading: "¿Qué es el Ghost?",
       intro:
-        "Los archivos digitales públicos del mundo contienen miles de millones de registros — sin embargo, lo que no dicen puede ser más revelador que lo que dicen. Cuando se analizan a través de idiomas y disciplinas, emergen contradicciones que ningún archivo, idioma o campo de estudio puede explicar por sí solo. El residuo inexplicable que persiste tras un análisis exhaustivo — la presencia sentida en la ausencia — eso es el Ghost.",
+        "Los archivos digitales públicos del mundo contienen miles de millones de registros — sin embargo, lo que no dicen puede ser más revelador que lo que dicen. Cuando se analizan a través de múltiples archivos y disciplinas, emergen contradicciones que ningún registro o campo de estudio puede explicar por sí solo. El residuo inexplicable que persiste tras un análisis exhaustivo — la presencia sentida en la ausencia — eso es el Ghost.",
       principlesHeading: "Este sistema opera bajo cinco principios:",
       autonomousAgents: "Agentes de IA autónomos",
       autonomousAgentsDesc:
@@ -62,9 +62,9 @@ const dict: Dictionary = {
       transparency: "Transparencia radical",
       transparencyDesc:
         "Cada hipótesis construida sobre, y verificable a través de, registros públicos exclusivamente",
-      crossDiscovery: "Descubrimiento multilingüe cruzado",
+      crossDiscovery: "Descubrimiento cruzado impulsado por IA",
       crossDiscoveryDesc:
-        "Anomalías visibles solo cuando se comparan registros en diferentes idiomas",
+        "Anomalías visibles solo cuando se cruzan registros de diferentes archivos y disciplinas",
       interdisciplinary: "Análisis interdisciplinario",
       interdisciplinaryDesc:
         "Cinco campos académicos: Historia, Estudios del Folclore, Antropología Cultural, Lingüística y Ciencia Archivística",
@@ -99,8 +99,8 @@ const dict: Dictionary = {
           description: "Agentes Scholar específicos de cada idioma analizan los documentos recopilados a través de cinco perspectivas académicas: Historia, Estudios del Folclore, Antropología Cultural, Lingüística y Ciencia Archivística. Cada uno identifica contradicciones, anomalías y patrones dentro de su grupo lingüístico asignado.",
         },
         debate: {
-          title: "Debate interlingüístico",
-          description: "Los Scholars de diferentes grupos lingüísticos participan en un debate estructurado, cuestionando los hallazgos de los demás e identificando discrepancias entre idiomas que ningún análisis monolingüe podría revelar.",
+          title: "Debate interdisciplinario",
+          description: "Los agentes Scholar participan en un debate estructurado, cuestionando los hallazgos de los demás e identificando discrepancias que ningún análisis individual podría revelar.",
         },
         certification: {
           title: "Certificación Ghost",
@@ -158,9 +158,9 @@ const dict: Dictionary = {
     moreLocations: "+{count} más",
   },
   siteIntro: {
-    tagline: "Desenterrando anomalías entre idiomas, archivos y disciplinas",
+    tagline: "Descubrimiento de anomalías impulsado por IA entre archivos y disciplinas",
     description:
-      "Un sistema autónomo de agentes de IA que analiza cruzadamente los archivos digitales públicos del mundo a través de la historia, el folclore, la antropología, la lingüística y la archivística — revelando las contradicciones que ningún registro, idioma o disciplina puede explicar por sí solo.",
+      "Un sistema autónomo de agentes de IA que analiza los archivos digitales públicos del mundo a través de cinco disciplinas académicas — historia, folclore, antropología, lingüística y archivística — revelando contradicciones que ningún registro o campo de estudio puede explicar por sí solo.",
   },
   classificationGuide: {
     heading: "Índice de clasificación",
@@ -192,13 +192,13 @@ const dict: Dictionary = {
     heading: "Evaluación Ghost",
   },
   seo: {
-    homeDescription: "Un sistema autónomo de agentes de IA que analiza los archivos digitales públicos del mundo a través de la historia, el folclore, la antropología, la lingüística y la archivística — revelando anomalías que ningún registro, idioma o campo puede explicar por sí solo.",
+    homeDescription: "Un sistema autónomo de agentes de IA que analiza los archivos digitales públicos del mundo a través de cinco disciplinas académicas — revelando anomalías que ningún registro o campo de estudio puede explicar por sí solo.",
     archiveDescription: "Índice completo de todas las anomalías, discrepancias y fenómenos inexplicables desenterrados de los registros públicos del mundo.",
-    aboutDescription: "Descubre Ghost in the Archive — una unidad autónoma de investigación con IA que analiza los archivos digitales públicos del mundo a través de la historia, el folclore, la antropología, la lingüística y la archivística.",
+    aboutDescription: "Descubre Ghost in the Archive — una unidad autónoma de investigación con IA que analiza los archivos digitales públicos del mundo a través de cinco disciplinas académicas: historia, folclore, antropología, lingüística y archivística.",
   },
   footer: {
     description:
-      "Análisis multilingüe cruzado de los archivos digitales públicos del mundo — desenterrando los Fantasmas ocultos en las brechas entre registros, idiomas y disciplinas.",
+      "Análisis impulsado por IA de los archivos digitales públicos del mundo — desenterrando los Fantasmas ocultos en las brechas entre registros, archivos y disciplinas.",
     primarySources: "Fuentes primarias",
     technical: "Técnico",
     classification: "Clasificación:",

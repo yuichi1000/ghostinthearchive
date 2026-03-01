@@ -81,7 +81,7 @@ export function Hero({ dict }: HeroProps) {
   // デフォルト英語テキスト
   const badge = dict?.hero.badge ?? "AI-POWERED INVESTIGATION UNIT"
   const title = dict?.hero.title ?? "Ghost in the Archive"
-  const subtitle = dict?.hero.subtitle ?? "Unearthing the Ghosts in the world's records — through multi-lingual cross-analysis and five academic disciplines"
+  const subtitle = dict?.hero.subtitle ?? "Unearthing the Ghosts in the world's records — AI-driven discovery across history, folklore, anthropology, linguistics, and archival science"
   const description = dict?.hero.description ?? "What the world's public records cannot explain — even after exhaustive analysis — that is the Ghost."
 
   return (
