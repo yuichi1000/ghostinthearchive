@@ -65,8 +65,8 @@ class TestFormatDocuments:
         assert "1 documents" in result
 
     def test_truncates_long_excerpt(self):
-        """raw_text が長い場合 3000 文字 + ... に切り詰める。"""
-        long_text = "x" * 5000
+        """raw_text が長い場合 5000 文字 + ... に切り詰める。"""
+        long_text = "x" * 6000
         docs = [
             {
                 "title": "Long Doc",
@@ -79,7 +79,7 @@ class TestFormatDocuments:
         ]
         result = _format_documents("en", docs)
         assert "..." in result
-        assert "x" * 3000 in result
+        assert "x" * 5000 in result
 
     def test_language_name_in_header(self):
         """ヘッダーに言語名が含まれる。"""

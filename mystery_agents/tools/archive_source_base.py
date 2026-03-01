@@ -74,6 +74,7 @@ class ArchiveSource(ABC):
         date_end: str | None = None,
         max_results: int = 20,
         language: str | None = None,
+        reference_keywords: list[str] | None = None,
     ) -> ArchiveSearchResult:
         """共通ラッパー: API キーチェック → レートリミット → 検索 → ログ。"""
         # API キーチェック
@@ -94,6 +95,7 @@ class ArchiveSource(ABC):
                 date_end=date_end,
                 max_results=max_results,
                 language=language,
+                reference_keywords=reference_keywords,
             )
             latency_ms = round((time.monotonic() - start) * 1000)
             logger.info(
@@ -133,6 +135,7 @@ class ArchiveSource(ABC):
         date_end: str | None,
         max_results: int,
         language: str | None,
+        reference_keywords: list[str] | None = None,
     ) -> ArchiveSearchResult:
         """サブクラスが実装する API 固有の検索ロジック。"""
         ...

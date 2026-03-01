@@ -221,9 +221,9 @@ def _format_documents(
             kw_str = ", ".join(matched) if isinstance(matched, list) else str(matched)
             lines.append(f"- **Keywords matched**: {kw_str}")
         if doc.get("raw_text"):
-            # テキスト抜粋は3000文字に制限（全文取得対応で拡大）
-            excerpt = str(doc["raw_text"])[:3000]
-            if len(str(doc["raw_text"])) > 3000:
+            # テキスト抜粋は5000文字に制限（fulltext_extraction.max_output_chars と一致）
+            excerpt = str(doc["raw_text"])[:5000]
+            if len(str(doc["raw_text"])) > 5000:
                 excerpt += "..."
             lines.append(f"- **Excerpt**: {excerpt}")
         else:

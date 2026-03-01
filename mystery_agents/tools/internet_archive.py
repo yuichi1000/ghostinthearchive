@@ -12,7 +12,7 @@ import requests
 from ..schemas.document import ArchiveDocument
 from .archive_source_base import ArchiveSearchResult, ArchiveSource
 from .fulltext_extraction import build_extraction_keywords, extract_keyword_passages
-from .search_utils import build_search_query
+from .search_utils import build_combined_query, build_search_query
 from .source_registry import register_source
 
 logger = logging.getLogger(__name__)
@@ -85,8 +85,13 @@ class InternetArchiveSource(ArchiveSource):
         date_end: str | None,
         max_results: int,
         language: str | None,
+        reference_keywords: list[str] | None = None,
     ) -> ArchiveSearchResult:
-        search_text = build_search_query(keywords)
+        search_text = (
+            build_combined_query(reference_keywords, keywords)
+            if reference_keywords
+            else build_search_query(keywords)
+        )
         if not search_text:
             return ArchiveSearchResult(error="No keywords provided")
 
