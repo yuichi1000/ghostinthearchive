@@ -14,7 +14,7 @@ const dict: Dictionary = {
     paragraph1:
       "The investigative unit behind this archive is not human. It is an autonomous AI agent system built on Google Agent Development Kit (ADK), operating under codename GHOST IN THE ARCHIVE. It conducts interdisciplinary analysis across five academic fields: History, Folklore Studies, Cultural Anthropology, Linguistics, and Archival Science.",
     paragraph2:
-      "All source materials are retrieved exclusively from public digital archives worldwide — the Library of Congress, Europeana, Internet Archive, and similar institutions across multiple countries and languages. No classified information is used in any investigation. (We do not have clearance. We have not applied for clearance.)",
+      "All source materials are retrieved exclusively from public digital archives worldwide — national libraries, cultural heritage portals, and historical newspaper collections across multiple countries and languages. No classified information is used in any investigation. (We do not have clearance. We have not applied for clearance.)",
     paragraph3:
       "Be advised: AI agents are capable of presenting erroneous conclusions with remarkable confidence. Readers are encouraged to verify all claims independently. The archive makes no warranty, express or implied, regarding the accuracy of any paranormal, folkloric, or historical assertion contained herein.",
     footer: {
@@ -72,6 +72,39 @@ const dict: Dictionary = {
         "The uncanny as a legitimate subject of scholarly inquiry, not sensationalism",
       folklore:
         "Folklore is not decoration. It is complementary evidence — the unofficial record that fills the silences left by official documentation.",
+    },
+    methodology: {
+      heading: "How We Investigate",
+      intro:
+        "Each investigation follows a six-step pipeline. Steps 1–3 are deterministic program operations — no AI interpretation is involved. Steps 4–6 use large language models (LLMs) for analysis, synthesis, and narrative generation.",
+      programLabel: "PROGRAM",
+      llmLabel: "LLM",
+      steps: {
+        search: {
+          title: "API Search",
+          description: "Programmatic queries are sent to public digital archive APIs — Trove, NDL Search, NYPL Digital Collections, Chronicling America, Internet Archive, and Delpher. The system retrieves metadata and catalog records matching the investigation theme.",
+        },
+        fulltext: {
+          title: "Full-text Retrieval",
+          description: "For each record returned, the system follows source URLs to retrieve the full text of primary documents. This is a mechanical fetch — no summarization or interpretation occurs.",
+        },
+        excerpt: {
+          title: "Excerpt Extraction",
+          description: "Relevant passages are extracted from retrieved documents using keyword matching and positional heuristics. The raw excerpts are preserved verbatim for downstream analysis.",
+        },
+        analysis: {
+          title: "Interdisciplinary Analysis",
+          description: "Language-specific Scholar agents analyze the collected documents through five academic lenses: History, Folklore Studies, Cultural Anthropology, Linguistics, and Archival Science. Each identifies contradictions, anomalies, and patterns within its assigned language group.",
+        },
+        debate: {
+          title: "Cross-lingual Debate",
+          description: "Scholars from different language groups engage in structured debate, challenging each other's findings and identifying cross-lingual discrepancies that no single-language analysis could surface.",
+        },
+        certification: {
+          title: "Ghost Certification",
+          description: "The Armchair Polymath synthesizes all analyses and debates, applying the three Ghost certification criteria: multiple independent sources, API-limitation exclusion, and reproducibility. The result is classified as Confirmed Ghost, Suspected Ghost, or Archival Echo.",
+        },
+      },
     },
     storytellers: {
       heading: "Our Storytellers",

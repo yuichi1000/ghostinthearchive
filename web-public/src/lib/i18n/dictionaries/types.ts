@@ -59,6 +59,20 @@ export interface Dictionary {
       intellectualAweDesc: string;
       folklore: string;
     };
+    methodology: {
+      heading: string;
+      intro: string;
+      programLabel: string;
+      llmLabel: string;
+      steps: {
+        search: { title: string; description: string };
+        fulltext: { title: string; description: string };
+        excerpt: { title: string; description: string };
+        analysis: { title: string; description: string };
+        debate: { title: string; description: string };
+        certification: { title: string; description: string };
+      };
+    };
     storytellers: {
       heading: string;
       intro: string;
